@@ -900,6 +900,28 @@ textarea.input { height: auto; padding-block: 10px; resize: vertical; line-heigh
   .cx-pain__b { height: 30px; font-size: 13px; }
 }
 
+.dx-queue { display: flex; flex-direction: column; gap: 8px; }
+.dx-queue__row { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+.dx-queue__row.is-done { background: var(--surface-2); opacity: .8; }
+.dx-queue__time { font-weight: 700; color: var(--brand-700); }
+.dx-queue__who { display: flex; flex-direction: column; min-width: 0; }
+.dx-queue__who b { color: var(--text-strong, var(--brand-700)); }
+.dx-queue__who small { color: var(--muted); font-size: 13px; }
+.dx-queue__act { display: flex; justify-content: flex-end; }
+@media (max-width: 640px) {
+  .dx-queue__row { grid-template-columns: auto minmax(0, 1fr); }
+  .dx-queue__row > .badge { grid-column: 2; justify-self: start; }
+  .dx-queue__act { grid-column: 1 / -1; }
+  .dx-queue__act .btn { width: 100%; }
+}
+.cx-draft { border: 1.5px dashed var(--warn); background: var(--warn-bg); }
+.cx-draft + .cx-draft { margin-top: 12px; }
+.cx-draft__steps { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.cx-draft__step { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: var(--r-pill); background: var(--surface); border: 1px solid var(--line); font-size: 13.5px; color: var(--muted); }
+.cx-draft__step b { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--line); color: var(--text); font-size: 12px; }
+.cx-draft__step.is-done { color: var(--ok); border-color: var(--ok); font-weight: 600; }
+.cx-draft__step.is-done b { background: var(--ok); color: #fff; }
+
 /* ---------- Exam sheets (nursing sheet + hip & knee sheet) ---------- */
 .sh-tabs { position: sticky; top: -22px; z-index: 3; box-shadow: 0 0 0 6px var(--surface); }
 .sh-tabs .seg__btn { height: auto; min-height: 40px; padding: 6px 8px; line-height: 1.3; }

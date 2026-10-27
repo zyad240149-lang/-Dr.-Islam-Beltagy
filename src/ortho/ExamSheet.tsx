@@ -50,6 +50,12 @@ const X_IMG = ['X-ray', 'MRI', 'CT', 'Ultrasound'];
 const X_DX_HIP = ['Osteoarthritis', 'Avascular necrosis', 'Femoroacetabular impingement', 'Labral tear', 'Trochanteric bursitis', 'Gluteal tendinopathy', 'Hip fracture', 'Septic arthritis'];
 const X_DX_KNEE = ['Osteoarthritis', 'Meniscal tear', 'Ligament injury (ACL / PCL / MCL / LCL)', 'Patellofemoral pain syndrome', 'Chondral lesion', 'Osgood-Schlatter disease', 'Patellar tendinopathy', 'Bursitis'];
 const X_PLAN = ['Medication', 'Physiotherapy', 'Activity modification', 'Injection / Intervention', 'Brace / Support', 'Surgery (if indicated)'];
+// نفس البنود لطباعة التشخيص (printDiagnosis) عشان الورقة المطبوعة تفضل مطابقة للشاشة
+export const SHEET_LISTS = {
+  N_VISIT, N_GENDER, N_MARITAL, N_HX, YES_NO, N_ALLERGY, N_CC, N_SINCE,
+  X_CC, X_DUR, X_SIDE, X_ONSET, X_COURSE, X_PREV, X_RF, X_DERM, X_PALP_HIP, X_PALP_KNEE, X_ROM_HIP, X_ROM_KNEE,
+  X_PATMOB, X_SPROM, X_MRC, X_REFLEX, X_ST_HIP, X_ST_KNEE, X_IMG, X_DX_HIP, X_DX_KNEE, X_PLAN,
+};
 
 // ---------- البيانات ----------
 export const emptySheet = (): ExamSheet => ({ on: [], txt: {}, meds: [], pain: [] });
@@ -69,6 +75,10 @@ const isAutoOn = (o: string) => o.startsWith('n.visit|') || o.startsWith('n.gend
 export const sheetHasContent = (s: ExamSheet) =>
   s.on.some((o) => !isAutoOn(o)) || s.pain.length > 0 || s.meds.some((m) => m.name.trim())
   || Object.entries(s.txt).some(([k, v]) => !BASIC_KEYS.includes(k) && v.trim());
+/** فيه حاجة اتكتبت في شيت التمريض (غير اللي اتملى تلقائي من ملف المريض) */
+export const nurseStarted = (s: ExamSheet) =>
+  s.on.some((o) => o.startsWith('n.') && !isAutoOn(o)) || s.pain.length > 0 || s.meds.some((m) => m.name.trim())
+  || Object.entries(s.txt).some(([k, v]) => k.startsWith('n.') && !BASIC_KEYS.includes(k) && v.trim());
 /** فيه حاجة متكتبة في شيت الطبيب (عشان استكمال الكشف يفتح عليه على طول) */
 export const doctorStarted = (s: ExamSheet) => s.on.some((o) => o.startsWith('x.')) || Object.entries(s.txt).some(([k, v]) => k.startsWith('x.') && v.trim());
 

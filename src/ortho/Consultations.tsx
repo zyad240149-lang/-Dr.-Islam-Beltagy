@@ -6,14 +6,15 @@ import { regionById } from '../components/BodyFigure';
 import { Icon } from '../utils/icons';
 import { findCondition } from '../data/bodyRegions';
 import type { DiagnosisRef } from '../types';
-import { fmtDate, todayYmd } from '../utils/format';
+import { fmtDate, fmtDateTime, todayYmd } from '../utils/format';
 import { useToast } from '../hooks/useToast';
 import { IMAGING_KIND, IMAGING_STATUS, REGIONS, SIDE, ortho, useOrthoVersion, type Attachment, type Consultation, type ImagingKind, type ImagingRequest, type Medication, type Side } from './data';
 import { LAB_GROUPS, MED_PRESETS, XRAY_VIEWS } from './clinicalLists';
 import { printRx } from './printRx';
+import { printDiagnosis } from './printDiagnosis';
 import { db } from '../data/db';
 import { Field, IconBtn, LoadState, PageHead, PatientSelect, SearchBox, Tone, confirmDelete, patientName, useClinicalCan, useRun } from './kit';
-import { DoctorSheet, NursingSheet, doctorStarted, emptySheet, normSheet, resetPatientBasics, sheetHasContent, sheetPatientPatch, sheetSummary, withPatientBasics } from './ExamSheet';
+import { DoctorSheet, NursingSheet, doctorStarted, emptySheet, nurseStarted, normSheet, resetPatientBasics, sheetHasContent, sheetPatientPatch, sheetSummary, withPatientBasics } from './ExamSheet';
 
 type Draft = Omit<Consultation, 'id'> & { id?: string };
 
@@ -41,7 +42,21 @@ export function loadConsultDraft(patientId: string): Draft | null {
   } catch { return null; }
 }
 function saveConsultDraft(patientId: string, data: Draft) {
-  try { localStorage.setItem(draftKey(patientId), JSON.stringify(data)); } catch { /* تخزين محلي غير متاح */ }
+  try { localStorage.setItem(draftKey(patientId), JSON.stringify({ ...data, savedAt: Date.now() })); } catch { /* تخزين محلي غير متاح */ }
+}
+export type ConsultDraft = Draft & { savedAt: number };
+/** كل الكشوفات اللي اتبدأت على الجهاز ده ولسه ما اتحفظتش — آخر تعديل أولًا */
+export function listConsultDrafts(): ConsultDraft[] {
+  const out: ConsultDraft[] = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k?.startsWith(DRAFT_PREFIX)) continue;
+      const d = loadConsultDraft(k.slice(DRAFT_PREFIX.length));
+      if (d && draftHasContent(d)) out.push({ ...d, savedAt: Number((d as Partial<ConsultDraft>).savedAt) || 0 });
+    }
+  } catch { /* تخزين محلي غير متاح */ }
+  return out.sort((a, b) => b.savedAt - a.savedAt);
 }
 export function clearConsultDraft(patientId: string) {
   try { localStorage.removeItem(draftKey(patientId)); } catch { /* تخزين محلي غير متاح */ }
@@ -177,6 +192,7 @@ export function ConsultModal({ initial, resume, patientId = '', onClose }: { ini
     <Modal xl title={initial ? 'تعديل الكشف' : 'كشف جديد'} onClose={cancel} footer={<>
       {need && <span className="sh-need">{need}</span>}
       <Button variant="outline" onClick={cancel}>إلغاء</Button>
+      <Button variant="outline" icon="print" disabled={!c.patientId} onClick={() => printDiagnosis({ ...c, complaint: sum.complaint, history: sum.history, examination: sum.examination, diagnosis: sum.diagnosis, sheet }, db.patient(c.patientId), visitNo)}>طباعة التشخيص</Button>
       <Button variant="outline" icon="print" loading={busy} disabled={!ok || uploading} onClick={() => save(true)}>حفظ وطباعة الروشتة</Button>
       <Button icon="check" loading={busy} disabled={!ok || uploading} onClick={() => save(false)}>حفظ الكشف</Button>
     </>}>
@@ -330,6 +346,40 @@ export function AttachmentThumbs({ items, onRemove }: { items: Attachment[]; onR
   );
 }
 
+// كشف بدأ ولسه ما اتحفظش: بيظهر في «تشخيص المريض» بالأجزاء اللي اتملت، وزرار يكمّله من مكان ما وقف
+export function DraftCard({ d, showPatient, onResume, onDiscard }: { d: ConsultDraft; showPatient?: boolean; onResume: () => void; onDiscard: () => void }) {
+  const s = normSheet(d.sheet);
+  const sum = sheetSummary(s);
+  const steps: [string, boolean][] = [
+    ['شيت التمريض', nurseStarted(s) || d.painScore !== ''],
+    ['كشف الطبيب', doctorStarted(s)],
+    ['الروشتة والأشعة والتحاليل', !!(d.medications.length || d.labs.length || d.imagingRequests.length || d.attachments.length || d.plan.trim())],
+  ];
+  return (
+    <div className="item-card cx-card cx-draft">
+      <div className="ortho-row">
+        <div>
+          {showPatient && <Link to={`/patients/${d.patientId}`} className="ortho-cell-strong">{patientName(d.patientId)}</Link>}
+          <div className="ortho-sub"><span className="badge badge--warn">لم يكتمل</span> {fmtDate(d.date)}{d.savedAt ? ` · آخر تعديل ${fmtDateTime(d.savedAt)}` : ''}</div>
+        </div>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <Button size="sm" icon="refresh" onClick={onResume}>استكمال التشخيص</Button>
+          <IconBtn icon="trash" label="حذف التشخيص اللي لم يكتمل" danger onClick={onDiscard} />
+        </div>
+      </div>
+      <div className="cx-draft__steps">
+        {steps.map(([label, done], i) => <span key={label} className={`cx-draft__step ${done ? 'is-done' : ''}`}><b className="num">{i + 1}</b>{label} {done ? '✓' : '— لسه'}</span>)}
+      </div>
+      {(sum.complaint || sum.diagnosis) && (
+        <dl className="dl" style={{ marginTop: 6 }}>
+          {sum.complaint && <div><dt>الشكوى</dt><dd dir="auto">{sum.complaint}</dd></div>}
+          {sum.diagnosis && <div><dt>التشخيص</dt><dd dir="auto">{sum.diagnosis}</dd></div>}
+        </dl>
+      )}
+    </div>
+  );
+}
+
 // نتيجة خريطة الجسم (مرجع مركز التميز) ← حقول الكشف: التشخيص + كود ICD-10 + المنطقة + الجهة
 export function pickedToConsult(text: string, ref: DiagnosisRef): Partial<Consultation> {
   const f = findCondition(ref.conditionId);
@@ -353,8 +403,12 @@ export function ConsultList({ items, onEdit, hidePatient }: { items: Consultatio
                 {!hidePatient && <Link to={`/patients/${c.patientId}`} className="ortho-cell-strong">{patientName(c.patientId)}</Link>}
                 <div className="ortho-sub">{fmtDate(c.date)} · {c.region} — {SIDE[c.side]}{c.painScore !== '' && c.painScore != null ? ` · الألم ${c.painScore}/10` : ''}</div>
               </div>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <IconBtn icon="print" label="طباعة الروشتة" onClick={() => printRx(c, db.patient(c.patientId))} />
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <Button size="sm" variant="outline" icon="print" onClick={() => {
+                  const visits = ortho.list('consultations', c.patientId).sort((a, b) => a.date.localeCompare(b.date));
+                  printDiagnosis(c, db.patient(c.patientId), visits.findIndex((x) => x.id === c.id) + 1 || undefined);
+                }}>طباعة التشخيص</Button>
+                <IconBtn icon="receipt" label="طباعة الروشتة" onClick={() => printRx(c, db.patient(c.patientId))} />
                 {perm.edit && <IconBtn icon="edit" label="تعديل" onClick={() => onEdit(c)} />}
                 {perm.del && <IconBtn icon="trash" label="حذف" danger onClick={() => confirmDelete('هذا الكشف') && run(async () => { await ortho.remove('consultations', c.id); atts.forEach((a) => void ortho.removeAttachment(a.path)); }, 'تم الحذف')} />}
               </div>

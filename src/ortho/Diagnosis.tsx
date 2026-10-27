@@ -79,7 +79,7 @@ export default function Diagnosis() {
         <section className="card" style={{ marginBottom: 16 }}>
           <div className="card__head"><h2>تشخيصات لم تكتمل ({drafts.length})</h2></div>
           <div className="card__body">
-            {drafts.map((d) => <DraftCard key={d.patientId} d={d} showPatient onResume={() => resumeDraft(d.patientId)} onDiscard={() => discardDraft(d.patientId)} />)}
+            {drafts.map((d) => <DraftCard key={d.patientId} d={d} onResume={() => resumeDraft(d.patientId)} onDiscard={() => discardDraft(d.patientId)} />)}
           </div>
         </section>
       )}

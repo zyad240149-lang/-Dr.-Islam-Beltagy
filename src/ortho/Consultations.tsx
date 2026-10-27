@@ -13,7 +13,7 @@ import { LAB_GROUPS, MED_PRESETS, XRAY_VIEWS } from './clinicalLists';
 import { printRx } from './printRx';
 import { printDiagnosis } from './printDiagnosis';
 import { db } from '../data/db';
-import { Field, IconBtn, LoadState, PageHead, PatientSelect, SearchBox, Tone, confirmDelete, patientName, useClinicalCan, useRun } from './kit';
+import { Field, IconBtn, LoadState, PageHead, PatientSelect, SearchBox, Tone, confirmDelete, patientFile, patientName, useClinicalCan, useRun } from './kit';
 import { DoctorSheet, NursingSheet, doctorStarted, emptySheet, nurseStarted, normSheet, resetPatientBasics, sheetHasContent, sheetPatientPatch, sheetSummary, withPatientBasics } from './ExamSheet';
 
 type Draft = Omit<Consultation, 'id'> & { id?: string };
@@ -347,7 +347,7 @@ export function AttachmentThumbs({ items, onRemove }: { items: Attachment[]; onR
 }
 
 // كشف بدأ ولسه ما اتحفظش: بيظهر في «تشخيص المريض» بالأجزاء اللي اتملت، وزرار يكمّله من مكان ما وقف
-export function DraftCard({ d, showPatient, onResume, onDiscard }: { d: ConsultDraft; showPatient?: boolean; onResume: () => void; onDiscard: () => void }) {
+export function DraftCard({ d, onResume, onDiscard }: { d: ConsultDraft; onResume: () => void; onDiscard: () => void }) {
   const s = normSheet(d.sheet);
   const sum = sheetSummary(s);
   const steps: [string, boolean][] = [
@@ -359,7 +359,8 @@ export function DraftCard({ d, showPatient, onResume, onDiscard }: { d: ConsultD
     <div className="item-card cx-card cx-draft">
       <div className="ortho-row">
         <div>
-          {showPatient && <Link to={`/patients/${d.patientId}`} className="ortho-cell-strong">{patientName(d.patientId)}</Link>}
+          <Link to={`/patients/${d.patientId}`} className="ortho-cell-strong">{patientName(d.patientId)}</Link>
+          <span className="badge badge--brand" style={{ marginInlineStart: 8 }}>ملف <span className="num">{patientFile(d.patientId)}</span></span>
           <div className="ortho-sub"><span className="badge badge--warn">لم يكتمل</span> {fmtDate(d.date)}{d.savedAt ? ` · آخر تعديل ${fmtDateTime(d.savedAt)}` : ''}</div>
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>

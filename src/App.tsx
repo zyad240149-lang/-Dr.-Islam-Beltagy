@@ -40,7 +40,6 @@ const MarketingReport = lazy(() => import('./pages/MarketingReport'));
 const Payroll = lazy(() => import('./pages/Payroll'));
 const PayrollStaff = lazy(() => import('./pages/PayrollStaff'));
 const PayrollReports = lazy(() => import('./pages/PayrollReports'));
-const MyTarget = lazy(() => import('./pages/MyTarget'));
 const Finance = lazy(() => import('./pages/Finance'));
 const Account = lazy(() => import('./pages/Account'));
 const Consultations = lazy(() => import('./ortho/Consultations'));
@@ -114,7 +113,6 @@ const ROUTES: { path: string; area: Area; anyOf?: Area[]; el: JSX.Element }[] = 
   { path: '/payroll', area: 'payroll', el: <Payroll /> },
   { path: '/payroll/staff', area: 'payroll', el: <PayrollStaff /> },
   { path: '/payroll/reports', area: 'payroll', el: <PayrollReports /> },
-  { path: '/my-target', area: 'mytarget', el: <MyTarget /> },
   { path: '/payments', area: 'invoices', el: <Navigate to="/invoices" replace /> },
   { path: '/product-sales', area: 'products', el: <ProductSales /> },
   { path: '/installments', area: 'installments', el: <Installments /> },

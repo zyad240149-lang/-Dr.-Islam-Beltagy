@@ -24,7 +24,6 @@ type NavItem = { to: string; label: string; icon: string; area: Area; anyOf?: Ar
 const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
   { title: 'الرئيسية', items: [
     { to: '/', label: 'الرئيسية', icon: 'grid', area: 'dashboard', end: true },
-    { to: '/my-target', label: 'تارجتي هالشهر', icon: 'target', area: 'mytarget' },
   ] },
   { title: 'المرضى والمواعيد', items: [
     { to: '/patients', label: 'المرضى', icon: 'users', area: 'patients' },
@@ -152,8 +151,7 @@ export default function Layout({ children }: { children: ReactNode }) {
     load();
     return installmentsApi.subscribe(load);
   }, [canDecideInst, user?.id]);
-  // «تارجتي» بتظهر بس لحساب مربوط بملف أخصائي
-  const items = NAV.filter((n) => (n.anyOf ?? [n.area]).some((a) => can(user?.role, a)) && (n.to !== '/my-target' || !!user?.therapistId));
+  const items = NAV.filter((n) => (n.anyOf ?? [n.area]).some((a) => can(user?.role, a)));
   const close = () => setOpen(false);
 
   const doLogout = async () => {

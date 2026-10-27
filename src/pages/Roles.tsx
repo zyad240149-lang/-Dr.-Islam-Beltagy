@@ -115,7 +115,7 @@ export default function Roles() {
             <tbody>{AREA_GROUPS.map((g) => (
               <Fragment key={g.title}>
                 <tr className="perm-group"><td colSpan={OPS.length + 2}><strong>{g.title}</strong> <span className="muted" style={{ fontSize: 12.5 }}>— {g.hint}</span></td></tr>
-                {g.areas.filter((a) => a !== 'roles' && a !== 'payroll' && a !== 'mytarget' && AREAS.includes(a)).map((a) => {
+                {g.areas.filter((a) => a !== 'roles' && a !== 'payroll' && AREAS.includes(a)).map((a) => {
                   const h = AREA_HELP[a]; const single = !!h.ops && Object.keys(h.ops).length === 1;
                   return (
                     <tr key={a}>
@@ -148,7 +148,7 @@ export default function Roles() {
         <div className="card__body">
           <div className="table-wrap"><table className="table perm-table">
             <thead><tr><th>القسم</th>{ROLES.map((r) => <th key={r}>{ROLE_LABEL[r]}</th>)}</tr></thead>
-            <tbody>{AREAS.filter((a) => a !== 'roles' && a !== 'payroll' && a !== 'mytarget').map((a) => (
+            <tbody>{AREAS.filter((a) => a !== 'roles' && a !== 'payroll').map((a) => (
               <tr key={a}><td style={{ fontWeight: 600 }}>{AREA_LABEL[a]}</td>{ROLES.map((r) => {
                 const ops = draft[r]?.[a] ?? [];
                 return <td key={r} style={{ fontSize: 12 }}>{ops.length === 0 ? <span className="muted">—</span> : ops.length === 4 ? 'كامل' : ops.map((o) => OP_LABEL[o]).join('، ')}</td>;

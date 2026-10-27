@@ -1,5 +1,5 @@
 // «الرواتب والتارجت» — طبقة بيانات مستقلة عن db.ts. كل الحسابات (الإيراد المؤهل، النسبة، المكافأة، المتبقي، حالة الصرف)
-// على الخادم (هجرة 112) — الواجهة بتعرض بس. لوحة المدير للمدير العام بس، و my_target للأخصائي (بياناته هو بس).
+// على الخادم (هجرة 112) — الواجهة بتعرض بس. للمدير العام بس.
 import { supabase } from '../lib/supabase';
 
 export type SubjectType = 'therapist' | 'employee';
@@ -47,11 +47,6 @@ export interface Payout {
 }
 export interface AuditEntry { at: string; actor: string; action: string; period: string | null; subject?: string | null; reason: string | null; details: Record<string, unknown> }
 export interface SubjectDetail { name: string; dueId: string | null; visits: VisitRow[]; plans: PlanVersion[]; payouts: Payout[]; audit: AuditEntry[] }
-export interface MyTarget extends LiveCalc {
-  period: string; from: string; to: string; today: string; daysLeft: number; name: string;
-  approved: boolean; approvedBonus: number | null; paidBonus: number;
-  visitsList: VisitRow[]; daily: { date: string; amount: number }[];
-}
 export interface PlanInput {
   type: SubjectType; id: string; effectiveFrom: string; baseSalary: number; target?: number;
   bonusMethod?: BonusMethod; bonusRate?: number; bonusFixed?: number; bonusCondition?: BonusCondition; paySystem?: PaySystem; payDay?: number | null; note?: string;
@@ -202,12 +197,6 @@ export const payrollApi = {
   async logs(from: string, to: string): Promise<Result<{ payouts: Payout[]; audit: AuditEntry[] }>> {
     const { data, error } = await supabase.rpc('payroll_log_list', { p_from: from, p_to: to });
     return error ? fail(error.message) : { ok: true, payouts: (data.payouts ?? []).map(toPayout), audit: data.audit ?? [] };
-  },
-  async myTarget(period: string): Promise<Result<{ data: MyTarget }>> {
-    const { data, error } = await supabase.rpc('my_target', { p_period: period });
-    if (error) return fail(error.message);
-    return { ok: true, data: { ...data, ...toLive(data), daysLeft: num(data.daysLeft), approvedBonus: numOrNull(data.approvedBonus), paidBonus: num(data.paidBonus),
-      visitsList: (data.visitsList ?? []).map(toVisit), daily: (data.daily ?? []).map((d: any) => ({ date: d.date, amount: num(d.amount) })) } };
   },
   async finance(period: string): Promise<Result<{ data: FinanceMonth }>> {
     const { data, error } = await supabase.rpc('finance_month', { p_period: period });

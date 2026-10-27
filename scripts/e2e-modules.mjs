@@ -219,11 +219,11 @@ try {
       insert into invoices (id, no, patient_id, appointment_id, service_name, price, discount, total, paid, remaining, status, date)
         values ('${invId}', 'TST-INV-${invId.slice(0, 6)}', '${P.id}', '${apId}', 'كشف عظام', 1200, 0, 1200, 1200, 0, 'paid', '${PAY_PERIOD}-15');
       set session_replication_role = origin;`);
+    // «تارجتي» اتشالت (هجرة 908): ولا الطبيب ولا الاستقبال يقدروا يطلبوها
     const mt = await doc.rpc('my_target', { p_period: PAY_PERIOD });
-    check('«تارجتي»: الإيراد 1200 من تارجت 1000 = وصل', !mt.error && Number(mt.data?.qualifying) === 1200 && mt.data?.reached === true && mt.data?.visits === 1, err(mt) || JSON.stringify({ q: mt.data?.qualifying, r: mt.data?.reached, v: mt.data?.visits }));
-    check('«تارجتي»: العمولة 10% = 120', Number(mt.data?.bonus) === 120, mt.data?.bonus);
+    check('«تارجتي» مش متاحة للطبيب', !!mt.error, 'visible!');
     const mtR = await recep.rpc('my_target', { p_period: PAY_PERIOD });
-    check('الاستقبال مالوش «تارجتي»', !!mtR.error, err(mtR) || 'visible!');
+    check('«تارجتي» مش متاحة للاستقبال', !!mtR.error, 'visible!');
     const ap = await admin.rpc('payroll_approve_period', { p_period: PAY_PERIOD, p_note: 'اختبار' });
     check('اعتماد الشهر بيثبّت مستحقين (الطبيب والاستقبال)', !ap.error && ap.data?.added === 2, err(ap) || JSON.stringify(ap.data));
     const ov = await admin.rpc('payroll_overview', { p_period: PAY_PERIOD });

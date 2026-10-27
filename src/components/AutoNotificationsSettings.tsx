@@ -2,7 +2,7 @@
 // الجدولة والإرسال كلهم على الخادم (pg_cron كل دقيقة + Edge Function "push") — الصفحة دي بتعرض وبتعدّل الإعدادات بس.
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Button, Input, Skeleton, StatusBadge } from './ui';
+import { Button, Skeleton, StatusBadge } from './ui';
 import { useCan } from './common';
 import { useToast } from '../hooks/useToast';
 import { fmtDateTime } from '../utils/format';
@@ -33,8 +33,6 @@ export function AutoNotificationsSettings() {
   const edit = can('settings', 'edit');
   const [kinds, setKinds] = useState<Kind[] | null>(null);
   const [offsets, setOffsets] = useState<number[]>([]);
-  const [thresholds, setThresholds] = useState<number[]>([]);
-  const [newThr, setNewThr] = useState('');
   const [report, setReport] = useState<Report | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -42,21 +40,16 @@ export function AutoNotificationsSettings() {
   const load = async () => {
     const [s, r] = await Promise.all([supabase.rpc('notification_settings'), supabase.rpc('notification_delivery_report', { p_days: 7 })]);
     if (s.error) { setErr(s.error.message); return; }
-    setKinds(s.data.kinds); setOffsets(s.data.prefs.reminderOffsets ?? []); setThresholds(s.data.prefs.targetThresholds ?? []);
+    setKinds(s.data.kinds); setOffsets(s.data.prefs.reminderOffsets ?? []);
     if (!r.error) setReport(r.data);
   };
   useEffect(() => { void load(); }, []);
 
   const setKind = (k: string, p: Partial<Kind>) => setKinds((x) => (x ?? []).map((y) => (y.kind === k ? { ...y, ...p } : y)));
   const toggleHour = (h: number) => setOffsets((x) => (x.includes(h) ? x.filter((y) => y !== h) : [...x, h].sort((a, b) => b - a)));
-  const addThr = () => {
-    const n = Math.round(Number(newThr));
-    if (!(n >= 1 && n <= 200)) { toast.error('اكتب نسبة من 1 إلى 200.'); return; }
-    setThresholds((x) => [...new Set([...x, n])].sort((a, b) => a - b)); setNewThr('');
-  };
   const save = async () => {
     setBusy(true);
-    const { error } = await supabase.rpc('save_notification_settings', { p: { kinds, reminderOffsets: offsets, targetThresholds: thresholds } });
+    const { error } = await supabase.rpc('save_notification_settings', { p: { kinds, reminderOffsets: offsets } });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
     toast.success('تم حفظ إعدادات الإشعارات — والتذكيرات الجاية اتعاد جدولتها.');
@@ -89,16 +82,6 @@ export function AutoNotificationsSettings() {
         {offsets.length === 0 && <div className="muted-sm" style={{ marginTop: 6 }}>ما فيه تذكيرات مختارة — تذكيرات المواعيد متوقفة.</div>}
       </div></section>
 
-      <section className="card"><div className="card__body">
-        <h4 style={{ marginTop: 0 }}>نسب التارجت (للأخصائيين)</h4>
-        <p className="muted-sm" style={{ marginTop: 0 }}>إشعار تحفيزي لما الأخصائي يوصل لكل نسبة من تارجته الشهري (من بيانات الإنجاز الفعلية في الرواتب والتارجت) — مرة واحدة لكل نسبة في الشهر، ويبدأ من جديد كل شهر.</p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-          {thresholds.map((t) => (
-            <span key={t} className="pr-chip"><b className="num">{t}%</b>{edit && <button type="button" className="icon-btn" aria-label={`حذف ${t}%`} onClick={() => setThresholds((x) => x.filter((y) => y !== t))}>✕</button>}</span>
-          ))}
-          {edit && <><Input id="nt-thr" placeholder="مثال: 50" value={newThr} onChange={(e) => setNewThr(e.target.value)} style={{ width: 110 }} /><Button size="sm" variant="outline" onClick={addThr}>إضافة نسبة</Button></>}
-        </div>
-      </div></section>
 
       <section className="card"><div className="card__body">
         <h4 style={{ marginTop: 0 }}>أنواع الإشعارات</h4>
@@ -114,7 +97,7 @@ export function AutoNotificationsSettings() {
             </tr>
           ))}</tbody>
         </table></div>
-        <p className="muted-sm">متغيرات: <code>{'{name}'}</code> الاسم الأول للمريض، <code>{'{hours}'}</code> الوقت المتبقي للموعد، <code>{'{pct}'}</code> نسبة التارجت.</p>
+        <p className="muted-sm">متغيرات: <code>{'{name}'}</code> الاسم الأول للمريض، <code>{'{hours}'}</code> الوقت المتبقي للموعد.</p>
         {edit && <Button icon="check" loading={busy} onClick={save}>حفظ إعدادات الإشعارات</Button>}
       </div></section>
 

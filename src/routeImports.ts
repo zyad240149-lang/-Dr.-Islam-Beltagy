@@ -17,7 +17,6 @@ export const ROUTE_IMPORTS: Record<string, () => Promise<unknown>> = {
   '/payroll': () => import('./pages/Payroll'),
   '/payroll/staff': () => import('./pages/PayrollStaff'),
   '/payroll/reports': () => import('./pages/PayrollReports'),
-  '/my-target': () => import('./pages/MyTarget'),
   '/discounts': () => import('./pages/Discounts'),
   '/loyalty': () => import('./pages/Loyalty'),
   '/product-sales': () => import('./pages/ProductSales'),

@@ -7,7 +7,7 @@ const ACC_ACCOUNTANT: Area[] = ['accounting.access', 'accounting.expenses.create
 
 export const AREAS: Area[] = [
   'dashboard', 'patients', 'booking', 'appointments', 'plans', 'sessions', 'services', 'therapists',
-  'employees', 'invoices', 'payments', 'packages', 'inventory', 'reports', 'notifications', 'roles', 'settings', 'workhours', 'requests', 'support', 'discounts', 'campaigns', 'financial', 'attendance', 'loyalty', 'whatsapp', 'products', 'installments', 'physio', 'payroll', 'mytarget', 'pkg_checkin', 'bodymap', 'marketing', 'pt_f_gender', 'pt_f_source', 'pt_f_doctor', 'pt_f_status', 'pt_f_sort',
+  'employees', 'invoices', 'payments', 'packages', 'inventory', 'reports', 'notifications', 'roles', 'settings', 'workhours', 'requests', 'support', 'discounts', 'campaigns', 'financial', 'attendance', 'loyalty', 'whatsapp', 'products', 'installments', 'physio', 'payroll','pkg_checkin', 'bodymap', 'marketing', 'pt_f_gender', 'pt_f_source', 'pt_f_doctor', 'pt_f_status', 'pt_f_sort',
   'inv_approve', 'inv_price', 'inv_cancel', 'appt_confirm', 'appt_cancel',
   ...ACC_AREAS,
 ];
@@ -22,7 +22,7 @@ export const ROLES: Role[] = ['system_admin', 'center_manager', 'secretary', 're
 export function defaultPermissions(): PermissionMatrix {
   const m: PermissionMatrix = {
     system_admin: full(AREAS),
-    center_manager: { ...full(AREAS.filter((a) => a !== 'employees' && a !== 'roles' && a !== 'payroll' && a !== 'mytarget' && !ACC_AREAS.includes(a))), employees: VIEW, ...Object.fromEntries(ACC_MANAGER.map((a) => [a, VIEW])) }, // الرواتب والتارجت للمدير العام بس
+    center_manager: { ...full(AREAS.filter((a) => a !== 'employees' && a !== 'roles' && a !== 'payroll' && !ACC_AREAS.includes(a))), employees: VIEW, ...Object.fromEntries(ACC_MANAGER.map((a) => [a, VIEW])) }, // الرواتب والتارجت للمدير العام بس
     secretary: {}, // بيتحسب تحت = استقبال + محاسب
     reception: {
       dashboard: VIEW, whatsapp: ['view', 'create'], patients: ['view', 'create', 'edit'], booking: ['view', 'create'], appointments: ['view', 'create', 'edit'],
@@ -34,7 +34,7 @@ export function defaultPermissions(): PermissionMatrix {
     },
     therapist: {
       dashboard: VIEW, patients: ['view', 'edit'], appointments: ['view', 'edit'], plans: ['view', 'create', 'edit'],
-      sessions: ['view', 'create', 'edit'], physio: ['view', 'create', 'edit'], inventory: VIEW, notifications: ['view', 'edit'], workhours: VIEW, requests: ['view', 'create'], attendance: VIEW, mytarget: VIEW,
+      sessions: ['view', 'create', 'edit'], physio: ['view', 'create', 'edit'], inventory: VIEW, notifications: ['view', 'edit'], workhours: VIEW, requests: ['view', 'create'], attendance: VIEW,
     },
   };
   // سكرتير المدير = اتحاد صلاحيات الاستقبال والمحاسب (قسم roles للمدير العام بس)

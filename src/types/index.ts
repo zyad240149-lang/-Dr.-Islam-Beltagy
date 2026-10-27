@@ -469,7 +469,7 @@ export interface SupportReply { id: string; ticketId: string; employeeId: string
 export type Area =
   | 'dashboard' | 'patients' | 'booking' | 'appointments' | 'plans' | 'sessions'
   | 'services' | 'therapists' | 'employees' | 'invoices' | 'payments' | 'packages'
-  | 'inventory' | 'reports' | 'notifications' | 'roles' | 'settings' | 'workhours' | 'requests' | 'support' | 'discounts' | 'campaigns' | 'financial' | 'attendance' | 'loyalty' | 'whatsapp' | 'products' | 'installments' | 'physio' | 'payroll' | 'mytarget' | 'pkg_checkin' | 'bodymap' | 'marketing' | 'patient_import' | 'patient_export' | 'online_accounts'
+  | 'inventory' | 'reports' | 'notifications' | 'roles' | 'settings' | 'workhours' | 'requests' | 'support' | 'discounts' | 'campaigns' | 'financial' | 'attendance' | 'loyalty' | 'whatsapp' | 'products' | 'installments' | 'physio' | 'payroll' | 'pkg_checkin' | 'bodymap' | 'marketing' | 'patient_import' | 'patient_export' | 'online_accounts'
   | 'pt_f_gender' | 'pt_f_source' | 'pt_f_doctor' | 'pt_f_status' | 'pt_f_sort'
   | 'inv_approve' | 'inv_price' | 'inv_cancel' | 'appt_confirm' | 'appt_cancel'
   | 'accounting.access' | 'accounting.expenses.create' | 'accounting.expenses.approve' | 'accounting.purchases.manage' | 'accounting.payroll.view' | 'accounting.payroll.manage' | 'accounting.journals.create' | 'accounting.journals.post' | 'accounting.reports.view' | 'accounting.settings.manage' | 'accounting.periods.close';

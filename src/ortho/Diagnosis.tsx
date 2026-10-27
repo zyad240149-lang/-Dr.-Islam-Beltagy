@@ -25,6 +25,7 @@ export default function Diagnosis() {
   const [edit, setEdit] = useState<Consultation | 'new' | null>(null);
   const [resume, setResume] = useState(false);
   const [newVisit, setNewVisit] = useState<string | null>(null); // الزيارة اللي التشخيص الجديد بيتربط بيها (من قايمة الانتظار)
+  const [fromQueue, setFromQueue] = useState(false); // اتفتح من «بانتظار التشخيص» ← بعد القفل يرجع للقايمة على المريض اللي بعده
   const [q, setQ] = useState('');
   const [, setDraftsVersion] = useState(0);
   const pick = (id: string) => setParams(id ? { patient: id } : view === 'done' ? { tab: 'done' } : {}, { replace: true });
@@ -35,9 +36,10 @@ export default function Diagnosis() {
   const consults = ortho.list('consultations');
   // تشخيصات اتحفظت ناقصة («يحتاج استكمال») — من أي جهاز، الأحدث أولًا
   const incomplete = consults.filter(isIncomplete).sort((a, b) => b.date.localeCompare(a.date));
-  const openSaved = (c: Consultation) => { setParams({ patient: c.patientId }, { replace: true }); setResume(false); setNewVisit(null); setEdit(c); };
-  const resumeDraft = (id: string) => { setParams({ patient: id }, { replace: true }); setResume(true); setNewVisit(null); setEdit('new'); };
-  const startNew = (id: string, appointmentId: string | null) => { setParams({ patient: id }, { replace: true }); setResume(false); setNewVisit(appointmentId); setEdit('new'); };
+  const openSaved = (c: Consultation, queue = false) => { setParams({ patient: c.patientId }, { replace: true }); setResume(false); setNewVisit(null); setFromQueue(queue); setEdit(c); };
+  const resumeDraft = (id: string, queue = false) => { setParams({ patient: id }, { replace: true }); setResume(true); setNewVisit(null); setFromQueue(queue); setEdit('new'); };
+  const startNew = (id: string, appointmentId: string | null) => { setParams({ patient: id }, { replace: true }); setResume(false); setNewVisit(appointmentId); setFromQueue(true); setEdit('new'); };
+  const closeModal = () => { setEdit(null); setResume(false); setNewVisit(null); if (fromQueue) setParams({}, { replace: true }); setFromQueue(false); };
   const discardDraft = (id: string) => {
     if (!window.confirm(`حذف التشخيص اللي لم يكتمل لـ ${patientName(id)}؟ كل اللي اتكتب فيه هيتمسح.`)) return;
     clearConsultDraft(id);
@@ -130,8 +132,8 @@ export default function Diagnosis() {
                               : <span className={`badge badge--${APPT_STATUS[a.status].tone}`}>{APPT_STATUS[a.status].label}</span>}
                             <div className="dx-queue__act">
                               {!perm.add ? null
-                                : state === 'incomplete' && consult ? <Button size="sm" icon="refresh" onClick={() => openSaved(consult)}>استكمال</Button>
-                                : local ? <Button size="sm" icon="refresh" onClick={() => resumeDraft(a.patientId)}>استكمال</Button>
+                                : state === 'incomplete' && consult ? <Button size="sm" icon="refresh" onClick={() => openSaved(consult, true)}>استكمال</Button>
+                                : local ? <Button size="sm" icon="refresh" onClick={() => resumeDraft(a.patientId, true)}>استكمال</Button>
                                 : <Button size="sm" icon="stethoscope" onClick={() => startNew(a.patientId, a.id)}>تشخيص</Button>}
                             </div>
                           </div>
@@ -146,8 +148,8 @@ export default function Diagnosis() {
             <section className="card" style={{ marginBottom: 16 }}>
               <div className="card__head"><h2>تشخيصات لم تكتمل ({otherDrafts.length + otherIncomplete.length})</h2></div>
               <div className="card__body">
-                {otherDrafts.map((d) => <DraftCard key={d.patientId} d={d} onResume={() => resumeDraft(d.patientId)} onDiscard={() => discardDraft(d.patientId)} />)}
-                {otherIncomplete.map((c) => <DraftCard key={c.id} d={c} onResume={() => openSaved(c)} />)}
+                {otherDrafts.map((d) => <DraftCard key={d.patientId} d={d} onResume={() => resumeDraft(d.patientId, true)} onDiscard={() => discardDraft(d.patientId)} />)}
+                {otherIncomplete.map((c) => <DraftCard key={c.id} d={c} onResume={() => openSaved(c, true)} />)}
               </div>
             </section>
           )}
@@ -202,7 +204,7 @@ export default function Diagnosis() {
         </section>
       )}
       {/* «تشخيص» بيفتح الشيت على طول: شيت التمريض (وفيه خريطة الجسم لمكان الألم) ← كشف الطبيب ← الروشتة */}
-      {edit && patientId && <ConsultModal patientId={patientId} appointmentId={edit === 'new' ? newVisit : undefined} initial={edit === 'new' ? undefined : edit} resume={edit === 'new' && resume} onClose={() => { setEdit(null); setResume(false); setNewVisit(null); }} />}
+      {edit && patientId && <ConsultModal patientId={patientId} appointmentId={edit === 'new' ? newVisit : undefined} initial={edit === 'new' ? undefined : edit} resume={edit === 'new' && resume} onClose={closeModal} />}
     </div>
   );
 }

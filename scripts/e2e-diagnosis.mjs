@@ -24,7 +24,7 @@ const NOISE = /Notification|push|ServiceWorker|service worker|WebSocket|realtime
 const today = cairoToday();
 const q1 = (s) => sql(s).then((r) => r[0]);
 
-let server, browser;
+let server, browser, lastPage;
 try {
   section('التجهيز');
   const admin = await loginAdmin();
@@ -49,12 +49,18 @@ try {
   }
   check('تشخيصين قدام لمريض «أ»', (await q1(`select count(*)::int n from ortho_consultations where patient_id = '${PA.id}'`)).n === 2);
   // مواعيد النهارده + تسجيل حضور (حالة «حضر» — نفس دالة الاستقبال)
-  for (const [P, time] of [[PA, '23:00'], [PB, '23:30']]) {
-    const bk = await admin.rpc('book_appointment', { p: { patientId: P.id, type: 'initial', serviceId: 'sv_exam', therapistId: made.therapist, date: today, time, location: 'center' } });
-    const id = bk.data?.id ?? bk.data;
+  // أول ميعاد فاضي النهارده جوّه ساعات عمل المركز (الحجز بيرفض الوقت اللي فات أو برّه المواعيد)
+  const SLOTS = ['20:00', '20:30', '21:00', '21:30', '19:00', '19:30', '18:00', '18:30', '17:00', '17:30', '16:00', '16:30'];
+  for (const P of [PA, PB]) {
+    let id, err;
+    for (const time of SLOTS) {
+      const bk = await admin.rpc('book_appointment', { p: { patientId: P.id, type: 'initial', serviceId: 'sv_exam', therapistId: made.therapist, date: today, time, location: 'center' } });
+      id = bk.data?.id ?? bk.data; err = bk.error?.message;
+      if (!bk.error && id) break;
+    }
     if (id) made.appts.push(id);
     P.appt = id;
-    check(`حجز موعد النهارده لـ ${P.first}`, !bk.error && id, bk.error?.message);
+    check(`حجز موعد النهارده لـ ${P.first}`, !!id, err);
   }
   // قبل الحضور: الحجز لوحده مايظهرش في قايمة الانتظار (بيتأكد في الواجهة تحت)
   const recepC = await login(STAFF.recep.digits, PW);
@@ -67,7 +73,7 @@ try {
   check('تشخيص تاني لنفس الزيارة مرفوض (فهرس فريد)', !!dup.error && /ortho_consultations_appointment_uq|duplicate/i.test(dup.error.message), dup.error?.message ?? 'accepted!');
   const recepIns = await recepC.from('ortho_consultations').insert({ patient_id: PB.id, complaint: 'x', diagnosis: 'x' }).select();
   check('الاستقبال ما يقدرش يسجّل تشخيص', !!recepIns.error || (recepIns.data ?? []).length === 0, 'inserted!');
-  if (tmp.data?.id) await sql(`delete from ortho_consultations where id = '${tmp.data.id}'`); // الواجهة هتعمله من الأول
+  await sql(`delete from ortho_consultations where patient_id = '${PB.id}'`); // الواجهة هتعمل تشخيص «ب» من الأول
   for (const P of [PA, PB]) {
     const st = await recepC.rpc('set_appointment_status', { p_id: P.appt, p_status: 'arrived', p_reason: null, p_therapist: null });
     check(`تسجيل حضور ${P.first} (من الاستقبال)`, !st.error, st.error?.message);
@@ -82,14 +88,19 @@ try {
     const page = await ctx.newPage();
     const errors = [];
     page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
-    page.on('console', (m) => { if (m.type() === 'error' && !NOISE.test(m.text())) errors.push('console: ' + m.text()); });
+    page.on('console', (m) => { if (m.type() === 'error' && !NOISE.test(m.text()) && !/Failed to load resource/.test(m.text())) errors.push('console: ' + m.text()); });
+    // الطلب اللي فشل نفسه (أوضح من رسالة «Failed to load resource»)
+    page.on('response', async (r) => { if (r.status() >= 400 && !NOISE.test(r.url())) errors.push(`HTTP ${r.status()} ${r.request().method()} ${r.url().replace(/^https?:\/\/[^/]+/, '').slice(0, 160)} ${(await r.text().catch(() => '')).slice(0, 160)}`); });
     page.on('dialog', (d) => d.accept());
+    lastPage = page;
     await page.goto(BASE + '/login');
     await page.fill('#al-phone', who.phone);
     await page.fill('#al-pass', PW);
     await page.click('button[type=submit]');
     const ok = await page.waitForURL((u) => u.pathname === '/', { timeout: 30000 }).then(() => true).catch(() => false);
     check(`${who.name}: الدخول`, ok, page.url());
+    // الدخول بيجرّب كذا صيغة للرقم (auth.tsx) فأول محاولة بترجع 400 عادي — الأخطاء اللي بتتحسب من صفحة التشخيص بس
+    errors.length = 0;
     return { ctx, page, errors };
   };
   const goto = async (page, path) => {
@@ -132,6 +143,8 @@ try {
   check('التشخيص الجديد اتحفظ مربوط بزيارة «أ» ومكتمل', newA && newA.complete === true && /Meniscal tear/.test(newA.diagnosis), JSON.stringify(newA));
   check('التشخيصات القديمة لمريض «أ» لسه موجودة (3 تشخيصات)', ca.length === 3 && ca.filter((c) => /قديم/.test(c.diagnosis)).length === 2, ca.length);
   check('الطبيب اللي سجّل التشخيص اتسجّل (created_by)', newA?.created_by === adminEmp, newA?.created_by);
+  await A.page.waitForSelector('.dx-views', { timeout: 10000 });
+  check('بعد الحفظ رجع لقايمة «بانتظار التشخيص» و«ب» لسه فيها', await queueRow(A.page, PB).count() === 1);
   check('مريض «أ» اختفى من «بانتظار التشخيص» بعد الاكتمال', await queueRow(A.page, PA).count() === 0);
 
   // مريض «ب»: حفظ ناقص ← يفضل «يحتاج استكمال» ← استكمال نفس السجل
@@ -150,8 +163,9 @@ try {
   await saveAnswer(A.page, 'التشخيص اكتمل');
   cb = await dbConsults(PB);
   check('الاستكمال عدّل نفس السجل (مفيش تشخيص مكرر) وبقى مكتمل', cb.length === 1 && cb[0].complete === true && /Labral tear/.test(cb[0].diagnosis), JSON.stringify(cb));
+  await A.page.waitForSelector('.dx-views', { timeout: 10000 });
   check('مريض «ب» اختفى من الانتظار بعد الاستكمال', await queueRow(A.page, PB).count() === 0);
-  check('الانتظار فاضي ومكتوب إنهم اتشخصوا (أو باقي مرضى حقيقيين)', await A.page.locator('.dx-queue__row').count() >= 0);
+  check('«اتشخص النهارده» بيعد المريضين', /اتشخص النهارده\s*[2-9]/.test((await A.page.locator('.card__head', { hasText: 'مرضى بانتظار التشخيص' }).textContent()) ?? ''));
 
   section('الواجهة — المرضى اللي اتشخصوا (بحث)');
   await A.page.locator('.dx-views button', { hasText: 'المرضى اللي اتشخصوا' }).click();
@@ -220,6 +234,10 @@ try {
   await R.ctx.close();
 } catch (e) {
   check('تنفيذ الاختبارات بدون أخطاء غير متوقعة', false, e.message);
+  if (lastPage) {
+    await lastPage.screenshot({ path: fileURLToPath(new URL('../docs/ui-failures/diagnosis-failure.png', import.meta.url)), fullPage: true }).catch(() => {});
+    console.log('  آخر شاشة:', ((await lastPage.locator('.page').textContent().catch(() => '')) ?? '').replace(/\s+/g, ' ').slice(0, 900));
+  }
 } finally {
   await browser?.close().catch(() => {});
   await server?.close().catch(() => {});

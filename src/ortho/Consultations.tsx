@@ -11,6 +11,7 @@ import { useToast } from '../hooks/useToast';
 import { IMAGING_KIND, IMAGING_STATUS, REGIONS, SIDE, ortho, useOrthoVersion, type Attachment, type Consultation, type ImagingKind, type ImagingRequest, type Medication, type Side } from './data';
 import { LAB_GROUPS, MED_PRESETS, XRAY_VIEWS } from './clinicalLists';
 import { printRx } from './printRx';
+import { openPrintWindow } from '../utils/printDoc';
 import { DiagnosisOutput } from './DiagnosisOutput';
 import type { DxPart } from './printDiagnosis';
 import { db } from '../data/db';
@@ -160,7 +161,10 @@ export function ConsultModal({ initial, resume, patientId = '', onClose }: { ini
     const text = { complaint: sum.complaint, history: sum.history, examination: sum.examination, diagnosis: sum.diagnosis };
     const sheetOut = { ...sheet, meds: sheet.meds.filter((m) => m.name.trim()) };
     const payload = { ...c, ...text, sheet: sheetOut, medications: meds, imagingRequests: reqs, painScore: c.painScore === '' ? null : c.painScore, followUp: c.followUp || null } as unknown as Draft;
-    run(async () => {
+    // تابة الطباعة بتتفتح دلوقتي (وقت الضغطة) وإلا المتصفح يحجبها بعد انتظار الحفظ — ولو الحفظ فشل بتتقفل
+    const printWin = thenPrint ? openPrintWindow() : null;
+    let printed = false;
+    void run(async () => {
       await ortho.save('consultations', payload);
       // طلبات الأشعة الجديدة بتتسجل في «الأشعة والتحاليل» كـ «مطلوبة» عشان تتابع وصولها وقراءتها
       const before = new Set((initial?.imagingRequests ?? []).map(reqKey));
@@ -185,9 +189,9 @@ export function ConsultModal({ initial, resume, patientId = '', onClose }: { ini
         if (badPhone) toast.error('رقم الهاتف في الشيت مش صحيح — ما اتحفظش في ملف المريض.');
         if (Object.keys(patch).length) void db.updatePatient(p.id, patch).catch((e) => toast.error(`الكشف اتحفظ، بس بيانات المريض ما اتحدّثتش: ${(e as Error).message}`));
       }
-      if (thenPrint) printRx({ ...c, ...text, medications: meds, imagingRequests: reqs }, db.patient(c.patientId));
+      if (thenPrint) { printed = true; printRx({ ...c, ...text, medications: meds, imagingRequests: reqs }, db.patient(c.patientId), printWin); }
       onClose();
-    });
+    }).then(() => { if (!printed) printWin?.close(); });
   }
 
   return (

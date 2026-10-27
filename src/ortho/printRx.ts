@@ -1,9 +1,10 @@
-// طباعة روشتة الكشف (أدوية + تحاليل + أشعة مطلوبة + تعليمات) — iframe مخفي عشان الطباعة تشتغل حتى بعد الحفظ (من غير popup)
+// طباعة روشتة الكشف (أدوية + تحاليل + أشعة مطلوبة + تعليمات) — في تابة لوحدها (utils/printDoc)
 // بيانات المريض بتتبعت من الشاشة (الإدارة من كاش db، وبوابة المريض من سجله) عشان الملف ده مايسحبش كاش الإدارة كله.
 import { DOCTOR } from '../landing/content';
 import { fileNoText } from '../utils/phoneUtils';
 import { fmtDate } from '../utils/format';
 import { IMAGING_KIND, SIDE, type Consultation } from './data';
+import { openPrintWindow, printHtml } from '../utils/printDoc';
 
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
@@ -81,19 +82,7 @@ ${RX_CSS}
 </style></head><body>${rxPageHtml(c, p)}</body></html>`;
 }
 
-export function printRx(c: Omit<Consultation, 'id' | 'patientId'>, p?: RxPatient | null) {
-  const f = document.createElement('iframe');
-  f.setAttribute('aria-hidden', 'true');
-  f.style.cssText = 'position:fixed;width:0;height:0;border:0;inset-inline-start:-9999px';
-  document.body.appendChild(f);
-  const doc = f.contentDocument!;
-  doc.open(); doc.write(rxHtml(c, p)); doc.close();
-  // الطباعة بعد ما الخط العربي يتحمّل (وإلا الروشتة بتطلع بخط الجهاز)؛ حد أقصى 2.5 ثانية لو مفيش إنترنت
-  const fontsReady = doc.fonts?.ready ?? Promise.resolve();
-  const wait = Promise.race([fontsReady.then(() => doc.fonts?.load('700 14px "IBM Plex Sans Arabic"')), new Promise((r) => setTimeout(r, 2500))]);
-  void wait.catch(() => undefined).then(() => {
-    f.contentWindow?.focus();
-    f.contentWindow?.print();
-    setTimeout(() => f.remove(), 1000);
-  });
+// win = تابة الطباعة لو اتفتحت قبل كده وقت الضغطة (زي «حفظ وطباعة الروشتة» اللي بيستنى الحفظ الأول)؛ من غيرها بتتفتح دلوقتي
+export function printRx(c: Omit<Consultation, 'id' | 'patientId'>, p?: RxPatient | null, win?: Window | null) {
+  void printHtml(rxHtml(c, p), win === undefined ? openPrintWindow() : win);
 }

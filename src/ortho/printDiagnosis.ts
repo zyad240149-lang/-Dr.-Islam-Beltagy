@@ -1,12 +1,13 @@
 // طباعة / PDF التشخيص: الشيتين متعبّيين بنفس شكل الورق — «شيت التمريض» و«Hip & Knee Consultation Sheet» (A4 بالعرض،
 // الخانات المتعلّمة ✓ والمكتوب على السطور) — والروشتة (A5). المستخدم بيختار أجزاء منهم أو الكل.
-// كشف قديم من غير شيت بيطلع ملخصه النصي. الطباعة من iframe مخفي زي printRx (من غير popup).
+// كشف قديم من غير شيت بيطلع ملخصه النصي. الطباعة في تابة لوحدها (utils/printDoc).
 import { DOCTOR } from '../landing/content';
 import { fileNoText } from '../utils/phoneUtils';
 import { fmtDate } from '../utils/format';
 import { SIDE, type Consultation, type ExamSheet } from './data';
 import { SHEET_LISTS as L, bmiOf, normSheet, painLabel, sheetHasContent } from './ExamSheet';
 import { RX_CSS, rxPageHtml } from './printRx';
+import { openPrintWindow, printHtml } from '../utils/printDoc';
 
 type DxConsult = Omit<Consultation, 'id'> & { id?: string };
 export interface DxPatient { fullName: string; fileNo?: string | null; birthDate?: string | null }
@@ -111,7 +112,16 @@ export function diagnosisHtml(c: DxConsult, p?: DxPatient | null, visitNo?: numb
   .rxw { page: rx; }
   .shp { font-family: "IBM Plex Sans", "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif; color: #10182f; font-size: 9px; line-height: 1.22; }
   .shp[dir="rtl"] { font-family: "IBM Plex Sans Arabic", "IBM Plex Sans", "Segoe UI", Tahoma, sans-serif; }
+  /* على الشاشة (معاينة ملف المريض / تابة الطباعة قبل ما تطبع): صفحات بيضا بمقاس الورق على خلفية رمادي */
+  @media screen {
+    body { background: #e9edf3; padding: 14px 0; }
+    .page { background: #fff; margin: 0 auto 14px; box-shadow: 0 1px 4px rgba(16, 24, 47, .15); border-radius: 4px; }
+    .shp { width: 1124px; padding: 26px; }
+    .rxw { width: 560px; padding: 45px; }
+  }
   /* PDF: كل صفحة بعرض المساحة المطبوعة بتاعتها (A4 بالعرض / A5) وبتتصوّر لوحدها */
+  .pdf body { background: #fff; padding: 0; }
+  .pdf .page { box-shadow: none; border-radius: 0; }
   .pdf .shp { width: 1070px; }
   .pdf .rxw { width: 469px; }
   .pdf .page { margin-bottom: 24px; padding: 4px; }
@@ -169,7 +179,7 @@ ${RX_CSS}
 </style></head><body>${body}</body></html>`;
 }
 
-// iframe بالمحتوى + استنّى الخطوط (حد أقصى 2.5 ثانية لو مفيش إنترنت) والصور
+// iframe بالمحتوى (لتصوير صفحات الـ PDF) + استنّى الخطوط (حد أقصى 2.5 ثانية لو مفيش إنترنت) والصور
 async function loadFrame(html: string, cssText: string) {
   const f = document.createElement('iframe');
   f.setAttribute('aria-hidden', 'true');
@@ -183,12 +193,9 @@ async function loadFrame(html: string, cssText: string) {
   return f;
 }
 
+/** لازم تتنادى من الضغطة نفسها (بتفتح تابة الطباعة على طول) */
 export function printDiagnosis(c: DxConsult, p?: DxPatient | null, visitNo?: number, parts?: DxPart[]) {
-  void loadFrame(diagnosisHtml(c, p, visitNo, parts), 'position:fixed;width:0;height:0;border:0;inset-inline-start:-9999px').then((f) => {
-    f.contentWindow?.focus();
-    f.contentWindow?.print();
-    setTimeout(() => f.remove(), 1000);
-  });
+  void printHtml(diagnosisHtml(c, p, visitNo, parts), openPrintWindow());
 }
 
 /** نفس الصفحات كملف PDF: الشيتات A4 بالعرض والروشتة A5 — كل صفحة صورة بتتظبط على المساحة المطبوعة */

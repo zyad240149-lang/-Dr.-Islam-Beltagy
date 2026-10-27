@@ -14,7 +14,7 @@ import { PhysioInlineSections, newPhysioInline, savePhysioInline, validatePhysio
 import { useAuth } from '../services/auth';
 import { TextPick } from './TextPick';
 import PlanSessionBooking, { SessionRowsEditor, bookDraftSessions, defaultPlanDoctor, emptyRow, sessionRowIssues, suggestSessionRows, type SessionRow } from './PlanSessionBooking';
-import { EMAIL_RE, NID_RE, PASSPORT_RE, REFERRAL_SOURCE_LABEL, toLatinDigits, WEEKDAY_LABEL, addDaysYmd, fmtDate, fmtTime, money, planScheduleError, planScheduleFor, planTotalSessions, sessionsLabel, todayYmd, wordCount } from '../utils/format';
+import { EMAIL_RE, REFERRAL_SOURCE_LABEL, WEEKDAY_LABEL, addDaysYmd, fmtDate, fmtTime, money, planScheduleError, planScheduleFor, planTotalSessions, sessionsLabel, todayYmd, wordCount } from '../utils/format';
 import type { InitialAssessment, Patient, PlanStatus, ReferralSource, TreatmentPlan } from '../types';
 
 function TextArea({ id, label, value, onChange, rows = 2, placeholder }: { id: string; label: string; value: string; onChange: (v: string) => void; rows?: number; placeholder?: string }) {
@@ -113,24 +113,19 @@ export function EditPatientModal({ patient, onClose }: { patient: Patient; onClo
   );
 }
 
-// الاسم مقسّم (الاسم / اسم الأب / العائلة) + الجنسية + الرقم القومي/جواز السفر — مشترك بين الإضافة والتعديل
+// الاسم مقسّم (الاسم / اسم الأب / العائلة) + الجنسية — مشترك بين الإضافة والتعديل.
+// الرقم القومي/جواز السفر اتشالوا من التسجيل: مابيتطلبوش ولا بيتراجعوا (اللي متسجّل قبل كده في الملف بيفضل زي ما هو)
 const splitName = (full: string) => { const w = full.trim().split(/\s+/).filter(Boolean); return { firstName: w[0] ?? '', fatherName: w[1] ?? '', familyName: w.slice(2).join(' ') }; };
 const joinName = (f: { firstName?: string; fatherName?: string; familyName?: string }) => [f.firstName, f.fatherName, f.familyName].map((x) => (x ?? '').trim()).filter(Boolean).join(' ');
-const idLabel = (n?: string) => (n === 'non_saudi' ? 'رقم جواز السفر' : 'الرقم القومي');
-function identityErrors(f: { firstName?: string; fatherName?: string; familyName?: string; nationality?: string; nationalId?: string }) {
+function identityErrors(f: { firstName?: string; fatherName?: string; familyName?: string }) {
   const e: Record<string, string> = {};
   // الاسم بالعربي (هجرة 162 — الخادم بيعتبر الملف «غير مكتمل» لو الاسم مش عربي)
   if (!f.firstName?.trim()) e.firstName = 'أدخل الاسم.'; else if (!isArabicName(f.firstName)) e.firstName = 'اكتب الاسم بالعربي.';
   if (!f.fatherName?.trim()) e.fatherName = 'أدخل اسم الأب.'; else if (!isArabicName(f.fatherName)) e.fatherName = 'اكتب اسم الأب بالعربي.';
   if (!f.familyName?.trim()) e.familyName = 'أدخل اسم العائلة.'; else if (!isArabicName(f.familyName)) e.familyName = 'اكتب اسم العائلة بالعربي.';
-  const id = (f.nationalId ?? '').trim();
-  if (id) {
-    if (f.nationality === 'non_saudi') { if (!PASSPORT_RE.test(id)) e.nationalId = 'رقم جواز السفر من 6 إلى 20 حرف/رقم إنجليزي.'; }
-    else if (!NID_RE.test(id)) e.nationalId = 'الرقم القومي 14 رقم يبدأ بـ 2 أو 3.';
-  }
   return e;
 }
-function IdentityFields({ idp, f, set, errors }: { idp: string; f: { firstName?: string; fatherName?: string; familyName?: string; nationality?: string; nationalId?: string }; set: (k: 'firstName' | 'fatherName' | 'familyName' | 'nationality' | 'nationalId', v: string) => void; errors: Record<string, string> }) {
+function IdentityFields({ idp, f, set, errors }: { idp: string; f: { firstName?: string; fatherName?: string; familyName?: string; nationality?: string }; set: (k: 'firstName' | 'fatherName' | 'familyName' | 'nationality', v: string) => void; errors: Record<string, string> }) {
   return (
     <>
       <div className="field" style={{ gridColumn: '1 / -1' }}>
@@ -143,7 +138,6 @@ function IdentityFields({ idp, f, set, errors }: { idp: string; f: { firstName?:
       <Input id={`${idp}-first`} label="الاسم *" value={f.firstName ?? ''} onChange={(e) => set('firstName', e.target.value)} error={errors.firstName} />
       <Input id={`${idp}-father`} label="اسم الأب *" value={f.fatherName ?? ''} onChange={(e) => set('fatherName', e.target.value)} error={errors.fatherName} />
       <Input id={`${idp}-family`} label="العائلة *" value={f.familyName ?? ''} onChange={(e) => set('familyName', e.target.value)} error={errors.familyName} />
-      <Input id={`${idp}-nid`} label={idLabel(f.nationality)} dir="ltr" inputMode={f.nationality === 'non_saudi' ? 'text' : 'numeric'} maxLength={f.nationality === 'non_saudi' ? 20 : 14} value={f.nationalId ?? ''} onChange={(e) => set('nationalId', f.nationality === 'non_saudi' ? e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase() : toLatinDigits(e.target.value).replace(/\D/g, ''))} error={errors.nationalId} />
     </>
   );
 }

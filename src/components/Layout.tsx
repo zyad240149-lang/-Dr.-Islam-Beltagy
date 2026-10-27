@@ -15,7 +15,6 @@ import { PwaControls, PwaUpdateBanner, RefreshButton } from '../pwa/PwaControls'
 import { OfflineBadge } from './OfflineStatus';
 import { offline } from '../offline';
 import { isNetworkError } from '../offline/net';
-import { installmentsApi } from '../data/installments';
 import { DetailsProvider } from './DetailsHost';
 import { ortho, useOrthoVersion } from '../ortho/data';
 
@@ -41,17 +40,16 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     { to: '/finance', label: 'الفواتير والمدفوعات (المدير)', icon: 'wallet', area: 'payroll' },
     // خانة واحدة — الأقسام التلاتة (الأخصائيين / الإداريين / التقارير) تبويبات جوه الصفحة، والخانة بتفضل منوّرة في أي واحد فيهم
     { to: '/payroll', label: 'الرواتب والتارجت', icon: 'target', area: 'payroll' },
-    { to: '/installments', label: 'طلبات تقسيط الباقات', icon: 'shield', area: 'installments' },
     { to: '/discounts', label: 'أكواد الخصم', icon: 'receipt', area: 'discounts' },
     { to: '/loyalty', label: 'نقاط الولاء', icon: 'spark', area: 'loyalty' },
-  ] },  { title: 'الموظفون', items: [
+  ] },
+  { title: 'الموظفون', items: [
     { to: '/employees', label: 'الموظفون', icon: 'user', area: 'employees' },
     { to: '/attendance', label: 'الحضور والانصراف', icon: 'checkCircle', area: 'attendance' },
     { to: '/requests', label: 'طلبات الموظفين', icon: 'inbox', area: 'requests' },
     { to: '/work-hours', label: 'مواعيد العمل', icon: 'clock', area: 'workhours' },
   ] },
-  { title: 'المخزون والتواصل', items: [
-    { to: '/product-sales', label: 'بيع المنتجات', icon: 'wallet', area: 'products' },
+  { title: 'التواصل', items: [
     { to: '/campaigns', label: 'إرسال إشعارات للمرضى', icon: 'bell', area: 'campaigns' },
     { to: '/support', label: 'الدعم الفني', icon: 'lock', area: 'support' },
   ] },
@@ -144,15 +142,6 @@ export default function Layout({ children }: { children: ReactNode }) {
   const unread = db.unreadCount();
   const pendingRequests = can(user?.role, 'requests', 'edit') ? db.pendingRequestsCount() : 0;
   const draftPlanInvoices = can(user?.role, 'invoices', 'edit') ? db.draftPlanInvoicesCount() : 0;
-  // عدد طلبات التقسيط المستنية قرار — للي يقدر يوافق بس، ويتحدّث لحظيًا
-  const canDecideInst = can(user?.role, 'installments', 'edit');
-  const [pendingInst, setPendingInst] = useState(0);
-  useEffect(() => {
-    if (!canDecideInst) { setPendingInst(0); return; }
-    const load = () => installmentsApi.list().then((r) => { if (r.ok) setPendingInst(r.rows.filter((x) => x.status === 'pending' && x.requestedBy !== user?.id).length); });
-    load();
-    return installmentsApi.subscribe(load);
-  }, [canDecideInst, user?.id]);
   const items = NAV.filter((n) => (n.anyOf ?? [n.area]).some((a) => can(user?.role, a)));
   const close = () => setOpen(false);
   const bottomItems = BOTTOM_PRIORITY.map((p) => items.find((n) => n.to === p)).filter((n): n is NavItem => !!n).slice(0, 4);
@@ -214,7 +203,6 @@ export default function Layout({ children }: { children: ReactNode }) {
                 {n.to === '/fractures' && ortho.castsDue() > 0 && <span className="count num" title="جبس مستحق الفك">{ortho.castsDue()}</span>}
                 {n.to === '/notifications' && unread > 0 && <span className="count num">{unread}</span>}
                 {n.to === '/requests' && pendingRequests > 0 && <span className="count num">{pendingRequests}</span>}
-                {n.to === '/installments' && pendingInst > 0 && <span className="count num" title="طلبات تقسيط بانتظار موافقتك">{pendingInst}</span>}
                 {n.to === '/invoices' && draftPlanInvoices > 0 && <span className="count num" title="فواتير خطط علاجية بانتظار المراجعة">{draftPlanInvoices}</span>}
               </NavLink>
               ))}

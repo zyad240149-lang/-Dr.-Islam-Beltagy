@@ -22,6 +22,7 @@ import BookingWizard from '../components/BookingWizard';
 import { ExamsTab } from '../components/ExamsTab';
 import PhysioTab from '../components/PhysioTab';
 import { OrthoPatientTab } from '../ortho/PatientTabs';
+import { DiagnosisTab } from '../ortho/DiagnosisTab';
 import { Icon } from '../utils/icons';
 import {
   APPT_STATUS, APPT_TYPE_LABEL, INVOICE_STATUS, PACKAGE_STATUS, PAYMENT_METHOD_LABEL, PLAN_STATUS, REFERRAL_SOURCE_LABEL,
@@ -30,9 +31,10 @@ import {
 import { useToast } from '../hooks/useToast';
 import type { InitialAssessment, Package, TreatmentPlan, TreatmentSession } from '../types';
 
-const TABS = ['بيانات المريض', 'مواعيدي', 'الجلسات', 'التقييم', 'خطة العلاج', 'الباقات', 'الفواتير والمدفوعات', 'سجل المريض', 'الملفات والمرفقات', 'سجل الجسم', 'العلاج الطبيعي (Physiotherapy)', 'سجل الكشوفات', 'الكشوفات والتشخيص', 'الأشعة والتحاليل', 'الكسور والجبس', 'العمليات الجراحية'];
-// ترتيب العرض (الأرقام فوق ثابتة عشان tab === n)
-const TAB_ORDER = [0, 12, 13, 14, 15, 1, 11, 2, 3, 5, 6, 7, 8, 9, 10];
+const TABS = ['بيانات المريض', 'مواعيدي', 'الجلسات', 'التقييم', 'خطة العلاج', 'الباقات', 'الفواتير والمدفوعات', 'سجل المريض', 'الملفات والمرفقات', 'سجل الجسم', 'العلاج الطبيعي (Physiotherapy)', 'سجل الكشوفات', 'التشخيص', 'الأشعة والتحاليل', 'الكسور والجبس', 'العمليات الجراحية'];
+// ترتيب العرض (الأرقام فوق ثابتة عشان tab === n). عيادة عظام: «التشخيص» تبويب واحد بالشيت زي ما اتكتب (بدل «الكشوفات والتشخيص»
+// و«سجل الكشوفات»)، والجلسات/التقييم/خطة العلاج/الباقات/العلاج الطبيعي مش معروضين — الكود موجود لو احتاجوهم تاني
+const TAB_ORDER = [0, 12, 13, 14, 15, 1, 6, 8, 9, 7];
 const PHYSIO_TAB = 10;
 
 type Confirm = { title: string; message: string; label?: string; run: () => Promise<void> } | null;
@@ -135,7 +137,7 @@ export default function PatientProfile() {
               <div><dt>الاسم الكامل</dt><dd>{patient.fullName}</dd></div>
               <div><dt>رقم الجوال</dt><dd className="num">{patient.phone}</dd></div>
               <div><dt>الجنسية</dt><dd>{patient.nationality === 'non_saudi' ? 'أجنبي' : 'مصري'}</dd></div>
-              <div><dt>{patient.nationality === 'non_saudi' ? 'رقم جواز السفر' : 'الرقم القومي'}</dt><dd className="num">{patient.nationalId || '—'}</dd></div>
+              {patient.nationalId && <div><dt>{patient.nationality === 'non_saudi' ? 'رقم جواز السفر' : 'الرقم القومي'}</dt><dd className="num">{patient.nationalId}</dd></div>}
               <div><dt>تاريخ الميلاد</dt><dd>{patient.birthDate ? fmtDate(patient.birthDate) : '—'}</dd></div>
               <div><dt>الجنس</dt><dd>{patient.genderUnknown ? 'الجنس غير محدد' : patient.gender === 'male' ? 'رجل' : 'امرأة'}</dd></div>
               <div><dt>كيف عرف عن المركز</dt><dd>{REFERRAL_SOURCE_LABEL[patient.referralSource] ?? '—'}</dd></div>
@@ -159,7 +161,7 @@ export default function PatientProfile() {
           {tab === 8 && <PatientFilesTab patientId={id} />}
           {tab === 9 && <BodyRecordsTab patientId={id} />}
           {tab === 11 && <ExamsTab patientId={id} />}
-          {tab === 12 && <OrthoPatientTab kind="consultations" patientId={id} />}
+          {tab === 12 && <DiagnosisTab patientId={id} />}
           {tab === 13 && <OrthoPatientTab kind="imaging" patientId={id} />}
           {tab === 14 && <OrthoPatientTab kind="fractures" patientId={id} />}
           {tab === 15 && <OrthoPatientTab kind="surgeries" patientId={id} />}

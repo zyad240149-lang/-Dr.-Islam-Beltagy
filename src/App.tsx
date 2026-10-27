@@ -34,8 +34,6 @@ const Roles = lazy(() => import('./pages/Roles'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Attendance = lazy(() => import('./pages/Attendance'));
 const Loyalty = lazy(() => import('./pages/Loyalty'));
-const ProductSales = lazy(() => import('./pages/ProductSales'));
-const Installments = lazy(() => import('./pages/Installments'));
 const MarketingReport = lazy(() => import('./pages/MarketingReport'));
 const Payroll = lazy(() => import('./pages/Payroll'));
 const PayrollStaff = lazy(() => import('./pages/PayrollStaff'));
@@ -114,8 +112,9 @@ const ROUTES: { path: string; area: Area; anyOf?: Area[]; el: JSX.Element }[] = 
   { path: '/payroll/staff', area: 'payroll', el: <PayrollStaff /> },
   { path: '/payroll/reports', area: 'payroll', el: <PayrollReports /> },
   { path: '/payments', area: 'invoices', el: <Navigate to="/invoices" replace /> },
-  { path: '/product-sales', area: 'products', el: <ProductSales /> },
-  { path: '/installments', area: 'installments', el: <Installments /> },
+  // «بيع المنتجات» و«طلبات تقسيط الباقات» اتشالوا من البرنامج (الصفحات لسه في الكود لو احتاجوهم)
+  { path: '/product-sales', area: 'products', el: <Navigate to="/" replace /> },
+  { path: '/installments', area: 'installments', el: <Navigate to="/" replace /> },
   { path: '/reports', area: 'reports', el: <Reports /> },
   { path: '/marketing-report', area: 'marketing', el: <MarketingReport /> },
   { path: '/online-accounts', area: 'online_accounts', el: <Navigate to="/patients?tab=online" replace /> },

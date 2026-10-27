@@ -1,7 +1,7 @@
 // اختبارات تكامل حقيقية على مشروع Supabase: دخول، أدوار، صلاحيات RLS، حجز، فواتير، مدفوعات، أقسام العظام.
 // بتنشئ حسابات وبيانات اختبار مؤقتة (أسماء فيها «اختبار») وبتمسحها في الآخر — مابتلمسش أي بيانات تانية.
 //   node scripts/e2e.mjs
-import { api, cairoDate, client, deleteEmployee, env, login, sql, suite, URL_ } from './_harness.mjs';
+import { ADMIN_DIGITS, api, cairoDate, client, deleteEmployee, login, loginAdmin, sql, suite } from './_harness.mjs';
 
 const { check, save } = suite();
 
@@ -14,9 +14,9 @@ try {
   const anon = client();
   const { data: anonRows, error: anonErr } = await anon.from('patients').select('id').limit(1);
   check('الزائر بدون دخول ما يقدر يقرا المرضى', !anonErr ? (anonRows ?? []).length === 0 : true, anonErr?.message ?? `rows=${anonRows?.length}`);
-  const bad = await client().auth.signInWithPassword({ email: '201000000000@clinic.local', password: 'wrong-password' });
+  const bad = await client().auth.signInWithPassword({ email: `${ADMIN_DIGITS}@clinic.local`, password: 'wrong-password' });
   check('كلمة مرور غلط مرفوضة', !!bad.error, bad.error?.message);
-  const admin = await login('201000000000', env.ADMIN_INITIAL_PASSWORD);
+  const admin = await loginAdmin();
   const me = await api(admin, 'GET', 'me');
   check('المدير يدخل و /api/me يرجّع موظف', me.status === 200 && me.body?.kind === 'staff' && me.body.employee.role === 'system_admin', JSON.stringify(me.body).slice(0, 120));
 

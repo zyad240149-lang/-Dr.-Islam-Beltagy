@@ -1,6 +1,7 @@
 // صفحة الهبوط العامة (للزوار) — بيانات الطبيب من صفحته على فيسبوك، والحجز بالاتصال/واتساب
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import InstallButton from '../pwa/InstallButton';
 import { Icon } from '../utils/icons';
 import { DOCTOR, POSTS, SERVICES, STEPS } from './content';
 import './landing.css';
@@ -46,9 +47,12 @@ export default function Landing() {
             <a href="#approach" onClick={go}>طريقتنا</a>
             <a href="#posts" onClick={go}>من صفحتنا</a>
             <a href="#contact" onClick={go}>التواصل</a>
-            <Link to="/login" className="lp-login" onClick={go}>تسجيل الدخول</Link>
-            <Link to="/signup" className="lp-signup" onClick={go}>إنشاء حساب</Link>
+            <InstallButton className="lp-btn lp-btn--sm lp-btn--outline" />
           </nav>
+          <span className="lp-nav__auth">
+            <Link to="/login" className="lp-login">تسجيل الدخول</Link>
+            <Link to="/signup" className="lp-signup">إنشاء حساب</Link>
+          </span>
           <a className="lp-btn lp-btn--sm lp-nav__cta" href={tel(main.number)}><Icon name="phone" size={16} />احجز الآن</a>
           <button className="lp-burger" aria-label="القائمة" aria-expanded={menu} onClick={() => setMenu((m) => !m)}><Icon name={menu ? 'close' : 'menu'} size={22} /></button>
         </div>

@@ -219,7 +219,7 @@ export default function Campaigns() {
                     <article key={c.id} className="cm-item">
                       <div className="row-between">
                         <strong>{c.title}</strong>
-                        <span className="muted num" style={{ fontSize: 12 }}>{fmtDateTime(c.createdAt)}</span>
+                        <span className="muted num date" style={{ fontSize: 12 }}>{fmtDateTime(c.createdAt)}</span>
                       </div>
                       <p>{c.body}</p>
                       <div className="cm-item__meta">

@@ -340,7 +340,7 @@ export default function Invoices() {
                   <thead><tr><th>التاريخ</th><th>المريض</th><th>الفاتورة</th><th>الخدمة</th><th>المبلغ</th><th>طريقة الدفع</th><th>ملاحظة</th><th className="actions"></th></tr></thead>
                   <tbody>{payments.map((p) => (
                     <tr key={p.id}>
-                      <td className="num">{fmtDateTime(p.date)}</td><td>{db.patient(p.patientId)?.fullName}</td><td className="num">{db.invoice(p.invoiceId)?.no}</td>
+                      <td className="num date">{fmtDateTime(p.date)}</td><td>{db.patient(p.patientId)?.fullName}</td><td className="num">{db.invoice(p.invoiceId)?.no}</td>
                       <td>{db.invoice(p.invoiceId)?.serviceName}</td><td className="num">{money(p.amount)}</td><td>{PAYMENT_METHOD_LABEL[p.method]}</td><td>{p.note || '—'}</td>
                       <td className="actions"><RowActions>
                         {can('payments', 'edit') && <IconAction icon="edit" label="تعديل الدفعة" onClick={() => setEditingPay(p)} />}
@@ -507,7 +507,7 @@ function InvoiceModal({ invoiceId, canEdit, canDelete, canPay, canEditPay, canDe
             <div className="table-wrap"><table className="table">
               <thead><tr><th>التاريخ</th><th>المبلغ</th><th>الطريقة</th><th>ملاحظة</th><th className="actions no-print"></th></tr></thead>
               <tbody>{payments.map((p) => (
-                <tr key={p.id}><td className="num">{fmtDateTime(p.date)}</td><td className="num">{money(p.amount)}</td><td>{PAYMENT_METHOD_LABEL[p.method]}</td><td>{p.note || '—'}</td>
+                <tr key={p.id}><td className="num date">{fmtDateTime(p.date)}</td><td className="num">{money(p.amount)}</td><td>{PAYMENT_METHOD_LABEL[p.method]}</td><td>{p.note || '—'}</td>
                   <td className="actions no-print"><RowActions>
                     {canEditPay && <IconAction icon="edit" label="تعديل الدفعة" onClick={() => setEditPay(p)} />}
                     {canDeletePay && <IconAction icon="trash" label="حذف الدفعة" danger onClick={() => setConfirm({ title: 'حذف الدفعة', message: `سيتم حذف دفعة ${money(p.amount)} وإعادة احتساب المتبقي على الفاتورة.`, run: async () => { await db.deletePayment(p.id); toast.success('تم حذف الدفعة.'); } })} />}

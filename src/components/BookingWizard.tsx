@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Patient, PaymentMethod, ReferralSource } from '../types';
 import { db, DOCTOR_DAY_LABEL } from '../data/db';
+import { branchForDate } from './WorkHoursEditor';
 import { useDbVersion } from '../hooks/useDb';
 import { Modal, Button, Input, Select } from './ui';
 import { PhoneInput } from './PhoneInput';
@@ -62,12 +63,14 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
   // (ومعاها جدول الدكتور + العطلات/الإجازات عشان أي تعديل في دوامه يبان فورًا)
   useEffect(() => { if (therapistId && date) void db.refresh('appointments', 'catalog', 'center'); }, [therapistId, date]);
   const docDay = therapistId && date ? db.doctorDay(therapistId, date) : null;
-  const slots = serviceId && date && therapistId ? db.availableSlots(therapistId, date, duration) : [];
+  const slots = serviceId && date && therapistId ? db.availableSlots(therapistId, date, duration, undefined, patientId || undefined) : [];
   const takenSet = new Set<string>();
+  const ptBusySet = new Set<string>(); // المريض عنده موعد تاني في الوقت ده (مع أي دكتور) — الخادم بيرفضه
   if (serviceId && date && therapistId) {
     for (const s of db.takenSlots(therapistId, date, duration)) if (!slots.includes(s)) takenSet.add(s);
+    if (patientId) for (const s of db.patientBusySlots(patientId, therapistId, date, duration)) if (!takenSet.has(s)) ptBusySet.add(s);
   }
-  const allSlots = [...slots, ...takenSet].sort(); // الأوقات اللي فاتت (بتوقيت القاهرة) مش بتظهر
+  const allSlots = [...slots, ...takenSet, ...ptBusySet].sort(); // الأوقات اللي فاتت (بتوقيت القاهرة) مش بتظهر
   // حجز أسهل: أزرار لأقرب الأيام اللي فيها أوقات فاضية (خلال أسبوعين) بعدد الأوقات، وأول يوم بيتختار لوحده
   const quickDays = (() => {
     if (!serviceId || !therapistId) return [] as Array<{ date: string; free: number }>;
@@ -99,7 +102,8 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
   const packageId = packageChoice === 'auto' ? eligiblePkgs[0]?.id ?? null : packageChoice === 'none' ? null : packageChoice;
   const activePkg = eligiblePkgs.find((p) => p.id === packageId);
   const patientPlans = patientId ? db.plansForPatient(patientId).filter((p) => p.status === 'active') : [];
-  const planId = planChoice === 'auto' ? (patientPlans[0]?.id ?? null) : planChoice === 'none' ? null : planChoice;
+  // «تلقائي» = الخطة اللي خدمتها نفس خدمة الموعد بس — كشف أو متابعة لمريض عنده خطة علاج طبيعي مايتحسبش جلسة منها وليه فاتورته
+  const planId = planChoice === 'auto' ? (patientPlans.find((p) => p.serviceId === serviceId)?.id ?? null) : planChoice === 'none' ? null : planChoice;
   const pricedPlan = !packageId && planId ? ((db.plan(planId)?.price ?? 0) > 0) : false;
   const discountPreview = discountCode.trim() && !pricedPlan ? db.previewDiscountCode(discountCode.trim(), shownPrice) : null;
   // فاتورة مستقلة تُنشأ فقط لو الموعد مش مغطّى بباقة أو خطة علاجية مدفوعة — عندها فقط يصح تسجيل دفعة فورية
@@ -341,6 +345,8 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
                 {!date ? <p className="muted">اختر التاريخ أولًا.</p> : allSlots.length ? (
                   <div className="slots">{allSlots.map((s) => takenSet.has(s) ? (
                     <button key={s} type="button" className="slot slot--taken" disabled title="محجوز">✕ {fmtTime(s)}</button>
+                  ) : ptBusySet.has(s) ? (
+                    <button key={s} type="button" className="slot slot--taken" disabled title="عند المريض موعد تاني في هالوقت">✕ {fmtTime(s)}</button>
                   ) : (
                     <button key={s} type="button" className={`slot ${time === s ? 'selected' : ''}`} onClick={() => setTime(s)}>{fmtTime(s)}</button>
                   ))}</div>
@@ -356,6 +362,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
                     </div>
                   );
                 })()}
+                {ptBusySet.size > 0 && <p className="muted-sm" style={{ marginTop: 8 }}>الأوقات المعطّلة بعلامة ✕ تشمل أوقات عند {patient?.fullName ?? 'المريض'} فيها موعد تاني في نفس اليوم.</p>}
                 {date && allSlots.length > 0 && slots.length === 0 && <p className="muted" style={{ marginTop: 8 }}>{takenSet.size === 0 ? 'انتهت مواعيد اليوم بتوقيت القاهرة — جرّب يوم ثاني.' : 'كل مواعيد هذا الدكتور محجوزة في هاليوم — جرّب يوم ثاني.'}</p>}
               </div>
             </>
@@ -369,7 +376,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
         <dl className="review-list">
           <div><dt>المريض</dt><dd>{patient?.fullName ?? np.fullName}</dd></div>
           <div><dt>الجوال</dt><dd className="num">{patient?.phone ?? np.phone}</dd></div>
-          <div><dt>المكان</dt><dd>المركز — {center.city} – {center.district}</dd></div>
+          <div><dt>المكان</dt><dd>{(date && branchForDate(db.therapist(therapistId)?.workHours ?? [], date)?.name) || `المركز — ${center.city} – ${center.district}`}</dd></div>
           <div><dt>الخدمة</dt><dd>{service?.name}</dd></div>
           <div><dt>الدكتور</dt><dd>{db.therapist(therapistId)?.name}</dd></div>
           <div><dt>التاريخ</dt><dd>{date && fmtDate(date)}</dd></div>

@@ -15,6 +15,8 @@ import { Icon } from '../../utils/icons';
 import type { Invoice, PatientFile } from '../../types';
 import { fileNoText } from '../../utils/phoneUtils';
 import { PushStatusCard } from '../../pwa/PushStatusCard';
+import { FRACTURE_STATUS, IMAGING_KIND, IMAGING_STATUS, SIDE, SURGERY_STATUS } from '../../ortho/data';
+import { printRx } from '../../ortho/printRx';
 
 const ErrorBox = ({ text, retry }: { text: string; retry: () => void }) => (
   <div className="card"><div className="card__body"><EmptyState icon="alert" title="حدث خطأ، حاول مرة ثانية" text={text} action={<Button variant="outline" icon="refresh" onClick={retry}>إعادة المحاولة</Button>} /></div></div>
@@ -41,13 +43,24 @@ export function PatientDashboard() {
   const dash = useAsync(() => patientApi.dashboard(), [live]);
   const appts = useAsync(() => patientApi.appointments(), [live]);
   const plans = useAsync(() => patientApi.plans(), [live]);
+  const rec = useAsync(() => patientApi.medicalRecord(), [live]);
   const d = dash.data;
   const prev = (appts.data ?? []).filter((a) => !ACTIVE.includes(a.status)).slice(0, 4);
   const activePlan = (plans.data ?? []).find((p) => p.status === 'active');
+  // ميعاد متابعة حدده الطبيب ولسه المريض ماحجزش موعد في يومه أو بعده
+  const followUp = rec.data?.nextFollowUp;
+  const followUpBooked = !!followUp && (appts.data ?? []).some((a) => ACTIVE.includes(a.status) && a.date >= followUp);
 
   return (
     <div className="page">
       <Head title={`مرحبًا، ${patient?.name.split(' ')[0] ?? ''} 👋`} text="نظرة سريعة على مواعيدك وحسابك." action={<Link to="/me/book"><Button icon="calendarPlus">حجز موعد</Button></Link>} />
+      {followUp && !followUpBooked && appts.data && (
+        <div className="alert alert-info" style={{ marginBottom: 18 }}>
+          <Icon name="calendar" size={17} />
+          <div style={{ flex: 1 }}>الطبيب حدد لك ميعاد متابعة يوم <strong>{fmtDate(followUp)}</strong> — احجزه من دلوقتي. <Link to="/me/records" className="link-more">سجلي الطبي</Link></div>
+          <Link to="/me/book"><Button size="sm" icon="calendarPlus">احجز المتابعة</Button></Link>
+        </div>
+      )}
       {dash.error ? <ErrorBox text={dash.error} retry={dash.reload} /> : dash.loading && !d ? (
         <div className="kpi-grid">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="card kpi"><Skeleton h={38} w={38} r={11} /><Skeleton h={22} w={60} /></div>)}</div>
       ) : d && (
@@ -366,7 +379,7 @@ export function PatientExams() {
           return (
             <article key={a.id} className="cm-item">
               <div className="row-between"><strong>{a.service}</strong>{st && <StatusBadge label={st.label} tone={st.tone} />}</div>
-              <p><span className="num">{fmtDate(a.date)} · {fmtTime(a.time)}</span>{a.doctor ? <> — <span data-no-i18n>{a.doctor}</span></> : null}</p>
+              <p><span className="num date">{fmtDate(a.date)} · {fmtTime(a.time)}</span>{a.doctor ? <> — <span data-no-i18n>{a.doctor}</span></> : null}</p>
               {a.status === 'cancelled' && a.cancel_reason && <p className="muted">سبب الإلغاء: {a.cancel_reason}</p>}
             </article>
           );
@@ -485,13 +498,104 @@ export function PatientFilePage() {
         <div className="card__body">
           {files.loading && !files.data ? <Skeleton h={60} /> : (files.data ?? []).length === 0 ? <EmptyState icon="doc" title="ما فيه ملفات" text="تقدر ترفع تقارير أو صور أو مستندات (حتى 10 ميجابايت)." /> : (
             <div className="table-wrap"><table className="table"><thead><tr><th>الملف</th><th>رفعه</th><th>التاريخ</th><th className="actions"></th></tr></thead>
-              <tbody>{(files.data ?? []).map((f) => <tr key={f.id}><td>{f.fileName}<div className="muted-sm num">{(f.sizeBytes / 1024).toFixed(0)} ك.ب</div></td><td>{f.uploadedByName || '—'}</td><td className="num">{fmtDateTime(f.createdAt)}</td>
+              <tbody>{(files.data ?? []).map((f) => <tr key={f.id}><td>{f.fileName}<div className="muted-sm num">{(f.sizeBytes / 1024).toFixed(0)} ك.ب</div></td><td>{f.uploadedByName || '—'}</td><td className="num date">{fmtDateTime(f.createdAt)}</td>
                 <td className="actions"><span style={{ display: 'flex', gap: 6 }}><Button size="sm" variant="outline" onClick={() => open(f)}>عرض</Button>{f.uploadedBy && <Button size="sm" variant="soft-danger" onClick={() => setDel(f)}>حذف</Button>}</span></td></tr>)}</tbody></table></div>
           )}
         </div>
       </section>
       {edit && p && <ProfileModal p={p} onClose={() => setEdit(false)} onDone={me.reload} />}
       {del && <ConfirmDialog title="حذف الملف" message={`سيتم حذف الملف «${del.fileName}» نهائيًا.`} onClose={() => setDel(null)} onConfirm={async () => { try { await patientApi.removeFile(del); toast.success('تم حذف الملف.'); files.reload(); } catch (e) { toast.error((e as Error).message); } }} />}
+    </div>
+  );
+}
+
+// ============ سجلي الطبي ============
+// اللي كتبه الطبيب في الكشف (التشخيص، الروشتة، التحاليل، الأشعة المطلوبة، ميعاد المتابعة) + الأشعة والكسور والعمليات — قراءة بس
+export function PatientRecords() {
+  const live = useLive();
+  const rec = useAsync(() => patientApi.medicalRecord(), [live]);
+  const r = rec.data;
+  const empty = r && !r.consultations.length && !r.imaging.length && !r.fractures.length && !r.surgeries.length;
+  const sideText = (s: keyof typeof SIDE) => (s === 'na' ? '' : ` — ${SIDE[s]}`);
+  return (
+    <div className="page">
+      <Head title="سجلي الطبي" text="الكشوفات والروشتات والأشعة والمتابعة اللي سجّلها لك الطبيب." />
+      {rec.error ? <ErrorBox text={rec.error} retry={rec.reload} /> : rec.loading && !r ? <Skeleton h={160} /> : !r || empty ? (
+        <div className="card"><div className="card__body"><EmptyState icon="stethoscope" title="ما فيه سجل طبي للحين" text="بعد كشفك هتلاقي هنا التشخيص والروشتة والأشعة المطلوبة." /></div></div>
+      ) : (
+        <>
+          {r.nextFollowUp && (
+            <div className="card" style={{ marginBottom: 18 }}><div className="card__body row-between">
+              <span><Icon name="calendar" size={18} /> ميعاد المتابعة القادم: <strong>{fmtDate(r.nextFollowUp)}</strong></span>
+              <Link to="/me/book"><Button icon="calendarPlus" variant="outline">احجز المتابعة</Button></Link>
+            </div></div>
+          )}
+          {r.consultations.length > 0 && (
+            <section className="card" style={{ marginBottom: 18 }}>
+              <div className="card__head"><h2>الكشوفات والروشتات</h2></div>
+              <div className="card__body"><div className="cm-history">{r.consultations.map((c) => {
+                const meds = c.medications.filter((m) => m.name.trim());
+                const reqs = c.imagingRequests.filter((x) => x.region.trim() || x.view.trim());
+                return (
+                  <article key={c.id} className="cm-item">
+                    <div className="row-between">
+                      <strong>{c.diagnosis}{c.icd10 ? <span className="muted-sm" dir="ltr"> ({c.icd10})</span> : null}</strong>
+                      <Button size="sm" variant="outline" icon="print" onClick={() => printRx({ ...c, side: c.side, attachments: [], history: '', examination: '', painScore: '', followUp: c.followUp ?? '' }, r.patient ? { fullName: r.patient.name, fileNo: r.patient.fileNo, birthDate: r.patient.birthDate } : null)}>طباعة الروشتة</Button>
+                    </div>
+                    <p><span className="num date">{fmtDate(c.date)}</span> · {c.region}{sideText(c.side)}{c.doctor ? <> — <span data-no-i18n>{c.doctor}</span></> : null}</p>
+                    {c.complaint && <p className="muted-sm">الشكوى: {c.complaint}</p>}
+                    {meds.length > 0 && <div style={{ marginTop: 8 }}><strong>الروشتة</strong><ol style={{ margin: '4px 0 0', paddingInlineStart: 20 }}>{meds.map((m, i) => (
+                      <li key={i}><span dir="ltr" style={{ fontWeight: 600 }}>{m.name}</span>{[m.dose, m.frequency, m.duration && `لمدة ${m.duration}`].filter(Boolean).length ? ` — ${[m.dose, m.frequency, m.duration && `لمدة ${m.duration}`].filter(Boolean).join(' — ')}` : ''}{m.notes ? <span className="muted-sm"> ({m.notes})</span> : null}</li>
+                    ))}</ol></div>}
+                    {c.labs.length > 0 && <p style={{ marginTop: 6 }}><strong>تحاليل مطلوبة:</strong> <span dir="ltr">{c.labs.join(' • ')}</span></p>}
+                    {reqs.length > 0 && <p style={{ marginTop: 6 }}><strong>أشعة مطلوبة:</strong> {reqs.map((x) => `${IMAGING_KIND[x.kind] ?? x.kind} — ${x.region}${x.view ? ` (${x.view})` : ''}`).join('، ')}</p>}
+                    {c.plan && <p style={{ marginTop: 6, whiteSpace: 'pre-line' }}><strong>تعليمات:</strong> {c.plan}</p>}
+                    {c.followUp && <p style={{ marginTop: 6 }}><strong>ميعاد المتابعة:</strong> {fmtDate(c.followUp)}</p>}
+                  </article>
+                );
+              })}</div></div>
+            </section>
+          )}
+          <div className="grid-2">
+            {r.imaging.length > 0 && (
+              <section className="card">
+                <div className="card__head"><h2>الأشعة</h2></div>
+                <div className="card__body"><div className="cm-history">{r.imaging.map((x) => (
+                  <article key={x.id} className="cm-item">
+                    <div className="row-between"><strong>{IMAGING_KIND[x.kind] ?? x.kind} — {x.region}</strong><StatusBadge label={IMAGING_STATUS[x.status]?.label ?? x.status} tone={IMAGING_STATUS[x.status]?.tone ?? 'muted'} /></div>
+                    <p className="num date">{fmtDate(x.requestedAt)}</p>
+                    {x.finding && <p className="muted-sm">النتيجة: {x.finding}</p>}
+                  </article>
+                ))}</div></div>
+              </section>
+            )}
+            {r.fractures.length > 0 && (
+              <section className="card">
+                <div className="card__head"><h2>الكسور والجبس</h2></div>
+                <div className="card__body"><div className="cm-history">{r.fractures.map((x) => (
+                  <article key={x.id} className="cm-item">
+                    <div className="row-between"><strong>{x.kind} — {x.bone}{sideText(x.side)}</strong><StatusBadge label={FRACTURE_STATUS[x.status]?.label ?? x.status} tone={FRACTURE_STATUS[x.status]?.tone ?? 'muted'} /></div>
+                    <p>تاريخ الإصابة: <span className="num date">{fmtDate(x.injuryDate)}</span>{x.castDate ? <> · الجبس: <span className="num date">{fmtDate(x.castDate)}</span></> : null}</p>
+                    {x.removalDue && x.status === 'casted' && <p><strong>ميعاد فك الجبس:</strong> {fmtDate(x.removalDue)}</p>}
+                  </article>
+                ))}</div></div>
+              </section>
+            )}
+            {r.surgeries.length > 0 && (
+              <section className="card">
+                <div className="card__head"><h2>العمليات</h2></div>
+                <div className="card__body"><div className="cm-history">{r.surgeries.map((x) => (
+                  <article key={x.id} className="cm-item">
+                    <div className="row-between"><strong>{x.procedure}</strong><StatusBadge label={SURGERY_STATUS[x.status]?.label ?? x.status} tone={SURGERY_STATUS[x.status]?.tone ?? 'muted'} /></div>
+                    <p>{x.region}{sideText(x.side)}{x.date ? <> · <span className="num date">{fmtDate(x.date)}</span></> : null}{x.hospital ? ` · ${x.hospital}` : ''}</p>
+                    {x.implant && <p className="muted-sm">الشرائح/المسامير: {x.implant}</p>}
+                  </article>
+                ))}</div></div>
+              </section>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -678,7 +782,7 @@ export function PatientNotifications() {
       {list.error ? <ErrorBox text={list.error} retry={list.reload} /> : list.loading && !list.data ? <Skeleton h={120} /> : (list.data ?? []).length === 0 ? <div className="card"><div className="card__body"><EmptyState icon="bell" title="ما فيه إشعارات" /></div></div> : (
         <div className="card"><div className="card__body"><div className="cm-history">{(list.data ?? []).map((n) => (
           <article key={n.id} className="cm-item" style={{ opacity: n.read ? 0.7 : 1, borderInlineStart: n.read ? undefined : '3px solid var(--brand)' }}>
-            <div className="row-between"><strong>{n.title}</strong><span className="muted num" style={{ fontSize: 12 }}>{fmtDateTime(n.createdAt)}</span></div>
+            <div className="row-between"><strong>{n.title}</strong><span className="muted num date" style={{ fontSize: 12 }}>{fmtDateTime(n.createdAt)}</span></div>
             <p>{n.body}</p>
             {n.link?.startsWith('/me') && <Button size="sm" variant="outline" style={{ marginInlineEnd: 8 }} onClick={() => { void mark(n.id); navigate(n.link!); }}>{OPEN_LABEL[n.link.split('/')[2] ?? ''] ?? 'فتح'}</Button>}
             {!n.read && <Button size="sm" variant="ghost" onClick={() => mark(n.id)}>تحديد كمقروء</Button>}

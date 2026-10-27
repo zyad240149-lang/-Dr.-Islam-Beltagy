@@ -181,7 +181,7 @@ export default function PlanSessionBooking({ plan, canBook, ensurePriced }: { pl
       {booked.length > 0 && (
         <div className="table-wrap" style={{ marginBottom: 10 }}><table className="table">
           <thead><tr><th>الجلسة</th><th>التاريخ</th><th>الوقت</th><th>الدكتور</th><th>الحالة</th>{canBook && <th></th>}</tr></thead>
-          <tbody>{booked.map((a, i) => <tr key={a.id}><td className="num">{i + 1}</td><td className="num">{fmtDate(a.date)}</td><td className="num">{fmtTime(a.time)}</td><td>{db.therapist(a.therapistId)?.name ?? '—'}</td><td>{APPT_STATUS[a.status]?.label}</td>{canBook && <td>{['new', 'confirmed', 'rescheduled'].includes(a.status) && <Button size="sm" variant="outline" icon="edit" onClick={() => setEditing(a)}>تعديل الموعد</Button>}</td>}</tr>)}</tbody>
+          <tbody>{booked.map((a, i) => <tr key={a.id}><td className="num">{i + 1}</td><td className="num date">{fmtDate(a.date)}</td><td className="num">{fmtTime(a.time)}</td><td>{db.therapist(a.therapistId)?.name ?? '—'}</td><td>{APPT_STATUS[a.status]?.label}</td>{canBook && <td>{['new', 'confirmed', 'rescheduled'].includes(a.status) && <Button size="sm" variant="outline" icon="edit" onClick={() => setEditing(a)}>تعديل الموعد</Button>}</td>}</tr>)}</tbody>
         </table></div>
       )}
       {remaining === 0 ? <p className="muted">كل الجلسات محجوزة.</p>

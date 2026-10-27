@@ -69,7 +69,7 @@ export function SessionDiagnosisModal({ source, id, title, onClose }: { source: 
             <textarea id="sd-text" className="input" rows={5} maxLength={1000} value={text} onChange={(e) => setText(e.target.value)} placeholder="اكتب التشخيص هنا" autoFocus />
             <div className="field__hint">
               {data.items.find((x) => x.no === no)
-                ? <>آخر تعديل: {data.items.find((x) => x.no === no)!.by ?? '—'} · <span className="num">{fmtDate(data.items.find((x) => x.no === no)!.updatedAt.slice(0, 10))}</span></>
+                ? <>آخر تعديل: {data.items.find((x) => x.no === no)!.by ?? '—'} · <span className="num date">{fmtDate(data.items.find((x) => x.no === no)!.updatedAt.slice(0, 10))}</span></>
                 : 'ما اتكتب تشخيص لهذي الجلسة بعد.'}
             </div>
           </div>

@@ -34,6 +34,21 @@ export const DOCTOR_DAY_MESSAGE: Record<DoctorDayStatus, string> = {
 
 export interface PatientProfile { customer: any; patient: any; doctor: string | null }
 
+// سجل المريض الطبي من أقسام العظام (patient_medical_record — هجرة 909): للقراءة بس، ملفه هو بس
+export interface RecordConsultation {
+  id: string; date: string; complaint: string; region: string; side: 'right' | 'left' | 'both' | 'na'; diagnosis: string; icd10: string; plan: string;
+  medications: Array<{ name: string; dose: string; frequency: string; duration: string; notes: string }>; labs: string[];
+  imagingRequests: Array<{ kind: 'xray' | 'mri' | 'ct' | 'dexa' | 'us'; region: string; view: string }>; followUp: string | null; doctor: string | null;
+}
+export interface MedicalRecord {
+  consultations: RecordConsultation[];
+  imaging: Array<{ id: string; kind: 'xray' | 'mri' | 'ct' | 'dexa' | 'us' | 'lab'; region: string; requestedAt: string; status: 'requested' | 'received' | 'reviewed'; finding: string }>;
+  fractures: Array<{ id: string; bone: string; side: 'right' | 'left' | 'both' | 'na'; kind: string; injuryDate: string; castDate: string | null; removalDue: string | null; status: 'casted' | 'healing' | 'healed' | 'surgical' }>;
+  surgeries: Array<{ id: string; procedure: string; region: string; side: 'right' | 'left' | 'both' | 'na'; hospital: string; date: string | null; implant: string; status: 'planned' | 'scheduled' | 'done' | 'postponed' }>;
+  nextFollowUp: string | null;
+  patient: { name: string; fileNo: string | null; birthDate: string | null; gender: string | null } | null;
+}
+
 export const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 // حساب الأوقات للمريض على الخادم بس (doctor_day_slots — هجرة 157: دوام الدكتور + العطلات + إجازته + حجوزاته)
@@ -50,6 +65,7 @@ export const patientApi = {
   cancel: (id: string, reason = '') => call<void>('patient_cancel', { p_id: id, p_reason: reason }),
   reschedule: (id: string, date: string, time: string) => call<void>('patient_reschedule', { p_id: id, p_date: date, p_time: time }),
   updateProfile: (p: Record<string, unknown>) => call<void>('patient_update_profile', { p }),
+  medicalRecord: () => call<MedicalRecord>('patient_medical_record'),
 
   async plans(): Promise<TreatmentPlan[]> {
     const { data, error } = await supabase.from('treatment_plans').select('*').order('created_at', { ascending: false });

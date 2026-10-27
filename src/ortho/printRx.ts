@@ -1,5 +1,5 @@
 // طباعة روشتة الكشف (أدوية + تحاليل + أشعة مطلوبة + تعليمات) — iframe مخفي عشان الطباعة تشتغل حتى بعد الحفظ (من غير popup)
-import { db } from '../data/db';
+// بيانات المريض بتتبعت من الشاشة (الإدارة من كاش db، وبوابة المريض من سجله) عشان الملف ده مايسحبش كاش الإدارة كله.
 import { DOCTOR } from '../landing/content';
 import { fileNoText } from '../utils/phoneUtils';
 import { fmtDate } from '../utils/format';
@@ -17,17 +17,23 @@ function ageOf(birth: string) {
   return y >= 0 ? `${y} سنة` : '';
 }
 
-export function rxHtml(c: Omit<Consultation, 'id'>): string {
-  const p = db.patient(c.patientId);
+export interface RxPatient { fullName: string; fileNo?: string | null; birthDate?: string | null }
+
+// نفس خط النظام (IBM Plex Sans Arabic) — بيتحمّل جوّه الروشتة نفسها والطباعة بتستنى لحد ما يجهز
+const FONT_HREF = 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap';
+
+export function rxHtml(c: Omit<Consultation, 'id' | 'patientId'>, p?: RxPatient | null): string {
   const meds = c.medications.filter((m) => m.name.trim());
   const labs = c.labs.filter(Boolean);
   const imgs = c.imagingRequests.filter((r) => r.region.trim() || r.view.trim());
   const phones = DOCTOR.phones.map((x) => `${esc(x.label)}: <span dir="ltr">${esc(x.number)}</span>`).join(' &nbsp;•&nbsp; ');
   return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>روشتة — ${esc(p?.fullName)}</title>
+<link rel="stylesheet" href="${FONT_HREF}">
 <style>
   @page { size: A5; margin: 12mm; }
   * { box-sizing: border-box; }
-  body { font-family: "Cairo", "Segoe UI", Tahoma, sans-serif; color: #10182f; margin: 0; font-size: 13px; line-height: 1.6; }
+  :root { color-scheme: light; }
+  body { font-family: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif; color: #10182f; background: #fff; margin: 0; font-size: 13px; line-height: 1.6; }
   header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1b2a54; padding-bottom: 8px; }
   header h1 { margin: 0; font-size: 18px; color: #1b2a54; }
   header .t { color: #475569; font-size: 12.5px; }
@@ -35,7 +41,7 @@ export function rxHtml(c: Omit<Consultation, 'id'>): string {
   .pt { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px 12px; margin: 10px 0; padding: 8px 10px; background: #f3f5fa; border-radius: 8px; font-size: 12.5px; }
   .pt b { color: #1b2a54; }
   .dx { margin: 6px 0 10px; font-size: 12.5px; }
-  .rx { font-size: 26px; font-weight: 700; color: #1b2a54; font-family: serif; margin: 4px 0; direction: ltr; text-align: left; }
+  .rx { font-size: 26px; font-weight: 700; color: #1b2a54; font-family: Georgia, "Times New Roman", serif; margin: 4px 0; direction: ltr; text-align: left; }
   ol { margin: 0; padding: 0 18px 0 0; }
   ol li { margin-bottom: 8px; }
   .med { direction: ltr; text-align: left; font-weight: 700; font-size: 14px; }
@@ -64,16 +70,19 @@ ${c.followUp ? `<div class="fu">ميعاد المتابعة: ${esc(fmtDate(c.fol
 </body></html>`;
 }
 
-export function printRx(c: Omit<Consultation, 'id'>) {
+export function printRx(c: Omit<Consultation, 'id' | 'patientId'>, p?: RxPatient | null) {
   const f = document.createElement('iframe');
   f.setAttribute('aria-hidden', 'true');
   f.style.cssText = 'position:fixed;width:0;height:0;border:0;inset-inline-start:-9999px';
   document.body.appendChild(f);
   const doc = f.contentDocument!;
-  doc.open(); doc.write(rxHtml(c)); doc.close();
-  setTimeout(() => {
+  doc.open(); doc.write(rxHtml(c, p)); doc.close();
+  // الطباعة بعد ما الخط العربي يتحمّل (وإلا الروشتة بتطلع بخط الجهاز)؛ حد أقصى 2.5 ثانية لو مفيش إنترنت
+  const fontsReady = doc.fonts?.ready ?? Promise.resolve();
+  const wait = Promise.race([fontsReady.then(() => doc.fonts?.load('700 14px "IBM Plex Sans Arabic"')), new Promise((r) => setTimeout(r, 2500))]);
+  void wait.catch(() => undefined).then(() => {
     f.contentWindow?.focus();
     f.contentWindow?.print();
     setTimeout(() => f.remove(), 1000);
-  }, 250);
+  });
 }

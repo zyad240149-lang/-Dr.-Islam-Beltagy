@@ -121,7 +121,7 @@ export function AutoNotificationsSettings() {
             <thead><tr><th>الوقت</th><th>المستلم</th><th>النوع</th><th>الإرسال</th><th>المحاولات</th><th>وصل</th><th>اتفتح</th><th>السبب</th></tr></thead>
             <tbody>{report.recent.map((r) => (
               <tr key={r.id}>
-                <td className="num">{fmtDateTime(new Date(r.created_at).getTime())}</td>
+                <td className="num date">{fmtDateTime(new Date(r.created_at).getTime())}</td>
                 <td data-no-i18n>{r.recipient ?? '—'}</td>
                 <td>{r.label ?? r.kind}</td>
                 <td><StatusBadge label={PUSH_STATUS[r.push_status ?? 'none']?.label ?? r.push_status ?? '—'} tone={PUSH_STATUS[r.push_status ?? 'none']?.tone ?? 'muted'} /></td>
@@ -138,7 +138,7 @@ export function AutoNotificationsSettings() {
               <thead><tr><th>وقت التذكير</th><th>الموعد</th><th>المريض</th><th>قبل</th><th>الحالة</th><th>ملاحظة</th></tr></thead>
               <tbody>{report.scheduled.map((s) => (
                 <tr key={s.id}>
-                  <td className="num">{fmtDateTime(new Date(s.scheduled_at).getTime())}</td>
+                  <td className="num date">{fmtDateTime(new Date(s.scheduled_at).getTime())}</td>
                   <td className="num">{s.appointment_no ?? '—'} · {fmtDateTime(new Date(s.appt_at).getTime())}</td>
                   <td data-no-i18n>{s.patient ?? '—'}</td>
                   <td>{hoursLabel(Math.round(s.offset_minutes / 60))}</td>

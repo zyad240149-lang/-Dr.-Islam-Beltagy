@@ -7,3 +7,6 @@ tsconfig.tsbuildinfo
 .claude
 .hallmark
 OneDrive
+docs/ui-failures
+docs/ui-shots
+docs/offline-error.png

@@ -1,5 +1,5 @@
 import { CompletenessBadge } from '../components/PatientCompleteness';
-import { PendingSyncTag } from '../components/OfflineStatus';
+import { LocalDataNote, PendingSyncTag } from '../components/OfflineStatus';
 import { useEffect, useState, type ReactNode } from 'react';
 import OnlineAccounts from './OnlineAccounts';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -60,6 +60,7 @@ function PatientsList({ tabs }: { tabs: ReactNode }) {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [local, setLocal] = useState(false); // النتائج من المرضى المحفوظين على الجهاز (بدون إنترنت)
   const [tick, setTick] = useState(0);
   // ?new=1 (من زرار «إضافة مريض جديد» في الحجز) ← نافذة إضافة المريض بتفتح على طول
   const [adding, setAdding] = useState(params.get('new') === '1');
@@ -78,7 +79,7 @@ function PatientsList({ tabs }: { tabs: ReactNode }) {
     setLoading(true); setError('');
     db.queryPatients({ q: dq, gender, source, active, doctorId: doctor, sort, gaps, page, pageSize: PAGE_SIZE }).then((r) => {
       if (!live) return;
-      if (r.ok) { setRows(r.rows); setTotal(r.total); } else setError(r.error);
+      if (r.ok) { setRows(r.rows); setTotal(r.total); setLocal(!!r.local); } else setError(r.error);
       setLoading(false);
     });
     return () => { live = false; };
@@ -106,6 +107,7 @@ function PatientsList({ tabs }: { tabs: ReactNode }) {
           {can('patients', 'create') && <Button icon="user" onClick={() => setAdding(true)}>فتح ملف مريض جديد</Button>}
         </div>
       </div>
+      {local && <LocalDataNote />}
       {tabs}
 
       <div className="card">

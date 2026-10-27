@@ -105,7 +105,7 @@ export function DiagnosisPicker({ onPick, onClose }: { onPick: (text: string, re
           ) : (
             <>
               <Input id="dx-q" icon="search" placeholder="Search: Knee OA, ACL, M17…" value={q} onChange={(e) => setQ(e.target.value)} />
-              {!search && !region ? <EmptyState icon="body" title="اختر منطقة من الجسم" text="أو ابحث باسم الحالة بالعربي أو الإنجليزي أو كود ICD-10." />
+              {!search && !region ? <EmptyState icon="body" title="اختر منطقة من الجسم" text="ابحث باسم الحالة بالعربي أو الإنجليزي أو كود ICD-10." />
                 : list.length === 0 ? <EmptyState icon="search" title="ما فيه حالات مطابقة" /> : (
                   <div className="dx-options">
                     {!search && region && <div className="bm-list__title">{region.name} · <span className="num">{region.conditions.length}</span> حالات</div>}

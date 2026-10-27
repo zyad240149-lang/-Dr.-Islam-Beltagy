@@ -27,9 +27,15 @@ const SPOTS: Record<BodyView, Spot[]> = {
   ],
 };
 
-export function BodyFigure({ view, selected, hovered, highlighted, onSelect, onHover, compact }: {
+// جهة النقطة من مكانها على الصورة (أمامي: شمال الصورة = يمين المريض) — للمناطق اللي ليها جهتين بس
+export type PinSide = 'right' | 'left' | null;
+const pinSide = (view: BodyView, x: number): 'right' | 'left' => ((x < W / 2) === (view === 'front') ? 'right' : 'left');
+
+export function BodyFigure({ view, selected, hovered, highlighted, marked, onSelect, onHover, compact }: {
   view: BodyView; selected: string | null; hovered: string | null; highlighted?: Set<string>;
-  onSelect: (id: string) => void; onHover: (id: string | null) => void; compact?: boolean;
+  /** نقط متعلّمة (اختيار متعدد): «knee:right» للمناطق اللي ليها جهتين، أو «lumbar» */
+  marked?: Set<string>;
+  onSelect: (id: string, side: PinSide) => void; onHover: (id: string | null) => void; compact?: boolean;
 }) {
   const spots = SPOTS[view];
   const order = spots.map((s) => s[0]).filter((id, i, a) => a.indexOf(id) === i);
@@ -40,10 +46,12 @@ export function BodyFigure({ view, selected, hovered, highlighted, onSelect, onH
         {spots.map(([id, x, y], i) => {
           const r = regionById(id);
           if (!r) return null;
-          const state = [selected === id && 'is-selected', hovered === id && 'is-hover', highlighted?.has(id) && 'is-match'].filter(Boolean).join(' ');
+          const side = r.sided ? pinSide(view, x) : null;
+          const on = selected === id || !!marked?.has(side ? `${id}:${side}` : id);
+          const state = [on && 'is-selected', hovered === id && 'is-hover', highlighted?.has(id) && 'is-match'].filter(Boolean).join(' ');
           return (
             <button key={i} type="button" className={`bm-skel__pin ${state}`} style={{ left: `${(x / W) * 100}%`, top: `${(y / H) * 100}%` }}
-              title={r.name} aria-label={r.name} onClick={() => onSelect(id)} onMouseEnter={() => onHover(id)} onMouseLeave={() => onHover(null)}
+              title={r.name} aria-label={r.name} aria-pressed={marked ? on : undefined} onClick={() => onSelect(id, side)} onMouseEnter={() => onHover(id)} onMouseLeave={() => onHover(null)}
               onFocus={() => onHover(id)} onBlur={() => onHover(null)}>
               {order.indexOf(id) + 1}
             </button>

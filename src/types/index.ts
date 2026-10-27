@@ -63,7 +63,7 @@ export interface Patient {
 }
 
 export type WorkDay = 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat';
-export interface WorkHours { day: WorkDay; from: string; to: string; breakFrom?: string; breakTo?: string }
+export interface WorkHours { day: WorkDay; from: string; to: string; breakFrom?: string; breakTo?: string; branchId?: string | null }
 export interface DaySchedule { day: WorkDay; open: boolean; from: string; to: string }
 export interface Leave { from: string; to: string; reason: string }
 

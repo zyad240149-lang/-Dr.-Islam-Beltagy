@@ -9,6 +9,7 @@ import { Button, Input, PasswordInput } from '../components/ui';
 import { isArabicName, nameWords } from '../utils/patientGaps';
 import { NID_RE, PASSPORT_RE } from '../utils/format';
 import { phoneErrorMessage, type PhoneErrorCode } from '../utils/phoneUtils';
+import { Icon } from '../utils/icons';
 import { DOCTOR } from '../landing/content';
 
 export function AuthBrand() {
@@ -83,11 +84,12 @@ export default function SignUp() {
   };
 
   return (
-    <div className="app-login">
-      <form className="card app-login__card" onSubmit={submit} noValidate>
-        <AuthBrand />
-        <h1 className="app-login__title">إنشاء حساب جديد</h1>
-        <p className="muted" style={{ textAlign: 'center', fontSize: 14, margin: '-10px 0 16px' }}>احجز مواعيدك وتابع ملفك وفواتيرك من موبايلك</p>
+    <div className="app-login app-login--split">
+      <div className="al-main">
+        <form className="card app-login__card" onSubmit={submit} noValidate>
+          <div className="al-logo-sm"><AuthBrand /></div>
+          <h1 className="app-login__title">إنشاء حساب جديد</h1>
+          <p className="al-lead">احجز مواعيدك وتابع ملفك وفواتيرك من موبايلك</p>
         {err && (
           <div className="alert alert-danger" style={{ marginBottom: 12 }} role="alert">
             <div>
@@ -112,8 +114,26 @@ export default function SignUp() {
         <PasswordInput id="su-confirm" label="تأكيد كلمة المرور" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} error={tried ? errors.confirm : ''} />
         <Button type="submit" block loading={busy} disabled={link === 'contact_clinic' || link === 'locked'}>إنشاء الحساب</Button>
         <p style={{ textAlign: 'center', marginTop: 14, fontSize: 14.5 }}>عندك حساب بالفعل؟ <Link to="/login" style={{ fontWeight: 700, color: 'var(--brand-700)' }}>سجّل الدخول</Link></p>
-      </form>
-      <a href="/" className="muted" style={{ display: 'block', textAlign: 'center', marginTop: 14, fontSize: 14 }}>الرجوع لموقع العيادة</a>
+        </form>
+        <a href="/" className="al-back">الرجوع لموقع العيادة</a>
+      </div>
+      <aside className="al-aside" aria-hidden="true">
+        <div className="al-aside__brand">
+          <img className="al-aside__logo" src={`${import.meta.env.BASE_URL}landing/logo.png`} alt="" />
+          <div><strong>{DOCTOR.short}</strong><span>{DOCTOR.title}</span></div>
+        </div>
+        <div>
+          <h2>احجز وتابع علاجك أونلاين</h2>
+          <p>حساب واحد يخليك تحجز وتتابع من غير ما تتصل أو تستنى.</p>
+          <ul className="al-aside__list">
+            <li><Icon name="calendarPlus" size={18} />احجز موعدك في أي وقت من موبايلك</li>
+            <li><Icon name="doc" size={18} />ملفك الطبي وتاريخ زياراتك في مكان واحد</li>
+            <li><Icon name="bell" size={18} />تذكير بموعدك وإشعار فوري بأي تحديث</li>
+            <li><Icon name="receipt" size={18} />فواتيرك ومدفوعاتك بوضوح</li>
+          </ul>
+        </div>
+        <div className="al-aside__foot">{DOCTOR.address}</div>
+      </aside>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useAuth } from '../services/auth';
 import { useToast } from '../hooks/useToast';
 import { Button, EmptyState, ErrorState, Input, Select, Skeleton, StatusBadge } from '../components/ui';
 import { FilterBar, IconAction, RowActions, useCan } from '../components/common';
@@ -22,6 +23,9 @@ const owedOf = (r: PayrollRow) => (r.due ? r.due.salaryDue + r.due.bonusDue : r.
 // «رواتب الأخصائيين والتارجت» — للمدير العام بس (الخادم بيرفض أي حد تاني).
 export default function Payroll() {
   const can = useCan();
+  const { user } = useAuth();
+  // ولا حتى المدير العام يحدد راتبه أو تارجته هو نفسه — تضارب مصالح
+  const isSelf = (r: PayrollRow) => r.type === 'therapist' && !!user?.therapistId && r.id === user.therapistId;
   const [period, setPeriod] = useState(currentPeriod());
   const [data, setData] = useState<Overview | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +58,8 @@ export default function Payroll() {
   const canPay = (r: PayrollRow) => (r.due ? r.payStatus === 'unpaid' || r.payStatus === 'partial' : r.live.hasPlan && r.live.baseSalary + r.live.bonus > 0);
   const canEdit = can('payroll', 'edit');
 
-  const all = (data?.rows ?? []).filter((r) => r.type === 'therapist');
+  // صاحب الحساب لا يظهر في قائمته هو نفسه — مينفعش يدير راتبه، فمفيش داعي يتعرض أصلًا
+  const all = (data?.rows ?? []).filter((r) => r.type === 'therapist' && !isSelf(r));
   const rows = all.filter((r) => (!q.trim() || r.name.includes(q.trim())) && (!tState || targetState(r) === tState));
   const sum = (f: (r: PayrollRow) => number) => all.reduce((s, r) => s + f(r), 0);
   const withTarget = all.filter((r) => targetState(r) !== 'none');

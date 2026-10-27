@@ -4,10 +4,22 @@ export const env = Object.fromEntries(readFileSync(new URL('../.env', import.met
   .split(/\r?\n/).filter((l) => /^[A-Z_]+=/.test(l)).map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1)]));
 export const REF = env.SUPABASE_PROJECT_REF;
 export async function sql(query) {
-  const r = await fetch(`https://api.supabase.com/v1/projects/${REF}/database/query`, {
-    method: 'POST', headers: { Authorization: 'Bearer ' + env.SUPABASE_ACCESS_TOKEN, 'Content-Type': 'application/json' }, body: JSON.stringify({ query }),
-  });
-  const t = await r.text();
+  let r, t;
+  // Management API عليه حد طلبات (429) والشبكة ممكن تقطع (fetch failed) — بيستنى ويعيد لحد 6 مرات
+  for (let i = 0; ; i++) {
+    try {
+      r = await fetch(`https://api.supabase.com/v1/projects/${REF}/database/query`, {
+        method: 'POST', headers: { Authorization: 'Bearer ' + env.SUPABASE_ACCESS_TOKEN, 'Content-Type': 'application/json' }, body: JSON.stringify({ query }),
+      });
+      t = await r.text();
+    } catch (e) {
+      if (i >= 5) throw e;
+      await new Promise((ok) => setTimeout(ok, 2000 * (i + 1)));
+      continue;
+    }
+    if (r.status !== 429 || i >= 5) break;
+    await new Promise((ok) => setTimeout(ok, 2000 * (i + 1)));
+  }
   if (!r.ok) throw new Error(`SQL ${r.status}: ${t.slice(0, 800)}`);
   return t ? JSON.parse(t) : null;
 }

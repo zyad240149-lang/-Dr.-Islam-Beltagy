@@ -116,7 +116,7 @@ export default function Finance() {
                     <thead><tr><th>التاريخ</th><th>النوع</th><th>المرجع</th><th>الطرف</th><th>التفاصيل</th><th>وارد</th><th>صادر</th></tr></thead>
                     <tbody>{ledger.map((r) => (
                       <tr key={r.id}>
-                        <td className="num" style={{ whiteSpace: 'nowrap' }}>{fmtDateTime(r.at)}</td>
+                        <td className="num date" style={{ whiteSpace: 'nowrap' }}>{fmtDateTime(r.at)}</td>
                         <td><StatusBadge label={r.type} tone={r.outAmt ? 'warn' : 'ok'} /></td>
                         <td className="num">{r.ref}</td><td data-no-i18n>{r.party}</td><td className="muted">{r.detail}</td>
                         <td className="num" style={{ color: 'var(--ok)', fontWeight: 600 }}>{r.inAmt ? money(r.inAmt) : ''}</td>
@@ -129,7 +129,7 @@ export default function Finance() {
                     <thead><tr><th>رقم الفاتورة</th><th>التاريخ</th><th>المريض</th><th>الخدمة</th><th>الأخصائي</th><th>الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>الحالة</th></tr></thead>
                     <tbody>{invoices.map((i) => (
                       <tr key={i.id}>
-                        <td className="num">{i.no}</td><td className="num" style={{ whiteSpace: 'nowrap' }}>{fmtDate(i.date)}</td><td data-no-i18n>{i.patient}</td><td>{i.service}</td><td data-no-i18n>{i.therapist ?? '—'}</td>
+                        <td className="num">{i.no}</td><td className="num date" style={{ whiteSpace: 'nowrap' }}>{fmtDate(i.date)}</td><td data-no-i18n>{i.patient}</td><td>{i.service}</td><td data-no-i18n>{i.therapist ?? '—'}</td>
                         <td className="num">{money(i.total)}</td><td className="num">{money(i.paid)}</td><td className="num">{money(i.remaining)}</td>
                         <td><StatusBadge label={INVOICE_STATUS[i.status as InvoiceStatus]?.label ?? i.status} tone={INVOICE_STATUS[i.status as InvoiceStatus]?.tone ?? 'muted'} /></td>
                       </tr>
@@ -140,7 +140,7 @@ export default function Finance() {
                     <thead><tr><th>التاريخ</th><th>المريض</th><th>الفاتورة</th><th>الخدمة</th><th>الأخصائي</th><th>المبلغ</th><th>طريقة الدفع</th></tr></thead>
                     <tbody>{payments.map((p) => (
                       <tr key={p.id}>
-                        <td className="num" style={{ whiteSpace: 'nowrap' }}>{fmtDateTime(ts(p.date))}</td><td data-no-i18n>{p.patient}</td><td className="num">{p.invoiceNo}</td><td>{p.service}</td><td data-no-i18n>{p.therapist ?? '—'}</td>
+                        <td className="num date" style={{ whiteSpace: 'nowrap' }}>{fmtDateTime(ts(p.date))}</td><td data-no-i18n>{p.patient}</td><td className="num">{p.invoiceNo}</td><td>{p.service}</td><td data-no-i18n>{p.therapist ?? '—'}</td>
                         <td className="num" style={{ fontWeight: 600 }}>{money(p.amount)}</td><td>{methodLabel(p.method)}</td>
                       </tr>
                     ))}</tbody>
@@ -150,7 +150,7 @@ export default function Finance() {
                     <thead><tr><th>رقم الفاتورة</th><th>التاريخ</th><th>المنتج</th><th>الكمية</th><th>العميل</th><th>الإجمالي</th><th>طريقة الدفع</th></tr></thead>
                     <tbody>{sales.map((s) => (
                       <tr key={s.id}>
-                        <td className="num">{s.no}</td><td className="num" style={{ whiteSpace: 'nowrap' }}>{fmtDateTime(ts(s.date))}</td><td>{s.product}</td><td className="num">{s.qty}</td><td data-no-i18n>{s.customer ?? '—'}</td>
+                        <td className="num">{s.no}</td><td className="num date" style={{ whiteSpace: 'nowrap' }}>{fmtDateTime(ts(s.date))}</td><td>{s.product}</td><td className="num">{s.qty}</td><td data-no-i18n>{s.customer ?? '—'}</td>
                         <td className="num" style={{ fontWeight: 600 }}>{money(s.total)}</td><td>{methodLabel(s.method)}</td>
                       </tr>
                     ))}</tbody>
@@ -179,7 +179,7 @@ function PayoutRows({ rows, canCancel, onCancel }: { rows: FinPayout[]; canCance
       <tbody>{rows.map((p) => (
         <tr key={p.id} style={p.status === 'void' ? { opacity: 0.6 } : undefined}>
           <td className="num">{p.no}</td><td style={{ whiteSpace: 'nowrap' }} data-no-i18n>{p.subject}</td><td>{ROLE_NAME[p.role] ?? p.role}</td><td style={{ whiteSpace: 'nowrap' }}>{periodLabel(p.period)}</td>
-          <td className="num" style={{ fontWeight: 600 }}>{money(p.amount)}</td><td className="num" style={{ whiteSpace: 'nowrap' }}>{fmtDate(p.paidOn)}</td><td>{methodLabel(p.method)}</td>
+          <td className="num" style={{ fontWeight: 600 }}>{money(p.amount)}</td><td className="num date" style={{ whiteSpace: 'nowrap' }}>{fmtDate(p.paidOn)}</td><td>{methodLabel(p.method)}</td>
           <td data-no-i18n>{[p.reference, p.note].filter(Boolean).join(' — ') || '—'}</td><td data-no-i18n>{p.paidBy ?? '—'}</td>
           <td>{p.status === 'paid' ? <StatusBadge label="مصروف" tone="ok" /> : <><StatusBadge label="ملغي" tone="muted" />{p.voidReason && <div className="muted-sm" data-no-i18n>{p.voidReason}</div>}</>}</td>
           <td className="actions"><RowActions>{p.status === 'paid' && canCancel && <IconAction icon="close" label="إلغاء الصرف" danger onClick={() => onCancel(p)} />}</RowActions></td>

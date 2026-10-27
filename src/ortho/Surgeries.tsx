@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button, EmptyState, Modal } from '../components/ui';
 import { fmtDate, todayYmd } from '../utils/format';
-import { REGIONS, SIDE, SURGERY_STATUS, addDays, daysBetween, ortho, useOrthoVersion, type Side, type Surgery, type SurgeryStatus } from './data';
+import { ORTHO_PROCEDURES, REGIONS, SIDE, SURGERY_STATUS, addDays, daysBetween, ortho, useOrthoVersion, type Side, type Surgery, type SurgeryStatus } from './data';
 import { Field, IconBtn, LoadState, PageHead, PatientSelect, PillTabs, Tone, confirmDelete, patientFile, patientName, useClinicalCan, useRun } from './kit';
 
 export function SurgeryModal({ initial, patientId = '', onClose }: { initial?: Surgery; patientId?: string; onClose: () => void }) {
@@ -16,7 +16,10 @@ export function SurgeryModal({ initial, patientId = '', onClose }: { initial?: S
     </>}>
       <div className="grid-form grid-form--3">
         <Field label="المريض" className="span-2"><PatientSelect value={s.patientId} onChange={(v) => set('patientId', v)} /></Field>
-        <Field label="اسم العملية" className="span-2"><input className="input" value={s.procedure} onChange={(e) => set('procedure', e.target.value)} placeholder="مثال: تغيير مفصل ركبة كامل" /></Field>
+        <Field label="اسم العملية" className="span-2">
+          <input className="input" list="ortho-procedures" value={s.procedure} onChange={(e) => set('procedure', e.target.value)} placeholder="مثال: تغيير مفصل ركبة كامل" />
+          <datalist id="ortho-procedures">{ORTHO_PROCEDURES.map((p) => <option key={p} value={p} />)}</datalist>
+        </Field>
         <Field label="المنطقة">
           <select className="input" value={s.region} onChange={(e) => set('region', e.target.value)}>{[...new Set([...REGIONS, s.region])].map((r) => <option key={r}>{r}</option>)}</select>
         </Field>
@@ -62,6 +65,9 @@ export function SurgeryCards({ items, onEdit }: { items: Surgery[]; onEdit: (s: 
               {s.status === 'scheduled' && left >= 0 && <span className="badge badge--brand">{left === 0 ? 'اليوم' : `بعد ${left} يوم`}</span>}
               {s.status === 'done' && left < 0 && <span className="muted" style={{ fontSize: 14 }}>اليوم {-left} بعد العملية</span>}
               <div style={{ flex: 1 }} />
+              {perm.edit && s.status !== 'done' && (
+                <Button icon="check" onClick={() => run(() => ortho.save('surgeries', { ...s, status: 'done' }), 'تم إتمام العملية')}>إتمام العملية</Button>
+              )}
               {perm.edit && <IconBtn icon="edit" label="تعديل" onClick={() => onEdit(s)} />}
               {perm.del && <IconBtn icon="trash" label="حذف" danger onClick={() => confirmDelete('هذه العملية') && run(() => ortho.remove('surgeries', s.id), 'تم الحذف')} />}
             </div>

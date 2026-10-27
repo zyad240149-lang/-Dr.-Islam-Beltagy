@@ -11,7 +11,7 @@
 // ======================================================================
 import type { KV } from './idb';
 
-export type OpKind = 'patient.create' | 'patient.update' | 'appointment.create' | 'appointment.reschedule' | 'appointment.cancel' | 'assessment.save';
+export type OpKind = 'patient.create' | 'patient.update' | 'appointment.create' | 'appointment.reschedule' | 'appointment.cancel' | 'assessment.save' | 'ortho.save';
 export type OpStatus = 'pending' | 'syncing' | 'failed' | 'conflict';
 
 export interface OfflineOp {

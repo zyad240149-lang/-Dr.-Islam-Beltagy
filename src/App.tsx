@@ -8,7 +8,7 @@ import { EmptyState } from './components/ui';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import PatientLayout from './components/PatientLayout';
 const AppLogin = lazy(() => import('./pwa/AppLogin'));
-import { PatientDashboard, PatientBook, PatientAppointments, PatientFilePage, PatientExams, PatientPlans, PatientPoints, PatientInvoices, PatientNotifications } from './pages/patient/PatientPages';
+import { PatientDashboard, PatientBook, PatientAppointments, PatientFilePage, PatientExams, PatientPlans, PatientPoints, PatientInvoices, PatientNotifications, PatientRecords } from './pages/patient/PatientPages';
 
 // كل صفحة تُحمَّل بكودها الخاص عند أول زيارة لها فقط (code-splitting) — يقلل حجم الحزمة الأولى ويسرّع التنقل بدل تحميل كل الصفحات دفعة واحدة.
 // نفس مسارات import() مكرَّرة (بنيّة) في routeImports.ts لتحميلها مسبقًا (prefetch) عند تمرير الفأرة
@@ -132,6 +132,7 @@ const PATIENT_ROUTES: { path: string; el: JSX.Element }[] = [
   { path: '/me/appointments', el: <PatientAppointments /> },
   { path: '/me/file', el: <PatientFilePage /> },
   { path: '/me/exams', el: <PatientExams /> },
+  { path: '/me/records', el: <PatientRecords /> },
   { path: '/me/plans', el: <PatientPlans /> },
   { path: '/me/points', el: <PatientPoints /> },
   { path: '/me/invoices', el: <PatientInvoices /> },

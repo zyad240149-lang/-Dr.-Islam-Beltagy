@@ -38,9 +38,17 @@
 .lp-links { display: flex; align-items: center; gap: 4px; margin-inline-start: auto; }
 .lp-links a { padding: 8px 12px; border-radius: 10px; font-weight: 600; font-size: 15px; color: var(--lp-ink); }
 .lp-links a:hover { background: var(--lp-blue-50); color: var(--lp-blue-700); }
-.lp-links .lp-login { color: var(--lp-blue-700); }
-.lp-links .lp-signup { background: var(--lp-green-50); color: var(--lp-green-700); }
-.lp-links .lp-signup:hover { background: var(--lp-green); color: #fff; }
+/* تسجيل الدخول وإنشاء حساب — ظاهرين في الشريط العلوي دايمًا (مش جوه قائمة الموبايل) */
+.lp-nav__auth { display: flex; align-items: center; gap: 6px; flex: none; }
+.lp-login { padding: 8px 12px; border-radius: 10px; font-weight: 600; font-size: 14.5px; color: var(--lp-blue-700); white-space: nowrap; }
+.lp-login:hover { background: var(--lp-blue-50); }
+.lp-signup { padding: 8px 14px; border-radius: 10px; font-weight: 700; font-size: 14.5px; background: var(--lp-green-50); color: var(--lp-green-700); white-space: nowrap; }
+.lp-signup:hover { background: var(--lp-green); color: #fff; }
+
+.install-btn-wrap { position: relative; display: inline-flex; }
+.install-btn-tip { position: absolute; top: calc(100% + 8px); inset-inline-end: 0; z-index: 70; width: 260px; background: var(--lp-ink); color: #fff; font-size: 13px; line-height: 1.6; padding: 10px 14px; border-radius: 10px; box-shadow: 0 12px 28px rgba(0, 0, 0, .25); display: flex; align-items: flex-start; gap: 8px; }
+.install-btn-tip button { flex: none; background: none; border: none; color: #fff; opacity: .7; cursor: pointer; padding: 0; margin-inline-start: auto; }
+.install-btn-tip button:hover { opacity: 1; }
 .lp-burger { display: none; width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--lp-line); background: #fff; color: var(--lp-ink); align-items: center; justify-content: center; cursor: pointer; }
 
 /* البداية */
@@ -48,7 +56,7 @@
 .lp-hero__in { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 48px; align-items: center; padding-top: 64px; padding-bottom: 72px; }
 .lp-pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; background: #fff; border: 1px solid var(--lp-line); font-weight: 600; font-size: 14px; color: var(--lp-green-700); box-shadow: 0 2px 8px rgba(15, 42, 74, .06); }
 .lp-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--lp-green); box-shadow: 0 0 0 4px var(--lp-green-50); }
-.lp-hero h1 { font-size: clamp(32px, 4.6vw, 52px); margin-top: 18px; letter-spacing: -.01em; }
+.lp-hero h1 { font-size: clamp(32px, 4.6vw, 52px); margin-top: 18px; }
 .lp-hero__title { font-size: clamp(18px, 2.2vw, 23px); font-weight: 700; color: var(--lp-blue); margin-top: 6px; }
 .lp-hero__lead { font-size: 18px; margin-top: 16px; max-width: 560px; }
 .lp-hero__cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
@@ -143,6 +151,12 @@
   .lp-links a { padding: 12px; }
   .lp-burger { margin-inline-start: auto; }
   .lp-fab { display: grid; }
+  /* البراند لازم يقصّر عشان زرار الدخول/الحساب ياخدوا مكانهم جنب البرجر من غير ما يطلعوا برّه الشاشة */
+  .lp-brand { min-width: 0; flex-shrink: 1; }
+  .lp-brand span { min-width: 0; overflow: hidden; }
+  .lp-brand strong { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lp-nav__auth { gap: 4px; margin-inline-start: 0; }
+  .lp-login, .lp-signup { padding: 7px 10px; font-size: 13px; }
 }
 @media (max-width: 560px) {
   .lp-wrap { padding: 0 16px; }
@@ -153,6 +167,10 @@
   .lp-hero__badge { inset-inline-end: 4px; }
   .lp-contact__actions { grid-template-columns: minmax(0, 1fr); }
   .lp-brand small { display: none; }
+  .lp-brand strong { max-width: 30vw; }
+  .lp-login { padding: 6px 8px; font-size: 12.5px; }
+  .lp-signup { padding: 6px 10px; font-size: 12.5px; }
+  .lp-nav__in { gap: 10px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .lp, .lp * { scroll-behavior: auto; transition: none !important; animation: none !important; }

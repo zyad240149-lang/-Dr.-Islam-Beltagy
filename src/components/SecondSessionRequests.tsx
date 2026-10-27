@@ -51,7 +51,7 @@ export default function SecondSessionRequests() {
               <td><strong>{db.patient(r.patient_id)?.fullName ?? '—'}</strong> <span className="muted-sm num">{db.patient(r.patient_id)?.fileNo}</span></td>
               <td>{db.therapist(r.therapist_id ?? '')?.name ?? '—'}</td>
               <td>{name(r.requested_by)}</td>
-              <td className="num">{fmtDateTime(Date.parse(r.requested_at))}</td>
+              <td className="num date">{fmtDateTime(Date.parse(r.requested_at))}</td>
               <td><StatusBadge label={STATUS[r.status].label + (r.status === 'rejected' && r.reject_reason ? ` — ${r.reject_reason}` : '')} tone={STATUS[r.status].tone} /></td>
               {isManager && <td>{r.status === 'pending' && <span style={{ display: 'flex', gap: 6 }}>
                 <Button size="sm" icon="check" loading={busy === r.id} disabled={!!busy} onClick={() => decide(r, true)}>موافقة وتسجيل</Button>

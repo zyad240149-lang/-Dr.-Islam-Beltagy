@@ -5,20 +5,18 @@ import { Button, EmptyState, Input, Modal, PasswordInput, Select, Skeleton, Stat
 import { PhoneInput } from '../components/PhoneInput';
 import { phoneErrorMessage, type PhoneErrorCode } from '../utils/phoneUtils';
 import { ConfirmDialog, IconAction, useCan } from '../components/common';
-import { APPT_STATUS, EMAIL_RE, WEEKDAY_LABEL, fmtDate, fmtTime, initials, todayYmd } from '../utils/format';
+import { APPT_STATUS, EMAIL_RE, fmtDate, fmtTime, initials, todayYmd } from '../utils/format';
 import { useToast } from '../hooks/useToast';
 import type { Leave, Role, Therapist, WorkDay, WorkHours } from '../types';
 import { ROLE_LABEL } from '../services/permissions';
 import { ROLES } from '../services/defaultPermissions';
 import { api } from '../lib/api';
 import { staffCall } from './Employees';
-import { WorkHoursEditor, cleanHours, defaultHours, hoursError } from '../components/WorkHoursEditor';
+import { WorkHoursEditor, cleanHours, defaultHours, hoursError, hoursSummary } from '../components/WorkHoursEditor';
 
-const DAYS: WorkDay[] = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']; // بترتيب getDay — لقراءة WEEKDAY_LABEL
 // ترتيب العرض: السبت أول الأسبوع
 const DAY_ORDER: WorkDay[] = ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'];
 const byDayOrder = (a: { day: WorkDay }, b: { day: WorkDay }) => DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day);
-const dayLabel = (d: WorkDay) => WEEKDAY_LABEL[DAYS.indexOf(d)];
 
 export default function Therapists({ embedded = false }: { embedded?: boolean }) {
   useDbVersion();
@@ -57,7 +55,7 @@ export default function Therapists({ embedded = false }: { embedded?: boolean })
                     {can('therapists', 'delete') && <IconAction icon="trash" label="حذف" danger onClick={() => setDeleting(t)} />}
                   </div>
                   <div className="kv-row"><span>الجوال</span><span className="num">{t.phone}</span></div>
-                  <div className="kv-row"><span>أيام وساعات العمل</span><span>{[...t.workHours].sort(byDayOrder).map((w) => `${dayLabel(w.day)} ${w.from}–${w.to}`).join('، ') || '—'}</span></div>
+                  <div className="kv-row"><span>أيام وساعات العمل</span><span>{hoursSummary(t.workHours) || '—'}</span></div>
                   <div className="kv-row"><span>الخدمات</span><span>كل الخدمات</span></div>
                   <div className="kv-row"><span>الجلسات المكتملة</span><span className="num">{completed}</span></div>
                   <div className="kv-row"><span>مواعيد قادمة</span><span className="num">{upcoming}</span></div>

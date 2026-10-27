@@ -16,6 +16,7 @@ import { useAuth } from '../services/auth';
 import { isScopedToOwnPatients } from '../services/permissions';
 import { APPT_STATUS, APPT_TYPE_LABEL, fmtDate, fmtShortDate, fmtTime, money, todayYmd, addDaysYmd, ymdLocal } from '../utils/format';
 import BookingWizard from '../components/BookingWizard';
+import { branchForDate } from '../components/WorkHoursEditor';
 import ScheduleGrid, { type Preset } from '../components/ScheduleGrid';
 import { ActorBadges, ActorDetails } from '../components/AppointmentActor';
 import { RescheduleModal, CancelModal, EditAppointmentModal, StatusMenu, useStatusWithDoctor, useConfirmAppointment, CONFIRMABLE, attendanceOpen } from '../components/AppointmentActions';
@@ -154,7 +155,7 @@ export default function Appointments() {
                     {hits.length === 0 ? <p className="muted" style={{ margin: '6px 0 0' }}>ما فيه نتائج مطابقة للبحث.</p> : hits.slice(0, 8).map((x) => (
                       <button key={x.id} type="button" onClick={() => { setDate(x.date); setDetail(x); }}>
                         <span><strong>{db.patient(x.patientId)?.fullName}</strong> {x.pendingSync && <PendingSyncTag />}<CompletenessBadge patient={db.patient(x.patientId)} /> <span className="muted-sm">· {db.service(x.serviceId)?.name}</span></span>
-                        <span className="muted-sm num">{fmtDate(x.date)} · {fmtTime(x.time)} · {db.therapist(x.therapistId)?.name ?? '—'}</span>
+                        <span className="muted-sm num date">{fmtDate(x.date)} · {fmtTime(x.time)} · {db.therapist(x.therapistId)?.name ?? '—'}</span>
                       </button>
                     ))}
                     {hits.length > 8 && <p className="muted-sm" style={{ margin: '4px 0 0' }}>وغيرها {hits.length - 8} — استخدم «قائمة» لعرض الكل.</p>}
@@ -172,13 +173,14 @@ export default function Appointments() {
                       {dayAppts.map((a) => {
                         const p = db.patient(a.patientId); const svc = db.service(a.serviceId); const th = db.therapist(a.therapistId); const st = APPT_STATUS[a.status];
                         const live = a.status !== 'completed' && a.status !== 'cancelled' && a.status !== 'no_show';
+                        const branch = th ? branchForDate(th.workHours, a.date) : null;
                         return (
                           <div className="tl-row" key={a.id}>
                             <div className="tl-time num">{fmtTime(a.time)}</div>
                             <div className={`tl-card st-${a.status}`}>
                               <div className="tl-card__info">
                                 <strong>{p?.fullName}</strong> {a.pendingSync && <PendingSyncTag />}{p && !isPatientComplete(p) && <CompletenessBadge patient={p} />}
-                                <span className="muted-sm">{svc?.name} · {APPT_TYPE_LABEL[a.type]} · {th?.name ?? 'بدون طبيب'}</span>
+                                <span className="muted-sm">{svc?.name} · {APPT_TYPE_LABEL[a.type]} · {th?.name ?? 'بدون طبيب'}{branch ? ` · ${branch.name}` : ''}</span>
                               </div>
                               <StatusBadge label={st.label} tone={st.tone} />
                               {live && <Countdown target={new Date(`${a.date}T${a.time}:00+03:00`).getTime()} />}
@@ -208,8 +210,10 @@ export default function Appointments() {
               <>
                 <div className="table-wrap"><table className="table">
                   <thead><tr><th>رقم الموعد</th><th>التاريخ</th><th>الوقت</th><th>المريض</th><th>الخدمة</th><th>الطبيب</th><th>الحالة</th><th>حجزه / ألغاه</th><th></th></tr></thead>
-                  <tbody>{listAll.slice((listPage - 1) * LIST_SIZE, listPage * LIST_SIZE).map((a) => { const st = APPT_STATUS[a.status]; return (
-                    <tr key={a.id}><td className="num">{a.no}</td><td>{fmtDate(a.date)}</td><td className="num">{fmtTime(a.time)}</td><td>{db.patient(a.patientId)?.fullName} {a.pendingSync && <PendingSyncTag />}<CompletenessBadge patient={db.patient(a.patientId)} /></td><td>{db.service(a.serviceId)?.name}</td><td>{db.therapist(a.therapistId)?.name}</td><td><StatusBadge label={st.label} tone={st.tone} /></td><td><ActorBadges a={a} /></td>
+                  <tbody>{listAll.slice((listPage - 1) * LIST_SIZE, listPage * LIST_SIZE).map((a) => {
+                    const st = APPT_STATUS[a.status]; const th = db.therapist(a.therapistId); const branch = th ? branchForDate(th.workHours, a.date) : null;
+                    return (
+                    <tr key={a.id}><td className="num">{a.no}</td><td>{fmtDate(a.date)}</td><td className="num">{fmtTime(a.time)}</td><td>{db.patient(a.patientId)?.fullName} {a.pendingSync && <PendingSyncTag />}<CompletenessBadge patient={db.patient(a.patientId)} /></td><td>{db.service(a.serviceId)?.name}</td><td>{th?.name}{branch && <div className="muted-sm">{branch.name}</div>}</td><td><StatusBadge label={st.label} tone={st.tone} /></td><td><ActorBadges a={a} /></td>
                       <td><Button variant="outline" size="sm" onClick={() => setDetail(a)}>التفاصيل</Button></td></tr>); })}</tbody></table></div>
                 <div className="row-between" style={{ marginTop: 12 }}><span className="muted">صفحة <span className="num">{listPage}</span> من <span className="num">{listPages}</span></span>
                   <span className="row-actions"><Button variant="outline" size="sm" disabled={listPage <= 1} onClick={() => setListPage(listPage - 1)}>السابق</Button><Button variant="outline" size="sm" disabled={listPage >= listPages} onClick={() => setListPage(listPage + 1)}>التالي</Button></span></div>

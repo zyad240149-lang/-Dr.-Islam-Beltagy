@@ -616,7 +616,7 @@ export function PayModal({ row, period, defaultKind, onClose, onPaid }: { row: P
       )}
       {review ? (
         <div className="alert alert-warn">راجع قبل التأكيد — ستسجّل صرف <strong className="num">{money(amt)}</strong> (<strong>{kind === 'salary' ? 'راتب' : 'مكافأة التارجت'}</strong>) لـ<strong data-no-i18n> {row.name} </strong>
-          عن {periodLabel(period)} بتاريخ <span className="num">{fmtDate(paidOn)}</span> — {PAYOUT_METHOD[method]}{reference ? ` · مرجع ${reference}` : ''}. هذا تسجيل لعملية تمت فعلًا، وليس تحويلًا تلقائيًا.</div>
+          عن {periodLabel(period)} بتاريخ <span className="num date">{fmtDate(paidOn)}</span> — {PAYOUT_METHOD[method]}{reference ? ` · مرجع ${reference}` : ''}. هذا تسجيل لعملية تمت فعلًا، وليس تحويلًا تلقائيًا.</div>
       ) : (
         <>
           <div className="grid-form">
@@ -757,7 +757,7 @@ export function SubjectDetailModal({ row, overview, onClose, onChanged }: { row:
                   <thead><tr><th>تاريخ الزيارة</th><th>رقم الملف</th><th>المريض</th><th>الخدمة</th><th>الفاتورة</th><th>قيمة الزيارة</th><th>المحصّل</th><th>المؤهل</th><th>حالة الدفع</th></tr></thead>
                   <tbody>{visits.map((v, i) => (
                     <tr key={(v.appointmentId ?? '') + i} style={v.countedElsewhere ? { opacity: 0.55 } : undefined}>
-                      <td className="num" style={{ whiteSpace: 'nowrap' }}>{fmtDate(v.date)}</td><td className="num" data-no-i18n>{String(v.fileNo ?? "").replace(/\D/g, "")}</td><td data-no-i18n>{v.patient}</td><td>{v.service}</td>
+                      <td className="num date" style={{ whiteSpace: 'nowrap' }}>{fmtDate(v.date)}</td><td className="num" data-no-i18n>{String(v.fileNo ?? "").replace(/\D/g, "")}</td><td data-no-i18n>{v.patient}</td><td>{v.service}</td>
                       <td><span className="num">{v.invoiceNo ?? '—'}</span><div className="muted-sm">{SOURCE_LABEL[v.source] ?? v.source}</div></td>
                       <td className="num" style={{ whiteSpace: 'nowrap' }}>{money(v.valueNet)}</td><td className="num" style={{ whiteSpace: 'nowrap' }}>{money(v.collected)}</td>
                       <td className="num" style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{money(v.qualifying)}{v.countedElsewhere && <div className="muted-sm">محتسبة في شهر معتمد</div>}</td>
@@ -792,7 +792,7 @@ export function SubjectDetailModal({ row, overview, onClose, onChanged }: { row:
                   <tbody>{d.payouts.map((p) => (
                     <tr key={p.id} style={p.status === 'void' ? { opacity: 0.6 } : undefined}>
                       <td className="num" style={{ whiteSpace: 'nowrap' }}>{p.no}</td><td style={{ whiteSpace: 'nowrap' }}>{periodLabel(p.period)}</td><td>{PAYOUT_KIND[p.kind]}</td>
-                      <td className="num" style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{money(p.amount)}</td><td className="num" style={{ whiteSpace: 'nowrap' }}>{fmtDate(p.paidOn)}</td><td>{PAYOUT_METHOD[p.method]}</td>
+                      <td className="num" style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{money(p.amount)}</td><td className="num date" style={{ whiteSpace: 'nowrap' }}>{fmtDate(p.paidOn)}</td><td>{PAYOUT_METHOD[p.method]}</td>
                       <td data-no-i18n>{[p.reference, p.note].filter(Boolean).join(' — ') || '—'}</td><td data-no-i18n>{p.createdBy ?? '—'}</td>
                       <td>{p.status === 'paid' ? <StatusBadge label="مصروف" tone="ok" /> : <><StatusBadge label="ملغي" tone="muted" />{p.voidReason && <div className="muted-sm" data-no-i18n>{p.voidReason}</div>}</>}</td>
                       <td className="actions">{p.status === 'paid' && can('payroll', 'delete') && <IconAction icon="close" label="إلغاء الصرف" danger onClick={() => setAct({ voidId: p.id, no: p.no })} />}</td>
@@ -809,7 +809,7 @@ export function SubjectDetailModal({ row, overview, onClose, onChanged }: { row:
                 <tr key={p.id}>
                   <td style={{ whiteSpace: 'nowrap' }}>{periodLabel(p.effectiveFrom)}</td><td className="num">{money(p.baseSalary)}</td>
                   {isTh && <><td className="num">{p.target > 0 ? money(p.target) : '—'}</td><td>{bonusSummary(p.bonusMethod, p.bonusRate, p.bonusFixed, p.bonusCondition)}</td></>}
-                  <td data-no-i18n>{p.note || '—'}</td><td data-no-i18n>{p.createdBy ?? '—'}</td><td className="num" style={{ whiteSpace: 'nowrap' }}>{fmtDateTime(Date.parse(p.createdAt))}</td>
+                  <td data-no-i18n>{p.note || '—'}</td><td data-no-i18n>{p.createdBy ?? '—'}</td><td className="num date" style={{ whiteSpace: 'nowrap' }}>{fmtDateTime(Date.parse(p.createdAt))}</td>
                 </tr>
               ))}</tbody>
             </table></div>
@@ -840,7 +840,7 @@ export function AuditList({ entries, showSubject }: { entries: SubjectDetail['au
       <thead><tr><th>الوقت</th><th>العملية</th>{showSubject && <th>الشخص</th>}<th>الشهر</th><th>بواسطة</th><th>السبب / الملاحظة</th><th>التفاصيل</th></tr></thead>
       <tbody>{entries.map((a, i) => (
         <tr key={i}>
-          <td className="num" style={{ whiteSpace: 'nowrap' }}>{fmtDateTime(Date.parse(a.at))}</td><td>{a.action}</td>
+          <td className="num date" style={{ whiteSpace: 'nowrap' }}>{fmtDateTime(Date.parse(a.at))}</td><td>{a.action}</td>
           {showSubject && <td data-no-i18n>{a.subject ?? '—'}</td>}
           <td style={{ whiteSpace: 'nowrap' }}>{a.period ? periodLabel(a.period) : '—'}</td><td data-no-i18n>{a.actor || '—'}</td>
           <td data-no-i18n>{a.reason ?? '—'}</td><td className="muted-sm" data-no-i18n style={{ maxWidth: 320, overflowWrap: 'anywhere' }}>{auditDetails(a.details)}</td>

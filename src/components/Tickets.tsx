@@ -72,7 +72,7 @@ export function Tickets() {
                       {t.description && <p>{t.description}</p>}
                       {db.repliesFor(t.id).map((r) => (
                         <div key={r.id} className="cm-preview__card" style={{ marginTop: 8 }}>
-                          <div><strong>{who(r.employeeId)}</strong> <span className="muted num" style={{ fontSize: 12 }}>{fmtDateTime(r.createdAt)}</span><p>{r.body}</p></div>
+                          <div><strong>{who(r.employeeId)}</strong> <span className="muted num date" style={{ fontSize: 12 }}>{fmtDateTime(r.createdAt)}</span><p>{r.body}</p></div>
                         </div>
                       ))}
                       {t.status !== 'closed' && (

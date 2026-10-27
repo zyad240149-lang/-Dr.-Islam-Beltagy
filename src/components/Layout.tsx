@@ -64,6 +64,8 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
   ] },
 ];
 const NAV: NavItem[] = NAV_GROUPS.flatMap((g) => g.items);
+// شريط التنقل السفلي على الموبايل: أهم 4 أقسام بالترتيب (حسب صلاحية المستخدم) + زرار «القائمة» لباقي الأقسام
+const BOTTOM_PRIORITY = ['/', '/patients', '/appointments', '/booking', '/diagnosis', '/invoices'];
 
 // البحث بيتخصّص حسب الصفحة: في الفواتير فواتير بس، في المواعيد مواعيد بس، في المرضى مرضى بس — وإلا فالكل. لو مفيش نتايج من النوع ده يرجع للكل
 const PAGE_HIT: Record<string, string> = { '/invoices': 'invoice', '/appointments': 'appointment', '/patients': 'patient' };
@@ -153,6 +155,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   }, [canDecideInst, user?.id]);
   const items = NAV.filter((n) => (n.anyOf ?? [n.area]).some((a) => can(user?.role, a)));
   const close = () => setOpen(false);
+  const bottomItems = BOTTOM_PRIORITY.map((p) => items.find((n) => n.to === p)).filter((n): n is NavItem => !!n).slice(0, 4);
 
   const doLogout = async () => {
     // تغييرات سُجّلت بدون إنترنت ولسه ما وصلتش الخادم: نحاول نزامنها الأول، وإلا نحذّر قبل ما نمسحها مع الخروج
@@ -183,6 +186,17 @@ export default function Layout({ children }: { children: ReactNode }) {
       </header>
 
       <div className={`backdrop ${open ? 'show' : ''}`} onClick={close} />
+
+      {bottomItems.length > 0 && (
+        <nav className="bottom-nav no-print" aria-label="التنقل الأساسي">
+          {bottomItems.map((n) => (
+            <NavLink key={n.to} to={n.to} end={n.end} onMouseEnter={() => prefetchRoute(n.to)}>
+              <Icon name={n.icon} size={21} /><span>{n.label}</span>
+            </NavLink>
+          ))}
+          <button type="button" onClick={() => setOpen(true)} aria-label="كل الأقسام"><Icon name="menu" size={21} /><span>القائمة</span></button>
+        </nav>
+      )}
 
       <aside className={`sidebar ${open ? 'open' : ''}`}>
         <Brand />

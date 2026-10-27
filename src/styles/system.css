@@ -51,6 +51,8 @@
 /* ============ الأساس ============ */
 body { font-size: 15px; line-height: 1.65; color: var(--text); background: var(--bg); }
 h1, h2, h3, h4 { letter-spacing: 0; color: var(--ink); }
+/* الحقول والقوايم مابتورّثش الخط من المتصفح لوحدها — من غير السطر ده كانت بتظهر بخط الجهاز مش IBM Plex Sans Arabic */
+input, select, textarea, optgroup { font: inherit; }
 ::selection { background: var(--brand-100); color: var(--ink); }
 
 /* ============ الهيكل: القائمة الجانبية ============ */
@@ -357,11 +359,27 @@ select.input { background-position: left 12px center; }
 @media (max-width: 1000px) {
   /* القائمة بتبقى درج ثابت — الهيكل عمود واحد (لازم نكررها هنا لأن قاعدة .shell فوق بتغطي على index.css) */
   .shell { grid-template-columns: minmax(0, 1fr); }
+  /* قائمة الدرج تبقى شكل تطبيقات الموبايل: خانات مربعة (أيقونة فوق، اسم تحت) بدل قايمة أسطر */
+  .nav-group { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 10px 8px; }
+  .nav-group .nav-label { grid-column: 1 / -1; padding: 10px 2px 2px; }
+  .nav a {
+    flex-direction: column; justify-content: center; gap: 7px; min-height: 78px; padding: 10px 6px;
+    border-radius: 16px; background: var(--surface-2); border: 1px solid var(--line-2); text-align: center;
+  }
+  .nav a .icon { width: 22px; height: 22px; }
+  .nav a span { font-size: 12px; line-height: 1.25; font-weight: 600; white-space: normal; }
+  .nav a:hover { padding-inline-start: 6px; }
+  .nav a.active { border-color: var(--brand-100); }
+  .nav a.active::before { display: none; }
+  .nav a .count { position: absolute; top: 6px; inset-inline-end: 6px; margin: 0; }
   .desktop-topbar { position: static; height: auto; padding: 12px 16px 0; background: transparent; border-bottom: 0; }
   .dt-tools { display: none; }
   .gsearch { flex: 1 1 auto; }
   .gsearch__input { background: var(--surface); }
   .topbar { min-height: 56px; border-bottom-color: var(--line); }
+  /* اسم العيادة الطويل (nowrap) كان بيمنع الشعار من إنه يصغر فبيزق الأزرار برّه الشاشة على الموبايل (سكرول عرضي 185px) — دلوقتي بيتقص بـ «…» */
+  .topbar .brand { min-width: 0; }
+  .topbar > span { flex: none; }
   .page { padding: 18px 20px 48px; }
   .kpi__value, .stat__value { font-size: 22px; }
 }
@@ -384,9 +402,33 @@ select.input { background-position: left 12px center; }
   .sp-search .btn { height: 46px; }
   .card__head { padding: 12px 16px; }
   .card__body { padding: 16px; }
+  /* الشريط العلوي على الموبايل: حالة الاتصال نقطة بس (النص بيبان لما يقطع النت) */
+  .topbar { padding-inline: 12px; gap: 8px; }
+  .topbar .offline-badge--ok { padding: 6px 10px; }
+  .topbar .offline-badge--ok > span:not(.offline-badge__dot) { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .page > .page-head, .page > *:not(.page-head):not(.overlay) { animation: none; }
+}
+
+/* ============ شريط التنقل السفلي (موبايل) — زي تطبيقات الموبايل الحقيقية ============ */
+.bottom-nav { display: none; }
+@media (max-width: 680px) {
+  .bottom-nav {
+    display: flex; position: fixed; inset-inline: 0; bottom: 0; z-index: 55; height: calc(58px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom); background: var(--surface); border-top: 1px solid var(--line);
+    box-shadow: 0 -2px 10px rgba(17, 26, 51, .05);
+  }
+  .bottom-nav a, .bottom-nav button {
+    flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    border: 0; background: none; color: var(--muted); font: inherit; font-size: 11px; font-weight: 600; min-width: 0;
+  }
+  .bottom-nav a span, .bottom-nav button span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bottom-nav .icon { width: 21px; height: 21px; }
+  .bottom-nav a.active { color: var(--brand); }
+  /* المحتوى ما يتغطاش تحت الشريط — والتنبيهات (toast) تطلع فوقه */
+  .page { padding-bottom: max(calc(58px + env(safe-area-inset-bottom) + 20px), calc(58px + 40px)); }
+  .toast-stack { bottom: calc(58px + env(safe-area-inset-bottom) + 12px); }
 }
 
 /* اختيار مريض بالبحث (أقسام العظام) */

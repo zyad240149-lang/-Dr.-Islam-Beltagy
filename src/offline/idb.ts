@@ -8,6 +8,9 @@ export interface KV {
   get<T = unknown>(key: string): Promise<T | undefined>;
   set(key: string, value: unknown): Promise<void>;
   del(key: string): Promise<void>;
+  /** كتابة كذا مفتاح في معاملة واحدة (كلها أو ولا واحدة) + مسح مفاتيح — لقطة البيانات بتتحفظ كده عشان امتلاء التخزين مايسيبش نسخة نصها قديم ونصها جديد */
+  setMany(entries: Array<[string, unknown]>, remove?: string[]): Promise<void>;
+  keys(): Promise<string[]>;
   /** يمسح كل المخزنين (يتنادى عند الخروج أو تغيير المستخدم) */
   clearAll(): Promise<void>;
   ops: {
@@ -31,6 +34,8 @@ export function memoryStore(): KV {
     async get(key) { return clone(kv.get(key)) as never; },
     async set(key, value) { kv.set(key, clone(value)); },
     async del(key) { kv.delete(key); },
+    async setMany(entries, remove = []) { for (const [k, v] of entries) kv.set(k, clone(v)); for (const k of remove) kv.delete(k); },
+    async keys() { return [...kv.keys()]; },
     async clearAll() { kv.clear(); ops.clear(); },
     ops: {
       async getAll() { return [...ops.values()].map(clone) as never; },
@@ -63,6 +68,8 @@ function txDone(tx: IDBTransaction): Promise<void> {
 
 export async function openStore(): Promise<KV> {
   if (typeof indexedDB === 'undefined') return memoryStore();
+  // نطلب من المتصفح يعتبر التخزين «دائم» (مايتمسحش لوحده لما المساحة تقل — مهم على iPhone/أندرويد). المتصفح ممكن يرفض بصمت.
+  try { void navigator.storage?.persist?.(); } catch { /* ignore */ }
   let dbp: Promise<IDBDatabase>;
   try { dbp = openDb(); await dbp; } catch { return memoryStore(); }
   const d = await dbp;
@@ -77,6 +84,14 @@ export async function openStore(): Promise<KV> {
     get: (key) => run('kv', 'readonly', (s) => s.get(key)) as never,
     set: async (key, value) => { await run('kv', 'readwrite', (s) => { s.put(value, key); }); },
     del: async (key) => { await run('kv', 'readwrite', (s) => { s.delete(key); }); },
+    async setMany(entries, remove = []) {
+      const tx = d.transaction('kv', 'readwrite');
+      const s = tx.objectStore('kv');
+      for (const [k, v] of entries) s.put(v, k);
+      for (const k of remove) s.delete(k);
+      await txDone(tx);
+    },
+    keys: async () => ((await run('kv', 'readonly', (s) => s.getAllKeys())) ?? []).map(String),
     async clearAll() {
       const tx = d.transaction(['kv', 'ops'], 'readwrite');
       tx.objectStore('kv').clear(); tx.objectStore('ops').clear();

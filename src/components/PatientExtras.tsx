@@ -153,7 +153,7 @@ export function PatientFilesTab({ patientId }: { patientId: string }) {
         <div className="table-wrap"><table className="table">
           <thead><tr><th>الملف</th><th>الحجم</th><th>رفعه</th><th>التاريخ</th><th className="actions"></th></tr></thead>
           <tbody>{files.map((f) => (
-            <tr key={f.id}><td style={{ fontWeight: 600 }}>{f.fileName}{f.note && <div className="muted-sm">{f.note}</div>}{f.planId && db.plan(f.planId) && <button type="button" className="muted-sm" style={{ border: 0, background: 'none', color: 'var(--brand-700)', cursor: 'pointer', padding: 0, display: 'block' }} onClick={() => openPlan(f.planId!)}>الخطة: {db.plan(f.planId)?.diagnosis}</button>}</td><td className="num">{fmtSize(f.sizeBytes)}</td><td>{f.uploadedByName || '—'}</td><td className="num">{fmtDateTime(f.createdAt)}</td>
+            <tr key={f.id}><td style={{ fontWeight: 600 }}>{f.fileName}{f.note && <div className="muted-sm">{f.note}</div>}{f.planId && db.plan(f.planId) && <button type="button" className="muted-sm" style={{ border: 0, background: 'none', color: 'var(--brand-700)', cursor: 'pointer', padding: 0, display: 'block' }} onClick={() => openPlan(f.planId!)}>الخطة: {db.plan(f.planId)?.diagnosis}</button>}</td><td className="num">{fmtSize(f.sizeBytes)}</td><td>{f.uploadedByName || '—'}</td><td className="num date">{fmtDateTime(f.createdAt)}</td>
               <td className="actions"><RowActions><Button size="sm" variant="outline" onClick={() => open(f)}>عرض</Button>{can('patients', 'edit') && <IconAction icon="trash" label="حذف الملف" danger onClick={() => setDel(f)} />}</RowActions></td></tr>
           ))}</tbody>
         </table></div>

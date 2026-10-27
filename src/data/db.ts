@@ -12,11 +12,15 @@ import { defaultPermissions } from '../services/defaultPermissions';
 import { supabase } from '../lib/supabase';
 import { fetchAll, map, toCenter, toMatrix } from './remote';
 import { applyConditionRows, type ConditionRow } from './bodyRegions';
+import { patientGaps } from '../utils/patientGaps';
 import { phoneMatches, normalizeSearch } from '../utils/phoneUtils';
 import { addDaysYmd, planTotalSessions, riyadhNow, todayYmd } from '../utils/format';
 import { offline } from '../offline';
 import { net, isNetworkError } from '../offline/net';
 import { uuid } from '../offline/queue';
+import type { TableSync } from '../offline/session';
+import { syncTable } from './download';
+import { exportOrthoCache, hydrateOrthoCache, loadAllOrtho, reloadLoadedOrtho } from '../ortho/data';
 
 // ===============================================================
 // طبقة البيانات — المصدر الوحيد للحقيقة هو قاعدة بيانات Supabase.
@@ -40,6 +44,35 @@ export class DbError extends Error {}
 const EMPTY_WEEK: DaySchedule[] = (['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const).map((day) => ({ day, open: day !== 'fri', from: '09:00', to: '21:00' }));
 
 let guests: Patient[] = [];
+
+// ---------- الجداول اللي بتتزامن تزايديًا (هجرة 911 + download.ts) ----------
+// mirror = نسخة الخادم بالظبط (من غير العمليات المعلّقة) — الدمج التزايدي بيتعمل عليها، والجداول المعروضة = نسخة منها + الطابور فوقها.
+// النسخة المحفوظة على الجهاز بتتاخد منها، والطابور بيتعاد فوقها وقت الفتح.
+type SyncKey = 'patients' | 'appointments' | 'sessions' | 'assessments' | 'plans' | 'packages' | 'invoices' | 'payments';
+const byDate = (a: { date: string }, b: { date: string }) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+const SYNC: Record<SyncKey, { table: string; label: string; map: (r: any) => any; sort?: (a: any, b: any) => number }> = {
+  patients: { table: 'patients', label: 'المرضى', map: (r) => map.patient(r), sort: (a, b) => b.registeredAt - a.registeredAt },
+  appointments: { table: 'appointments', label: 'المواعيد', map: (r) => map.appointment(r), sort: byDate },
+  sessions: { table: 'treatment_sessions', label: 'الجلسات', map: (r) => map.session(r), sort: byDate },
+  assessments: { table: 'initial_assessments', label: 'التقييمات', map: (r) => map.assessment(r), sort: byDate },
+  plans: { table: 'treatment_plans', label: 'الخطط العلاجية', map: (r) => map.plan(r), sort: (a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0) },
+  packages: { table: 'packages', label: 'الباقات', map: (r) => map.package(r) },
+  invoices: { table: 'invoices', label: 'الفواتير', map: (r) => map.invoice(r), sort: (a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0) },
+  payments: { table: 'payments', label: 'المدفوعات', map: (r) => map.payment(r), sort: byDate },
+};
+let mirror: Partial<Record<SyncKey, any[]>> = {};
+let syncInfo: Record<string, TableSync> = {};
+let lastPullAt = 0;
+const syncListeners = new Set<() => void>();
+const emitSync = () => syncListeners.forEach((l) => l());
+async function syncInto(k: SyncKey): Promise<any[]> {
+  const spec = SYNC[k];
+  const r = await syncTable(spec.table, mirror[k] ?? null, spec.map, syncInfo[spec.table], spec.label);
+  if (spec.sort) r.rows.sort(spec.sort);
+  mirror[k] = r.rows; syncInfo = { ...syncInfo, [spec.table]: r.sync };
+  emitSync();
+  return r.rows;
+}
 function emptyDb(): Database {
   return {
     version: 3,
@@ -236,7 +269,7 @@ const loaders: Record<Key, (d: Database) => Promise<void>> = {
     d.employees = [...full, ...rest];
   },
   // المتصلين (is_guest) مخفيين من «المرضى» — محفوظين لوحدهم عشان المواعيد والفواتير تعرض أسماءهم
-  patients: async (d) => { const all = (await fetchAll('patients', { col: 'registered_at', asc: false })).map(map.patient); d.patients = all.filter((p) => !p.isGuest); guests = all.filter((p) => p.isGuest); },
+  patients: async (d) => { const all = await syncInto('patients'); d.patients = all.filter((p: Patient) => !p.isGuest); guests = all.filter((p: Patient) => p.isGuest); },
   catalog: async (d) => {
     const [th, sv, ts, pp] = await Promise.all([fetchAll('therapists', { col: 'created_at' }), fetchAll('services', { col: 'id' }), fetchAll('therapist_services'), fetchAll('package_plans')]);
     const byTh = new Map<string, string[]>(); const bySv = new Map<string, string[]>();
@@ -246,13 +279,13 @@ const loaders: Record<Key, (d: Database) => Promise<void>> = {
     d.packagePlans = pp.map(map.packagePlan);
   },
   conditions: async () => { applyConditionRows(await fetchAll('conditions') as ConditionRow[]); },
-  appointments: async (d) => { d.appointments = (await fetchAll('appointments', { col: 'date' })).map(map.appointment); },
-  sessions: async (d) => { d.sessions = (await fetchAll('treatment_sessions', { col: 'date' })).map(map.session); },
-  assessments: async (d) => { d.assessments = (await fetchAll('initial_assessments', { col: 'date' })).map(map.assessment); },
-  plans: async (d) => { d.plans = (await fetchAll('treatment_plans', { col: 'created_at' })).map(map.plan); },
-  packages: async (d) => { d.packages = (await fetchAll('packages')).map(map.package); },
-  invoices: async (d) => { d.invoices = (await fetchAll('invoices', { col: 'created_at', asc: false })).map(map.invoice); },
-  payments: async (d) => { d.payments = (await fetchAll('payments', { col: 'date' })).map(map.payment); },
+  appointments: async (d) => { d.appointments = (await syncInto('appointments')).slice(); },
+  sessions: async (d) => { d.sessions = (await syncInto('sessions')).slice(); },
+  assessments: async (d) => { d.assessments = (await syncInto('assessments')).slice(); },
+  plans: async (d) => { d.plans = (await syncInto('plans')).slice(); },
+  packages: async (d) => { d.packages = (await syncInto('packages')).slice(); },
+  invoices: async (d) => { d.invoices = (await syncInto('invoices')).slice(); },
+  payments: async (d) => { d.payments = (await syncInto('payments')).slice(); },
   notifications: async (d) => {
     const { data } = await supabase.from('notifications').select('*').eq('audience', 'staff').order('created_at', { ascending: false }).limit(500);
     d.notifications = (data ?? []).map(map.notification);
@@ -287,9 +320,12 @@ async function pull(keys: (Key | string)[]) {
   const d = load();
   if (!net.isOnline()) return; // بدون اتصال: الكاش المحلي هو المرجع، وما نمسحش حاجة
   // الـ loaders بتكتب على d بعد ما التحميل يخلص بس، فأي فشل (شبكة أو جدول غير مسموح لهذا الدور) مابيلمسش النسخة القديمة
-  await Promise.all(keys.map((k) => loaders[k as Key](d).catch(() => { /* ماشي */ })));
+  let failed = 0;
+  await Promise.all(keys.map((k) => loaders[k as Key](d).catch(() => { failed++; })));
+  if (!failed) lastPullAt = Date.now();
   applyOverlay(d);
   commit();
+  emitSync();
 }
 
 const cleanMsg = (m: string) => stripFileNoPrefix(m.replace(/^.*?ERROR:\s*/, ''));
@@ -368,7 +404,25 @@ export const normalizeCode = (s: string) => s
 export const newestInvoiceFirst = (a: Invoice, b: Invoice) =>
   (b.createdAt ?? 0) - (a.createdAt ?? 0) || (a.date < b.date ? 1 : a.date > b.date ? -1 : 0) || b.no.localeCompare(a.no, 'en', { numeric: true });
 
-const installOfflineHooks = () => offline.setHooks({ exportSnapshot: () => db.exportSnapshot(), refreshAfterSync: () => pull(CRITICAL_KEYS.concat(['sessions', 'assessments'])) });
+// سحب تغييرات الخادم للجهاز (تزايدي) من غير ما يكون فيه حاجة معلّقة: رجوع الاتصال، رجوع التطبيق للواجهة، وكل 5 دقايق
+// (Background Sync مش مدعوم على iPhone — المزامنة بتحصل وقت ما التطبيق مفتوح، وبتكمّل من مكانها في الفتحة الجاية)
+let triggersOn = false;
+let pullBusy = false;
+const SYNC_KEYS: Key[] = [...CRITICAL_KEYS, 'sessions', 'assessments'];
+function pullChanges(minAgeMs: number) {
+  if (!ready || pullBusy || !net.isOnline() || Date.now() - lastPullAt < minAgeMs) return;
+  pullBusy = true;
+  void pull(SYNC_KEYS).then(() => { reloadLoadedOrtho(); return offline.saveSnapshotNow(); }).finally(() => { pullBusy = false; });
+}
+function startPullTriggers() {
+  if (triggersOn || typeof window === 'undefined') return;
+  triggersOn = true;
+  net.subscribe(() => { if (net.isOnline()) pullChanges(0); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') pullChanges(60_000); });
+  window.addEventListener('pageshow', () => pullChanges(60_000));
+  setInterval(() => pullChanges(5 * 60_000), 60_000);
+}
+const installOfflineHooks = () => offline.setHooks({ exportSnapshot: () => db.exportSnapshot(), refreshAfterSync: async () => { reloadLoadedOrtho(); await pull(CRITICAL_KEYS.concat(['sessions', 'assessments'])); } });
 
 export const db = {
   subscribe(l: () => void): () => void { listeners.add(l); return () => { listeners.delete(l); }; },
@@ -378,35 +432,58 @@ export const db = {
   async hydrate() {
     installOfflineHooks();
     await pull(CRITICAL_KEYS);
-    ready = true; commit(); db.startRealtime();
-    void pull(ALL_KEYS.filter((k) => !CRITICAL_KEYS.includes(k))).then(() => offline.saveSnapshotNow());
+    ready = true; commit(); db.startRealtime(); startPullTriggers();
+    void Promise.all([pull(ALL_KEYS.filter((k) => !CRITICAL_KEYS.includes(k))), loadAllOrtho()]).then(() => offline.saveSnapshotNow());
   },
   // لقطة للتخزين المحلي (offline/session.ts) — بتتاخد من الكاش بعد ما الخادم طبّق صلاحيات الموظف (RLS)، فيها بس اللي يحق له يشوفه.
   // العمليات المعلّقة بتتحفظ في الطابور (مش جوّا اللقطة) وبتتعاد فوقها وقت الفتح.
-  exportSnapshot(): Record<string, unknown> {
+  exportSnapshot(): { data: Record<string, unknown>; sync: Record<string, TableSync> } {
     const d = load();
-    // اللي اتعمل أوفلاين ولسه ما اتبعتش (إنشاء) بيتشال من اللقطة — بيتعاد من الطابور. اللي موجود على الخادم وعليه تعديل معلّق بيفضل (بنسخته الحالية، والتعديل بيتعاد فوقه).
+    // الجداول المتزامنة من نسخة الخادم (mirror) — العمليات المعلّقة محفوظة في الطابور وبتتعاد فوقها وقت الفتح.
+    // قبل أول تحميل من الخادم (mirror فاضي) بناخد المعروض بعد ما نشيل اللي اتعمل أوفلاين (إنشاء) — بيتعاد من الطابور.
     const creating = new Set(offline.queue.list().filter((o) => o.kind.endsWith('.create')).map((o) => o.entityId));
-    const strip = <T extends { id: string }>(xs: T[]) => xs.filter((x) => !creating.has(x.id));
+    const strip = <T extends { id: string }>(xs: T[]) => xs.filter((x) => !creating.has(x.id) && !(x as { pendingSync?: boolean }).pendingSync);
+    const server = (k: SyncKey, shown: any[]) => mirror[k] ?? strip(shown);
+    const pts = mirror.patients ?? [...strip(d.patients), ...guests];
     return {
-      center: d.center, blocks, permissions: d.permissions, employees: d.employees, patients: strip(d.patients), guests,
-      therapists: d.therapists, services: d.services, packagePlans: d.packagePlans, servicePrices: d.servicePrices, branches: d.branches,
-      appointments: strip(d.appointments), sessions: d.sessions, assessments: d.assessments, plans: d.plans, packages: d.packages, planServices: d.planServices,
+      data: {
+        center: d.center, blocks, permissions: d.permissions, employees: d.employees, patients: pts,
+        therapists: d.therapists, services: d.services, packagePlans: d.packagePlans, servicePrices: d.servicePrices, branches: d.branches,
+        appointments: server('appointments', d.appointments), sessions: server('sessions', d.sessions), assessments: server('assessments', d.assessments),
+        plans: server('plans', d.plans), packages: server('packages', d.packages), planServices: d.planServices,
+        invoices: server('invoices', d.invoices), payments: server('payments', d.payments), discountCodes: d.discountCodes,
+        ortho: exportOrthoCache(),
+      },
+      sync: syncInfo,
     };
   },
-  /** فتح التطبيق بدون إنترنت من لقطة محفوظة (بعد ما offline/session.ts تحقق من المستخدم والمدة) */
-  hydrateFromSnapshot(s: Record<string, any>) {
+  /** فتح التطبيق من النسخة المحفوظة على الجهاز (بدون إنترنت، أو كبداية سريعة قبل ما الخادم يبعت التغييرات) */
+  hydrateFromSnapshot(s: Record<string, any>, sync: Record<string, TableSync> = {}) {
     const d = emptyDb();
-    for (const k of ['center', 'permissions', 'employees', 'patients', 'therapists', 'services', 'packagePlans', 'servicePrices', 'branches', 'appointments', 'sessions', 'assessments', 'plans', 'packages', 'planServices'] as const) {
+    for (const k of ['center', 'permissions', 'employees', 'therapists', 'services', 'packagePlans', 'servicePrices', 'branches', 'planServices', 'discountCodes'] as const) {
       if (s[k] !== undefined && s[k] !== null) (d as any)[k] = s[k];
     }
+    mirror = {};
+    for (const k of Object.keys(SYNC) as SyncKey[]) if (Array.isArray(s[k])) mirror[k] = s[k];
+    // نسخة قديمة كان فيها المتصلين (guests) لوحدهم
+    if (mirror.patients && Array.isArray(s.guests)) mirror.patients = [...mirror.patients.filter((p) => !p.isGuest), ...s.guests];
+    const all: Patient[] = mirror.patients ?? [];
+    d.patients = all.filter((p) => !p.isGuest); guests = all.filter((p) => p.isGuest);
+    for (const k of ['appointments', 'sessions', 'assessments', 'plans', 'packages', 'invoices', 'payments'] as const) if (mirror[k]) (d as any)[k] = mirror[k]!.slice();
+    // جدول ماكانش متحفوظ (نسخة قديمة) أو اتعطّب ← مايتعتبرش مكتمل، فيتحمّل كامل أول ما الاتصال يرجع
+    syncInfo = {};
+    for (const k of Object.keys(SYNC) as SyncKey[]) { const t = SYNC[k].table; if (mirror[k] && sync[t]) syncInfo[t] = sync[t]; }
+    if (s.ortho) hydrateOrthoCache(s.ortho);
     installOfflineHooks();
-    cache = d; guests = Array.isArray(s.guests) ? s.guests : [];
+    cache = d;
     if (s.blocks) blocks = s.blocks;
     applyOverlay(d);
-    ready = true; commit();
+    ready = true; commit(); emitSync(); startPullTriggers();
   },
-  clear() { db.stopRealtime(); cache = emptyDb(); ready = false; actorId = null; guests = []; commit(); },
+  clear() { db.stopRealtime(); cache = emptyDb(); ready = false; actorId = null; guests = []; mirror = {}; syncInfo = {}; lastPullAt = 0; hydrateOrthoCache(null); commit(); emitSync(); },
+  /** حالة البيانات على الجهاز (لشاشة المزامنة): كل جدول — عدد الصفوف هنا وعلى الخادم، مكتمل ولا لأ، ووقت آخر مزامنة */
+  syncStatus: () => ({ tables: Object.entries(SYNC).map(([, v]) => ({ table: v.table, label: v.label, info: syncInfo[v.table] ?? null })), lastPullAt }),
+  onSyncChange(l: () => void): () => void { syncListeners.add(l); return () => { syncListeners.delete(l); }; },
   raw: () => load(),
   async refresh(...keys: Key[]) { await pull(keys.length ? keys : ALL_KEYS); },
   setActor(id: string | null) { actorId = id; },
@@ -426,6 +503,20 @@ export const db = {
   },
   async updateWeekSchedule(schedule: DaySchedule[]): Promise<Result> {
     const r = await rpc('update_week_schedule', { p_schedule: schedule }, ['center']);
+    return r.ok ? { ok: true } : r;
+  },
+  // ---------- أيام إغلاق العيادة (أعياد/إجازات رسمية) — الحجز بيترفض فيها من الخادم (check_slot) ----------
+  async holidays(): Promise<Array<{ id: string; date: string; reason: string }>> {
+    const { data, error } = await supabase.from('holidays').select('id, date, reason').eq('active', true).gte('date', todayYmd()).order('date');
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((h) => ({ id: h.id, date: h.date, reason: h.reason ?? '' }));
+  },
+  async saveHoliday(date: string, reason: string): Promise<Result> {
+    const r = await rpc('save_holiday', { p: { date, reason: reason.trim() } }, ['center', 'activity']);
+    return r.ok ? { ok: true } : r;
+  },
+  async deleteHoliday(id: string): Promise<Result> {
+    const r = await rpc('delete_holiday', { p_id: id }, ['center', 'activity']);
     return r.ok ? { ok: true } : r;
   },
   // ---------- permissions ----------
@@ -721,9 +812,20 @@ export const db = {
     return null;
   },
   // الأوقات المتاحة للحجز: جوّه دوام الدكتور − المحجوز له هو بس − اللي فات (نفس check_slot / doctor_day_slots)
-  availableSlots(therapistId: string, date: string, durationMin: number, excludeAppointmentId?: string): string[] {
+  // patientId: كمان من غير الأوقات اللي المريض عنده فيها موعد تاني مع أي دكتور (نفس تريجر الخادم — هجرة 909)
+  availableSlots(therapistId: string, date: string, durationMin: number, excludeAppointmentId?: string, patientId?: string): string[] {
     const busy = load().appointments.filter((a) => a.therapistId === therapistId && a.date === date && a.status !== 'cancelled' && a.id !== excludeAppointmentId);
-    return doctorStarts(therapistId, date, durationMin).filter((cur) => !busy.some((a) => overlaps(cur, durationMin, a.time, a.durationMin)) && !isPastSlot(date, cur));
+    return doctorStarts(therapistId, date, durationMin).filter((cur) => !busy.some((a) => overlaps(cur, durationMin, a.time, a.durationMin)) && !isPastSlot(date, cur)
+      && !(patientId && this.patientConflict(patientId, date, cur, durationMin, excludeAppointmentId)));
+  },
+  // موعد تاني نشط للمريض متداخل مع الوقت ده (أي دكتور) — الموعد اللي خلص أو اتلغى أو ماحضرهوش مابيحجزش وقت المريض
+  patientConflict(patientId: string, date: string, time: string, durationMin: number, excludeAppointmentId?: string): Appointment | undefined {
+    return load().appointments.find((a) => a.patientId === patientId && a.date === date && a.id !== excludeAppointmentId
+      && a.status !== 'cancelled' && a.status !== 'no_show' && a.status !== 'completed' && overlaps(time, durationMin, a.time, a.durationMin));
+  },
+  // أوقات دوام الدكتور اللي المريض مشغول فيها بموعد تاني — بتتعرض معطّلة «عند المريض موعد»
+  patientBusySlots(patientId: string, therapistId: string, date: string, durationMin: number, excludeAppointmentId?: string): string[] {
+    return doctorStarts(therapistId, date, durationMin).filter((cur) => !isPastSlot(date, cur) && !!this.patientConflict(patientId, date, cur, durationMin, excludeAppointmentId));
   },
   // الأوقات المحجوزة فعلًا جوّه دوام الدكتور — بتتعرض باهتة وعليها ✕ (الموعد الملغي مش بيحجز الوقت)
   takenSlots(therapistId: string, date: string, durationMin: number, excludeAppointmentId?: string): string[] {
@@ -1132,20 +1234,25 @@ export const db = {
   },
 
   // ---------- المرضى: بحث/فلترة/فرز/ترقيم على الخادم ----------
-  async queryPatients(o: { q?: string; gender?: string; source?: string; active?: string; doctorId?: string; sort?: string; gaps?: string; page?: number; pageSize?: number }): Promise<Result<{ total: number; rows: PatientRow[] }>> {
+  // بدون إنترنت (أو الخادم مش بيرد): نفس الفلاتر والترتيب من المرضى اللي على الجهاز — local=true والشاشة بتوضّح ده
+  async queryPatients(o: PatientQuery): Promise<Result<{ total: number; rows: PatientRow[]; local?: boolean }>> {
     const pageSize = o.pageSize ?? 20;
+    if (!net.isOnline()) return { ok: true, ...localQueryPatients(o), local: true };
     const { data, error } = await supabase.rpc('list_patients', {
       p_q: o.q ?? '', p_gender: o.gender ?? '', p_source: o.source ?? '', p_active: o.active ?? '', p_doctor: o.doctorId || null,
       p_sort: o.sort ?? 'registered_desc', p_limit: pageSize, p_offset: ((o.page ?? 1) - 1) * pageSize, p_gaps: o.gaps ?? '',
     });
-    if (error) return fail(cleanMsg(error.message));
+    // أي فشل من الخادم (مش بس انقطاع الشبكة — جلسة منتهية، رفض صلاحيات، خطأ 500...) ولينا نسخة محلية فعلية: نعرضها بدل ما نوقف المستخدم برسالة خطأ
+    if (error) return ready ? { ok: true, ...localQueryPatients(o), local: true } : fail(cleanMsg(error.message));
     const rows: PatientRow[] = (data.rows as any[]).map((r) => ({ ...map.patient(r), doctorName: r.doctor_name ?? '', lastVisit: r.last_visit ?? null, nextVisit: r.next_visit ?? null, balance: Number(r.balance ?? 0), hasAccount: !!r.has_account }));
     return { ok: true, total: data.total as number, rows };
   },
 
   // ---------- بحث شامل (مرضى / أطباء / مواعيد) ----------
   async globalSearch(q: string): Promise<SearchHit[]> {
+    if (!net.isOnline()) return localSearch(q);
     const { data, error } = await supabase.rpc('global_search', { p_q: q });
+    if (error && isNetworkError(error)) return localSearch(q);
     if (error) throw new DbError(cleanMsg(error.message));
     // فواتير المريض اللي رقم ملفه/اسمه/جواله بيطابق البحث (أو رقم الفاتورة نفسه) — بتظهر في نفس القائمة
     const s = q.trim().toLowerCase();
@@ -1311,6 +1418,63 @@ export const db = {
 
 export type PatientRow = Patient & { doctorName: string; lastVisit: string | null; nextVisit: string | null; balance: number; hasAccount: boolean };
 export interface SearchHit { type: 'patient' | 'doctor' | 'appointment' | 'invoice'; id: string; title: string; sub: string; link: string }
+export interface PatientQuery { q?: string; gender?: string; source?: string; active?: string; doctorId?: string; sort?: string; gaps?: string; page?: number; pageSize?: number }
+
+// ---------- بحث المرضى من الجهاز (نفس list_patients على الخادم: نفس الفلاتر والترتيب وشكل الصفوف) ----------
+const VISITED = new Set(['completed', 'arrived', 'in_progress']);
+const UPCOMING = new Set(['new', 'confirmed', 'rescheduled']);
+const digitsOf = (s: string | null | undefined) => (s ?? '').replace(/\D/g, '');
+const fileNum = (s: string) => Number(digitsOf(s) || 0);
+function gapMatch(p: Patient, gaps: string): boolean {
+  switch (gaps) {
+    case '': return true;
+    case 'any': return patientGaps(p).length > 0;
+    case 'id': return p.nationality === 'non_saudi' ? !/^[A-Za-z0-9]{6,20}$/.test(p.nationalId ?? '') : !/^[23][0-9]{13}$/.test(p.nationalId ?? '');
+    case 'phone': return digitsOf(p.phone).length < 9;
+    case 'name': return (p.fullName ?? '').trim().split(/\s+/).filter(Boolean).length < 3;
+    case 'nationality': return !!p.nationalityUnconfirmed || !['saudi', 'non_saudi'].includes(p.nationality ?? '');
+    case 'gender': return !!p.genderUnknown || !['male', 'female'].includes(p.gender ?? '');
+    default: return true;
+  }
+}
+function localQueryPatients(o: PatientQuery): { total: number; rows: PatientRow[] } {
+  const d = load(); const today = todayYmd(); const q = (o.q ?? '').trim();
+  const last = new Map<string, string>(), next = new Map<string, string>(), bal = new Map<string, number>();
+  for (const a of d.appointments) {
+    if (VISITED.has(a.status)) { if ((last.get(a.patientId) ?? '') < a.date) last.set(a.patientId, a.date); }
+    else if (UPCOMING.has(a.status) && a.date >= today) { const n = next.get(a.patientId); if (!n || a.date < n) next.set(a.patientId, a.date); }
+  }
+  for (const i of d.invoices) if (i.status === 'due' || i.status === 'partial') bal.set(i.patientId, (bal.get(i.patientId) ?? 0) + Number(i.remaining ?? 0));
+  const list = d.patients.filter((p) => !p.isGuest && (!q || patientMatches(p, q)) && (!o.gender || p.gender === o.gender) && (!o.source || p.referralSource === o.source)
+    && (!o.active || p.active === (o.active === 'on')) && (!o.doctorId || p.doctorId === o.doctorId) && gapMatch(p, o.gaps ?? ''));
+  const sort = o.sort ?? 'registered_desc';
+  const cmp: Record<string, (a: Patient, b: Patient) => number> = {
+    registered_desc: (a, b) => b.registeredAt - a.registeredAt, registered_asc: (a, b) => a.registeredAt - b.registeredAt,
+    name_asc: (a, b) => a.fullName.localeCompare(b.fullName, 'ar'), name_desc: (a, b) => b.fullName.localeCompare(a.fullName, 'ar'),
+    file_asc: (a, b) => fileNum(a.fileNo) - fileNum(b.fileNo), file_desc: (a, b) => fileNum(b.fileNo) - fileNum(a.fileNo),
+    last_visit_desc: (a, b) => (last.get(b.id) ?? '').localeCompare(last.get(a.id) ?? ''),
+  };
+  const by = cmp[sort] ?? cmp.registered_desc;
+  // مع البحث: الأقرب للكلمة الأول (رقم ملف/موبايل مطابق قبل جزء من الاسم) — زي ترتيب الخادم
+  list.sort(q ? (a, b) => patientRank(a, q) - patientRank(b, q) || by(a, b) : by);
+  const pageSize = o.pageSize ?? 20; const from = ((o.page ?? 1) - 1) * pageSize;
+  const doctors = new Map(d.therapists.map((t) => [t.id, t.name]));
+  const rows = list.slice(from, from + pageSize).map((p) => ({ ...p, doctorName: (p.doctorId && doctors.get(p.doctorId)) || '', lastVisit: last.get(p.id) ?? null, nextVisit: next.get(p.id) ?? null, balance: bal.get(p.id) ?? 0, hasAccount: false }));
+  return { total: list.length, rows };
+}
+// البحث العام من الجهاز: مرضى + مواعيد النهارده وبعده + أطباء
+function localSearch(q: string): SearchHit[] {
+  const s = q.trim(); if (!s) return [];
+  const d = load(); const today = todayYmd();
+  const pts = d.patients.filter((p) => !p.isGuest && patientMatches(p, s)).sort((a, b) => patientRank(a, s) - patientRank(b, s)).slice(0, 8)
+    .map((p) => ({ type: 'patient' as const, id: p.id, title: p.fullName, sub: [p.fileNo, p.phone].filter(Boolean).join(' · '), link: `/patients/${p.id}` }));
+  const ids = new Set(pts.map((p) => p.id));
+  const appts = d.appointments.filter((a) => ids.has(a.patientId) && a.date >= today && a.status !== 'cancelled').slice(0, 4)
+    .map((a) => ({ type: 'appointment' as const, id: a.id, title: `${d.patients.find((p) => p.id === a.patientId)?.fullName ?? ''} — ${a.date} ${a.time}`, sub: d.services.find((x) => x.id === a.serviceId)?.name ?? '', link: '/appointments' }));
+  const docs = d.therapists.filter((t) => normalizeSearch(t.name).includes(normalizeSearch(s))).slice(0, 3)
+    .map((t) => ({ type: 'doctor' as const, id: t.id, title: t.name, sub: t.title ?? '', link: '/employees' }));
+  return [...pts, ...appts, ...docs];
+}
 export interface DashboardStats {
   todayAppointments: number; completedToday: number; totalPatients: number; newPatientsMonth: number; monthRevenue: number | null;
   outstanding: number | null; draftPlanInvoices: number; unreadNotifications: number; pendingRequests: number; openTickets: number;

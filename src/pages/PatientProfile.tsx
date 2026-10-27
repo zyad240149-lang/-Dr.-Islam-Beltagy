@@ -353,7 +353,7 @@ export default function PatientProfile() {
               <div className="timeline-log">
                 {activity.map((l) => (
                   <div className="timeline-log__row" key={l.id}>
-                    <time className="num">{fmtDateTime(l.at)}</time>
+                    <time className="num date">{fmtDateTime(l.at)}</time>
                     <div style={{ flex: 1 }}>{l.action}<div className="muted" style={{ fontSize: 12 }}>{l.employeeId ? db.employeeById(l.employeeId)?.name ?? '—' : 'النظام'}</div></div>
                   </div>
                 ))}

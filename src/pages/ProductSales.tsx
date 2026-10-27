@@ -270,7 +270,7 @@ function ProductInvoiceTemplate({ sale, product }: { sale: ProductSale; product:
         <div className="pinv__title"><h2>فاتورة بيع{sale.status === 'cancelled' ? ' (ملغاة)' : ''}</h2><p className="num">{sale.invoiceNo}</p></div>
       </div>
       <dl className="pinv__meta">
-        <div><dt>التاريخ</dt><dd className="num">{fmtDateTime(new Date(sale.createdAt).getTime())}</dd></div>
+        <div><dt>التاريخ</dt><dd className="num date">{fmtDateTime(new Date(sale.createdAt).getTime())}</dd></div>
         <div><dt>رقم الملف</dt><dd className="num">{patient?.fileNo ?? '—'}</dd></div>
         <div><dt>العميل</dt><dd>{customerOf(sale)}</dd></div>
         <div><dt>الموظف</dt><dd>{empName(sale.employeeId)}</dd></div>

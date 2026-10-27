@@ -38,7 +38,7 @@ export function SessionDiagnosesList({ source, id, title, overall }: { source: '
                 <tr key={n}>
                   <td><strong>الجلسة <span className="num">{n}</span></strong>{n <= data.attended && <div className="muted-sm">حضر ✓</div>}</td>
                   <td dir="auto" style={{ whiteSpace: 'pre-wrap' }}>{x ? x.diagnosis : <span className="muted">{n > Math.min(data.attended + 1, data.total) ? 'بعد تأكيد حضور الجلسة السابقة' : 'لم يُكتب'}</span>}</td>
-                  <td className="muted-sm">{x ? <><span data-no-i18n>{x.by ?? '—'}</span> · <span className="num">{fmtDate(x.updatedAt.slice(0, 10))}</span></> : '—'}</td>
+                  <td className="muted-sm">{x ? <><span data-no-i18n>{x.by ?? '—'}</span> · <span className="num date">{fmtDate(x.updatedAt.slice(0, 10))}</span></> : '—'}</td>
                 </tr>
               );
             })}

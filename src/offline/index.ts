@@ -5,13 +5,13 @@
 import { useSyncExternalStore } from 'react';
 import { openStore, memoryStore, type KV } from './idb';
 import { OfflineQueue, type OfflineOp } from './queue';
-import { OfflineSession } from './session';
+import { OfflineSession, type TableSync } from './session';
 import { executeOp } from './executors';
 import { net } from './net';
 import { supabase } from '../lib/supabase';
 
 export interface OfflineHooks {
-  exportSnapshot: () => Record<string, unknown>;
+  exportSnapshot: () => { data: Record<string, unknown>; sync: Record<string, TableSync> };
   /** بعد مزامنة ناجحة: حمّل الجداول من الخادم (هتشيل علامة «معلّق» وتجيب أرقام الملفات/المواعيد الحقيقية) */
   refreshAfterSync: () => Promise<void>;
 }
@@ -28,6 +28,8 @@ let lastSnap = 0;
 let syncing = false;
 let inflight: Promise<void> | null = null;
 let lastSummary: { at: number; done: number; failed: number; conflicts: number } | null = null;
+let lastSyncOkAt = 0;          // آخر مرة الطابور خلص كله بنجاح على الخادم
+let snapError: string | null = null; // آخر فشل في حفظ النسخة على الجهاز (امتلاء التخزين مثلًا)
 
 const webLock = <T,>(f: () => Promise<T>): Promise<T | undefined> => {
   const locks = (typeof navigator !== 'undefined' ? (navigator as Navigator & { locks?: LockManager }).locks : undefined);
@@ -83,8 +85,8 @@ export const offline = {
   },
   async saveSnapshotNow() {
     if (!userId || !hooks) return;
-    try { await session.saveSnapshot(userId, hooks.exportSnapshot()); lastSnap = Date.now(); }
-    catch { /* تخزين ممتلئ/ممنوع — نكمّل أونلاين بس */ }
+    try { const s = hooks.exportSnapshot(); await session.saveSnapshot(userId, s.data, s.sync); lastSnap = Date.now(); snapError = null; }
+    catch (e) { snapError = e instanceof Error ? e.message : String(e); bump(); } // تخزين ممتلئ/ممنوع — نكمّل أونلاين، والواجهة بتعرض السبب
   },
 
   /** قراءة معرّف المستخدم من جلسة Supabase المحفوظة (من غير شبكة) */
@@ -102,6 +104,17 @@ export const offline = {
   },
 
   isSyncing: () => syncing || queue.isRunning(),
+  lastSyncOkAt: () => lastSyncOkAt,
+  snapshotError: () => snapError,
+  lastSnapshotAt: () => lastSnap,
+  /** المساحة المستخدمة/المتاحة وهل التخزين دائم (المتصبح ممكن يمسح غير الدائم لما المساحة تقل) */
+  async storageInfo(): Promise<{ usage: number | null; quota: number | null; persisted: boolean | null }> {
+    try {
+      const est = await navigator.storage?.estimate?.();
+      const persisted = (await navigator.storage?.persisted?.()) ?? null;
+      return { usage: est?.usage ?? null, quota: est?.quota ?? null, persisted };
+    } catch { return { usage: null, quota: null, persisted: null }; }
+  },
   lastSummary: () => lastSummary,
 
   /** مزامنة الآن. force = تجاهل تأخير إعادة المحاولة (زرار المستخدم). لو فيه مزامنة شغّالة بنستناها (مش بنرجع فورًا) عشان اللي بيستدعي يقرا نتيجة حقيقية. */
@@ -121,6 +134,7 @@ export const offline = {
         }
         const s = await queue.run(executeOp, { force });
         lastSummary = { at: Date.now(), done: s.done, failed: s.failed, conflicts: s.conflicts };
+        if (!queue.pendingCount()) lastSyncOkAt = Date.now();
         if (s.authError) window.dispatchEvent(new CustomEvent('session-expired'));
         if (s.done > 0 && hooks) { await session.touchVerified(); await hooks.refreshAfterSync().catch(() => {}); }
       } finally { syncing = false; inflight = null; bump(); }

@@ -181,7 +181,7 @@ export default function Dashboard() {
                 <dl className="dl" style={{ marginBottom: 16 }}>
                   <div><dt>الخدمة</dt><dd>{lp.svc?.name} ({APPT_TYPE_LABEL[shown.type]})</dd></div>
                   <div><dt>المعالج</dt><dd>{lp.th?.name ?? '—'}</dd></div>
-                  <div><dt>التاريخ والوقت</dt><dd className="num">{fmtDate(shown.date)} · {fmtTime(shown.time)}</dd></div>
+                  <div><dt>التاريخ والوقت</dt><dd className="num date">{fmtDate(shown.date)} · {fmtTime(shown.time)}</dd></div>
                 </dl>
                 {CONFIRMABLE.includes(shown.status) && attendanceOpen(shown) && canConfirmAppt ? (
                   <Button style={{ width: '100%' }} icon="check" onClick={() => confirmAppt(shown)}>تأكيد</Button>

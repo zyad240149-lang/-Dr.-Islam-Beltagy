@@ -18,7 +18,8 @@ export class ErrorBoundary extends Component<Props, State> {
     // eslint-disable-next-line no-console
     console.error('[ErrorBoundary]', this.props.label ?? '', error, info.componentStack);
     // نسخة جديدة اترفعت والصفحة المفتوحة بتطلب ملف قسم اتشال: تحديث مرة واحدة بيجيب النسخة الجديدة
-    if (/dynamically imported module|Importing a module script failed|Failed to fetch dynamically|error loading dynamically/i.test(String(error?.message))) {
+    // (بدون إنترنت لأ: التحديث بيقفل التطبيق على شاشة «غير متصل» بتاعة المتصفح — الشاشة دي بتعرض زرار «تحديث» يدوي)
+    if (navigator.onLine && /dynamically imported module|Importing a module script failed|Failed to fetch dynamically|error loading dynamically/i.test(String(error?.message))) {
       try { if (!sessionStorage.getItem('ortho_chunk_reload')) { sessionStorage.setItem('ortho_chunk_reload', '1'); window.location.reload(); } } catch { /* ignore */ }
     }
   }

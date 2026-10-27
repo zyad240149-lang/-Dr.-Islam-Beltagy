@@ -49,9 +49,14 @@ async function applyCloudSession(): Promise<Session> {
       db.setActor(employee.id);
       // ربط التخزين المحلي بالمستخدم ده (لو اتغيّر المستخدم على الجهاز بيتمسح كل اللي يخص اللي قبله) ثم تشغيل طابور المزامنة
       await offline.init();
-      await offline.session.bindUser(employee.id, employee);
+      const authUid = (await supabase.auth.getSession()).data.session?.user.id;
+      await offline.session.bindUser(employee.id, employee, authUid);
       await offline.start(employee.id);
-      await db.hydrate();
+      // النسخة المحفوظة على الجهاز لنفس المستخدم ← الشاشات بتفتح فورًا منها، والخادم بيبعت «اللي اتغيّر بس» في الخلفية
+      // (من غيرها: تحميل كامل لكل البيانات قبل ما الدخول يكمّل)
+      const snap = await offline.session.readSnapshot(employee.id).catch(() => undefined);
+      if (snap && Object.keys(snap.data).length) { db.hydrateFromSnapshot(snap.data, snap.sync); void db.hydrate(); }
+      else await db.hydrate();
       return { employee };
     }
     if (me.kind === 'customer') {
@@ -60,8 +65,10 @@ async function applyCloudSession(): Promise<Session> {
     }
     return null;
   } catch (e) {
-    // مفيش اتصال/الخادم واقع ≠ الجلسة باطلة: ما نسجّلش الخروج، ونحاول نفتح من اللقطة المحلية
-    if (isNetworkError(e) || !net.isOnline() || /((0|5dd))/.test((e as Error)?.message ?? '')) return 'network';
+    // مفيش اتصال/الخادم واقع (5xx) ≠ الجلسة باطلة: ما نسجّلش الخروج، ونحاول نفتح من النسخة المحلية.
+    // 401/403 (الحساب اتوقف أو الصلاحية اتسحبت) = خروج — كان أي خطأ فيه رقم «0» بيتحسب «مفيش إنترنت» ويفتح النسخة المحلية
+    const status = (e as { status?: number })?.status;
+    if (isNetworkError(e) || !net.isOnline() || status === 0 || (status !== undefined && status >= 500)) return 'network';
     return null;
   }
 }
@@ -83,8 +90,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setMyExtraPerms(employee.extraPerms);
       setMyPermOverride(employee.permOverride);
       db.setActor(employee.id);
-      db.hydrateFromSnapshot(r.snapshot.data);
+      // الطابور الأول: النسخة بتتعرض والعمليات المعلّقة فوقها (لو العكس، اللي اتضاف أوفلاين مابيظهرش بعد إعادة الفتح)
       await offline.start(employee.id);
+      db.hydrateFromSnapshot(r.snapshot.data, r.snapshot.sync);
       setPatient(null); setUser(employee); setOfflineSession(true);
       return true;
     } catch { return false; }

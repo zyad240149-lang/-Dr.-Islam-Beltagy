@@ -136,9 +136,9 @@ export default function PayrollReports() {
                   <tbody>{logs.payouts.filter((p) => !subject || subjects.find((s) => s.value === subject)?.label === p.subject).map((p) => (
                     <tr key={p.id} style={p.status === 'void' ? { opacity: 0.6 } : undefined}>
                       <td className="num" style={{ whiteSpace: 'nowrap' }}>{p.no}</td><td data-no-i18n>{p.subject}</td><td>{ROLE_NAME[p.role ?? ''] ?? p.role}</td><td style={{ whiteSpace: 'nowrap' }}>{periodLabel(p.period)}</td>
-                      <td>{PAYOUT_KIND[p.kind]}</td><td className="num" style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{money(p.amount)}</td><td className="num" style={{ whiteSpace: 'nowrap' }}>{fmtDate(p.paidOn)}</td>
+                      <td>{PAYOUT_KIND[p.kind]}</td><td className="num" style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{money(p.amount)}</td><td className="num date" style={{ whiteSpace: 'nowrap' }}>{fmtDate(p.paidOn)}</td>
                       <td>{PAYOUT_METHOD[p.method]}</td><td data-no-i18n>{[p.reference, p.note].filter(Boolean).join(' — ') || '—'}</td>
-                      <td data-no-i18n>{p.createdBy ?? '—'}<div className="muted-sm num">{fmtDateTime(Date.parse(p.createdAt))}</div></td>
+                      <td data-no-i18n>{p.createdBy ?? '—'}<div className="muted-sm num date">{fmtDateTime(Date.parse(p.createdAt))}</div></td>
                       <td>{p.status === 'paid' ? <StatusBadge label="مصروف" tone="ok" /> : <><StatusBadge label="ملغي" tone="muted" />{p.voidReason && <div className="muted-sm" data-no-i18n>{p.voidReason}</div>}</>}</td>
                     </tr>
                   ))}</tbody>

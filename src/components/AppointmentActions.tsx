@@ -34,8 +34,9 @@ export function EditAppointmentModal({ appt, onClose, fromInvoices = false }: { 
   const duration = db.service(serviceId)?.durationMin ?? appt.durationMin;
   const therapists = done ? db.therapists().filter((t) => t.active || t.id === appt.therapistId) : db.therapistsForService(serviceId);
   // أوقات الدكتور المختار فقط — المحجوز ✕ ومعطّل، وموعده الحالي متاح له
-  const free = therapistId ? db.availableSlots(therapistId, date, duration, appt.id) : [];
-  const taken = therapistId ? db.takenSlots(therapistId, date, duration, appt.id) : [];
+  const free = therapistId ? db.availableSlots(therapistId, date, duration, appt.id, appt.patientId) : [];
+  // محجوز للدكتور، أو المريض عنده فيه موعد تاني مع دكتور تاني
+  const taken = therapistId ? [...db.takenSlots(therapistId, date, duration, appt.id), ...db.patientBusySlots(appt.patientId, therapistId, date, duration, appt.id)] : [];
   const all = Array.from(new Set([...free, ...taken, ...(date === appt.date && therapistId === appt.therapistId ? [appt.time] : [])])).sort();
 
   const submit = async () => {
@@ -95,9 +96,9 @@ export function RescheduleModal({ appt, onClose }: { appt: Appointment; onClose:
   // حجز البوابة بييجي من غير طبيب — نبدأ بأول طبيب عشان الأوقات تظهر (وتقدر تغيّره)
   const [therapistId, setTherapistId] = useState(appt.therapistId || therapists[0]?.id || '');
   const [busy, setBusy] = useState(false);
-  const slots = date && therapistId ? db.availableSlots(therapistId, date, appt.durationMin, appt.id) : [];
+  const slots = date && therapistId ? db.availableSlots(therapistId, date, appt.durationMin, appt.id, appt.patientId) : [];
   // المحجوز للدكتور ده بيظهر ✕ ومعطّل — عشان تشوف متى هو فاضي من نظرة واحدة
-  const takenSlots = date && therapistId ? db.takenSlots(therapistId, date, appt.durationMin, appt.id) : [];
+  const takenSlots = date && therapistId ? [...db.takenSlots(therapistId, date, appt.durationMin, appt.id), ...db.patientBusySlots(appt.patientId, therapistId, date, appt.durationMin, appt.id)] : [];
   const allSlots = Array.from(new Set([...slots, ...takenSlots])).sort();
 
   const submit = async () => {

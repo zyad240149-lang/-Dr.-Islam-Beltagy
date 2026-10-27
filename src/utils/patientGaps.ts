@@ -14,9 +14,10 @@ export function patientGaps(p: Pick<Patient, 'fullName' | 'phone' | 'nationalId'
   if (nameWords(p.fullName ?? '') < 3 || !isArabicName(p.fullName ?? '')) g.push('الاسم الثلاثي بالعربي');
   if ((p.phone ?? '').replace(/\D/g, '').length < 9) g.push('رقم الجوال');
   if (p.nationalityUnconfirmed) g.push('الجنسية (مصري / أجنبي)');
+  // الرقم القومي اختياري — لو اتكتب لازم يكون بالشكل الصح، لكن مش شرط لاكتمال الملف
   const id = (p.nationalId ?? '').trim();
   const foreign = p.nationality === 'non_saudi'; // القيمة المخزنة non_saudi = أجنبي، saudi = مصري
-  if (foreign ? !/^[A-Za-z0-9]{6,20}$/.test(id) : !/^[23]\d{13}$/.test(id)) g.push(foreign ? 'رقم جواز السفر' : 'الرقم القومي');
+  if (id && !(foreign ? /^[A-Za-z0-9]{6,20}$/.test(id) : /^[23]\d{13}$/.test(id))) g.push(foreign ? 'رقم جواز السفر' : 'الرقم القومي');
   if (p.genderUnknown) g.push('الجنس');
   return g;
 }

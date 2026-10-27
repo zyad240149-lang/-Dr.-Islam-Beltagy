@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
 import { db } from '../data/db';
 import { useDbVersion, useLoading } from '../hooks/useDb';
-import { Button, Skeleton } from '../components/ui';
-import { useCan } from '../components/common';
+import { Button, Input, Skeleton, StatusBadge } from '../components/ui';
+import { ConfirmDialog, useCan } from '../components/common';
 import { useToast } from '../hooks/useToast';
-import { WEEKDAY_LABEL } from '../utils/format';
+import { WEEKDAY_LABEL, fmtDate, todayYmd } from '../utils/format';
 import type { DaySchedule, WorkDay } from '../types';
 
 // الأسبوع السعودي يبدأ السبت
 const WEEK: WorkDay[] = ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'];
 const JS_DAYS: WorkDay[] = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 const dayLabel = (d: WorkDay) => WEEKDAY_LABEL[JS_DAYS.indexOf(d)];
+const fmtDayName = (ymd: string) => WEEKDAY_LABEL[new Date(ymd + 'T12:00:00Z').getUTCDay()];
 
 function Switch({ on, disabled, onChange, label }: { on: boolean; disabled?: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
@@ -97,6 +98,74 @@ export default function WorkHours() {
           )}
         </div>
       </section>
+      <Holidays />
     </div>
+  );
+}
+
+// أيام إغلاق العيادة (عيد، إجازة رسمية، سفر الدكتور): الحجز فيها بيترفض من الخادم، والأوقات بتختفي من شاشة الحجز وبوابة المريض
+function Holidays() {
+  useDbVersion();
+  const toast = useToast();
+  const can = useCan();
+  const canAdd = can('settings', 'create');
+  const canDelete = can('settings', 'delete');
+  const [list, setList] = useState<Array<{ id: string; date: string; reason: string }> | null>(null);
+  const [error, setError] = useState('');
+  const [date, setDate] = useState('');
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [del, setDel] = useState<{ id: string; date: string } | null>(null);
+  const reload = () => db.holidays().then((x) => { setList(x); setError(''); }).catch((e) => setError((e as Error).message));
+  useEffect(() => { void reload(); }, []);
+  // مواعيد قائمة في اليوم ده — لازم تتأجل أو تتلغي بعد الإغلاق (الإغلاق مابيلغيهاش لوحده)
+  const activeOn = (d: string) => db.appointmentsForDate(d).filter((a) => !['cancelled', 'completed', 'no_show'].includes(a.status)).length;
+  const pending = date ? activeOn(date) : 0;
+
+  const add = async () => {
+    if (!date) { toast.error('اختر التاريخ.'); return; }
+    if (list?.some((h) => h.date === date)) { toast.error('اليوم ده مسجّل إغلاق بالفعل.'); return; }
+    setBusy(true);
+    const r = await db.saveHoliday(date, reason);
+    setBusy(false);
+    if (!r.ok) { toast.error(r.error); return; }
+    toast.success(pending ? `تم إغلاق اليوم — فيه ${pending} موعد لازم تأجّلهم أو تلغيهم من «المواعيد».` : 'تم إغلاق اليوم — مفيش حجز فيه.');
+    setDate(''); setReason('');
+    void reload();
+  };
+  const remove = async () => {
+    if (!del) return;
+    const r = await db.deleteHoliday(del.id);
+    if (!r.ok) { toast.error(r.error); return; }
+    toast.success('تم فتح اليوم للحجز.');
+    void reload();
+  };
+
+  return (
+    <section className="card">
+      <div className="card__head"><h2>أيام إغلاق العيادة</h2><span className="muted" style={{ fontSize: 13 }}>أعياد وإجازات رسمية — مفيش حجز فيها</span></div>
+      <div className="card__body">
+        {canAdd && (
+          <div className="grid-form" style={{ gridTemplateColumns: 'minmax(150px, 200px) 1fr auto', alignItems: 'end', gap: 10 }}>
+            <Input id="hol-date" label="التاريخ" type="date" min={todayYmd()} value={date} onChange={(e) => setDate(e.target.value)} />
+            <Input id="hol-reason" label="السبب" placeholder="مثلاً: عيد الأضحى" value={reason} maxLength={120} onChange={(e) => setReason(e.target.value)} />
+            <div className="field"><Button icon="plus" onClick={add} loading={busy} disabled={!date}>إغلاق اليوم</Button></div>
+          </div>
+        )}
+        {date && pending > 0 && <p className="field__err" style={{ marginTop: -6, marginBottom: 12 }}>فيه <span className="num">{pending}</span> موعد قائم في {fmtDate(date)} — بعد الإغلاق أجّلهم أو ألغيهم من «المواعيد».</p>}
+        {error ? <p className="field__err">{error}</p> : list === null ? <Skeleton h={60} /> : list.length === 0 ? (
+          <p className="muted">ما فيه أيام إغلاق قادمة — العيادة بتشتغل حسب أيام العمل اللي فوق.</p>
+        ) : (
+          <div className="table-wrap"><table className="table"><thead><tr><th>التاريخ</th><th>اليوم</th><th>السبب</th><th>مواعيد قائمة</th>{canDelete && <th />}</tr></thead>
+            <tbody>{list.map((h) => { const n = activeOn(h.date); return (
+              <tr key={h.id}>
+                <td className="num date">{fmtDate(h.date)}</td><td>{fmtDayName(h.date)}</td><td>{h.reason || '—'}</td>
+                <td>{n ? <StatusBadge label={String(n)} tone="warn" /> : <span className="muted">—</span>}</td>
+                {canDelete && <td style={{ textAlign: 'end' }}><Button size="sm" variant="ghost" icon="trash" onClick={() => setDel({ id: h.id, date: h.date })}>فتح اليوم</Button></td>}
+              </tr>); })}</tbody></table></div>
+        )}
+      </div>
+      {del && <ConfirmDialog title="فتح اليوم للحجز" message={`هيرجع يوم ${fmtDate(del.date)} يوم عمل عادي ويقبل الحجز.`} confirmLabel="فتح اليوم" danger={false} onClose={() => setDel(null)} onConfirm={remove} />}
+    </section>
   );
 }

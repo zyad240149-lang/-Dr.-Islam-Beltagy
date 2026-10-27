@@ -8,7 +8,9 @@
    - الأوفلاين: وقت التثبيت بنحمّل كل ملفات البناء (precache-manifest.json اللي بيتولّد وقت البناء) عشان أي شاشة تفتح بدون إنترنت
      حتى لو ما اتزارتش قبل كده؛ وخطوط Google بتتخزّن عند أول استخدام. بيانات المرضى والـ API مابتتخزنش هنا خالص —
      بتتخزن في IndexedDB (src/offline/) مربوطة بالمستخدم وبتتمسح عند الخروج. */
-const VERSION = 'v5';
+// رقم البناء بيتحط وقت البناء (vite.config.ts) — أي نشر جديد = SW جديد وكاش جديد للملفات (بيانات IndexedDB مابتتلمسش)
+const BUILD = 'dev';
+const VERSION = 'v6-' + BUILD;
 const SHELL = `ortho-shell-${VERSION}`;
 const ASSETS = `ortho-assets-${VERSION}`;
 const BASE = new URL(self.registration.scope).pathname; // '/' محليًا أو '/admin/' لما اللوحة تتنشر تحت مسار
@@ -23,14 +25,21 @@ self.addEventListener('install', (event) => {
     const clean = res.redirected ? new Response(await res.blob(), { status: 200, headers: res.headers }) : res;
     await c.put(u, clean);
   }))));
-  // كل ملفات التطبيق (الأقسام اللي بتتحمّل بالطلب) — لو فشل التحميل ما نوقفش التثبيت؛ بيتخزّن كل ملف عند أول طلب بعدين
+  // كل ملفات التطبيق (الأقسام اللي بتتحمّل بالطلب) لازم تتخزّن كلها قبل ما النسخة دي تشتغل: لو ملف فشل التثبيت بيفشل
+  // والنسخة القديمة (الكاملة) بتفضل شغالة — عشان ماتبقاش فيه نسخة ناقصة تفتح شاشة بيضا بدون إنترنت. المتصفح بيعيد المحاولة لوحده.
   event.waitUntil((async () => {
-    try {
-      const m = await (await fetch(P('precache-manifest.json'), { cache: 'no-store' })).json();
-      const cache = await caches.open(ASSETS);
-      const files = (m.files || []).map((f) => P(f));
-      for (let i = 0; i < files.length; i += 6) await Promise.all(files.slice(i, i + 6).map((u) => cache.match(u, { ignoreVary: true }).then((hit) => hit || fetch(u).then((r) => (r.ok ? cache.put(u, r) : null))).catch(() => {})));
-    } catch { /* مفيش manifest (سيرفر التطوير) */ }
+    if (BUILD === 'dev') return; // سيرفر التطوير: مفيش manifest
+    const m = await (await fetch(P('precache-manifest.json'), { cache: 'no-store' })).json();
+    const cache = await caches.open(ASSETS);
+    const files = (m.files || []).map((f) => P(f));
+    for (let i = 0; i < files.length; i += 6) {
+      await Promise.all(files.slice(i, i + 6).map(async (u) => {
+        if (await caches.match(u, { ignoreVary: true })) { const hit = await caches.match(u, { ignoreVary: true }); return cache.put(u, hit); }
+        const r = await fetch(u, { cache: 'no-cache' });
+        if (!r.ok) throw new Error('precache ' + u + ' ' + r.status);
+        await cache.put(u, r.redirected ? new Response(await r.blob(), { status: 200, headers: r.headers }) : r);
+      }));
+    }
   })());
   // مابنعملش skipWaiting تلقائي: الواجهة بتعرض "تحديث متاح" والمستخدم يقرر (عشان مايضيعش نموذج مفتوح)
 });

@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode, type ButtonHTMLAttributes, type InputHTMLAttributes, type ChangeEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from '../utils/icons';
 import { toLatinDigits } from '../utils/format';
 
@@ -136,7 +137,8 @@ export function Modal({ title, onClose, children, footer, wide, xl }: { title: s
     document.addEventListener('focusin', onFocus);
     return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('focusin', onFocus); document.body.style.overflow = ''; };
   }, [onClose]);
-  return (
+  // بيترسم في body: النافذة اللي بتتفتح من جوّه عنصر sticky (زي «حالة المزامنة» في القائمة الجانبية) كانت بتطلع ورا محتوى الصفحة ومابتتضغطش
+  return createPortal(
     <div className="overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className={`modal ${wide ? 'modal--wide' : ''} ${xl ? 'modal--xl' : ''}`} role="dialog" aria-modal="true" aria-label={title}>
         <div className="modal__head">
@@ -146,6 +148,7 @@ export function Modal({ title, onClose, children, footer, wide, xl }: { title: s
         <div className="modal__body">{children}</div>
         {footer && <div className="modal__foot">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

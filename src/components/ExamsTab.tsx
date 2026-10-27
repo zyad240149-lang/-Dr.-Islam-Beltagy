@@ -38,8 +38,8 @@ export function ExamsTab({ patientId }: { patientId: string }) {
       <div className="row-between" style={{ marginBottom: 14, gap: 8, flexWrap: 'wrap' }}>
         <span className="muted" style={{ fontSize: 13 }}>
           <span className="num">{exams.length}</span> <span>كشف مسجّل</span> · <span className="num">{done.length}</span> <span>تم</span>
-          {done[0] && <> · <span>آخر كشف</span> <span className="num">{fmtDate(done[0].date)}</span></>}
-          {upcoming && <> · <span>الكشف الجاي</span> <span className="num">{fmtDate(upcoming.date)} {fmtTime(upcoming.time)}</span></>}
+          {done[0] && <> · <span>آخر كشف</span> <span className="num date">{fmtDate(done[0].date)}</span></>}
+          {upcoming && <> · <span>الكشف الجاي</span> <span className="num date">{fmtDate(upcoming.date)} {fmtTime(upcoming.time)}</span></>}
         </span>
       </div>
 
@@ -57,7 +57,7 @@ export function ExamsTab({ patientId }: { patientId: string }) {
         return (
           <div className="item-card" key={a.id}>
             <div className="row-between" style={{ marginBottom: 8, gap: 8, flexWrap: 'wrap' }}>
-              <strong>{svc?.name ?? 'كشف'} — <span className="num">{fmtDate(a.date)} · {fmtTime(a.time)}</span></strong>
+              <strong>{svc?.name ?? 'كشف'} — <span className="num date">{fmtDate(a.date)} · {fmtTime(a.time)}</span></strong>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                 <StatusBadge label={st.label} tone={st.tone} />
                 {inv && <StatusBadge label={INVOICE_STATUS[inv.status].label} tone={INVOICE_STATUS[inv.status].tone} />}
@@ -76,7 +76,7 @@ export function ExamsTab({ patientId }: { patientId: string }) {
             </>}
             {plan && <div className="kv-row"><span>الخطة بعد الكشف</span><span>
               <button type="button" className="link-btn" style={{ border: 0, background: 'none', color: 'var(--brand-700)', cursor: 'pointer', padding: 0 }} onClick={() => openPlan(plan.id)}>
-                {plan.diagnosis || 'خطة علاجية'} — <span className="num">{fmtDate(plan.startDate)}</span>
+                {plan.diagnosis || 'خطة علاجية'} — <span className="num date">{fmtDate(plan.startDate)}</span>
               </button></span></div>}
             {canMedical && !ev && !ass && !ses && ['arrived', 'in_progress', 'completed'].includes(a.status) && (
               <p className="muted-sm" style={{ margin: '6px 0 0' }}><Icon name="alert" size={13} /> ما اتسجّلش تقييم لهذا الكشف — سجّله من تبويب «التقييم» أو «العلاج الطبيعي».</p>

@@ -66,7 +66,7 @@ export default function Employees({ embedded = false }: { embedded?: boolean }) 
               <tbody>{employees.map((e) => (
                 <tr key={e.id}>
                   <td style={{ fontWeight: 600 }}>{e.name}</td><td className="num">{e.phone || '—'}</td>
-                  <td><span className="role-tag">{ROLE_LABEL[e.role]}</span></td><td className="num">{fmtDateTime(e.createdAt)}</td>
+                  <td><span className="role-tag">{ROLE_LABEL[e.role]}</span></td><td className="num date">{fmtDateTime(e.createdAt)}</td>
                   <td className="num">{e.lastLogin ? fmtDateTime(e.lastLogin) : '—'}</td>
                   <td>{db.activeLeave(e.id) ? <StatusBadge label={db.activeLeave(e.id)!.type === 'leave' ? 'في إجازة' : 'مستأذن'} tone="info" /> : <StatusBadge label={e.active ? 'نشط' : 'معطّل'} tone={e.active ? 'ok' : 'muted'} />}</td>
                   <td className="actions">

@@ -12,7 +12,9 @@ import { initPwa } from './pwa/pwa';
 import { initI18n } from './i18n';
 
 // Vite: فشل تحميل ملف قسم بعد رفع نسخة جديدة → تحديث مرة واحدة (والعلامة بتتمسح لما الصفحة تشتغل)
+// بدون إنترنت مابنعملش تحديث: الصفحة كانت بتتقفل على شاشة «غير متصل» بتاعة المتصفح وتضيع الشغل المفتوح — الشاشة بتعرض الخطأ والباقي شغال
 window.addEventListener('vite:preloadError', (e) => {
+  if (!navigator.onLine) return;
   try { if (!sessionStorage.getItem('ortho_chunk_reload')) { e.preventDefault(); sessionStorage.setItem('ortho_chunk_reload', '1'); window.location.reload(); } } catch { /* ignore */ }
 });
 setTimeout(() => { try { sessionStorage.removeItem('ortho_chunk_reload'); } catch { /* ignore */ } }, 10000);

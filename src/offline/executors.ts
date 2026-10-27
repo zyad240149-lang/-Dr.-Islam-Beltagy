@@ -44,6 +44,10 @@ export async function executeOp(op: OfflineOp): Promise<ExecResult> {
         if (error.code === '23505' && /patients_pkey|\(id\)/.test(`${error.message} ${error.details ?? ''}`)) return { type: 'done' };
         const msg = clean(error.message ?? '');
         if (DUP_PHONE.test(msg)) {
+          // فحص التكرار في الخادم (نفس الجوال + نفس الاسم) بيشتغل قبل فحص المفتاح الأساسي: لو الملف اللي «متكرر» هو نفس معرّف الجهاز
+          // يبقى المحاولة اللي فاتت وصلت والرد بس اللي ضاع ← خلصت (مش تعارض يحتاج قرار)
+          const { data: same } = await supabase.from('patients').select('id').eq('id', op.entityId).maybeSingle();
+          if (same) return { type: 'done' };
           const { data: ex } = await supabase.from('patients').select('id,full_name,file_no').eq('phone', String(row.phone)).limit(1);
           return asConflict({ reason: 'duplicate_patient', message: msg, existingId: ex?.[0]?.id });
         }
@@ -64,6 +68,18 @@ export async function executeOp(op: OfflineOp): Promise<ExecResult> {
         // نفس اللي بتعمله saveAssessment أونلاين: تحديث الشكوى والتشخيص في ملف المريض
         await supabase.from('patients').update({ main_complaint: row.main_complaint, diagnosis: row.medical_diagnosis }).eq('id', String(row.patient_id));
         return { type: 'done' };
+      }
+      case 'ortho.save': {
+        // كشف/أشعة/كسر/عملية: إنشاء بمعرّف الجهاز (التكرار = تعارض مفتاح أساسي ← اتنفّذ قبل كده)، تعديل بكشف تعارض مع نسخة الخادم
+        const table = String(op.payload.table);
+        if (!/^ortho_(consultations|imaging|fractures|surgeries)$/.test(table)) return { type: 'failed', error: 'نوع سجل غير معروف' };
+        const row = op.payload.row as Record<string, unknown>;
+        if (op.payload.isNew) {
+          const { error, status } = await supabase.from(table).insert({ ...row, id: op.entityId });
+          if (!error || (error.code === '23505' && /pkey|\(id\)/.test(`${error.message} ${error.details ?? ''}`))) return { type: 'done' };
+          return classify(error, status) ?? { type: 'failed', error: clean(error.message ?? '') };
+        }
+        return guardedUpdate(table, op.entityId, op, row, 'السجل الطبي');
       }
       case 'appointment.create': {
         const p = op.payload.p as Record<string, unknown>;

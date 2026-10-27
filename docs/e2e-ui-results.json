@@ -1,0 +1,977 @@
+{
+  "at": "2026-10-27T08:31:35.988Z",
+  "passed": 194,
+  "failed": 0,
+  "results": [
+    {
+      "name": "حساب مدير واجهة اختبار",
+      "ok": true,
+      "detail": "{\"id\":\"632e4f9f-1600-4dfc-983c-b13409fc99e8\",\"name\":\"مدير واجهة اختبار\",\"username\":\"201200000961\",\"role\":\"system_admin\","
+    },
+    {
+      "name": "حساب استقبال واجهة اختبار",
+      "ok": true,
+      "detail": "{\"id\":\"18a3ad60-2bb4-4068-beb0-f8141205fa20\",\"name\":\"استقبال واجهة اختبار\",\"username\":\"201200000962\",\"role\":\"reception\","
+    },
+    {
+      "name": "حساب محاسب واجهة اختبار",
+      "ok": true,
+      "detail": "{\"id\":\"87bf88de-abc6-4b8c-8f66-7c9551ebdd0c\",\"name\":\"محاسب واجهة اختبار\",\"username\":\"201200000963\",\"role\":\"accountant\",\""
+    },
+    {
+      "name": "حساب طبيب واجهة اختبار",
+      "ok": true,
+      "detail": "{\"id\":\"ba523772-cba8-4425-bf40-b6461d845f3b\",\"name\":\"طبيب واجهة اختبار\",\"username\":\"201200000964\",\"role\":\"therapist\",\"ph"
+    },
+    {
+      "name": "حساب مريض الاختبار",
+      "ok": true,
+      "detail": "{\"ok\":true,\"patientId\":\"ec6bc9a0-917d-41bc-aef4-b963d9e0c542\",\"customerId\":\"e5f5b724-8178-48bc-85e1-71c58c88d9aa\"}"
+    },
+    {
+      "name": "موعد للمريض",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: الدخول من شاشة الدخول",
+      "ok": true,
+      "detail": "https://beltagy-ortho.pages.dev/"
+    },
+    {
+      "name": "المدير: / «مرحبًا، مدير»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: / على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ 0px — "
+    },
+    {
+      "name": "المدير: /patients «المرضى»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /patients على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ 0px — "
+    },
+    {
+      "name": "المدير: /booking «حجز موعد جديد»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /booking على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ 0px — "
+    },
+    {
+      "name": "المدير: /appointments «المواعيد»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /appointments على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ 0px — "
+    },
+    {
+      "name": "المدير: /body-map «جسم الإنسان»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /sessions «الجلسات»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /services «الخدمات والأسعار»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /diagnosis «تشخيص المريض»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /consultations «الكشوفات والتشخيص»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /consultations على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ 0px — "
+    },
+    {
+      "name": "المدير: /imaging «الأشعة والتحاليل»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /fractures «الكسور والجبس»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /surgeries «العمليات الجراحية»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /employees «الموظفون»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /work-hours «مواعيد العمل»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /work-hours على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ 0px — "
+    },
+    {
+      "name": "المدير: /requests «طلبات الموظفين»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /attendance «الحضور والانصراف»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /loyalty «استبدال نقاط العملاء»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /support «الدعم الفني»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /discounts «أكواد الخصم»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /campaigns «إشعارات المرضى»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /invoices «الفواتير والمدفوعات»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /invoices على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ 0px — "
+    },
+    {
+      "name": "المدير: /finance «الفواتير والمدفوعات (المدير)»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /payroll «الرواتب والتارجت»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /payroll/staff «الرواتب والتارجت»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /payroll/reports «الرواتب والتارجت»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /product-sales «بيع المنتجات»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /installments «طلبات تقسيط الباقات»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /reports «التقارير»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /marketing-report «تقرير التسويق»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /notifications «الإشعارات»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /roles «الأدوار والصلاحيات»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /settings «الإعدادات»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /account «حسابي»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /patients/ec6bc9a0-917d-41bc-aef4-b963d9e0c542 «مريض واجهة اختبار»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: خط IBM Plex Sans Arabic متحمّل",
+      "ok": true,
+      "detail": "{\"loaded\":true,\"body\":\"\\\"IBM Plex Sans Arabic\\\", \\\"Segoe UI\\\", Tahoma, system-ui, sans-serif\",\"field\":null}"
+    },
+    {
+      "name": "الاستقبال: الدخول من شاشة الدخول",
+      "ok": true,
+      "detail": "https://beltagy-ortho.pages.dev/"
+    },
+    {
+      "name": "الاستقبال: / «مرحبًا، استقبال»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: / على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ 0px — "
+    },
+    {
+      "name": "الاستقبال: /patients «المرضى»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /patients على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ 0px — "
+    },
+    {
+      "name": "الاستقبال: /booking «حجز موعد جديد»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /booking على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ 0px — "
+    },
+    {
+      "name": "الاستقبال: /appointments «المواعيد»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /appointments على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ 0px — "
+    },
+    {
+      "name": "الاستقبال: /body-map «جسم الإنسان»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /sessions «الجلسات»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /services «الخدمات والأسعار»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /diagnosis «تشخيص المريض»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /consultations «الكشوفات والتشخيص»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /consultations على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ 0px — "
+    },
+    {
+      "name": "الاستقبال: /imaging «الأشعة والتحاليل»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /fractures «الكسور والجبس»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /surgeries «العمليات الجراحية»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /employees «الموظفون»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /work-hours «مواعيد العمل»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /work-hours على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ 0px — "
+    },
+    {
+      "name": "الاستقبال: /requests «طلبات الموظفين»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /attendance «الحضور والانصراف»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /loyalty «استبدال نقاط العملاء»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /support «الدعم الفني»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /discounts «أكواد الخصم»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /campaigns «إشعارات المرضى»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /invoices «الفواتير والمدفوعات»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /invoices على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ 0px — "
+    },
+    {
+      "name": "الاستقبال: /finance (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /payroll (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /payroll/staff (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /payroll/reports (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /product-sales «بيع المنتجات»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /installments «طلبات تقسيط الباقات»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /reports «التقارير»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /marketing-report «تقرير التسويق»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /notifications «الإشعارات»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /roles (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /settings «الإعدادات»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /account «حسابي»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /patients/ec6bc9a0-917d-41bc-aef4-b963d9e0c542 «مريض واجهة اختبار»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: خط IBM Plex Sans Arabic متحمّل",
+      "ok": true,
+      "detail": "{\"loaded\":true,\"body\":\"\\\"IBM Plex Sans Arabic\\\", \\\"Segoe UI\\\", Tahoma, system-ui, sans-serif\",\"field\":null}"
+    },
+    {
+      "name": "المحاسب: الدخول من شاشة الدخول",
+      "ok": true,
+      "detail": "https://beltagy-ortho.pages.dev/"
+    },
+    {
+      "name": "المحاسب: / «مرحبًا، محاسب»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: / على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ 0px — "
+    },
+    {
+      "name": "المحاسب: /patients «المرضى»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /patients على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ 0px — "
+    },
+    {
+      "name": "المحاسب: /booking (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /appointments (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /body-map «جسم الإنسان»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /sessions (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /services (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /diagnosis «تشخيص المريض»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /consultations «الكشوفات والتشخيص»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /consultations على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ 0px — "
+    },
+    {
+      "name": "المحاسب: /imaging «الأشعة والتحاليل»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /fractures «الكسور والجبس»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /surgeries «العمليات الجراحية»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /employees (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /work-hours (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /requests «طلبات الموظفين»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /attendance «الحضور والانصراف»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /loyalty «استبدال نقاط العملاء»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /support (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /discounts «أكواد الخصم»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /campaigns (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /invoices «الفواتير والمدفوعات»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /invoices على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ 0px — "
+    },
+    {
+      "name": "المحاسب: /finance (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /payroll (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /payroll/staff (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /payroll/reports (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /product-sales «بيع المنتجات»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /installments «طلبات تقسيط الباقات»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /reports «التقارير»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /marketing-report «تقرير التسويق»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /notifications «الإشعارات»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /roles (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /settings (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /account «حسابي»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: خط IBM Plex Sans Arabic متحمّل",
+      "ok": true,
+      "detail": "{\"loaded\":true,\"body\":\"\\\"IBM Plex Sans Arabic\\\", \\\"Segoe UI\\\", Tahoma, system-ui, sans-serif\",\"field\":\"\\\"IBM Plex Sans Arabic\\\", \\\"Segoe UI\\\", Tahoma, system-ui, sans-serif\"}"
+    },
+    {
+      "name": "المحاسب: الحقول بنفس خط النظام",
+      "ok": true,
+      "detail": "{\"loaded\":true,\"body\":\"\\\"IBM Plex Sans Arabic\\\", \\\"Segoe UI\\\", Tahoma, system-ui, sans-serif\",\"field\":\"\\\"IBM Plex Sans Arabic\\\", \\\"Segoe UI\\\", Tahoma, system-ui, sans-serif\"}"
+    },
+    {
+      "name": "الطبيب: الدخول من شاشة الدخول",
+      "ok": true,
+      "detail": "https://beltagy-ortho.pages.dev/"
+    },
+    {
+      "name": "الطبيب: / «دكتور اختبار واجهة»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: / على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ 0px — "
+    },
+    {
+      "name": "الطبيب: /patients «المرضى»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /patients على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ 0px — "
+    },
+    {
+      "name": "الطبيب: /booking (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /appointments «المواعيد»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /appointments على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ 0px — "
+    },
+    {
+      "name": "الطبيب: /body-map «جسم الإنسان»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /sessions «الجلسات»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /services (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /diagnosis «تشخيص المريض»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /consultations «الكشوفات والتشخيص»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /consultations على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ 0px — "
+    },
+    {
+      "name": "الطبيب: /imaging «الأشعة والتحاليل»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /fractures «الكسور والجبس»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /surgeries «العمليات الجراحية»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /employees (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /work-hours «مواعيد العمل»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /work-hours على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ 0px — "
+    },
+    {
+      "name": "الطبيب: /requests «طلبات الموظفين»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /attendance «الحضور والانصراف»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /loyalty (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /support (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /discounts (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /campaigns (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /invoices (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /finance (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /payroll (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /payroll/staff (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /payroll/reports (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /product-sales (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /installments (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /reports (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /marketing-report (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /notifications «الإشعارات»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /roles (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /settings (ما فيه صلاحية)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /account «حسابي»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /patients/ec6bc9a0-917d-41bc-aef4-b963d9e0c542 «مريض واجهة اختبار»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: خط IBM Plex Sans Arabic متحمّل",
+      "ok": true,
+      "detail": "{\"loaded\":true,\"body\":\"\\\"IBM Plex Sans Arabic\\\", \\\"Segoe UI\\\", Tahoma, system-ui, sans-serif\",\"field\":null}"
+    },
+    {
+      "name": "المريض: الدخول من شاشة الدخول",
+      "ok": true,
+      "detail": "https://beltagy-ortho.pages.dev/me"
+    },
+    {
+      "name": "المريض: /me «مرحبًا، مريض 👋»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المريض: /me على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ 0px — "
+    },
+    {
+      "name": "المريض: /me/book «حجز موعد»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المريض: /me/book على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ 0px — "
+    },
+    {
+      "name": "المريض: /me/appointments «مواعيدي»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المريض: /me/appointments على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ 0px — "
+    },
+    {
+      "name": "المريض: /me/file «ملفي»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المريض: /me/exams «سجل الكشوفات»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المريض: /me/records «سجلي الطبي»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المريض: /me/records على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ 0px — "
+    },
+    {
+      "name": "المريض: /me/plans «خطط العلاج»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المريض: /me/points «نقاطي»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المريض: /me/invoices «الفواتير»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المريض: /me/notifications «الإشعارات»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المريض: /me/account «حسابي»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المريض: خط IBM Plex Sans Arabic متحمّل",
+      "ok": true,
+      "detail": "{\"loaded\":true,\"body\":\"\\\"IBM Plex Sans Arabic\\\", \\\"Segoe UI\\\", Tahoma, system-ui, sans-serif\",\"field\":\"\\\"IBM Plex Sans Arabic\\\", \\\"Segoe UI\\\", Tahoma, system-ui, sans-serif\"}"
+    },
+    {
+      "name": "المريض: الحقول بنفس خط النظام",
+      "ok": true,
+      "detail": "{\"loaded\":true,\"body\":\"\\\"IBM Plex Sans Arabic\\\", \\\"Segoe UI\\\", Tahoma, system-ui, sans-serif\",\"field\":\"\\\"IBM Plex Sans Arabic\\\", \\\"Segoe UI\\\", Tahoma, system-ui, sans-serif\"}"
+    },
+    {
+      "name": "/ بيفتح على الموبايل من غير أخطاء ولا سكرول عرضي",
+      "ok": true,
+      "detail": "over 0px"
+    },
+    {
+      "name": "/login بيفتح على الموبايل من غير أخطاء ولا سكرول عرضي",
+      "ok": true,
+      "detail": "over 0px"
+    },
+    {
+      "name": "/signup بيفتح على الموبايل من غير أخطاء ولا سكرول عرضي",
+      "ok": true,
+      "detail": "over 0px"
+    }
+  ]
+}

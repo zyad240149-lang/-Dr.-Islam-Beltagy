@@ -33,7 +33,12 @@ export async function login(phoneDigits, password) {
   if (error) throw new Error(`login failed for ${phoneDigits}: ${error.message}`);
   return c;
 }
-export const loginAdmin = () => login('201000000000', env.ADMIN_INITIAL_PASSWORD);
+/** رقم المدير بصيغة الدخول (20xxxxxxxxxx) من ADMIN_INITIAL_PHONE في .env */
+export const ADMIN_DIGITS = (() => {
+  const d = String(env.ADMIN_INITIAL_PHONE ?? '').replace(/\D/g, '');
+  return d.startsWith('20') ? d : d.startsWith('0') ? '2' + d : '20' + d;
+})();
+export const loginAdmin = () => login(ADMIN_DIGITS, env.ADMIN_INITIAL_PASSWORD);
 
 export async function api(c, method, path, body) {
   const { data } = await c.auth.getSession();

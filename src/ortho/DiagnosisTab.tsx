@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Button, EmptyState } from '../components/ui';
 import { db } from '../data/db';
 import { fmtDate } from '../utils/format';
-import { ortho, useOrthoVersion, type Consultation } from './data';
+import { isIncomplete, ortho, useOrthoVersion, type Consultation } from './data';
 import { IconBtn, LoadState, confirmDelete, useClinicalCan, useRun } from './kit';
 import { ConsultModal, DraftCard, listConsultDrafts, clearConsultDraft } from './Consultations';
 import { DiagnosisOutput } from './DiagnosisOutput';
@@ -76,10 +76,12 @@ export function DiagnosisTab({ patientId }: { patientId: string }) {
             <div className="item-card dxh" key={c.id}>
               <div className="ortho-row">
                 <div>
-                  <div className="dxh__when"><b>{fmtDate(c.date)}</b> <span className="badge badge--brand">زيارة رقم <span className="num">{n}</span></span>{i === 0 && <span className="badge badge--ok">آخر تشخيص</span>}</div>
-                  <div className="cx-dx"><span className="cx-dx__l">التشخيص</span><b dir="auto">{c.diagnosis}</b>{c.icd10 && <span className="badge badge--brand" dir="ltr">{c.icd10}</span>}</div>
+                  <div className="dxh__when"><b>{fmtDate(c.date)}</b> <span className="badge badge--brand">زيارة رقم <span className="num">{n}</span></span>
+                    {isIncomplete(c) ? <span className="badge badge--warn">يحتاج استكمال</span> : i === 0 && <span className="badge badge--ok">آخر تشخيص</span>}</div>
+                  <div className="cx-dx"><span className="cx-dx__l">التشخيص</span>{c.diagnosis ? <b dir="auto">{c.diagnosis}</b> : <span className="muted">لسه ما اتحددش</span>}{c.icd10 && <span className="badge badge--brand" dir="ltr">{c.icd10}</span>}</div>
                 </div>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  {isIncomplete(c) && perm.edit && <Button size="sm" icon="refresh" onClick={() => setEdit(c)}>استكمال</Button>}
                   <Button size="sm" variant="outline" icon="print" onClick={() => setOut({ c, visitNo: n })}>طباعة وإرسال</Button>
                   {perm.edit && <IconBtn icon="edit" label="تعديل" onClick={() => setEdit(c)} />}
                   {perm.del && <IconBtn icon="trash" label="حذف" danger onClick={() => confirmDelete('هذا التشخيص') && run(async () => { await ortho.remove('consultations', c.id); (c.attachments ?? []).forEach((a) => void ortho.removeAttachment(a.path)); }, 'تم الحذف')} />}

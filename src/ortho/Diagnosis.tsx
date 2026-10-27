@@ -1,7 +1,7 @@
 // «تشخيص المريض»: اختار المريض ← زرار واحد «تشخيص» يفتح نموذج الكشف والتشخيص، وتحته التشخيصات السابقة
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ortho, useOrthoVersion, type Consultation } from './data';
+import { isIncomplete, ortho, useOrthoVersion, type Consultation } from './data';
 import { LoadState, PageHead, PatientSelect, patientFile, patientName, useClinicalCan } from './kit';
 import { ConsultList, ConsultModal, DraftCard, clearConsultDraft, listConsultDrafts } from './Consultations';
 import { EmptyState } from '../components/ui';
@@ -24,6 +24,9 @@ export default function Diagnosis() {
   // تشخيصات بدأت ولسه ما اتحفظتش (على الجهاز ده) — بنعيد قرايتها كل ما النافذة تتقفل عشان القايمة تفضل مظبوطة
   const drafts = !edit ? listConsultDrafts() : [];
   const draft = patientId ? drafts.find((d) => d.patientId === patientId) ?? null : null;
+  // تشخيصات اتحفظت ناقصة («يحتاج استكمال») — من أي جهاز، الأحدث أولًا
+  const incomplete = ortho.list('consultations').filter(isIncomplete).sort((a, b) => b.date.localeCompare(a.date));
+  const openSaved = (c: Consultation) => { pick(c.patientId); setResume(false); setEdit(c); };
   const resumeDraft = (id: string) => { pick(id); setResume(true); setEdit('new'); };
   const discardDraft = (id: string) => {
     if (!window.confirm(`حذف التشخيص اللي لم يكتمل لـ ${patientName(id)}؟ كل اللي اتكتب فيه هيتمسح.`)) return;
@@ -44,7 +47,9 @@ export default function Diagnosis() {
   })();
   // مرضى اتعمللهم حضور النهارده (لأي خدمة، حتى لو الزيارة خلصت) — واحد لكل مريض: اللي لسه ما اتشخصش أولًا، وبعدين بالميعاد
   const today = todayYmd();
-  const diagnosedToday = new Set(ortho.list('consultations').filter((c) => c.date === today).map((c) => c.patientId));
+  const todays = ortho.list('consultations').filter((c) => c.date === today);
+  const diagnosedToday = new Set(todays.filter((c) => !isIncomplete(c)).map((c) => c.patientId));
+  const incompleteToday = new Map(todays.filter(isIncomplete).map((c) => [c.patientId, c]));
   const presentToday = (() => {
     const seen = new Set<string>();
     const out: Appointment[] = [];
@@ -75,11 +80,12 @@ export default function Diagnosis() {
           }}>{draft ? 'تشخيص جديد' : 'تشخيص'}</Button>}
         </div>
       </section>
-      {!patientId && perm.add && drafts.length > 0 && (
+      {!patientId && perm.add && drafts.length + incomplete.length > 0 && (
         <section className="card" style={{ marginBottom: 16 }}>
-          <div className="card__head"><h2>تشخيصات لم تكتمل ({drafts.length})</h2></div>
+          <div className="card__head"><h2>تشخيصات لم تكتمل ({drafts.length + incomplete.length})</h2></div>
           <div className="card__body">
             {drafts.map((d) => <DraftCard key={d.patientId} d={d} onResume={() => resumeDraft(d.patientId)} onDiscard={() => discardDraft(d.patientId)} />)}
+            {incomplete.map((c) => <DraftCard key={c.id} d={c} onResume={() => openSaved(c)} />)}
           </div>
         </section>
       )}
@@ -96,7 +102,8 @@ export default function Diagnosis() {
                 <div className="dx-queue">
                   {presentToday.map((a) => {
                     const done = diagnosedToday.has(a.patientId);
-                    const started = drafts.some((d) => d.patientId === a.patientId);
+                    const saved = incompleteToday.get(a.patientId);
+                    const started = !!saved || drafts.some((d) => d.patientId === a.patientId);
                     return (
                       <div className={`dx-queue__row${done ? ' is-done' : ''}`} key={a.patientId}>
                         <span className="dx-queue__time num">{fmtTime(a.time)}</span>
@@ -110,7 +117,7 @@ export default function Diagnosis() {
                         <div className="dx-queue__act">
                           {done ? <Button size="sm" variant="outline" onClick={() => pick(a.patientId)}>عرض التشخيص</Button>
                             : !perm.add ? null
-                            : started ? <Button size="sm" icon="refresh" onClick={() => resumeDraft(a.patientId)}>استكمال</Button>
+                            : started ? <Button size="sm" icon="refresh" onClick={() => (saved ? openSaved(saved) : resumeDraft(a.patientId))}>استكمال</Button>
                             : <Button size="sm" icon="stethoscope" onClick={() => startNew(a.patientId)}>تشخيص</Button>}
                         </div>
                       </div>

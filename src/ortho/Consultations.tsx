@@ -8,7 +8,7 @@ import { findCondition } from '../data/bodyRegions';
 import type { DiagnosisRef } from '../types';
 import { fmtDate, fmtDateTime, todayYmd } from '../utils/format';
 import { useToast } from '../hooks/useToast';
-import { IMAGING_KIND, IMAGING_STATUS, REGIONS, SIDE, ortho, useOrthoVersion, type Attachment, type Consultation, type ImagingKind, type ImagingRequest, type Medication, type Side } from './data';
+import { IMAGING_KIND, IMAGING_STATUS, REGIONS, SIDE, isIncomplete, ortho, useOrthoVersion, type Attachment, type Consultation, type ImagingKind, type ImagingRequest, type Medication, type Side } from './data';
 import { LAB_GROUPS, MED_PRESETS, XRAY_VIEWS } from './clinicalLists';
 import { printRx } from './printRx';
 import { openPrintWindow } from '../utils/printDoc';
@@ -111,8 +111,15 @@ export function ConsultModal({ initial, resume, patientId = '', onClose }: { ini
   const sheet = normSheet(c.sheet);
   const changeSheet = (f: (s: typeof sheet) => typeof sheet) => setC((x) => ({ ...x, sheet: f(normSheet(x.sheet)) }));
   const sum = sheetSummary(sheet);
-  const ok = c.patientId && sum.complaint && sum.diagnosis;
-  const need = !c.patientId ? 'اختار المريض' : !sum.complaint ? 'حدد الشكوى (خانة 5 في شيت التمريض أو خانة 1 في كشف الطبيب)' : !sum.diagnosis ? 'حدد التشخيص (خانة 10 في كشف الطبيب)' : '';
+  // كل حاجة اختيارية: الحفظ محتاج المريض بس. لو فيه حاجة ناقصة بنسأل: «استكمال بعدين» (يتحفظ «يحتاج استكمال») ولا «التشخيص اكتمل»
+  const ok = !!c.patientId;
+  const missing = [
+    !nurseStarted(sheet) && c.painScore === '' && 'شيت التمريض',
+    !doctorStarted(sheet) && 'كشف الطبيب',
+    !sum.complaint && 'الشكوى',
+    !sum.diagnosis && 'التشخيص',
+  ].filter(Boolean) as string[];
+  const [ask, setAsk] = useState<{ thenPrint: boolean } | null>(null);
   const patientConsults = c.patientId ? ortho.list('consultations', c.patientId).sort((a, b) => a.date.localeCompare(b.date)) : [];
   const visitNo = initial ? Math.max(1, patientConsults.findIndex((x) => x.id === initial.id) + 1) : patientConsults.length + 1;
   const goTab = (t: Tab) => { setTab(t); bodyRef.current?.closest('.modal__body')?.scrollTo({ top: 0 }); };
@@ -154,13 +161,15 @@ export function ConsultModal({ initial, resume, patientId = '', onClose }: { ini
     onClose();
   }
 
-  function save(thenPrint: boolean) {
+  function save(thenPrint: boolean, complete?: boolean) {
+    if (complete === undefined && missing.length) { setAsk({ thenPrint }); return; }
+    const done = complete ?? true;
     const meds = c.medications.filter((m) => m.name.trim());
     const reqs = c.imagingRequests.filter((r) => r.region.trim());
     // الملخص النصي من الشيت ← حقول الكشف (القوايم والروشتة وسجل المريض)
     const text = { complaint: sum.complaint, history: sum.history, examination: sum.examination, diagnosis: sum.diagnosis };
     const sheetOut = { ...sheet, meds: sheet.meds.filter((m) => m.name.trim()) };
-    const payload = { ...c, ...text, sheet: sheetOut, medications: meds, imagingRequests: reqs, painScore: c.painScore === '' ? null : c.painScore, followUp: c.followUp || null } as unknown as Draft;
+    const payload = { ...c, ...text, sheet: sheetOut, complete: done, medications: meds, imagingRequests: reqs, painScore: c.painScore === '' ? null : c.painScore, followUp: c.followUp || null } as unknown as Draft;
     // تابة الطباعة بتتفتح دلوقتي (وقت الضغطة) وإلا المتصفح يحجبها بعد انتظار الحفظ — ولو الحفظ فشل بتتقفل
     const printWin = thenPrint ? openPrintWindow() : null;
     let printed = false;
@@ -180,7 +189,7 @@ export function ConsultModal({ initial, resume, patientId = '', onClose }: { ini
         const now = new Set(c.attachments.map((a) => a.path));
         initial.attachments.filter((a) => !now.has(a.path)).forEach((a) => void ortho.removeAttachment(a.path));
       }
-    }, 'تم حفظ الكشف', () => {
+    }, done ? 'تم حفظ الكشف — التشخيص اكتمل' : 'اتحفظ — التشخيص محتاج استكمال', () => {
       if (!initial) clearConsultDraft(c.patientId);
       // تعديلات خانة 1 (الاسم/السن/النوع/الهاتف/العنوان) ← ملف المريض — بعد ما الكشف اتحفظ، عشان فشلها مايكرّرش الكشف
       const p = db.patient(c.patientId);
@@ -196,7 +205,7 @@ export function ConsultModal({ initial, resume, patientId = '', onClose }: { ini
 
   return (
     <Modal xl title={initial ? 'تعديل الكشف' : 'كشف جديد'} onClose={cancel} footer={<>
-      {need && <span className="sh-need">{need}</span>}
+      {c.patientId && missing.length > 0 && <span className="sh-need">لسه ناقص: {missing.join('، ')}</span>}
       <Button variant="outline" onClick={cancel}>إلغاء</Button>
       <Button variant="outline" icon="print" disabled={!c.patientId} onClick={() => setOut(['nurse', 'doctor', 'rx'])}>طباعة وإرسال</Button>
       <Button variant="outline" icon="print" loading={busy} disabled={!ok || uploading} onClick={() => save(true)}>حفظ وطباعة الروشتة</Button>
@@ -317,6 +326,16 @@ export function ConsultModal({ initial, resume, patientId = '', onClose }: { ini
       </div>
       {out && <DiagnosisOutput initial={out} patient={db.patient(c.patientId)} visitNo={visitNo} onClose={() => setOut(null)}
         c={{ ...c, ...sum, plan: c.plan, sheet, medications: c.medications.filter((m) => m.name.trim()), imagingRequests: c.imagingRequests.filter((r) => r.region.trim()) }} />}
+      {ask && (
+        <Modal title="فيه حاجات لسه ناقصة" onClose={() => setAsk(null)} footer={<>
+          <Button variant="outline" onClick={() => setAsk(null)}>رجوع للكشف</Button>
+          <Button variant="outline" icon="refresh" onClick={() => { const t = ask.thenPrint; setAsk(null); save(t, false); }}>حفظ — استكمال بعدين</Button>
+          <Button icon="check" onClick={() => { const t = ask.thenPrint; setAsk(null); save(t, true); }}>التشخيص اكتمل</Button>
+        </>}>
+          <p style={{ marginTop: 0 }}>لسه ما اتملاش: <b>{missing.join('، ')}</b>.</p>
+          <p className="muted" style={{ marginBottom: 0 }}>«حفظ — استكمال بعدين» بيحفظه ويفضل ظاهر بزرار «استكمال» لحد ما يخلص. «التشخيص اكتمل» بيحفظه تشخيص نهائي كده.</p>
+        </Modal>
+      )}
       {/* خريطة الجسم من خانة التشخيص (10): الحالة بتتضاف في «Others» + الكود والمنطقة والجهة */}
       {mapOpen && <DiagnosisPicker onClose={() => setMapOpen(false)} onPick={(text, ref) => {
         const p = pickedToConsult(text, ref);
@@ -361,8 +380,9 @@ export function AttachmentThumbs({ items, onRemove }: { items: Attachment[]; onR
   );
 }
 
-// كشف بدأ ولسه ما اتحفظش: بيظهر في «تشخيص المريض» بالأجزاء اللي اتملت، وزرار يكمّله من مكان ما وقف
-export function DraftCard({ d, onResume, onDiscard }: { d: ConsultDraft; onResume: () => void; onDiscard: () => void }) {
+// تشخيص لسه ما خلصش — يا إما مسودة على الجهاز (لسه ما اتحفظتش) يا إما اتحفظ «يحتاج استكمال» (ليه id):
+// بيظهر بالأجزاء اللي اتملت، وزرار يكمّله من مكان ما وقف
+export function DraftCard({ d, onResume, onDiscard }: { d: Draft & { savedAt?: number }; onResume: () => void; onDiscard?: () => void }) {
   const s = normSheet(d.sheet);
   const sum = sheetSummary(s);
   const steps: [string, boolean][] = [
@@ -376,11 +396,11 @@ export function DraftCard({ d, onResume, onDiscard }: { d: ConsultDraft; onResum
         <div>
           <Link to={`/patients/${d.patientId}`} className="ortho-cell-strong">{patientName(d.patientId)}</Link>
           <span className="badge badge--brand" style={{ marginInlineStart: 8 }}>ملف <span className="num">{patientFile(d.patientId)}</span></span>
-          <div className="ortho-sub"><span className="badge badge--warn">لم يكتمل</span> {fmtDate(d.date)}{d.savedAt ? ` · آخر تعديل ${fmtDateTime(d.savedAt)}` : ''}</div>
+          <div className="ortho-sub"><span className="badge badge--warn">{d.id ? 'يحتاج استكمال' : 'لم يكتمل'}</span> {fmtDate(d.date)}{d.savedAt ? ` · آخر تعديل ${fmtDateTime(d.savedAt)}` : ''}</div>
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <Button size="sm" icon="refresh" onClick={onResume}>استكمال التشخيص</Button>
-          <IconBtn icon="trash" label="حذف التشخيص اللي لم يكتمل" danger onClick={onDiscard} />
+          {onDiscard && <IconBtn icon="trash" label="حذف التشخيص اللي لم يكتمل" danger onClick={onDiscard} />}
         </div>
       </div>
       <div className="cx-draft__steps">
@@ -418,9 +438,10 @@ export function ConsultList({ items, onEdit, hidePatient }: { items: Consultatio
             <div className="ortho-row">
               <div>
                 {!hidePatient && <Link to={`/patients/${c.patientId}`} className="ortho-cell-strong">{patientName(c.patientId)}</Link>}
-                <div className="ortho-sub">{fmtDate(c.date)} · {c.region} — {SIDE[c.side]}{c.painScore !== '' && c.painScore != null ? ` · الألم ${c.painScore}/10` : ''}</div>
+                <div className="ortho-sub">{isIncomplete(c) && <span className="badge badge--warn" style={{ marginInlineEnd: 6 }}>يحتاج استكمال</span>}{fmtDate(c.date)} · {c.region} — {SIDE[c.side]}{c.painScore !== '' && c.painScore != null ? ` · الألم ${c.painScore}/10` : ''}</div>
               </div>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                {isIncomplete(c) && perm.edit && <Button size="sm" icon="refresh" onClick={() => onEdit(c)}>استكمال</Button>}
                 <Button size="sm" variant="outline" icon="print" onClick={() => setOut(c)}>طباعة وإرسال</Button>
                 {perm.edit && <IconBtn icon="edit" label="تعديل" onClick={() => onEdit(c)} />}
                 {perm.del && <IconBtn icon="trash" label="حذف" danger onClick={() => confirmDelete('هذا الكشف') && run(async () => { await ortho.remove('consultations', c.id); atts.forEach((a) => void ortho.removeAttachment(a.path)); }, 'تم الحذف')} />}
@@ -428,10 +449,10 @@ export function ConsultList({ items, onEdit, hidePatient }: { items: Consultatio
             </div>
             <div className="cx-dx">
               <span className="cx-dx__l">التشخيص</span>
-              <b>{c.diagnosis}</b>{c.icd10 && <span className="badge badge--brand" dir="ltr">{c.icd10}</span>}
+              {c.diagnosis ? <b>{c.diagnosis}</b> : <span className="muted">لسه ما اتحددش</span>}{c.icd10 && <span className="badge badge--brand" dir="ltr">{c.icd10}</span>}
             </div>
             <dl className="dl" style={{ marginTop: 6 }}>
-              <div><dt>الشكوى</dt><dd>{c.complaint}</dd></div>
+              <div><dt>الشكوى</dt><dd>{c.complaint || '—'}</dd></div>
               {c.history && <div><dt>التاريخ المرضي</dt><dd style={{ whiteSpace: 'pre-line' }}>{c.history}</dd></div>}
               <div><dt>الفحص</dt><dd dir="auto" style={{ whiteSpace: 'pre-line' }}>{c.examination || '—'}</dd></div>
               {sheetPlan && <div><dt>الخطة</dt><dd dir="ltr" style={{ textAlign: 'start' }}>{sheetPlan}</dd></div>}

@@ -20,6 +20,7 @@ export interface Consultation {
   id: string; patientId: string; date: string; complaint: string; region: string; side: Side; examination: string; diagnosis: string; plan: string;
   history: string; painScore: number | ''; icd10: string; medications: Medication[]; labs: string[]; imagingRequests: ImagingRequest[]; attachments: Attachment[]; followUp: string;
   sheet?: ExamSheet; // شيت الكشف الرقمي (التمريض + الورك والركبة) — الكشوفات القديمة من غيره
+  complete?: boolean; // false = اتحفظ ناقص «يحتاج استكمال» (هجرة 917)؛ مش موجود = كشف قديم مكتمل
 }
 // اختيارات الشيت: on = خانات متعلّمة («المجموعة|البند»)، txt = خانات كتابة، meds = الأدوية الحالية، pain = أماكن الألم على خريطة الجسم («knee:right»)
 export interface CurrentMed { name: string; dose: string; freq: string }
@@ -50,7 +51,7 @@ const todayYmd = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cair
 
 // الأعمدة المسموح إرسالها لكل جدول (أي حاجة غيرها بتتجاهل — created_by والتواريخ بيحددها الخادم)
 const COLUMNS: Record<Kind, string[]> = {
-  consultations: ['patient_id', 'date', 'complaint', 'region', 'side', 'examination', 'diagnosis', 'plan', 'history', 'pain_score', 'icd10', 'medications', 'labs', 'imaging_requests', 'attachments', 'follow_up', 'sheet'],
+  consultations: ['patient_id', 'date', 'complaint', 'region', 'side', 'examination', 'diagnosis', 'plan', 'history', 'pain_score', 'icd10', 'medications', 'labs', 'imaging_requests', 'attachments', 'follow_up', 'sheet', 'complete'],
   imaging: ['patient_id', 'kind', 'region', 'requested_at', 'status', 'finding', 'attachments'],
   surgeries: ['patient_id', 'procedure', 'region', 'side', 'hospital', 'date', 'implant', 'status', 'notes'],
   fractures: ['patient_id', 'bone', 'side', 'kind', 'injury_date', 'cast_date', 'removal_due', 'status'],
@@ -74,6 +75,8 @@ const subs = new Set<() => void>();
 const bump = () => { version++; subs.forEach((f) => f()); };
 // الاتصال رجع: رسالة «محتاج اتصال» بتتشال والشاشة بتحمّل من الخادم
 net.subscribe(() => { if (net.isOnline() && Object.keys(errors).length) { for (const k of Object.keys(errors) as Kind[]) delete errors[k]; bump(); } });
+/** الكشف اتحفظ ناقص ومحتاج استكمال */
+export const isIncomplete = (c: { complete?: boolean }) => c.complete === false;
 export function useOrthoVersion() {
   return useSyncExternalStore((cb) => { subs.add(cb); return () => { subs.delete(cb); }; }, () => version);
 }

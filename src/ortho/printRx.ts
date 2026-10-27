@@ -22,35 +22,34 @@ export interface RxPatient { fullName: string; fileNo?: string | null; birthDate
 // نفس خط النظام (IBM Plex Sans Arabic) — بيتحمّل جوّه الروشتة نفسها والطباعة بتستنى لحد ما يجهز
 const FONT_HREF = 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap';
 
-export function rxHtml(c: Omit<Consultation, 'id' | 'patientId'>, p?: RxPatient | null): string {
+// ستايل الروشتة متقيّد بـ .rxp عشان تتحط في نفس ملف طباعة التشخيص (printDiagnosis) من غير ما تلخبط ستايل الشيتات
+export const RX_CSS = `
+  .rxp { font-family: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif; color: #10182f; background: #fff; font-size: 13px; line-height: 1.6; }
+  .rxp header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1b2a54; padding-bottom: 8px; }
+  .rxp header h1 { margin: 0; font-size: 18px; color: #1b2a54; }
+  .rxp header .t { color: #475569; font-size: 12.5px; }
+  .rxp header .en { text-align: left; direction: ltr; font-size: 12px; color: #475569; }
+  .rxp .pt { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px 12px; margin: 10px 0; padding: 8px 10px; background: #f3f5fa; border-radius: 8px; font-size: 12.5px; }
+  .rxp .pt b { color: #1b2a54; }
+  .rxp .dx { margin: 6px 0 10px; font-size: 12.5px; }
+  .rxp .rx { font-size: 26px; font-weight: 700; color: #1b2a54; font-family: Georgia, "Times New Roman", serif; margin: 4px 0; direction: ltr; text-align: left; }
+  .rxp ol { margin: 0; padding: 0 18px 0 0; }
+  .rxp ol li { margin-bottom: 8px; }
+  .rxp ul { margin: 0; padding: 0 18px 0 0; }
+  .rxp .med { direction: ltr; text-align: left; font-weight: 700; font-size: 14px; }
+  .rxp .sig { color: #334155; }
+  .rxp h3 { font-size: 13.5px; margin: 12px 0 4px; color: #1b2a54; border-bottom: 1px solid #e2e8f0; padding-bottom: 2px; }
+  .rxp .ltr { direction: ltr; text-align: left; }
+  .rxp footer { margin-top: 18px; border-top: 1px solid #cbd5e1; padding-top: 6px; font-size: 11px; color: #64748b; display: flex; justify-content: space-between; gap: 8px; }
+  .rxp .fu { margin-top: 10px; font-weight: 700; }
+`;
+
+export function rxPageHtml(c: Omit<Consultation, 'id' | 'patientId'>, p?: RxPatient | null): string {
   const meds = c.medications.filter((m) => m.name.trim());
   const labs = c.labs.filter(Boolean);
   const imgs = c.imagingRequests.filter((r) => r.region.trim() || r.view.trim());
   const phones = DOCTOR.phones.map((x) => `${esc(x.label)}: <span dir="ltr">${esc(x.number)}</span>`).join(' &nbsp;•&nbsp; ');
-  return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>روشتة — ${esc(p?.fullName)}</title>
-<link rel="stylesheet" href="${FONT_HREF}">
-<style>
-  @page { size: A5; margin: 12mm; }
-  * { box-sizing: border-box; }
-  :root { color-scheme: light; }
-  body { font-family: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif; color: #10182f; background: #fff; margin: 0; font-size: 13px; line-height: 1.6; }
-  header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1b2a54; padding-bottom: 8px; }
-  header h1 { margin: 0; font-size: 18px; color: #1b2a54; }
-  header .t { color: #475569; font-size: 12.5px; }
-  header .en { text-align: left; direction: ltr; font-size: 12px; color: #475569; }
-  .pt { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px 12px; margin: 10px 0; padding: 8px 10px; background: #f3f5fa; border-radius: 8px; font-size: 12.5px; }
-  .pt b { color: #1b2a54; }
-  .dx { margin: 6px 0 10px; font-size: 12.5px; }
-  .rx { font-size: 26px; font-weight: 700; color: #1b2a54; font-family: Georgia, "Times New Roman", serif; margin: 4px 0; direction: ltr; text-align: left; }
-  ol { margin: 0; padding: 0 18px 0 0; }
-  ol li { margin-bottom: 8px; }
-  .med { direction: ltr; text-align: left; font-weight: 700; font-size: 14px; }
-  .sig { color: #334155; }
-  h3 { font-size: 13.5px; margin: 12px 0 4px; color: #1b2a54; border-bottom: 1px solid #e2e8f0; padding-bottom: 2px; }
-  .ltr { direction: ltr; text-align: left; }
-  footer { margin-top: 18px; border-top: 1px solid #cbd5e1; padding-top: 6px; font-size: 11px; color: #64748b; display: flex; justify-content: space-between; gap: 8px; }
-  .fu { margin-top: 10px; font-weight: 700; }
-</style></head><body>
+  return `<div class="rxp" dir="rtl">
 <header>
   <div><h1>${esc(DOCTOR.name)}</h1><div class="t">${esc(DOCTOR.title)}</div></div>
   <div class="en">Orthopedic &amp; Trauma Surgery<br>${esc(fmtDate(c.date))}</div>
@@ -67,7 +66,19 @@ ${imgs.length ? `<h3>الأشعة المطلوبة</h3><ul>${imgs.map((r) => `<l
 ${c.plan.trim() ? `<h3>تعليمات</h3><div>${esc(c.plan).replace(/\n/g, '<br>')}</div>` : ''}
 ${c.followUp ? `<div class="fu">ميعاد المتابعة: ${esc(fmtDate(c.followUp))}</div>` : ''}
 <footer><span>${esc(DOCTOR.address)}</span><span>${phones}</span></footer>
-</body></html>`;
+</div>`;
+}
+
+export function rxHtml(c: Omit<Consultation, 'id' | 'patientId'>, p?: RxPatient | null): string {
+  return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>روشتة — ${esc(p?.fullName)}</title>
+<link rel="stylesheet" href="${FONT_HREF}">
+<style>
+  @page { size: A5; margin: 12mm; }
+  * { box-sizing: border-box; }
+  :root { color-scheme: light; }
+  body { background: #fff; margin: 0; }
+${RX_CSS}
+</style></head><body>${rxPageHtml(c, p)}</body></html>`;
 }
 
 export function printRx(c: Omit<Consultation, 'id' | 'patientId'>, p?: RxPatient | null) {

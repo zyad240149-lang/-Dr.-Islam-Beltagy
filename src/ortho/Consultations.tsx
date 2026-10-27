@@ -11,7 +11,8 @@ import { useToast } from '../hooks/useToast';
 import { IMAGING_KIND, IMAGING_STATUS, REGIONS, SIDE, ortho, useOrthoVersion, type Attachment, type Consultation, type ImagingKind, type ImagingRequest, type Medication, type Side } from './data';
 import { LAB_GROUPS, MED_PRESETS, XRAY_VIEWS } from './clinicalLists';
 import { printRx } from './printRx';
-import { printDiagnosis } from './printDiagnosis';
+import { DiagnosisOutput } from './DiagnosisOutput';
+import type { DxPart } from './printDiagnosis';
 import { db } from '../data/db';
 import { Field, IconBtn, LoadState, PageHead, PatientSelect, SearchBox, Tone, confirmDelete, patientFile, patientName, useClinicalCan, useRun } from './kit';
 import { DoctorSheet, NursingSheet, doctorStarted, emptySheet, nurseStarted, normSheet, resetPatientBasics, sheetHasContent, sheetPatientPatch, sheetSummary, withPatientBasics } from './ExamSheet';
@@ -98,6 +99,7 @@ export function ConsultModal({ initial, resume, patientId = '', onClose }: { ini
   // خانة 1 وقت الفتح — اللي يتعدّل بعدها بس يروح لملف المريض (لو المريض اتغيّر، الخانات اتملت من ملفه هو فبنقارن بالملف بس)
   const [opened] = useState(() => ({ patientId: c.patientId, sheet: normSheet(c.sheet) }));
   const [mapOpen, setMapOpen] = useState(false);
+  const [out, setOut] = useState<DxPart[] | null>(null); // نافذة «طباعة وإرسال» بالأجزاء المختارة مبدئيًا
   const [uploading, setUploading] = useState(false);
   const [labQ, setLabQ] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
@@ -192,7 +194,7 @@ export function ConsultModal({ initial, resume, patientId = '', onClose }: { ini
     <Modal xl title={initial ? 'تعديل الكشف' : 'كشف جديد'} onClose={cancel} footer={<>
       {need && <span className="sh-need">{need}</span>}
       <Button variant="outline" onClick={cancel}>إلغاء</Button>
-      <Button variant="outline" icon="print" disabled={!c.patientId} onClick={() => printDiagnosis({ ...c, complaint: sum.complaint, history: sum.history, examination: sum.examination, diagnosis: sum.diagnosis, sheet }, db.patient(c.patientId), visitNo)}>طباعة التشخيص</Button>
+      <Button variant="outline" icon="print" disabled={!c.patientId} onClick={() => setOut(['nurse', 'doctor', 'rx'])}>طباعة وإرسال</Button>
       <Button variant="outline" icon="print" loading={busy} disabled={!ok || uploading} onClick={() => save(true)}>حفظ وطباعة الروشتة</Button>
       <Button icon="check" loading={busy} disabled={!ok || uploading} onClick={() => save(false)}>حفظ الكشف</Button>
     </>}>
@@ -218,13 +220,19 @@ export function ConsultModal({ initial, resume, patientId = '', onClose }: { ini
           <NursingSheet sheet={sheet} onChange={changeSheet} patient={c.patientId ? db.patient(c.patientId) : null} date={c.date} visitNo={visitNo}
             painScore={c.painScore} onPainScore={(v) => set('painScore', v)}
             onFirstPain={(id, side) => setC((x) => ({ ...x, region: regionById(id)?.name ?? x.region, ...(side ? { side } : {}) }))} />
-          <div className="sh-next"><Button icon="chevronLeft" onClick={() => goTab('doctor')}>التالي: كشف الطبيب</Button></div>
+          <div className="sh-next">
+            <Button variant="outline" icon="print" disabled={!c.patientId} onClick={() => setOut(['nurse'])}>طباعة / إرسال شيت التمريض</Button>
+            <Button icon="chevronLeft" onClick={() => goTab('doctor')}>التالي: كشف الطبيب</Button>
+          </div>
         </>}
 
         {tab === 'doctor' && <>
           <DoctorSheet sheet={sheet} onChange={changeSheet} side={c.side} onSide={(v) => set('side', v)}
             icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => setMapOpen(true)} />
-          <div className="sh-next"><Button icon="chevronLeft" onClick={() => goTab('rx')}>التالي: الروشتة والأشعة والتحاليل</Button></div>
+          <div className="sh-next">
+            <Button variant="outline" icon="print" disabled={!c.patientId} onClick={() => setOut(['doctor'])}>طباعة / إرسال كشف الطبيب</Button>
+            <Button icon="chevronLeft" onClick={() => goTab('rx')}>التالي: الروشتة والأشعة والتحاليل</Button>
+          </div>
         </>}
 
         {tab === 'rx' && <>
@@ -300,8 +308,11 @@ export function ConsultModal({ initial, resume, patientId = '', onClose }: { ini
         <Section icon="doc" title="التعليمات وملاحظات الطبيب">
           <textarea className="input" rows={3} placeholder="مثال: راحة وتجنب طلوع السلم، كمادات تلج 15 دقيقة 3 مرات يوميًا، جلسات علاج طبيعي، رباط ضاغط…" value={c.plan} onChange={(e) => set('plan', e.target.value)} />
         </Section>
+        <div className="sh-next"><Button variant="outline" icon="print" disabled={!c.patientId} onClick={() => setOut(['rx'])}>طباعة / إرسال الروشتة</Button></div>
         </>}
       </div>
+      {out && <DiagnosisOutput initial={out} patient={db.patient(c.patientId)} visitNo={visitNo} onClose={() => setOut(null)}
+        c={{ ...c, ...sum, plan: c.plan, sheet, medications: c.medications.filter((m) => m.name.trim()), imagingRequests: c.imagingRequests.filter((r) => r.region.trim()) }} />}
       {/* خريطة الجسم من خانة التشخيص (10): الحالة بتتضاف في «Others» + الكود والمنطقة والجهة */}
       {mapOpen && <DiagnosisPicker onClose={() => setMapOpen(false)} onPick={(text, ref) => {
         const p = pickedToConsult(text, ref);
@@ -391,6 +402,7 @@ export function pickedToConsult(text: string, ref: DiagnosisRef): Partial<Consul
 export function ConsultList({ items, onEdit, hidePatient }: { items: Consultation[]; onEdit: (c: Consultation) => void; hidePatient?: boolean }) {
   const { run } = useRun();
   const perm = useClinicalCan();
+  const [out, setOut] = useState<Consultation | null>(null);
   if (!items.length) return <EmptyState icon="stethoscope" title="لا توجد كشوفات" />;
   return (
     <>
@@ -405,11 +417,7 @@ export function ConsultList({ items, onEdit, hidePatient }: { items: Consultatio
                 <div className="ortho-sub">{fmtDate(c.date)} · {c.region} — {SIDE[c.side]}{c.painScore !== '' && c.painScore != null ? ` · الألم ${c.painScore}/10` : ''}</div>
               </div>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                <Button size="sm" variant="outline" icon="print" onClick={() => {
-                  const visits = ortho.list('consultations', c.patientId).sort((a, b) => a.date.localeCompare(b.date));
-                  printDiagnosis(c, db.patient(c.patientId), visits.findIndex((x) => x.id === c.id) + 1 || undefined);
-                }}>طباعة التشخيص</Button>
-                <IconBtn icon="receipt" label="طباعة الروشتة" onClick={() => printRx(c, db.patient(c.patientId))} />
+                <Button size="sm" variant="outline" icon="print" onClick={() => setOut(c)}>طباعة وإرسال</Button>
                 {perm.edit && <IconBtn icon="edit" label="تعديل" onClick={() => onEdit(c)} />}
                 {perm.del && <IconBtn icon="trash" label="حذف" danger onClick={() => confirmDelete('هذا الكشف') && run(async () => { await ortho.remove('consultations', c.id); atts.forEach((a) => void ortho.removeAttachment(a.path)); }, 'تم الحذف')} />}
               </div>
@@ -433,6 +441,10 @@ export function ConsultList({ items, onEdit, hidePatient }: { items: Consultatio
           </div>
         );
       })}
+      {out && (() => {
+        const visits = ortho.list('consultations', out.patientId).sort((a, b) => a.date.localeCompare(b.date));
+        return <DiagnosisOutput c={out} initial={['nurse', 'doctor', 'rx']} patient={db.patient(out.patientId)} visitNo={visits.findIndex((x) => x.id === out.id) + 1 || undefined} onClose={() => setOut(null)} />;
+      })()}
     </>
   );
 }

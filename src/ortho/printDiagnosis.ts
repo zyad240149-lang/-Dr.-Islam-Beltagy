@@ -1,19 +1,28 @@
-// طباعة التشخيص: الشيتين متعبّيين بنفس شكل الورق — صفحة «شيت التمريض» وصفحة «Hip & Knee Consultation Sheet»
-// (A4 بالعرض، الخانات المتعلّمة ✓ والمكتوب على السطور). كشف قديم من غير شيت بيطبع ملخصه النصي.
-// iframe مخفي زي printRx عشان الطباعة تشتغل من غير popup.
+// طباعة / PDF التشخيص: الشيتين متعبّيين بنفس شكل الورق — «شيت التمريض» و«Hip & Knee Consultation Sheet» (A4 بالعرض،
+// الخانات المتعلّمة ✓ والمكتوب على السطور) — والروشتة (A5). المستخدم بيختار أجزاء منهم أو الكل.
+// كشف قديم من غير شيت بيطلع ملخصه النصي. الطباعة من iframe مخفي زي printRx (من غير popup).
 import { DOCTOR } from '../landing/content';
 import { fileNoText } from '../utils/phoneUtils';
 import { fmtDate } from '../utils/format';
 import { SIDE, type Consultation, type ExamSheet } from './data';
 import { SHEET_LISTS as L, bmiOf, normSheet, painLabel, sheetHasContent } from './ExamSheet';
+import { RX_CSS, rxPageHtml } from './printRx';
 
 type DxConsult = Omit<Consultation, 'id'> & { id?: string };
-export interface DxPatient { fullName: string; fileNo?: string | null }
+export interface DxPatient { fullName: string; fileNo?: string | null; birthDate?: string | null }
+
+export type DxPart = 'nurse' | 'doctor' | 'rx';
+export const DX_PARTS: { id: DxPart; label: string }[] = [
+  { id: 'nurse', label: 'شيت التمريض' }, { id: 'doctor', label: 'كشف الطبيب — الورك والركبة' }, { id: 'rx', label: 'الروشتة والأشعة والتحاليل' },
+];
+/** فيه روشتة تتطبع؟ (أدوية/تحاليل/أشعة مطلوبة/تعليمات/متابعة) */
+export const hasRx = (c: DxConsult) => c.medications.some((m) => m.name.trim()) || c.labs.length > 0
+  || c.imagingRequests.some((r) => r.region.trim()) || !!c.plan.trim() || !!c.followUp;
 
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 const FONT_HREF = 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap';
 
-function sheetHtml(c: DxConsult, p: DxPatient | null | undefined, visitNo?: number) {
+function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: number) {
   const s: ExamSheet = normSheet(c.sheet);
   const has = (g: string, i: string) => s.on.includes(`${g}|${i}`);
   const v = (k: string) => esc((s.txt[k] ?? '').trim());
@@ -33,7 +42,7 @@ function sheetHtml(c: DxConsult, p: DxPatient | null | undefined, visitNo?: numb
 
   // ---------- صفحة 1: شيت التمريض ----------
   const meds = s.meds.filter((m) => m.name.trim());
-  const nurse = `<div class="page" dir="rtl">
+  const nurse = `<div class="page shp" dir="rtl">
   ${head('شيت التمريض', 'يملأ بواسطة التمريض قبل دخول المريض')}
   <div class="bar">${cks('n.visit', L.N_VISIT)}<span>اسم المريض: <b>${name || '—'}</b></span><span>رقم الملف: <b>${fileNo || '—'}</b></span><span>رقم الزيارة: <b>${visitNo ?? '—'}</b></span><span>التاريخ: <b>${date}</b></span></div>
   <div class="grid g4">
@@ -53,7 +62,7 @@ function sheetHtml(c: DxConsult, p: DxPatient | null | undefined, visitNo?: numb
   // ---------- صفحة 2: Hip & Knee ----------
   const rtLt = (k: string) => `<td>${v(k + '.rt')}</td><td>${v(k + '.lt')}</td>`;
   const sex = has('n.gender', 'ذكر') ? 'M' : has('n.gender', 'أنثى') ? 'F' : '';
-  const dr = `<div class="page" dir="ltr">
+  const dr = `<div class="page shp" dir="ltr">
   ${head('HIP &amp; KNEE CONSULTATION SHEET', '')}
   <div class="bar">Patient Name: <b>${name || '—'}</b><span>Age: <b>${v('n.age') || '—'}</b></span><span>Sex: ${ck(sex === 'M', 'M')}${ck(sex === 'F', 'F')}</span><span>Date: <b>${dmy(c.date)}</b></span><span>File No.: <b>${fileNo || '—'}</b></span></div>
   <div class="grid g4">
@@ -71,36 +80,50 @@ function sheetHtml(c: DxConsult, p: DxPatient | null | undefined, visitNo?: numb
     ${box(12, 'Notes', `<div class="notes">${v('x.notes').replace(/\n/g, '<br>') || '&nbsp;'}</div>`)}
   </div>
 </div>`;
-  return nurse + dr;
+  return { nurse, doctor: dr };
 }
 
 // كشف قديم (قبل الشيت): ملخصه النصي في صفحة واحدة
 function legacyHtml(c: DxConsult, p: DxPatient | null | undefined) {
   const row = (l: string, t: string) => (t.trim() ? `<div class="ln stack"><b>${l}</b><span>${esc(t).replace(/\n/g, '<br>')}</span></div>` : '');
-  return `<div class="page" dir="rtl"><header><div class="brand"><b>${esc(DOCTOR.name)}</b><span>${esc(DOCTOR.title)}</span></div><div class="title">التشخيص</div></header>
+  return `<div class="page shp" dir="rtl"><header><div class="brand"><b>${esc(DOCTOR.name)}</b><span>${esc(DOCTOR.title)}</span></div><div class="title">التشخيص</div></header>
   <div class="bar"><span>اسم المريض: <b>${esc(p?.fullName ?? '—')}</b></span><span>رقم الملف: <b>${esc(fileNoText(p?.fileNo) || '—')}</b></span><span>التاريخ: <b>${esc(fmtDate(c.date))}</b></span><span>المنطقة: <b>${esc(c.region)}${c.side !== 'na' ? ' ' + esc(SIDE[c.side]) : ''}</b></span></div>
   <div class="legacy">${row('الشكوى', c.complaint)}${row('التاريخ المرضي', c.history)}${row('الفحص', c.examination)}${row('التشخيص', c.diagnosis + (c.icd10 ? ` (${c.icd10})` : ''))}${row('التعليمات', c.plan)}</div></div>`;
 }
 
-export function diagnosisHtml(c: DxConsult, p?: DxPatient | null, visitNo?: number): string {
-  const body = sheetHasContent(normSheet(c.sheet)) ? sheetHtml(c, p, visitNo) : legacyHtml(c, p);
+export function diagnosisHtml(c: DxConsult, p?: DxPatient | null, visitNo?: number, parts: DxPart[] = ['nurse', 'doctor']): string {
+  const pages: string[] = [];
+  const sheetParts = parts.filter((x) => x !== 'rx');
+  if (sheetParts.length) {
+    if (sheetHasContent(normSheet(c.sheet))) { const sp = sheetPages(c, p, visitNo); sheetParts.forEach((x) => pages.push(sp[x as 'nurse' | 'doctor'])); }
+    else pages.push(legacyHtml(c, p));
+  }
+  if (parts.includes('rx')) pages.push(`<div class="page rxw">${rxPageHtml(c, p)}</div>`);
+  const body = pages.join('');
   return `<!doctype html><html lang="ar"><head><meta charset="utf-8"><title>التشخيص — ${esc(p?.fullName)}</title>
 <link rel="stylesheet" href="${FONT_HREF}">
 <style>
   @page { size: A4 landscape; margin: 7mm; }
   * { box-sizing: border-box; }
   :root { color-scheme: light; }
-  body { font-family: "IBM Plex Sans", "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif; color: #10182f; background: #fff; margin: 0; font-size: 9px; line-height: 1.22; }
-  [dir="rtl"] { font-family: "IBM Plex Sans Arabic", "IBM Plex Sans", "Segoe UI", Tahoma, sans-serif; }
+  @page rx { size: A5; margin: 12mm; }
+  body { background: #fff; margin: 0; }
+  .rxw { page: rx; }
+  .shp { font-family: "IBM Plex Sans", "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif; color: #10182f; font-size: 9px; line-height: 1.22; }
+  .shp[dir="rtl"] { font-family: "IBM Plex Sans Arabic", "IBM Plex Sans", "Segoe UI", Tahoma, sans-serif; }
+  /* PDF: كل صفحة بعرض المساحة المطبوعة بتاعتها (A4 بالعرض / A5) وبتتصوّر لوحدها */
+  .pdf .shp { width: 1070px; }
+  .pdf .rxw { width: 469px; }
+  .pdf .page { margin-bottom: 24px; padding: 4px; }
   .page { break-after: page; }
   .page:last-child { break-after: auto; }
-  header { display: flex; align-items: center; gap: 12px; border-bottom: 2.5px solid #1b4f8f; padding-bottom: 4px; margin-bottom: 5px; }
-  header img { width: 32px; height: 32px; object-fit: contain; }
-  header .brand b { display: block; font-size: 13.5px; color: #1b4f8f; }
-  header .brand span { display: block; font-size: 9.5px; color: #475569; }
-  header .title { flex: 1; text-align: center; background: #1b4f8f; color: #fff; border-radius: 7px; padding: 4px 10px; font-weight: 700; font-size: 13px; letter-spacing: .3px; }
-  [dir="rtl"] header .title { letter-spacing: 0; }
-  header .title small { display: block; font-weight: 500; font-size: 9.5px; opacity: .9; }
+  .shp header { display: flex; align-items: center; gap: 12px; border-bottom: 2.5px solid #1b4f8f; padding-bottom: 4px; margin-bottom: 5px; }
+  .shp header img { width: 32px; height: 32px; object-fit: contain; }
+  .shp header .brand b { display: block; font-size: 13.5px; color: #1b4f8f; }
+  .shp header .brand span { display: block; font-size: 9.5px; color: #475569; }
+  .shp header .title { flex: 1; text-align: center; background: #1b4f8f; color: #fff; border-radius: 7px; padding: 4px 10px; font-weight: 700; font-size: 13px; letter-spacing: .3px; }
+  .shp[dir="rtl"] header .title { letter-spacing: 0; }
+  .shp header .title small { display: block; font-weight: 500; font-size: 9.5px; opacity: .9; }
   .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 20px; background: #eef4fb; border: 1px solid #c7dcf2; border-radius: 7px; padding: 3px 10px; margin-bottom: 5px; font-size: 10px; }
   .bar b { color: #1b4f8f; }
   .grid { display: grid; gap: 4px; }
@@ -129,35 +152,62 @@ export function diagnosisHtml(c: DxConsult, p?: DxPatient | null, visitNo?: numb
   .two { display: grid; grid-template-columns: 1fr 1fr; gap: 0 8px; }
   .g3 { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 0 14px; }
   .cols2 { columns: 2; column-gap: 8px; }
-  table { width: 100%; border-collapse: collapse; margin: 1px 0 4px; }
-  th, td { border: 1px solid #cbd5e1; padding: 1px 4px; text-align: center; font-size: 8.5px; }
-  th { background: #eef4fb; color: #1b4f8f; }
-  th:first-child, td:first-child { text-align: start; }
-  td { height: 12px; font-weight: 600; }
+  .shp table { width: 100%; border-collapse: collapse; margin: 1px 0 4px; }
+  .shp th, .shp td { border: 1px solid #cbd5e1; padding: 1px 4px; text-align: center; font-size: 8.5px; }
+  .shp th { background: #eef4fb; color: #1b4f8f; }
+  .shp th:first-child, .shp td:first-child { text-align: start; }
+  .shp td { height: 12px; font-weight: 600; }
   .sw { display: inline-block; width: 7px; height: 7px; border-radius: 2px; margin-inline-end: 4px; }
   .note { font-size: 8.5px; color: #64748b; }
-  ul { margin: 0 0 3px; padding-inline-start: 14px; font-weight: 600; }
+  .shp ul { margin: 0 0 3px; padding-inline-start: 14px; font-weight: 600; }
   .vas { display: flex; gap: 2px; margin: 2px 0; }
   .vas span { width: 15px; height: 15px; display: grid; place-items: center; border: 1px solid #94a3b8; border-radius: 3px; font-size: 9px; }
   .vas span.on { background: #c4372d; border-color: #c4372d; color: #fff; font-weight: 700; }
   .notes { min-height: 50px; font-weight: 600; white-space: normal; }
   .legacy { padding: 8px 4px; }
+${RX_CSS}
 </style></head><body>${body}</body></html>`;
 }
 
-export function printDiagnosis(c: DxConsult, p?: DxPatient | null, visitNo?: number) {
+// iframe بالمحتوى + استنّى الخطوط (حد أقصى 2.5 ثانية لو مفيش إنترنت) والصور
+async function loadFrame(html: string, cssText: string) {
   const f = document.createElement('iframe');
   f.setAttribute('aria-hidden', 'true');
-  f.style.cssText = 'position:fixed;width:0;height:0;border:0;inset-inline-start:-9999px';
+  f.style.cssText = cssText;
   document.body.appendChild(f);
   const doc = f.contentDocument!;
-  doc.open(); doc.write(diagnosisHtml(c, p, visitNo)); doc.close();
-  // الطباعة بعد ما الخطوط تتحمّل (حد أقصى 2.5 ثانية لو مفيش إنترنت)
+  doc.open(); doc.write(html); doc.close();
   const fontsReady = doc.fonts?.ready ?? Promise.resolve();
-  const wait = Promise.race([fontsReady.then(() => doc.fonts?.load('700 12px "IBM Plex Sans Arabic"')), new Promise((r) => setTimeout(r, 2500))]);
-  void wait.catch(() => undefined).then(() => {
+  await Promise.race([fontsReady.then(() => doc.fonts?.load('700 12px "IBM Plex Sans Arabic"')), new Promise((r) => setTimeout(r, 2500))]).catch(() => undefined);
+  await Promise.all(Array.from(doc.images).map((img) => (img.complete ? null : new Promise((r) => { img.onload = r; img.onerror = r; }))));
+  return f;
+}
+
+export function printDiagnosis(c: DxConsult, p?: DxPatient | null, visitNo?: number, parts?: DxPart[]) {
+  void loadFrame(diagnosisHtml(c, p, visitNo, parts), 'position:fixed;width:0;height:0;border:0;inset-inline-start:-9999px').then((f) => {
     f.contentWindow?.focus();
     f.contentWindow?.print();
     setTimeout(() => f.remove(), 1000);
   });
+}
+
+/** نفس الصفحات كملف PDF: الشيتات A4 بالعرض والروشتة A5 — كل صفحة صورة بتتظبط على المساحة المطبوعة */
+export async function buildDiagnosisPdf(c: DxConsult, p?: DxPatient | null, visitNo?: number, parts?: DxPart[]): Promise<Blob> {
+  const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import('html2canvas'), import('jspdf')]);
+  const html = diagnosisHtml(c, p, visitNo, parts).replace('<html lang="ar">', '<html lang="ar" class="pdf">');
+  const f = await loadFrame(html, 'position:fixed;top:0;left:-12000px;width:1200px;height:900px;border:0;');
+  try {
+    const pages = Array.from(f.contentDocument!.querySelectorAll<HTMLElement>('.page'));
+    if (!pages.length) throw new Error('مفيش حاجة تتطبع.');
+    let pdf: InstanceType<typeof jsPDF> | null = null;
+    for (const el of pages) {
+      const rx = el.classList.contains('rxw');
+      const [format, orientation, w, h, m] = rx ? ['a5', 'portrait', 148, 210, 12] as const : ['a4', 'landscape', 297, 210, 7] as const;
+      const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+      if (!pdf) pdf = new jsPDF({ unit: 'mm', format, orientation }); else pdf.addPage(format, orientation);
+      const k = Math.min((w - 2 * m) / canvas.width, (h - 2 * m) / canvas.height);
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', (w - canvas.width * k) / 2, m, canvas.width * k, canvas.height * k);
+    }
+    return pdf!.output('blob');
+  } finally { f.remove(); }
 }

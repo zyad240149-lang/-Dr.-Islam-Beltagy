@@ -15,6 +15,7 @@ export default function Diagnosis() {
   const [edit, setEdit] = useState<Consultation | 'new' | null>(null);
   const [mapOpen, setMapOpen] = useState(false);
   const [preset, setPreset] = useState<Partial<Consultation> | undefined>();
+  const [resume, setResume] = useState(false);
   const pick = (id: string) => setParams(id ? { patient: id } : {}, { replace: true });
   // فيه تشخيص بدأه المستخدم لنفس المريض وخرج من غير ما يحفظه؟ (نعيد الفحص كل ما تتقفل النافذة عشان الزرار يظهر/يختفي صح)
   const draft = patientId && !edit ? loadConsultDraft(patientId) : null;
@@ -29,8 +30,11 @@ export default function Diagnosis() {
             <PatientSelect value={patientId} onChange={pick} />
           </div>
           {patientId && <span className="badge badge--brand">ملف {patientFile(patientId)}</span>}
-          {perm.add && draft && <Button icon="refresh" variant="outline" onClick={() => setEdit('new')}>استكمال التشخيص</Button>}
-          {perm.add && <Button icon="stethoscope" disabled={!patientId} onClick={() => setMapOpen(true)}>تشخيص {draft ? 'جديد' : ''}</Button>}
+          {perm.add && draft && <Button icon="refresh" variant="outline" onClick={() => { setResume(true); setEdit('new'); }}>استكمال التشخيص</Button>}
+          {perm.add && <Button icon="stethoscope" disabled={!patientId} onClick={() => {
+            if (draft && !window.confirm('فيه تشخيص لم يكتمل للمريض ده — بدء تشخيص جديد هيستبدله. تكمل؟')) return;
+            setMapOpen(true);
+          }}>{draft ? 'تشخيص جديد' : 'تشخيص'}</Button>}
         </div>
       </section>
       {patientId && (
@@ -43,7 +47,7 @@ export default function Diagnosis() {
           </div>
         </section>
       )}
-      {edit && patientId && <ConsultModal patientId={patientId} initial={edit === 'new' ? undefined : edit} preset={edit === 'new' ? preset : undefined} onClose={() => { setEdit(null); setPreset(undefined); }} />}
+      {edit && patientId && <ConsultModal patientId={patientId} initial={edit === 'new' ? undefined : edit} preset={edit === 'new' ? preset : undefined} resume={edit === 'new' && resume} onClose={() => { setEdit(null); setPreset(undefined); setResume(false); }} />}
       {/* خريطة الجسم (مرجع مركز التميز): اختيار المنطقة والحالة ← نموذج الكشف متعبّي بالتشخيص والكود والجهة */}
       {mapOpen && <DiagnosisPicker onClose={() => setMapOpen(false)} onPick={(text, ref) => { setPreset(pickedToConsult(text, ref)); setMapOpen(false); setEdit('new'); }} />}
     </div>

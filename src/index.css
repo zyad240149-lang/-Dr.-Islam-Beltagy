@@ -850,6 +850,54 @@ textarea.input { height: auto; padding-block: 10px; resize: vertical; line-heigh
 @keyframes ntGrow { from { transform: scaleX(0); } }
 @media (max-width: 1000px) { .nt-layout { grid-template-columns: minmax(0, 1fr); } .nt-sources { position: static; } }
 
+/* ---------- Clinical consultation form ---------- */
+.cx { display: flex; flex-direction: column; gap: 14px; }
+.cx-sec { border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px 6px; background: var(--surface); }
+.cx-sec__head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; color: var(--brand-700); }
+.cx-sec__head h3 { margin: 0; font-size: 16px; font-weight: 700; }
+.cx-sec__aside { margin-inline-start: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+.cx-empty { margin: 0 0 10px; color: var(--muted); font-size: 14.5px; }
+.cx-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.cx-chip { height: 30px; padding: 0 11px; border-radius: var(--r-pill); border: 1px solid var(--line); background: var(--surface); font: inherit; font-size: 13.5px; font-weight: 600; color: var(--text); cursor: pointer; transition: background .15s, color .15s, border-color .15s; }
+.cx-chip:hover { border-color: var(--brand-100); color: var(--brand-700); }
+.cx-chip.is-on { background: var(--brand-700); border-color: var(--brand-700); color: #fff; }
+.cx-pain { display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); gap: 4px; max-width: 520px; }
+.cx-pain__b { height: 34px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); font: inherit; font-weight: 700; color: var(--text); cursor: pointer; }
+.cx-pain__b--lo.is-on { background: var(--ok); border-color: var(--ok); color: #fff; }
+.cx-pain__b--mid.is-on { background: var(--warn); border-color: var(--warn); color: #fff; }
+.cx-pain__b--hi.is-on { background: var(--danger); border-color: var(--danger); color: #fff; }
+.cx-pain-val { margin-inline-start: 6px; color: var(--brand-700); }
+.cx-rows { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.cx-row { display: grid; gap: 8px; align-items: center; }
+.cx-row--med { grid-template-columns: 24px minmax(0, 2.2fr) minmax(0, 1fr) minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1.2fr) auto; }
+.cx-row--img { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.2fr) minmax(0, 1.2fr) auto; }
+.cx-row__n { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--brand-50); color: var(--brand-700); font-weight: 700; font-size: 13px; }
+.cx-row .input { height: 40px; }
+.cx-labgrp { margin-bottom: 10px; }
+.cx-labgrp__t { font-size: 13.5px; font-weight: 700; color: var(--muted); }
+.cx-labgrp .cx-chips { margin-top: 4px; }
+.cx-labadd { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; max-width: 420px; }
+.cx-thumbs { display: flex; flex-wrap: wrap; gap: 10px; margin: 4px 0 10px; }
+.cx-thumb { position: relative; width: 116px; }
+.cx-thumb a { display: grid; place-items: center; width: 116px; height: 96px; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); background: #0d1424; }
+.cx-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.cx-thumb__doc { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #cbd5e1; font-size: 12.5px; font-weight: 700; }
+.cx-thumb__name { display: block; margin-top: 4px; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cx-thumb__x { position: absolute; top: 4px; inset-inline-end: 4px; width: 24px; height: 24px; border-radius: 50%; border: 0; display: grid; place-items: center; background: rgba(16, 24, 47, .7); color: #fff; cursor: pointer; }
+.cx-dx { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; padding: 8px 12px; border-radius: 10px; background: var(--brand-50); color: var(--brand-700); }
+.cx-dx__l { font-size: 13px; font-weight: 600; color: var(--muted); }
+.cx-medlist { margin: 0; padding-inline-start: 18px; }
+.cx-medlist li { margin-bottom: 2px; }
+@media (max-width: 760px) {
+  .cx-row--med { grid-template-columns: 24px minmax(0, 1fr) auto; }
+  .cx-row--med > .input:not(:nth-child(2)) { grid-column: 2 / 3; }
+  .cx-row--img { grid-template-columns: minmax(0, 1fr) auto; }
+  .cx-row--img > .input, .cx-row--img > select { grid-column: 1 / 2; }
+  .cx-row--med > .icon-btn { grid-column: 3; grid-row: 1; }
+  .cx-row--img > .icon-btn { grid-column: 2; grid-row: 1; }
+  .cx-pain__b { height: 30px; font-size: 13px; }
+}
+
 /* ---------- Diagnosis picker ---------- */
 .dx-field { position: relative; }
 .dx-open { position: absolute; top: 0; inset-inline-end: 0; display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; padding: 0; font: inherit; font-size: 14.5px; font-weight: 600; color: var(--brand-600); cursor: pointer; }

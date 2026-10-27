@@ -1,0 +1,82 @@
+{
+  "at": "2026-10-27T00:26:15.803Z",
+  "passed": 15,
+  "failed": 0,
+  "results": [
+    {
+      "name": "تجهيز طبيب واستقبال ومريض للاختبار",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب يرفع صورة أشعة في ملف المريض",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "صورة الأشعة تتفتح برابط موقّع",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "الاستقبال يشوف صورة الأشعة في الكشف",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "صورة الأشعة مش متاحة لزائر بدون دخول",
+      "ok": true,
+      "detail": "downloaded!"
+    },
+    {
+      "name": "حفظ كشف كامل (تاريخ مرضي + ألم + ICD + روشتة + تحاليل + أشعة + مرفقات + متابعة)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الروشتة والتحاليل والمرفقات راجعة زي ما اتحفظت",
+      "ok": true,
+      "detail": "{\"m\":2,\"l\":[\"CBC\",\"ESR\",\"Vitamin D (25-OH)\"],\"p\":7,\"f\":\"2026-11-10\"}"
+    },
+    {
+      "name": "تعديل الروشتة ودرجة الألم",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال ما يقدرش يعدّل الكشف",
+      "ok": true,
+      "detail": "updated!"
+    },
+    {
+      "name": "درجة ألم أكبر من 10 مرفوضة",
+      "ok": true,
+      "detail": "new row for relation \"ortho_consultations\" violates check constraint \"ortho_consultations_pain_score_check\""
+    },
+    {
+      "name": "الأدوية لازم تكون قائمة",
+      "ok": true,
+      "detail": "new row for relation \"ortho_consultations\" violates check constraint \"ortho_consultations_medications_check\""
+    },
+    {
+      "name": "كشف من غير الحقول الجديدة بيتحفظ بقيم افتراضية",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "طلب الأشعة من الكشف بيتسجل كـ «مطلوبة»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "حذف الكشف",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "حذف صورة الأشعة من التخزين",
+      "ok": true,
+      "detail": "1"
+    }
+  ]
+}

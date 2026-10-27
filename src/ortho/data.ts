@@ -9,7 +9,13 @@ export type ImagingStatus = 'requested' | 'received' | 'reviewed';
 export type SurgeryStatus = 'planned' | 'scheduled' | 'done' | 'postponed';
 export type FractureStatus = 'casted' | 'healing' | 'healed' | 'surgical';
 
-export interface Consultation { id: string; patientId: string; date: string; complaint: string; region: string; side: Side; examination: string; diagnosis: string; plan: string }
+export interface Medication { name: string; dose: string; frequency: string; duration: string; notes: string }
+export interface ImagingRequest { kind: ImagingKind; region: string; view: string }
+export interface Attachment { path: string; name: string; type: string; size: number }
+export interface Consultation {
+  id: string; patientId: string; date: string; complaint: string; region: string; side: Side; examination: string; diagnosis: string; plan: string;
+  history: string; painScore: number | ''; icd10: string; medications: Medication[]; labs: string[]; imagingRequests: ImagingRequest[]; attachments: Attachment[]; followUp: string;
+}
 export interface Imaging { id: string; patientId: string; kind: ImagingKind; region: string; requestedAt: string; status: ImagingStatus; finding: string }
 export interface Surgery { id: string; patientId: string; procedure: string; region: string; side: Side; hospital: string; date: string; implant: string; status: SurgeryStatus; notes: string }
 export interface Fracture { id: string; patientId: string; bone: string; side: Side; kind: string; injuryDate: string; castDate: string; removalDue: string; status: FractureStatus }
@@ -27,7 +33,7 @@ const todayYmd = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cair
 
 // الأعمدة المسموح إرسالها لكل جدول (أي حاجة غيرها بتتجاهل — created_by والتواريخ بيحددها الخادم)
 const COLUMNS: Record<Kind, string[]> = {
-  consultations: ['patient_id', 'date', 'complaint', 'region', 'side', 'examination', 'diagnosis', 'plan'],
+  consultations: ['patient_id', 'date', 'complaint', 'region', 'side', 'examination', 'diagnosis', 'plan', 'history', 'pain_score', 'icd10', 'medications', 'labs', 'imaging_requests', 'attachments', 'follow_up'],
   imaging: ['patient_id', 'kind', 'region', 'requested_at', 'status', 'finding'],
   surgeries: ['patient_id', 'procedure', 'region', 'side', 'hospital', 'date', 'implant', 'status', 'notes'],
   fractures: ['patient_id', 'bone', 'side', 'kind', 'injury_date', 'cast_date', 'removal_due', 'status'],
@@ -80,10 +86,12 @@ export const ortho = {
     const q = item.id ? table.update(row as never).eq('id', item.id) : table.insert(row as never);
     const { data, error } = await q.select().single();
     if (error) throw new Error(clean(error.message));
-    const list: Row[] = cache[kind] ?? [];
-    const i = list.findIndex((r) => r.id === data.id);
-    if (i >= 0) list[i] = data; else list.unshift(data);
-    cache[kind] = list;
+    // لو النوع لسه ما اتحمّلش ما نعلّمهوش «محمّل» بصف واحد — أول شاشة تطلبه هتحمّله كامل
+    const list = cache[kind];
+    if (list) {
+      const i = list.findIndex((r) => r.id === data.id);
+      if (i >= 0) list[i] = data; else list.unshift(data);
+    }
     bump();
     return data.id as string;
   },
@@ -94,6 +102,21 @@ export const ortho = {
     cache[kind] = (cache[kind] ?? []).filter((r) => r.id !== id);
     bump();
   },
+  // صور الأشعة/التقارير المرفقة بالكشف: بتترفع في ملفات المريض (نفس الـ bucket وصلاحياته) تحت مجلد xray
+  async uploadAttachment(patientId: string, file: File): Promise<Attachment> {
+    if (file.size > 10 * 1024 * 1024) throw new Error('حجم الملف أكبر من 10 ميجابايت.');
+    if (!['image/png', 'image/jpeg', 'image/webp', 'application/pdf'].includes(file.type)) throw new Error('ارفع صورة (JPG/PNG/WEBP) أو PDF.');
+    const ext = (file.name.split('.').pop() ?? 'bin').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8) || 'bin';
+    const path = `${patientId}/xray/${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from('patient-files').upload(path, file, { contentType: file.type, upsert: false });
+    if (error) throw new Error('تعذّر رفع الملف: ' + clean(error.message));
+    return { path, name: file.name, type: file.type, size: file.size };
+  },
+  async attachmentUrl(path: string): Promise<string | null> {
+    const { data } = await supabase.storage.from('patient-files').createSignedUrl(path, 600);
+    return data?.signedUrl ?? null;
+  },
+  async removeAttachment(path: string) { await supabase.storage.from('patient-files').remove([path]); },
   pendingImaging: () => (cache.imaging ?? []).filter((r) => r.status !== 'reviewed').length,
   castsDue: () => { const t = todayYmd(); return (cache.fractures ?? []).filter((r) => r.status !== 'healed' && String(r.removal_due) <= t).length; },
   preloadCounters: () => { if (!cache.imaging) void load('imaging'); if (!cache.fractures) void load('fractures'); },

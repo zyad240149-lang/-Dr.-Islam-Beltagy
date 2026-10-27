@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test:e2e": "node scripts/e2e.mjs && node scripts/e2e-modules.mjs && node scripts/e2e-patient.mjs",
+    "test:e2e": "node scripts/e2e.mjs && node scripts/e2e-modules.mjs && node scripts/e2e-patient.mjs && node scripts/e2e-consult.mjs",
     "db:migrate": "node scripts/db-migrate.mjs"
   },
   "dependencies": {

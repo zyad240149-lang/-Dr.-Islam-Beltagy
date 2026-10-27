@@ -1,0 +1,12 @@
+{
+ "تخصيص لدكتور": "Assign to a doctor",
+ "بدون دكتور": "No doctor",
+ "كل الأطباء": "All doctors",
+ "اختر دكتور واحد على الأقل.": "Choose at least one doctor.",
+ "الخدمة متاحة لكل الأطباء.": "The service is available to all doctors.",
+ "تم تخصيص الخدمة للأطباء المختارين.": "The service has been assigned to the selected doctors.",
+ "اختر الأطباء اللي يقدّمون هذي الخدمة. الحجز (من الإدارة والموقع وبوابة المريض) يعرض هالأطباء بس لهذي الخدمة. المواعيد الحالية ما تتأثر.": "Choose the doctors who provide this service. Booking (admin, website and patient portal) will show only these doctors for this service. Existing appointments are not affected.",
+ "لتخصيص الخدمة لدكتور معيّن استخدم زر «تخصيص لدكتور» في كرت الخدمة.": "To assign the service to a specific doctor, use the \"Assign to a doctor\" button on the service card.",
+ "اختر دكتور واحد على الأقل للخدمة": "Choose at least one doctor for the service",
+ "الخدمة غير موجودة": "Service not found"
+}

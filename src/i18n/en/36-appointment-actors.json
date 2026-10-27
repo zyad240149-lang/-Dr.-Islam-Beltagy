@@ -1,0 +1,17 @@
+{
+ "حجزه:": "Booked by:",
+ "ألغاه:": "Cancelled by:",
+ "دكتور": "Doctor",
+ "حجز آلي": "Auto-booked",
+ "ألغاه المريض": "Cancelled by the patient",
+ "ألغاه النظام": "Cancelled by the system",
+ "ملغي — غير معروف مين لغاه": "Cancelled — canceller unknown",
+ "حجزه": "Booked by",
+ "ألغاه": "Cancelled by",
+ "وقت الحجز": "Booked at",
+ "وقت الإلغاء": "Cancelled at",
+ "المريض (حجز أونلاين من الموقع)": "The patient (online booking)",
+ "النظام (حجز آلي)": "The system (auto-booked)",
+ "غير معروف": "Unknown",
+ "حجزه / ألغاه": "Booked / cancelled by"
+}

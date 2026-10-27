@@ -1,0 +1,22 @@
+{
+ "راتب أساسي + عمولة": "Base salary + commission",
+ "عمولة فقط": "Commission only",
+ "راتب أساسي فقط": "Base salary only",
+ "راتب ثابت + عمولة على الإيراد المؤهل. الإجمالي = الراتب الأساسي + العمولة المستحقة.": "Fixed salary + commission on qualifying revenue. Total = base salary + commission due.",
+ "بدون راتب أساسي: نسبة من قيمة زياراته المنفذة فقط، وإذا لم ينفذ زيارات تكون عمولته صفرًا.": "No base salary: a percentage of the value of the visits they performed; if none, the commission is zero.",
+ "راتب شهري ثابت دون عمولات (التارجت اختياري للمتابعة فقط).": "Fixed monthly salary with no commission (target is optional, for tracking only).",
+ "التارجت للمتابعة فقط.": "The target is for tracking only.",
+ "نظام الراتب": "Pay system",
+ "اختر طريقة احتساب راتب هذا الأخصائي.": "Choose how this specialist's pay is calculated.",
+ "العمولة": "Commission",
+ "نسبة من الإيراد المؤهل (زيارات نفذها بنفسه) أو من قيمة التارجت حسب الشرط.": "A percentage of qualifying revenue (visits they performed) or of the target value, depending on the condition.",
+ "يوم صرف الراتب (من الشهر التالي)": "Payday (in the following month)",
+ "غير محدد": "Not set",
+ "موعد الصرف": "Payment date",
+ "متأخر": "Overdue",
+ "رواتب متأخرة": "Overdue salaries",
+ "نظام الراتب غير صحيح": "Invalid pay system",
+ "يوم الصرف لازم يكون من 1 إلى 31": "Payday must be between 1 and 31",
+ "يوم الصرف لازم يكون رقم من 1 إلى 31": "Payday must be a number from 1 to 31",
+ "حدّد نسبة العمولة للنظام: راتب أساسي + عمولة": "Set the commission rate for the base salary + commission system"
+}

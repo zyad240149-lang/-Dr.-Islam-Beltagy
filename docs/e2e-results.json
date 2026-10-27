@@ -1,0 +1,162 @@
+{
+  "at": "2026-10-26T20:22:31.708Z",
+  "passed": 31,
+  "failed": 0,
+  "results": [
+    {
+      "name": "الزائر بدون دخول ما يقدر يقرا المرضى",
+      "ok": true,
+      "detail": "permission denied for table patients"
+    },
+    {
+      "name": "كلمة مرور غلط مرفوضة",
+      "ok": true,
+      "detail": "Invalid login credentials"
+    },
+    {
+      "name": "المدير يدخل و /api/me يرجّع موظف",
+      "ok": true,
+      "detail": "{\"kind\":\"staff\",\"employee\":{\"id\":\"39867676-9b3a-4c6b-95ad-086b239ee40d\",\"auth_user_id\":\"c7fc6235-c83d-42c9-bf5f-da8de727"
+    },
+    {
+      "name": "إنشاء ملف طبيب (save_therapist)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "إنشاء حساب استقبال",
+      "ok": true,
+      "detail": "{\"id\":\"2332992f-74bf-456b-971d-235737c35b48\",\"name\":\"استقبال اختبار آلي\",\"username\":\"201200000901\",\"role\":\"reception\",\"phone\":\"+201200000901\",\"active\""
+    },
+    {
+      "name": "إنشاء حساب طبيب مربوط بملفه",
+      "ok": true,
+      "detail": "{\"id\":\"7b106fd3-03d4-4568-9353-a4bfdd58c843\",\"name\":\"طبيب اختبار آلي\",\"username\":\"201200000902\",\"role\":\"therapist\",\"phone\":\"+201200000902\",\"active\":tr"
+    },
+    {
+      "name": "رقم موظف مكرر مرفوض",
+      "ok": true,
+      "detail": "409"
+    },
+    {
+      "name": "كلمة مرور قصيرة مرفوضة",
+      "ok": true,
+      "detail": "400"
+    },
+    {
+      "name": "الاستقبال ما يقدر ينشئ موظفين",
+      "ok": true,
+      "detail": "403"
+    },
+    {
+      "name": "الاستقبال يضيف مريض ورقم الملف يتولد تلقائي",
+      "ok": true,
+      "detail": "TM-1"
+    },
+    {
+      "name": "المريض محفوظ فعلًا في القاعدة",
+      "ok": true,
+      "detail": "{\"full_name\":\"مريض اختبار آلي\",\"phone\":\"+201200000999\"}"
+    },
+    {
+      "name": "بحث المرضى بالاسم (list_patients)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "حجز موعد من الاستقبال",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "حجز نفس الوقت لنفس الطبيب مرفوض من الخادم",
+      "ok": true,
+      "detail": "عذرًا، هذا الموعد تم حجزه للتو. يرجى اختيار موعد آخر."
+    },
+    {
+      "name": "حجز خارج ساعات العمل مرفوض",
+      "ok": true,
+      "detail": "الوقت خارج ساعات عمل المركز (16:00 - 22:00)"
+    },
+    {
+      "name": "حجزين متزامنين على نفس الوقت: واحد بس ينجح",
+      "ok": true,
+      "detail": "ok | عذرًا، هذا الموعد تم حجزه للتو. يرجى اختيار موعد آخر."
+    },
+    {
+      "name": "الفاتورة اتعملت تلقائيًا مع الحجز بسعر الخدمة",
+      "ok": true,
+      "detail": "{\"total\":400,\"status\":\"due\"}"
+    },
+    {
+      "name": "دفع أكبر من المتبقي مرفوض",
+      "ok": true,
+      "detail": "المبلغ لازم يكون بين 1 و 400.00 ج.م"
+    },
+    {
+      "name": "تسجيل دفعة جزئية",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الخادم حسب المدفوع والمتبقي والحالة",
+      "ok": true,
+      "detail": "{\"paid\":150,\"remaining\":250,\"status\":\"partial\"}"
+    },
+    {
+      "name": "الاستقبال ما يشوفش الرواتب",
+      "ok": true,
+      "detail": "ما فيه صلاحية لهذه العملية"
+    },
+    {
+      "name": "المدير يشوف الرواتب",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "لوحة الاستقبال بدون أرقام الإيراد",
+      "ok": true,
+      "detail": "{\"openTickets\":0,\"outstanding\":null,\"monthRevenue\":null,\"totalPatients\":1,\"completedToday\":0,\"pendingRequests\":0,\"newPat"
+    },
+    {
+      "name": "الاستقبال ما يقدرش يكتب تشخيص",
+      "ok": true,
+      "detail": "new row violates row-level security policy for table \"ortho_consultations\""
+    },
+    {
+      "name": "الطبيب يسجّل كشف وتشخيص",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الكشف محفوظ باسم الطبيب",
+      "ok": true,
+      "detail": "7b106fd3-03d4-4568-9353-a4bfdd58c843"
+    },
+    {
+      "name": "الاستقبال يقرا الكشف (عرض فقط)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "تشخيص فاضي مرفوض من القاعدة",
+      "ok": true,
+      "detail": "new row for relation \"ortho_consultations\" violates check constraint \"ortho_consultations_diagnosis_check\""
+    },
+    {
+      "name": "موعد فك الجبس قبل التركيب مرفوض",
+      "ok": true,
+      "detail": "new row for relation \"ortho_fractures\" violates check constraint \"ortho_fractures_check\""
+    },
+    {
+      "name": "الاستقبال ما يقدرش يحذف كشف",
+      "ok": true,
+      "detail": "deleted 0"
+    },
+    {
+      "name": "إضافة الكشف متسجلة في سجل التدقيق",
+      "ok": true,
+      "detail": "1"
+    }
+  ]
+}

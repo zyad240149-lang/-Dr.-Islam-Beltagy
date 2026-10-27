@@ -1,0 +1,16 @@
+{
+ "مواعيد الجلسات": "Session appointments",
+ "محجوزة)": "booked)",
+ "اختر التاريخ والوقت": "Choose the date and time",
+ "مسح": "Clear",
+ "الخطة ليست نشطة — لا يمكن حجز جلسات عليها.": "The plan isn't active — sessions can't be booked on it.",
+ "الخطة العلاجية ليست نشطة — لا يمكن حجز جلسات عليها": "The treatment plan isn't active — sessions can't be booked on it",
+ "المريض عنده جلسة خطة/باقة محجوزة في اليوم ده — جلسة واحدة في اليوم": "The patient already has a plan/package session booked on this day — one session per day",
+ "مواعيد مقترحة حسب دوام الدكتور — تقدر تغيّر الدكتور أو التاريخ أو الوقت قبل الحجز. جلسة واحدة للمريض في اليوم.": "Suggested times based on the doctor's schedule — you can change the doctor, date or time before booking. One session per patient per day.",
+ "تحديد مواعيد الجلسات الآن (اختياري)": "Set session appointments now (optional)",
+ "تاريخ ووقت ودكتور كل جلسة — بتتحجز مواعيد حقيقية مربوطة بالخطة بعد الحفظ، ومن غير فواتير منفصلة. اللي تسيبه فاضي تكمّله من «مراجعة فاتورة الخطة العلاجية».": "Date, time and doctor for each session — real appointments linked to the plan are booked after saving, with no separate invoices. Anything left empty can be completed from “Review treatment plan invoice”.",
+ "مقترحة حسب دوام الدكتور — جلسة واحدة للمريض في اليوم.": "Suggested based on the doctor's schedule — one session per patient per day.",
+ "اقتراح المواعيد تلقائيًا": "Suggest times automatically",
+ "اتحفظت الخطة — كمّل حجز الجلسات الباقية من «مراجعة فاتورة الخطة العلاجية».": "The plan was saved — complete booking the remaining sessions from “Review treatment plan invoice”.",
+ "محجوزة —": "Booked —"
+}

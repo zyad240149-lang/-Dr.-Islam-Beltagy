@@ -1,0 +1,53 @@
+/* أقسام العظام: تبويبات، بطاقات الحالات، الحقائق، وشريط التقدم */
+.ortho-pills { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 16px; }
+.ortho-pill { flex: none; display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 15px; font-weight: 600; white-space: nowrap; }
+.ortho-pill .num { font-size: 13px; padding: 1px 7px; border-radius: 999px; background: var(--line-2); }
+.ortho-pill:hover { border-color: var(--brand-700); }
+.ortho-pill.active { background: var(--brand-700); border-color: var(--brand-700); color: #fff; }
+.ortho-pill.active .num { background: rgba(255, 255, 255, .2); }
+
+.case-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.case-card { display: flex; flex-direction: column; gap: 12px; padding: 18px; border-top: 3px solid var(--brand-600); }
+.case-card--ok { border-top-color: var(--ok); }
+.case-card--warn { border-top-color: var(--warn); }
+.case-card--danger { border-top-color: var(--danger); }
+.case-card__who strong { display: block; font-size: 17px; color: var(--ink); }
+.case-card__who span { font-size: 14px; color: var(--muted); }
+.case-card__who:hover strong { color: var(--brand-700); }
+.facts { display: flex; flex-direction: column; gap: 6px; margin: 0; background: var(--surface-2); border-radius: 10px; padding: 10px 12px; font-size: 14.5px; }
+.facts > div { display: flex; justify-content: space-between; gap: 10px; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; font-weight: 600; color: var(--ink); text-align: end; }
+.case-card__foot { display: flex; align-items: center; gap: 6px; margin-top: auto; padding-top: 10px; border-top: 1px solid var(--line-2); flex-wrap: wrap; }
+.case-card .progress { height: 8px; }
+.ortho-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.ortho-cell-strong { color: var(--ink); font-weight: 600; }
+.ortho-sub { font-size: 13.5px; color: var(--muted); }
+@media (max-width: 640px) { .case-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* الفاتورة المطبوعة */
+.pinv { font-size: 12.5px; color: #111; direction: rtl; font-family: var(--font); }
+.pinv__top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding-bottom: 12px; border-bottom: 2px solid var(--brand); }
+.pinv__brand { display: flex; gap: 12px; align-items: center; }
+.pinv__brand img { width: 52px; height: 52px; }
+.pinv__brand h1 { font-size: 17px; margin: 0 0 2px; color: var(--brand-700); }
+.pinv__brand p { margin: 0; font-size: 12px; color: #555; }
+.pinv__title { text-align: end; }
+.pinv__title h2 { font-size: 20px; margin: 0; color: var(--brand-700); }
+.pinv__title p { margin: 2px 0 0; font-weight: 700; }
+.pinv__meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 16px; margin: 14px 0; }
+.pinv__meta div { display: flex; gap: 6px; }
+.pinv__meta dt { color: #666; }
+.pinv__meta dd { margin: 0; font-weight: 700; }
+.pinv__table { width: 100%; border-collapse: collapse; }
+.pinv__table th { background: #eef1f9; color: var(--brand-700); padding: 8px; text-align: start; font-size: 12px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.pinv__table td { padding: 9px 8px; border-bottom: 1px solid #ddd; }
+.pinv__totals { width: 320px; margin: 12px 0 0 auto; }
+.pinv__totals div { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dotted #ccc; }
+.pinv__totals dd { margin: 0; font-weight: 600; }
+.pinv__grand dt, .pinv__grand dd { font-weight: 800; color: var(--brand-700); }
+.pinv__words { margin: 12px 0 0; font-weight: 600; }
+.pinv__pkg { margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; column-gap: 24px; }
+.pinv__pkg > div { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; border-bottom: 1px dotted #ccc; }
+.pinv__pkg dd { margin: 0; font-weight: 600; }
+.pinv__sign { display: flex; justify-content: space-between; margin-top: 36px; font-weight: 600; }

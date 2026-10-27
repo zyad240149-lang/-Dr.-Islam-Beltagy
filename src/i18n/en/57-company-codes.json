@@ -1,0 +1,12 @@
+{
+ "إنشاء كود خصم شركات": "Create company discount code",
+ "تعديل كود الشركة": "Edit company code",
+ "اسم الشركة (يكون هو الكود) *": "Company name (becomes the code) *",
+ "من 3 إلى 20 حرف إنجليزي أو رقم، بدون مسافات.": "3 to 20 English letters or digits, no spaces.",
+ "تم إنشاء كود الشركة.": "Company code created.",
+ "تم تعديل كود الشركة.": "Company code updated.",
+ "كود شركة": "Company code",
+ "بدون مدة": "No expiry",
+ "بدون حد": "Unlimited",
+ "بدون مدة · بدون حد للاستخدام": "No expiry · unlimited uses"
+}

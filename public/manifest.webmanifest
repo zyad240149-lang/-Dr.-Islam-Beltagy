@@ -1,0 +1,62 @@
+{
+  "id": "./",
+  "name": "عيادة د. إسلام بلتاجي لجراحة العظام والكسور",
+  "short_name": "د. إسلام بلتاجي",
+  "description": "نظام إدارة عيادة د. إسلام بلتاجي لجراحة العظام والكسور — المواعيد والمرضى والفواتير.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "any",
+  "theme_color": "#223468",
+  "background_color": "#ffffff",
+  "categories": [
+    "medical",
+    "health",
+    "business",
+    "productivity"
+  ],
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "المواعيد",
+      "short_name": "المواعيد",
+      "url": "appointments?source=pwa",
+      "icons": [
+        {
+          "src": "icons/icon.svg",
+          "sizes": "any"
+        }
+      ]
+    },
+    {
+      "name": "المرضى",
+      "short_name": "المرضى",
+      "url": "patients?source=pwa",
+      "icons": [
+        {
+          "src": "icons/icon.svg",
+          "sizes": "any"
+        }
+      ]
+    }
+  ]
+}

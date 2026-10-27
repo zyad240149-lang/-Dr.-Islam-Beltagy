@@ -1,0 +1,15 @@
+{
+ "من الموقع": "From website",
+ "مصدر الحجز": "Booking source",
+ "كل الحجوزات": "All bookings",
+ "حجوزات من الموقع": "Website bookings",
+ "حجوزات من الإدارة": "Staff bookings",
+ "المصدر": "Source",
+ "الإدارة": "Staff",
+ "حجزه المريض بنفسه من الموقع": "Booked by the patient on the website",
+ "حجز أونلاين من الموقع": "Online booking from the website",
+ "حجوزات أونلاين من الموقع": "Online website bookings",
+ "تصدير ملف المرضى (Excel) (اطلاع = يظهر الزرار ويصدّر)": "Export patients file (Excel) (View = button shown and export allowed)",
+ "زرار «تصدير ملف المرضى (Excel)» في صفحة المرضى: ملف فيه المرضى والخطط والمواعيد والفواتير والمدفوعات.": "The \"Export patients file (Excel)\" button on the Patients page: a file with patients, plans, appointments, invoices and payments.",
+ "يشوف الزرار وينزّل الملف.": "Sees the button and downloads the file."
+}

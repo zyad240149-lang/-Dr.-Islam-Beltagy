@@ -1,0 +1,9 @@
+{
+ "تسجيل حضور الجلسة (خصم من الباقة/الخطة)": "Check in session (deduct from package/plan)",
+ "اكتملت جلسات الباقة": "Package sessions completed",
+ "ليس الآن": "Not now",
+ "تجديد الباقة": "Renew package",
+ "خلصت جلساتها.": "has no sessions left.",
+ "تم تجديد الباقة وإنشاء فاتورتها.": "The package was renewed and its invoice created.",
+ "ما قدرنا نلاقي نفس الباقة في كتالوج الباقات — افتح «بيع باقة» من ملف المريض واختَرها يدويًا.": "We couldn't find the same package in the package catalog — open «Sell package» from the patient's file and pick it manually."
+}

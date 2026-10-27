@@ -1,0 +1,23 @@
+{
+ "تشخيص الجلسات": "Session diagnoses",
+ "اكتب التشخيص.": "Enter the diagnosis.",
+ "اكتب التشخيص هنا": "Enter the diagnosis here",
+ "اكتب تشخيص كل جلسة بنفسك. الجلسة الأولى تقدر تكتب لها من الحين، وتشخيص الجلسة اللي بعدها يفتح بعد تأكيد حضور اللي قبلها.": "Write each session's diagnosis yourself. You can write the first session's now; the next session's diagnosis opens after the previous session's attendance is confirmed.",
+ "الحضور المؤكَّد:": "Confirmed attendance:",
+ "رقم الجلسة": "Session number",
+ "جلسة": "Session",
+ "ما اتكتب تشخيص لهذي الجلسة بعد.": "No diagnosis has been written for this session yet.",
+ "آخر تعديل:": "Last edit:",
+ "مصدر غير صحيح": "Invalid source",
+ "الباقة أو الخطة غير موجودة": "Package or plan not found",
+ "رقم الجلسة غير صحيح": "Invalid session number",
+ "اكتب التشخيص": "Enter the diagnosis",
+ "التشخيص طويل (الحد 1000 حرف)": "Diagnosis is too long (1000 characters max)",
+ "التشخيص العام": "Overall diagnosis",
+ "لم يُكتب": "Not written",
+ "حضر ✓": "Attended ✓",
+ "بعد تأكيد حضور الجلسة السابقة": "After the previous session's attendance is confirmed",
+ "تعديل / إضافة تشخيص جلسة": "Edit / add a session diagnosis",
+ "كتبه": "Written by",
+ "النوع": "Type"
+}

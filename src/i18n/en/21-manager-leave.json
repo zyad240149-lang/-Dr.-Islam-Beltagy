@@ -1,0 +1,6 @@
+{
+ "تسجيل إجازة أو استئذان": "Record leave or permission",
+ "حفظ واعتماد": "Save and approve",
+ "هتتعتمد الإجازة على طول بدون طلب موافقة، ولن يتمكن الموظف من دخول النظام طوال فترتها.": "The leave is approved immediately with no approval request, and the employee won't be able to sign in during it.",
+ "هيتعتمد الاستئذان على طول بدون طلب موافقة، ولن يتمكن الموظف من دخول النظام طوال فترته.": "The permission is approved immediately with no approval request, and the employee won't be able to sign in during it."
+}

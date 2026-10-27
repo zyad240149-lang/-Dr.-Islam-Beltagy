@@ -1,0 +1,6 @@
+{
+ "فاتورة الخطة كاملة (أول زيارة)": "Full plan invoice (first visit)",
+ "فاتورة الباقة كاملة (أول زيارة)": "Full package invoice (first visit)",
+ "لا تضيف شي (الباقة انحسبت في أول زيارة، أو بدون فاتورة)": "Adds nothing (the package was counted at the first visit, or no invoice)",
+ "الخطة العلاجية أو الباقة (فاتورتها واحدة) تدخل التارجت بكامل صافي سعرها أول ما تتأكد أول زيارة منها، باسم دكتور هالزيارة وفي شهرها. الزيارات اللاحقة من نفس الباقة ما تضيف شي.": "A treatment plan or package (single invoice) counts toward the target at its full net price once its first visit is confirmed, under that visit's doctor and in its month. Later visits from the same package add nothing."
+}

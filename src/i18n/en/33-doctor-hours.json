@@ -1,0 +1,14 @@
+{
+ "الدكتور غير موجود أو غير نشط": "The doctor doesn't exist or is inactive",
+ "المركز مغلق في هذا اليوم (عطلة)": "The center is closed on this day (holiday)",
+ "لم يتم تحديد مواعيد عمل لهذا الدكتور": "No working hours have been set for this doctor",
+ "الدكتور لا يعمل في هذا اليوم": "The doctor doesn't work on this day",
+ "الدكتور غير متاح في هذا الوقت (استراحة أو استئذان)": "The doctor isn't available at this time (break or permission)",
+ "لم يتم تحديد مواعيد عمل لهذا الدكتور — حدّدها من «المعالجين» أولًا": "No working hours have been set for this doctor — set them from «Therapists» first",
+ "الدكتور لا يعمل في هذا اليوم — اختر يومًا من أيام عمله": "The doctor doesn't work on this day — choose one of their working days",
+ "الدكتور لا يعمل في هذا اليوم — اختر يومًا آخر أو دكتورًا آخر.": "The doctor doesn't work on this day — choose another day or another doctor.",
+ "لا توجد مواعيد متاحة لهذا الدكتور حاليًا — اختر دكتورًا آخر.": "No appointments are available for this doctor right now — choose another doctor.",
+ "لا توجد مواعيد لهذا الدكتور في هذا اليوم ضمن دوامه — جرّب يومًا آخر.": "No appointments for this doctor within their working hours on this day — try another day.",
+ "الدوام:": "Hours:",
+ "دوامه": "hours"
+}

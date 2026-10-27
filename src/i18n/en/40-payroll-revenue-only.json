@@ -1,0 +1,7 @@
+{
+ "نسبة من الإيراد فقط": "Percentage of revenue only",
+ "الراتب = هذه النسبة من الإيراد المحقق الفعلي كل شهر، من أول ريال. اكتب الراتب الأساسي 0 والتارجت اختياري.": "Pay = this percentage of the actual revenue achieved each month, from the first riyal. Enter 0 as the base salary; the target is optional.",
+ "من الإيراد المحقق": "of achieved revenue",
+ "من الإيراد": "of revenue",
+ "الراتب من الإيراد يكون بنسبة من الإيراد المحقق": "Revenue-only pay must be a percentage of achieved revenue"
+}

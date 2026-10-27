@@ -1,0 +1,16 @@
+{
+ "ناقص:": "Missing:",
+ "بيانات ناقصة": "Missing data",
+ "أي نقص في البيانات": "Any missing data",
+ "بدون رقم هوية": "No national ID",
+ "بدون رقم جوال": "No phone number",
+ "اسم غير ثلاثي": "Name not three-part",
+ "جنسية غير مؤكدة": "Unconfirmed nationality",
+ "رقم الملف (الأصغر للأكبر)": "File number (smallest first)",
+ "رقم الملف (الأكبر للأصغر)": "File number (largest first)",
+ "بيانات ناقصة في ملف المريض": "Missing data in the patient file",
+ "رقم الهوية": "National ID",
+ "رقم الجوال": "Phone number",
+ "الاسم الثلاثي": "Three-part name",
+ "الجنسية (غير مؤكدة)": "Nationality (unconfirmed)"
+}

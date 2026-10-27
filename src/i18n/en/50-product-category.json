@@ -1,0 +1,17 @@
+{
+ "التصنيف": "Category",
+ "كل التصنيفات": "All categories",
+ "مثال: Physiotherapy tools": "Example: Physiotherapy tools",
+ "تصنيف المنتج": "Product category",
+ "فيه تحديث جديد للنظام — بيتحدّث لوحده بعد ثواني (أو اضغط «تحديث» الحين).": "A new system update is available — it will refresh automatically in a few seconds (or press \"Update\" now).",
+ "الكمية لازم تكون 0 أو أكثر": "Quantity must be 0 or more",
+ "تعديل الكمية يدويًا": "Manual quantity adjustment",
+ "مدة الجلسة": "Session duration",
+ "مدة أخرى (اكتبها بالدقائق)": "Other duration (in minutes)",
+ "المدة بالدقائق": "Duration in minutes",
+ "ساعة": "1 hour",
+ "ساعتين": "2 hours",
+ "ساعة ونص": "1.5 hours",
+ "3 ساعات": "3 hours",
+ "مدة الجلسة لازم تكون بين 5 دقائق و8 ساعات.": "Session duration must be between 5 minutes and 8 hours."
+}

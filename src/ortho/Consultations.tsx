@@ -13,7 +13,7 @@ import { LAB_GROUPS, MED_PRESETS, XRAY_VIEWS } from './clinicalLists';
 import { printRx } from './printRx';
 import { db } from '../data/db';
 import { Field, IconBtn, LoadState, PageHead, PatientSelect, SearchBox, Tone, confirmDelete, patientName, useClinicalCan, useRun } from './kit';
-import { DoctorSheet, NursingSheet, doctorStarted, emptySheet, normSheet, sheetHasContent, sheetSummary } from './ExamSheet';
+import { DoctorSheet, NursingSheet, doctorStarted, emptySheet, normSheet, resetPatientBasics, sheetHasContent, sheetPatientPatch, sheetSummary, withPatientBasics } from './ExamSheet';
 
 type Draft = Omit<Consultation, 'id'> & { id?: string };
 
@@ -70,15 +70,18 @@ export function ConsultModal({ initial, resume, patientId = '', onClose }: { ini
   const { run, busy } = useRun();
   const toast = useToast();
   const [c, setC] = useState<Draft>(() => {
-    if (initial) return withSheet({ ...emptyConsult(initial.patientId), ...initial });
+    const basics = (d: Draft) => ({ ...d, sheet: withPatientBasics(normSheet(d.sheet), d.patientId ? db.patient(d.patientId) : null) });
+    if (initial) return basics(withSheet({ ...emptyConsult(initial.patientId), ...initial }));
     const draft = resume && loadConsultDraft(patientId);
-    if (draft) return withSheet(draft);
+    if (draft) return basics(withSheet(draft));
     // زيارة جديدة ولا متابعة: من الكشوفات السابقة للمريض
     const fresh = emptyConsult(patientId);
     const visit = patientId && ortho.list('consultations', patientId).length ? 'متابعة' : 'زيارة جديدة';
-    return { ...fresh, sheet: { ...emptySheet(), on: [`n.visit|${visit}`] } };
+    return basics({ ...fresh, sheet: { ...emptySheet(), on: [`n.visit|${visit}`] } });
   });
   const [tab, setTab] = useState<Tab>(() => (initial || doctorStarted(normSheet(c.sheet)) ? 'doctor' : 'nurse'));
+  // خانة 1 وقت الفتح — اللي يتعدّل بعدها بس يروح لملف المريض (لو المريض اتغيّر، الخانات اتملت من ملفه هو فبنقارن بالملف بس)
+  const [opened] = useState(() => ({ patientId: c.patientId, sheet: normSheet(c.sheet) }));
   const [mapOpen, setMapOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [labQ, setLabQ] = useState('');
@@ -158,6 +161,13 @@ export function ConsultModal({ initial, resume, patientId = '', onClose }: { ini
       }
     }, 'تم حفظ الكشف', () => {
       if (!initial) clearConsultDraft(c.patientId);
+      // تعديلات خانة 1 (الاسم/السن/النوع/الهاتف/العنوان) ← ملف المريض — بعد ما الكشف اتحفظ، عشان فشلها مايكرّرش الكشف
+      const p = db.patient(c.patientId);
+      if (p) {
+        const { patch, badPhone } = sheetPatientPatch(sheetOut, p, c.patientId === opened.patientId ? opened.sheet : undefined);
+        if (badPhone) toast.error('رقم الهاتف في الشيت مش صحيح — ما اتحفظش في ملف المريض.');
+        if (Object.keys(patch).length) void db.updatePatient(p.id, patch).catch((e) => toast.error(`الكشف اتحفظ، بس بيانات المريض ما اتحدّثتش: ${(e as Error).message}`));
+      }
       if (thenPrint) printRx({ ...c, ...text, medications: meds, imagingRequests: reqs }, db.patient(c.patientId));
       onClose();
     });
@@ -172,7 +182,7 @@ export function ConsultModal({ initial, resume, patientId = '', onClose }: { ini
     </>}>
       <div className="cx" ref={bodyRef}>
         <div className="grid-form grid-form--4">
-          <Field label="المريض"><PatientSelect value={c.patientId} onChange={(v) => set('patientId', v)} /></Field>
+          <Field label="المريض"><PatientSelect value={c.patientId} onChange={(v) => setC((x) => ({ ...x, patientId: v, sheet: resetPatientBasics(normSheet(x.sheet), v ? db.patient(v) : null) }))} /></Field>
           <Field label="تاريخ الكشف"><input type="date" className="input" value={c.date} onChange={(e) => set('date', e.target.value)} /></Field>
           <Field label="المنطقة المصابة">
             <select className="input" value={c.region} onChange={(e) => set('region', e.target.value)}>{(REGIONS.includes(c.region) ? REGIONS : [c.region, ...REGIONS]).map((r) => <option key={r}>{r}</option>)}</select>

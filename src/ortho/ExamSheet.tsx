@@ -5,7 +5,8 @@
 import { useState, type ReactNode } from 'react';
 import { BodyFigure, regionById, type BodyView, type PinSide } from '../components/BodyFigure';
 import { SIDE_LABEL } from '../data/bodyRegions';
-import { fileNoText } from '../utils/phoneUtils';
+import { fileNoText, normalizePhone, toLatinDigits } from '../utils/phoneUtils';
+import { splitName } from '../utils/patientImport';
 import { fmtDate } from '../utils/format';
 import { Icon } from '../utils/icons';
 import type { Patient } from '../types';
@@ -13,6 +14,7 @@ import type { CurrentMed, ExamSheet, Side } from './data';
 
 // ---------- بنود الورقتين ----------
 const N_VISIT = ['زيارة جديدة', 'متابعة'];
+const N_GENDER = ['ذكر', 'أنثى'];
 const N_MARITAL = ['أعزب', 'متزوج', 'مطلق', 'أرمل'];
 const N_HX_NONE = 'لا توجد أمراض معروفة';
 const N_HX = [N_HX_NONE, 'ضغط الدم', 'السكر', 'أمراض القلب', 'أمراض الغدة الدرقية', 'أمراض الصدر / التنفسي', 'أمراض الكلى', 'أمراض المعدة / القولون', 'هشاشة العظام', 'أمراض روماتيزمية', 'أورام'];
@@ -61,9 +63,12 @@ export function normSheet(s: unknown): ExamSheet {
     pain: Array.isArray(x.pain) ? x.pain : [],
   };
 }
-// «زيارة جديدة / متابعة» بتتعلّم تلقائي أول ما الكشف يتفتح — مش محتوى
+// خانة 1 (البيانات الأساسية) و«زيارة جديدة / متابعة» بيتملوا تلقائي من ملف المريض أول ما الكشف يتفتح — مش محتوى
+const BASIC_KEYS = ['n.name', 'n.age', 'n.phone', 'n.address'];
+const isAutoOn = (o: string) => o.startsWith('n.visit|') || o.startsWith('n.gender|');
 export const sheetHasContent = (s: ExamSheet) =>
-  s.on.some((o) => !o.startsWith('n.visit|')) || s.pain.length > 0 || s.meds.some((m) => m.name.trim()) || Object.values(s.txt).some((v) => v.trim());
+  s.on.some((o) => !isAutoOn(o)) || s.pain.length > 0 || s.meds.some((m) => m.name.trim())
+  || Object.entries(s.txt).some(([k, v]) => !BASIC_KEYS.includes(k) && v.trim());
 /** فيه حاجة متكتبة في شيت الطبيب (عشان استكمال الكشف يفتح عليه على طول) */
 export const doctorStarted = (s: ExamSheet) => s.on.some((o) => o.startsWith('x.')) || Object.entries(s.txt).some(([k, v]) => k.startsWith('x.') && v.trim());
 
@@ -102,6 +107,48 @@ function ageOf(birth?: string | null) {
   let y = n.getFullYear() - b.getFullYear();
   if (n.getMonth() < b.getMonth() || (n.getMonth() === b.getMonth() && n.getDate() < b.getDate())) y--;
   return y >= 0 ? String(y) : '';
+}
+
+// خانة 1 بتبدأ ببيانات ملف المريض (الخانات اللي لسه ما اتكتبتش في الشيت بس)
+export function withPatientBasics(s: ExamSheet, p?: Patient | null): ExamSheet {
+  if (!p) return s;
+  const txt = { ...s.txt };
+  const fill = (k: string, v: string) => { if (!(k in txt)) txt[k] = v; };
+  fill('n.name', p.fullName ?? ''); fill('n.age', ageOf(p.birthDate)); fill('n.phone', p.phone ?? ''); fill('n.address', p.address ?? '');
+  const g = p.genderUnknown ? '' : p.gender === 'male' ? 'ذكر' : p.gender === 'female' ? 'أنثى' : '';
+  const on = g && !s.on.some((o) => o.startsWith('n.gender|')) ? [...s.on, key('n.gender', g)] : s.on;
+  return { ...s, txt, on };
+}
+/** مريض تاني اتختار في الكشف: خانة 1 بتتملى من ملفه هو */
+export function resetPatientBasics(s: ExamSheet, p?: Patient | null): ExamSheet {
+  const txt = Object.fromEntries(Object.entries(s.txt).filter(([k]) => !BASIC_KEYS.includes(k)));
+  return withPatientBasics({ ...s, txt, on: s.on.filter((o) => !o.startsWith('n.gender|')) }, p);
+}
+
+// اللي اتعدّل في خانة 1 ← ملف المريض (بيتبعت بعد حفظ الكشف). السن بيتحوّل لتاريخ ميلاد (نفس اليوم والشهر لو متسجلين).
+// since = الشيت وقت ما الكشف اتفتح: الخانات اللي ما اتلمستش ما بتتبعتش (تعديل كشف قديم مايرجّعش بيانات قديمة للملف)
+const genderOf = (s: ExamSheet) => (has(s, 'n.gender', 'ذكر') ? 'male' : has(s, 'n.gender', 'أنثى') ? 'female' : null);
+export function sheetPatientPatch(s: ExamSheet, p: Patient, since?: ExamSheet): { patch: Partial<Patient>; badPhone: boolean } {
+  const changed = (k: string) => !since || tx(s, k) !== tx(since, k);
+  const patch: Partial<Patient> = {};
+  const name = tx(s, 'n.name').replace(/\s+/g, ' ');
+  if (changed('n.name') && name && name !== (p.fullName ?? '').trim()) Object.assign(patch, { fullName: name, ...splitName(name) });
+  if (changed('n.address') && 'n.address' in s.txt && tx(s, 'n.address') !== (p.address ?? '').trim()) patch.address = tx(s, 'n.address');
+  const g = genderOf(s);
+  if ((!since || genderOf(since) !== g) && g && (g !== p.gender || p.genderUnknown)) patch.gender = g;
+  let badPhone = false;
+  const phone = tx(s, 'n.phone');
+  if (changed('n.phone') && phone && phone !== p.phone) {
+    const e164 = normalizePhone(phone);
+    if (!e164) badPhone = true; else if (e164 !== p.phone) patch.phone = e164;
+  }
+  const age = parseInt(toLatinDigits(tx(s, 'n.age')), 10);
+  if (changed('n.age') && age >= 0 && age < 120 && String(age) !== ageOf(p.birthDate)) {
+    const md = /^\d{4}-(\d{2}-\d{2})$/.exec(p.birthDate ?? '')?.[1] ?? '01-01';
+    const y = new Date().getFullYear() - age;
+    patch.birthDate = ageOf(`${y}-${md}`) === String(age) ? `${y}-${md}` : `${y - 1}-${md}`;
+  }
+  return { patch, badPhone };
 }
 
 // ---------- الملخص النصي (اللي بيتحفظ في حقول الكشف) ----------
@@ -234,7 +281,6 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
     onChange((x) => ({ ...x, pain: x.pain.includes(k) ? x.pain.filter((p) => p !== k) : [...x.pain, k] }));
   };
   const setMed = (i: number, patch: Partial<CurrentMed>) => onChange((x) => ({ ...x, meds: x.meds.map((m, j) => (j === i ? { ...m, ...patch } : m)) }));
-  const gender = patient?.genderUnknown ? '' : patient?.gender === 'male' ? 'ذكر' : patient?.gender === 'female' ? 'أنثى' : '';
 
   return (
     <div className="sh" dir="rtl">
@@ -247,14 +293,12 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
       </div>
       <div className="sh-grid sh-grid--2">
         <Box n={1} title="البيانات الأساسية">
-          <dl className="sh-facts">
-            <div><dt>الاسم</dt><dd>{patient?.fullName || '—'}</dd></div>
-            <div><dt>السن</dt><dd className="num">{ageOf(patient?.birthDate) || '—'}</dd></div>
-            <div><dt>النوع</dt><dd>{gender || '—'}</dd></div>
-            <div><dt>رقم الهاتف</dt><dd className="num" dir="ltr">{patient?.phone || '—'}</dd></div>
-            <div><dt>العنوان</dt><dd>{patient?.address || '—'}</dd></div>
-          </dl>
-          <p className="sh-note">البيانات دي من ملف المريض — بتتعدل من صفحة المريض.</p>
+          <Txt a={a} k="n.name" label="الاسم" />
+          <Txt a={a} k="n.age" label="السن" unit="سنة" num />
+          <Row label="النوع"><Pick a={a} g="n.gender" items={N_GENDER} /></Row>
+          <Txt a={a} k="n.phone" label="رقم الهاتف" dir="ltr" inputMode="tel" />
+          <Txt a={a} k="n.address" label="العنوان" />
+          <p className="sh-note">بتتملى من ملف المريض، وأي تعديل فيها بيتحفظ في ملفه لما تحفظ الكشف.</p>
           <Txt a={a} k="n.job" label="المهنة" />
           <Row label="الحالة الاجتماعية"><Pick a={a} g="n.marital" items={N_MARITAL} /></Row>
           <Txt a={a} k="n.compName" label="اسم المرافق" />

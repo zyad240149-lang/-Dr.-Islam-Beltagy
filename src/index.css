@@ -920,6 +920,16 @@ textarea.input { height: auto; padding-block: 10px; resize: vertical; line-heigh
 .out-act--wa:hover:not(:disabled) { border-color: #25d366; background: #e9f9ef; }
 .out-ready { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: var(--r-sm); background: var(--ok-bg); color: var(--ok); font-weight: 600; }
 @media (max-width: 520px) { .out-actions { grid-template-columns: minmax(0, 1fr); } .out-act { flex-direction: row; justify-content: flex-start; text-align: start; } .out-act small { margin-inline-start: auto; } }
+.sh-docmap { border: 1px solid var(--brand-100); border-radius: var(--r); background: var(--surface); }
+.sh-docmap summary { display: flex; align-items: center; gap: 6px; padding: 10px 12px; cursor: pointer; font-weight: 600; color: var(--brand-700); }
+.sh-docmap__body { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 0 12px 12px; max-width: 320px; margin: 0 auto; }
+.sh-docmap__body .seg { width: 100%; }
+.sh-regions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.sh-regions .cx-chip { margin: 0; }
+.sh-regions__l { font-weight: 700; color: var(--brand-700); }
+.sh-regions__add { width: auto; height: 32px; padding: 0 10px; font-size: 13.5px; border-radius: var(--r-pill); }
+.sh-choose { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 28px 16px; border: 1.5px dashed var(--brand-100); border-radius: var(--r); background: var(--brand-50); color: var(--brand-700); text-align: center; }
+.sh-choose .cx-chips { justify-content: center; }
 .sh-visitlink { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding: 8px 12px; border-radius: var(--r-sm); background: var(--info-bg); color: var(--info); font-weight: 600; font-size: 14px; }
 .dxh__when { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; color: var(--brand-700); }
 .dxh__toggle { margin-top: 10px; border: 0; background: none; padding: 0; font: inherit; font-size: 14.5px; font-weight: 600; color: var(--brand-600); cursor: pointer; }

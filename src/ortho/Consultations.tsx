@@ -8,6 +8,8 @@ import { findCondition } from '../data/bodyRegions';
 import type { DiagnosisRef } from '../types';
 import { fmtDate, fmtDateTime, fmtTime, todayYmd } from '../utils/format';
 import { openVisitFor } from './visits';
+import { SHEET_TAB, activeSheets, regionSheet, type SheetId } from './regionSheets';
+import { DoctorPainMap, RegionChooser, RegionSheetForm, SheetSwitch } from './RegionSheet';
 import { useToast } from '../hooks/useToast';
 import { IMAGING_KIND, IMAGING_STATUS, REGIONS, SIDE, isIncomplete, ortho, useOrthoVersion, type Attachment, type Consultation, type ImagingKind, type ImagingRequest, type Medication, type Side } from './data';
 import { LAB_GROUPS, MED_PRESETS, XRAY_VIEWS } from './clinicalLists';
@@ -81,7 +83,8 @@ function Section({ icon, title, children, aside }: { icon: string; title: string
 }
 
 // الكشف = الشيتين بالترتيب (التمريض قبل دخول المريض ← كشف الطبيب) وبعدهم الروشتة والأشعة والتحاليل
-const TABS = [['nurse', 'شيت التمريض'], ['doctor', 'كشف الطبيب — الورك والركبة'], ['rx', 'الروشتة والأشعة والتحاليل']] as const;
+// «كشف الطبيب» بيتسمى بالمنطقة: شيت الطبيب بيتحدد من مكان الألم في شيت التمريض (regionSheets)
+const TABS = [['nurse', 'شيت التمريض'], ['doctor', 'كشف الطبيب'], ['rx', 'الروشتة والأشعة والتحاليل']] as const;
 type Tab = typeof TABS[number][0];
 
 // appointmentId = الزيارة اللي التشخيص الجديد بيتربط بيها (من «بانتظار التشخيص»)؛ من غيرها بيتربط بزيارة النهارده المفتوحة للمريض لو فيه
@@ -116,7 +119,14 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setC((x) => ({ ...x, [k]: v }));
   const sheet = normSheet(c.sheet);
   const changeSheet = (f: (s: typeof sheet) => typeof sheet) => setC((x) => ({ ...x, sheet: f(normSheet(x.sheet)) }));
-  const sum = sheetSummary(sheet);
+  const sum = sheetSummary(sheet, c.side);
+  // شيتات الطبيب: من مكان الألم في شيت التمريض + اللي اتكتب فيه + اللي الطبيب ضافه
+  const active = activeSheets(sheet);
+  const [docSheet, setDocSheet] = useState<SheetId | null>(null);
+  const curSheet = docSheet && active.includes(docSheet) ? docSheet : active[0];
+  const addSheet = (id: SheetId) => { changeSheet((x) => (x.on.includes(`sheets|${id}`) ? x : { ...x, on: [...x.on, `sheets|${id}`] })); setDocSheet(id); };
+  const [mapKey, setMapKey] = useState('x.dx.other'); // خريطة الجسم بتكتب في «Others» بتاع الشيت اللي اتفتحت منه
+  const openMap = (key: string) => { setMapKey(key); setMapOpen(true); };
   // كل حاجة اختيارية: الحفظ محتاج المريض بس. لو فيه حاجة ناقصة بنسأل: «استكمال بعدين» (يتحفظ «يحتاج استكمال») ولا «التشخيص اكتمل»
   const ok = !!c.patientId;
   const missing = [
@@ -242,7 +252,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
         <div className="seg seg--3 sh-tabs" role="tablist" aria-label="أجزاء الكشف">
           {TABS.map(([k, l], i) => (
             <button key={k} type="button" role="tab" aria-selected={tab === k} className={`seg__btn ${tab === k ? 'active' : ''}`} onClick={() => goTab(k)}>
-              <span className="sh-tabs__n num">{i + 1}</span>{l}
+              <span className="sh-tabs__n num">{i + 1}</span>{k === 'doctor' && active.length ? `${l} — ${active.map((id) => SHEET_TAB[id]).join(' + ')}` : l}
             </button>
           ))}
         </div>
@@ -258,8 +268,15 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
         </>}
 
         {tab === 'doctor' && <>
-          <DoctorSheet sheet={sheet} onChange={changeSheet} side={c.side} onSide={(v) => set('side', v)}
-            icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => setMapOpen(true)} />
+          <DoctorPainMap sheet={sheet} onChange={changeSheet} />
+          {!curSheet ? <RegionChooser onPick={addSheet} /> : <>
+            <SheetSwitch active={active} current={curSheet} onPick={setDocSheet} onAdd={addSheet} />
+            {curSheet === 'hipknee'
+              ? <DoctorSheet sheet={sheet} onChange={changeSheet} side={c.side} onSide={(v) => set('side', v)}
+                icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap('x.dx.other')} />
+              : <RegionSheetForm key={curSheet} def={regionSheet(curSheet)!} sheet={sheet} onChange={changeSheet} side={c.side} onSide={(v) => set('side', v)}
+                icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap(`${regionSheet(curSheet)!.prefix}.dx.other`)} />}
+          </>}
           <div className="sh-next">
             <Button variant="outline" icon="print" disabled={!c.patientId} onClick={() => setOut(['doctor'])}>طباعة / إرسال كشف الطبيب</Button>
             <Button icon="chevronLeft" onClick={() => goTab('rx')}>التالي: الروشتة والأشعة والتحاليل</Button>
@@ -359,10 +376,10 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
         const p = pickedToConsult(text, ref);
         setC((x) => {
           const s = normSheet(x.sheet);
-          const cur = (s.txt['x.dx.other'] ?? '').trim();
+          const cur = (s.txt[mapKey] ?? '').trim();
           const icd = [x.icd10.trim(), p.icd10 ?? ''].filter((v, i, all) => v && all.indexOf(v) === i).join(', ');
           return { ...x, icd10: cur ? icd : p.icd10 ?? '', region: p.region ?? x.region, side: ref.side ?? x.side,
-            sheet: { ...s, txt: { ...s.txt, 'x.dx.other': cur ? `${cur} · ${p.diagnosis}` : p.diagnosis ?? '' } } };
+            sheet: { ...s, txt: { ...s.txt, [mapKey]: cur ? `${cur} · ${p.diagnosis}` : p.diagnosis ?? '' } } };
         });
         setMapOpen(false);
       }} />}

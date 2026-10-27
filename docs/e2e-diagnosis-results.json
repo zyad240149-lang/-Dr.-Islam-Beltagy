@@ -1,6 +1,6 @@
 {
-  "at": "2026-10-27T23:10:59.834Z",
-  "passed": 45,
+  "at": "2026-10-27T23:25:09.328Z",
+  "passed": 46,
   "failed": 0,
   "results": [
     {
@@ -11,17 +11,17 @@
     {
       "name": "حساب مدير تشخيص اختبار",
       "ok": true,
-      "detail": "{\"id\":\"9dd0bf7e-1b31-4fe0-990e-6b2a04ef7a4a\",\"name\":\"مدير تشخيص اختبار\",\"username\":\"201200000981\",\"role\":\"system_admin\","
+      "detail": "{\"id\":\"6c01490c-c451-47d7-a4fe-f070b467ff27\",\"name\":\"مدير تشخيص اختبار\",\"username\":\"201200000981\",\"role\":\"system_admin\","
     },
     {
       "name": "حساب طبيب تشخيص اختبار",
       "ok": true,
-      "detail": "{\"id\":\"a65bd31a-0451-4c7b-b47a-6d585e7815be\",\"name\":\"طبيب تشخيص اختبار\",\"username\":\"201200000982\",\"role\":\"therapist\",\"ph"
+      "detail": "{\"id\":\"65674745-8c2a-4196-b2e5-602588da5244\",\"name\":\"طبيب تشخيص اختبار\",\"username\":\"201200000982\",\"role\":\"therapist\",\"ph"
     },
     {
       "name": "حساب استقبال تشخيص اختبار",
       "ok": true,
-      "detail": "{\"id\":\"144edde7-073b-4e10-9763-8309f26ad6f5\",\"name\":\"استقبال تشخيص اختبار\",\"username\":\"201200000983\",\"role\":\"reception\","
+      "detail": "{\"id\":\"d1757327-deed-4a4e-ba62-d2fb5f1b2307\",\"name\":\"استقبال تشخيص اختبار\",\"username\":\"201200000983\",\"role\":\"reception\","
     },
     {
       "name": "مريضين للاختبار",
@@ -86,7 +86,7 @@
     {
       "name": "الصف فيه الموبايل ورقم الملف ورقم الزيارة والطبيب",
       "ok": true,
-      "detail": "8:00 مسامح عادل تشخيصاختبار+201200000984 · ملف 3 · زيارة MV-1118 · كشف عظام · د. تشخيص اختبارحضرتشخيص"
+      "detail": "8:00 مسامح عادل تشخيصاختبار+201200000984 · ملف 3 · زيارة MV-1120 · كشف عظام · د. تشخيص اختبارحضرتشخيص"
     },
     {
       "name": "نافذة التشخيص مربوطة بزيارة «أ»",
@@ -96,7 +96,7 @@
     {
       "name": "التشخيص الجديد اتحفظ مربوط بزيارة «أ» ومكتمل",
       "ok": true,
-      "detail": "{\"id\":\"d062819b-f283-4a0b-b787-da626fc99a3d\",\"appointment_id\":\"0121913e-fcec-4788-a05f-93cefe386557\",\"complete\":true,\"diagnosis\":\"Knee: Meniscal tear\",\"complaint\":\"Knee pain\",\"created_by\":\"9dd0bf7e-1b"
+      "detail": "{\"id\":\"d46c803c-be68-4caf-aada-9a0374852944\",\"appointment_id\":\"9cdbbaf7-fdc5-47a9-a5a7-7ee8894f5aed\",\"complete\":true,\"diagnosis\":\"Knee: Meniscal tear\",\"complaint\":\"Knee pain\",\"created_by\":\"6c01490c-c4"
     },
     {
       "name": "التشخيصات القديمة لمريض «أ» لسه موجودة (3 تشخيصات)",
@@ -106,7 +106,7 @@
     {
       "name": "الطبيب اللي سجّل التشخيص اتسجّل (created_by)",
       "ok": true,
-      "detail": "9dd0bf7e-1b31-4fe0-990e-6b2a04ef7a4a"
+      "detail": "6c01490c-c451-47d7-a4fe-f070b467ff27"
     },
     {
       "name": "بعد الحفظ رجع لقايمة «بانتظار التشخيص» و«ب» لسه فيها",
@@ -121,7 +121,7 @@
     {
       "name": "التشخيص الناقص اتحفظ «يحتاج استكمال» ومربوط بزيارة «ب»",
       "ok": true,
-      "detail": "[{\"id\":\"95fd8d06-0449-44a0-86c2-153c835c21b2\",\"appointment_id\":\"5a770511-a84a-47df-a561-afa1a97b2f39\",\"complete\":false,\"diagnosis\":\"\",\"complaint\":\"\",\"created_by\":\"9dd0bf7e-1b31-4fe0-990e-6b2a04ef7a4a\""
+      "detail": "[{\"id\":\"fd1ca670-500a-4db8-8e71-6d10dbf74409\",\"appointment_id\":\"98ea43bd-10a3-43f4-9af6-12229380920e\",\"complete\":false,\"diagnosis\":\"\",\"complaint\":\"\",\"created_by\":\"6c01490c-c451-47d7-a4fe-f070b467ff27\""
     },
     {
       "name": "مريض «ب» فاضل في الانتظار بعلامة «يحتاج استكمال» وزرار «استكمال»",
@@ -129,9 +129,14 @@
       "detail": ""
     },
     {
-      "name": "الاستكمال عدّل نفس السجل (مفيش تشخيص مكرر) وبقى مكتمل",
+      "name": "شيت الكاحل والقدم بيفتح لما المنطقة كاحل",
       "ok": true,
-      "detail": "[{\"id\":\"95fd8d06-0449-44a0-86c2-153c835c21b2\",\"appointment_id\":\"5a770511-a84a-47df-a561-afa1a97b2f39\",\"complete\":true,\"diagnosis\":\"Hip: Labral tear\",\"complaint\":\"Hip pain\",\"created_by\":\"9dd0bf7e-1b31-"
+      "detail": ""
+    },
+    {
+      "name": "الاستكمال عدّل نفس السجل (مفيش تشخيص مكرر) وبقى مكتمل بتشخيص الكاحل",
+      "ok": true,
+      "detail": "[{\"id\":\"fd1ca670-500a-4db8-8e71-6d10dbf74409\",\"appointment_id\":\"98ea43bd-10a3-43f4-9af6-12229380920e\",\"complete\":true,\"diagnosis\":\"Lateral ankle sprain\",\"complaint\":\"Ankle pain\",\"created_by\":\"6c01490c"
     },
     {
       "name": "مريض «ب» اختفى من الانتظار بعد الاستكمال",

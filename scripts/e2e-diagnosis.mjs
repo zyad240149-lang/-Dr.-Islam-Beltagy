@@ -112,6 +112,12 @@ try {
   const queueRow = (page, P) => page.locator('.dx-queue__row', { hasText: `${P.first} ${P.father}` });
   const dbConsults = (P) => sql(`select id, appointment_id, complete, diagnosis, complaint, created_by from ortho_consultations where patient_id = '${P.id}' order by date, created_at`);
   // تحديد خانة في الشيت (نفس اللي الطبيب بيعمله) + حفظ
+  // تبويب الطبيب: لو مفيش مكان ألم متحدد بيطلب اختيار المنطقة (شيت المنطقة بيتحدد من مكان الألم)
+  const openDoctor = async (page, region) => {
+    await page.locator('.sh-tabs button', { hasText: 'كشف الطبيب' }).click();
+    if (await page.locator('.sh-choose').count()) await page.locator('.sh-choose button', { hasText: region }).click();
+    else if (!(await page.locator('.sh-regions button[aria-selected=true]', { hasText: region }).count())) await page.locator('.sh-regions select').selectOption({ label: region });
+  };
   const tick = (page, text) => page.locator('.sh-ck', { hasText: text }).first().locator('input').check();
   const saveAnswer = async (page, answer) => {
     await page.locator('.modal__foot button', { hasText: 'حفظ الكشف' }).click();
@@ -134,7 +140,7 @@ try {
   await rowA.locator('button', { hasText: 'تشخيص' }).click();
   await A.page.waitForSelector('.modal .sh-visitlink');
   check('نافذة التشخيص مربوطة بزيارة «أ»', ((await A.page.locator('.sh-visitlink').textContent()) ?? '').includes(apA.no));
-  await A.page.locator('.sh-tabs button', { hasText: 'كشف الطبيب' }).click();
+  await openDoctor(A.page, 'الورك والركبة');
   await tick(A.page, 'Knee pain');
   await tick(A.page, 'Meniscal tear');
   await saveAnswer(A.page, 'التشخيص اكتمل');
@@ -157,12 +163,14 @@ try {
   check('مريض «ب» فاضل في الانتظار بعلامة «يحتاج استكمال» وزرار «استكمال»', await rowB2.locator('text=يحتاج استكمال').count() === 1 && await rowB2.locator('button', { hasText: 'استكمال' }).count() === 1);
   await rowB2.locator('button', { hasText: 'استكمال' }).click();
   await A.page.waitForSelector('.modal');
-  await A.page.locator('.sh-tabs button', { hasText: 'كشف الطبيب' }).click();
-  await tick(A.page, 'Hip pain');
-  await tick(A.page, 'Labral tear');
+  // «ب» بيشتكي من الكاحل ← شيت «الكاحل والقدم»
+  await openDoctor(A.page, 'الكاحل والقدم');
+  check('شيت الكاحل والقدم بيفتح لما المنطقة كاحل', await A.page.locator('.modal .sh-box__h', { hasText: 'Special Tests' }).count() === 1 && await A.page.locator('.modal .sh-ck', { hasText: 'Thompson test' }).count() === 1);
+  await tick(A.page, 'Ankle pain');
+  await tick(A.page, 'Lateral ankle sprain');
   await saveAnswer(A.page, 'التشخيص اكتمل');
   cb = await dbConsults(PB);
-  check('الاستكمال عدّل نفس السجل (مفيش تشخيص مكرر) وبقى مكتمل', cb.length === 1 && cb[0].complete === true && /Labral tear/.test(cb[0].diagnosis), JSON.stringify(cb));
+  check('الاستكمال عدّل نفس السجل (مفيش تشخيص مكرر) وبقى مكتمل بتشخيص الكاحل', cb.length === 1 && cb[0].complete === true && /Lateral ankle sprain/.test(cb[0].diagnosis), JSON.stringify(cb));
   await A.page.waitForSelector('.dx-views', { timeout: 10000 });
   check('مريض «ب» اختفى من الانتظار بعد الاستكمال', await queueRow(A.page, PB).count() === 0);
   check('«اتشخص النهارده» بيعد المريضين', /اتشخص النهارده\s*[2-9]/.test((await A.page.locator('.card__head', { hasText: 'مرضى بانتظار التشخيص' }).textContent()) ?? ''));
@@ -199,7 +207,7 @@ try {
   // تشخيص جديد من الملف نفسه (من غير زيارة مفتوحة) ← سجل رابع والقديم يفضل
   await A.page.getByRole('button', { name: 'تشخيص', exact: true }).first().click();
   await A.page.waitForSelector('.modal');
-  await A.page.locator('.sh-tabs button', { hasText: 'كشف الطبيب' }).click();
+  await openDoctor(A.page, 'الورك والركبة');
   await tick(A.page, 'Stiffness');
   await tick(A.page, 'Bursitis');
   await saveAnswer(A.page, 'التشخيص اكتمل');

@@ -7,6 +7,7 @@ import { fmtDate } from '../utils/format';
 import { SIDE, type Consultation, type ExamSheet } from './data';
 import { SHEET_LISTS as L, bmiOf, normSheet, painLabel, sheetHasContent } from './ExamSheet';
 import { RX_CSS, rxPageHtml } from './printRx';
+import { activeSheets, regionSheet, type Field, type RegionSheetDef } from './regionSheets';
 import { openPrintWindow, printHtml } from '../utils/printDoc';
 
 type DxConsult = Omit<Consultation, 'id'> & { id?: string };
@@ -14,7 +15,7 @@ export interface DxPatient { fullName: string; fileNo?: string | null; birthDate
 
 export type DxPart = 'nurse' | 'doctor' | 'rx';
 export const DX_PARTS: { id: DxPart; label: string }[] = [
-  { id: 'nurse', label: 'شيت التمريض' }, { id: 'doctor', label: 'كشف الطبيب — الورك والركبة' }, { id: 'rx', label: 'الروشتة والأشعة والتحاليل' },
+  { id: 'nurse', label: 'شيت التمريض' }, { id: 'doctor', label: 'كشف الطبيب (شيت المنطقة)' }, { id: 'rx', label: 'الروشتة والأشعة والتحاليل' },
 ];
 /** فيه روشتة تتطبع؟ (أدوية/تحاليل/أشعة مطلوبة/تعليمات/متابعة) */
 export const hasRx = (c: DxConsult) => c.medications.some((m) => m.name.trim()) || c.labs.length > 0
@@ -83,8 +84,8 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
   const side = (compact ? L.X_SIDE.filter(([k]) => c.side === k) : L.X_SIDE).map(([k, l]) => ck(c.side === k, l)).join('');
   const derm = L.X_DERM.filter(([r]) => !compact || has('x.derm', `${r} Rt`) || has('x.derm', `${r} Lt`));
   const imgs = L.X_IMG.filter((m) => !compact || has('x.img', m) || v(`x.img.${m}`) || v(`x.img.${m}.date`));
-  const dr = page('ltr', head('HIP &amp; KNEE CONSULTATION SHEET', ''),
-    `Patient Name: <b>${name || '—'}</b><span>Age: <b>${v('n.age') || '—'}</b></span><span>Sex: ${ck(sex === 'M', 'M')}${ck(sex === 'F', 'F')}</span><span>Date: <b>${dmy(c.date)}</b></span><span>File No.: <b>${fileNo || '—'}</b></span>`, [
+  const drBar = `Patient Name: <b>${name || '—'}</b><span>Age: <b>${v('n.age') || '—'}</b></span><span>Sex: ${ck(sex === 'M', 'M')}${ck(sex === 'F', 'F')}</span><span>Date: <b>${dmy(c.date)}</b></span><span>File No.: <b>${fileNo || '—'}</b></span>`;
+  const dr = page('ltr', head('HIP &amp; KNEE CONSULTATION SHEET', ''), drBar, [
       box(1, 'Chief Complaint', two(cks('x.cc', L.X_CC) + line('Other:', v('x.cc.other')), lbl('Duration:', cks('x.dur', L.X_DUR)))),
       box(2, 'History of Present Illness', row('Side:', side) + row('Onset:', cks('x.onset', L.X_ONSET)) + row('Course:', cks('x.course', L.X_COURSE)) + line('Aggravating factors:', v('x.aggr'))
         + line('Relieving factors:', v('x.reliev')) + lbl('Previous treatment:', wrap('row', cks('x.prev', L.X_PREV))) + line('Other:', v('x.prev.other'))),
@@ -104,7 +105,31 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
       box(11, 'Plan', cks('x.plan', L.X_PLAN) + line('Follow up after:', v('x.plan.fu')) + line('Others:', v('x.plan.other')) + (c.followUp ? line('Next visit:', dmy(c.followUp)) : '')),
       box(12, 'Notes', compact && !v('x.notes') ? '' : `<div class="notes">${v('x.notes').replace(/\n/g, '<br>') || '&nbsp;'}</div>`),
     ]);
-  return { nurse, doctor: dr };
+  // ---------- شيتات المناطق التانية (regionSheets) بنفس العناصر ----------
+  const regionPage = (def: RegionSheetDef) => {
+    const K = (x: string) => `${def.prefix}.${x}`;
+    const rf = (f: Field): string => {
+      switch (f.t) {
+        case 'checks': { const x = cks(K(f.g), f.items); const body = f.cols ? wrap('cols2', x) : x; return f.label ? lbl(f.label, body) : body; }
+        case 'pick': return row(f.label, cks(K(f.g), f.items));
+        case 'text': return line(f.label, v(K(f.k)));
+        case 'side': return row('Side:', side);
+        case 'two': return two(f.a.map(rf).join(''), f.b.map(rf).join(''));
+        case 'rom': return table(`<th>${f.title}</th><th>Normal</th><th>Rt.</th><th>Lt.</th>`, f.rows.filter(([m]) => filled(K(`${f.k}.${m}`))).map(([m, n]) => `<tr><td>${m}</td><td>${n}</td>${rtLt(K(`${f.k}.${m}`))}</tr>`));
+        case 'grade': return table(`<th>${f.title}</th><th>Rt.</th><th>Lt.</th>`, f.rows.filter(([r]) => filled(K(`${f.k}.${r}`))).map(([r, m]) => `<tr><td>${r} (${m})</td>${rtLt(K(`${f.k}.${r}`), f.opts === 'mrc' ? '/5' : '')}</tr>`));
+        case 'ticks': return table(`<th>${f.title}</th><th>Area</th><th>Rt.</th><th>Lt.</th>`, f.rows.filter(([r]) => !compact || has(K(f.g), `${r} Rt`) || has(K(f.g), `${r} Lt`)).map(([r, area]) => `<tr><td>${r}</td><td>${esc(area)}</td><td>${has(K(f.g), `${r} Rt`) ? '✓' : ''}</td><td>${has(K(f.g), `${r} Lt`) ? '✓' : ''}</td></tr>`));
+        case 'imaging': return L.X_IMG.filter((m) => !compact || has(K(f.k), m) || v(K(`${f.k}.${m}`)) || v(K(`${f.k}.${m}.date`))).map((m) => `<div class="row">${ck(has(K(f.k), m), m + ':')}<span class="fill">${v(K(`${f.k}.${m}`))}</span><span>Date: ${v(K(`${f.k}.${m}.date`)) ? dmy(v(K(`${f.k}.${m}.date`))) : '__ / __ / __'}</span></div>`).join('')
+          + line('Previous imaging:', v(K(`${f.k}.prev`))) + line('Others:', v(K(`${f.k}.other`)));
+        case 'dxmap': return c.icd10 ? line('ICD-10:', esc(c.icd10)) : '';
+        case 'notes': return compact && !v(K(f.k)) ? '' : `<div class="notes">${v(K(f.k)).replace(/\n/g, '<br>') || '&nbsp;'}</div>`;
+      }
+    };
+    return page('ltr', head(def.title, ''), drBar, def.boxes.map((b, i) => box(i + 1, b.title, b.f.map(rf).join('') + (b.role === 'plan' && c.followUp ? line('Next visit:', dmy(c.followUp)) : ''), b.tone ?? '')));
+  };
+  // شيت الطبيب = الشيتات النشطة (من مكان الألم + اللي اتكتب فيه)؛ كشف قديم من غير أي منطقة ← الورك والركبة زي الأول
+  const ids = activeSheets(s);
+  const doctor = (ids.length ? ids : ['hipknee' as const]).map((id) => (id === 'hipknee' ? dr : regionPage(regionSheet(id)!))).join('');
+  return { nurse, doctor };
 }
 
 // كشف قديم (قبل الشيت): ملخصه النصي في صفحة واحدة

@@ -11,6 +11,7 @@ import { fmtDate } from '../utils/format';
 import { Icon } from '../utils/icons';
 import type { Patient } from '../types';
 import type { CurrentMed, ExamSheet, Side } from './data';
+import { DOCTOR_PREFIXES, REGION_SHEETS, regionSummary, sheetFilled } from './regionSheets';
 
 // ---------- بنود الورقتين ----------
 const N_VISIT = ['زيارة جديدة', 'متابعة'];
@@ -80,7 +81,7 @@ export const nurseStarted = (s: ExamSheet) =>
   s.on.some((o) => o.startsWith('n.') && !isAutoOn(o)) || s.pain.length > 0 || s.meds.some((m) => m.name.trim())
   || Object.entries(s.txt).some(([k, v]) => k.startsWith('n.') && !BASIC_KEYS.includes(k) && v.trim());
 /** فيه حاجة متكتبة في شيت الطبيب (عشان استكمال الكشف يفتح عليه على طول) */
-export const doctorStarted = (s: ExamSheet) => s.on.some((o) => o.startsWith('x.')) || Object.entries(s.txt).some(([k, v]) => k.startsWith('x.') && v.trim());
+export const doctorStarted = (s: ExamSheet) => DOCTOR_PREFIXES.some((p) => s.on.some((o) => o.startsWith(p + '.')) || Object.entries(s.txt).some(([k, v]) => k.startsWith(p + '.') && v.trim()));
 
 const key = (g: string, item: string) => `${g}|${item}`;
 const has = (s: ExamSheet, g: string, item: string) => s.on.includes(key(g, item));
@@ -169,13 +170,18 @@ const rtLt = (s: ExamSheet, k: string, unit = '') => {
   return join([r && `Rt ${r}${unit}`, l && `Lt ${l}${unit}`], ' / ');
 };
 
-export function sheetSummary(s: ExamSheet) {
+// side = جهة الكشف (للشيتات حسب المنطقة)؛ شيت الورك والركبة + شيت كل منطقة اتكتب فيها بيتجمعوا في نفس الملخص
+export function sheetSummary(s: ExamSheet, side: Side = 'na') {
   const xcc = join([...picked(s, 'x.cc', X_CC), tx(s, 'x.cc.other')]);
   const dur = picked(s, 'x.dur', X_DUR)[0];
   const ncc = join([...picked(s, 'n.cc', N_CC), tx(s, 'n.cc.other')], '، ');
   const pain = s.pain.map(painLabel).join('، ');
   const since = picked(s, 'n.since', N_SINCE)[0];
-  const complaint = xcc ? join([xcc, dur], ' — ') : ncc ? join([ncc, pain], ' — ') : '';
+  const regions = REGION_SHEETS.filter((d) => sheetFilled(s, d.id)).map((d) => ({ d, r: regionSummary(d, s, side) }));
+  const multi = regions.length + (sheetFilled(s, 'hipknee') ? 1 : 0) > 1;
+  const tag = (label: string, t: string) => (t && multi ? `[${label}] ${t}` : t);
+  const doctorCc = join([xcc && join([xcc, dur], ' — '), ...regions.map(({ d, r }) => r.complaint && tag(d.tab, r.complaint))], ' · ');
+  const complaint = doctorCc || (ncc ? join([ncc, pain], ' — ') : '');
 
   const meds = s.meds.filter((m) => m.name.trim()).map((m) => join([m.name.trim(), m.dose.trim(), m.freq.trim()], ' ')).join('، ');
   const allergy = join([...picked(s, 'n.allergy', N_ALLERGY), tx(s, 'n.allergy.other')], '، ');
@@ -225,16 +231,16 @@ export function sheetSummary(s: ExamSheet) {
     ['Special tests +ve', join([sec('Hip', [...picked(s, 'x.st.hip', X_ST_HIP), tx(s, 'x.st.hip.other')]), sec('Knee', [...picked(s, 'x.st.knee', X_ST_KNEE), tx(s, 'x.st.knee.other')])], '; ')],
     ['Imaging', img],
   ];
-  const examination = join([...lines.map(([l, v]) => v && `${l} — ${v}`), tx(s, 'x.notes')], '\n');
+  const examination = join([...lines.map(([l, v]) => v && `${l} — ${v}`), tx(s, 'x.notes'), ...regions.flatMap(({ d, r }) => r.examination.map((t) => tag(d.tab, t)))], '\n');
 
-  const diagnosis = join([sec('Hip', picked(s, 'x.dx.hip', X_DX_HIP)), sec('Knee', picked(s, 'x.dx.knee', X_DX_KNEE)), tx(s, 'x.dx.other')], ' · ');
-  const plan = join([...picked(s, 'x.plan', X_PLAN), tx(s, 'x.plan.fu') && `Follow up after ${tx(s, 'x.plan.fu')}`, tx(s, 'x.plan.other')]);
-  return { complaint, history, examination, diagnosis, plan };
+  const diagnosis = join([sec('Hip', picked(s, 'x.dx.hip', X_DX_HIP)), sec('Knee', picked(s, 'x.dx.knee', X_DX_KNEE)), tx(s, 'x.dx.other'), ...regions.map(({ d, r }) => r.diagnosis && tag(d.tab, r.diagnosis))], ' · ');
+  const plan = join([...picked(s, 'x.plan', X_PLAN), tx(s, 'x.plan.fu') && `Follow up after ${tx(s, 'x.plan.fu')}`, tx(s, 'x.plan.other'), ...regions.map(({ d, r }) => r.plan && tag(d.tab, r.plan))]);
+  return { complaint, history: join([history, ...regions.flatMap(({ d, r }) => r.history.map((t) => tag(d.tab, t)))], '\n'), examination, diagnosis, plan };
 }
 
 // ---------- عناصر الشيت ----------
 type Change = (f: (s: ExamSheet) => ExamSheet) => void;
-function sheetApi(s: ExamSheet, onChange: Change) {
+export function sheetApi(s: ExamSheet, onChange: Change) {
   return {
     has: (g: string, i: string) => has(s, g, i),
     toggle: (g: string, i: string, none?: string) => onChange((x) => toggleIn(x, g, i, none)),
@@ -243,9 +249,9 @@ function sheetApi(s: ExamSheet, onChange: Change) {
     set: (k: string, v: string) => onChange((x) => ({ ...x, txt: { ...x.txt, [k]: v } })),
   };
 }
-type Api = ReturnType<typeof sheetApi>;
+export type Api = ReturnType<typeof sheetApi>;
 
-function Box({ n, title, tone, wide, children }: { n: number; title: ReactNode; tone?: 'red'; wide?: boolean; children: ReactNode }) {
+export function Box({ n, title, tone, wide, children }: { n: number; title: ReactNode; tone?: 'red'; wide?: boolean; children: ReactNode }) {
   return (
     <section className={`sh-box${tone ? ' sh-box--red' : ''}${wide ? ' sh-box--wide' : ''}`}>
       <h3 className="sh-box__h"><span className="sh-box__n">{n}</span>{title}</h3>
@@ -253,19 +259,19 @@ function Box({ n, title, tone, wide, children }: { n: number; title: ReactNode; 
     </section>
   );
 }
-function Ck({ on, onToggle, children }: { on: boolean; onToggle: () => void; children: ReactNode }) {
+export function Ck({ on, onToggle, children }: { on: boolean; onToggle: () => void; children: ReactNode }) {
   return <label className={`sh-ck${on ? ' is-on' : ''}`}><input type="checkbox" checked={on} onChange={onToggle} /><span>{children}</span></label>;
 }
-function Checks({ a, g, items, none }: { a: Api; g: string; items: string[]; none?: string }) {
+export function Checks({ a, g, items, none }: { a: Api; g: string; items: string[]; none?: string }) {
   return <>{items.map((i) => <Ck key={i} on={a.has(g, i)} onToggle={() => a.toggle(g, i, none)}>{i}</Ck>)}</>;
 }
-function Pick({ a, g, items }: { a: Api; g: string; items: string[] }) {
+export function Pick({ a, g, items }: { a: Api; g: string; items: string[] }) {
   return <>{items.map((i) => <Ck key={i} on={a.has(g, i)} onToggle={() => a.pick(g, i)}>{i}</Ck>)}</>;
 }
-function Row({ label, children }: { label: string; children: ReactNode }) {
+export function Row({ label, children }: { label: string; children: ReactNode }) {
   return <div className="sh-row"><b className="sh-row__l">{label}</b>{children}</div>;
 }
-function Txt({ a, k, label, unit, num, stack, ...rest }: { a: Api; k: string; label?: string; unit?: string; num?: boolean; stack?: boolean; placeholder?: string; dir?: 'ltr' | 'auto'; inputMode?: 'tel' | 'decimal' }) {
+export function Txt({ a, k, label, unit, num, stack, ...rest }: { a: Api; k: string; label?: string; unit?: string; num?: boolean; stack?: boolean; placeholder?: string; dir?: 'ltr' | 'auto'; inputMode?: 'tel' | 'decimal' }) {
   const input = (
     <input className={`sh-in${num ? ' sh-in--num' : ''}`} dir={num ? 'ltr' : rest.dir ?? 'auto'} inputMode={num ? 'decimal' : rest.inputMode}
       placeholder={rest.placeholder} aria-label={label ?? rest.placeholder} value={a.txt(k)} onChange={(e) => a.set(k, e.target.value)} />
@@ -421,7 +427,7 @@ function RomTable({ a, joint, title, rows }: { a: Api; joint: string; title: str
     </table>
   );
 }
-function SelCell({ a, k, label, options }: { a: Api; k: string; label: string; options: [string, string][] }) {
+export function SelCell({ a, k, label, options }: { a: Api; k: string; label: string; options: [string, string][] }) {
   return (
     <td>
       <select className="sh-sel" aria-label={label} value={a.txt(k)} onChange={(e) => a.set(k, e.target.value)}>
@@ -431,8 +437,8 @@ function SelCell({ a, k, label, options }: { a: Api; k: string; label: string; o
     </td>
   );
 }
-const MRC_OPTS: [string, string][] = [0, 1, 2, 3, 4, 5].map((n) => [String(n), `${n}/5`]);
-const REFLEX_OPTS: [string, string][] = X_REFLEX_V.map((v) => [v, v]);
+export const MRC_OPTS: [string, string][] = [0, 1, 2, 3, 4, 5].map((n) => [String(n), `${n}/5`]);
+export const REFLEX_OPTS: [string, string][] = X_REFLEX_V.map((v) => [v, v]);
 
 export function DoctorSheet({ sheet, onChange, side, onSide, icd10, onIcd10, onOpenMap }: {
   sheet: ExamSheet; onChange: Change; side: Side; onSide: (s: Side) => void;

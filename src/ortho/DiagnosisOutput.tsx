@@ -31,13 +31,14 @@ export function DiagnosisOutput({ c, patient, visitNo, initial, onClose }: {
   const [parts, setParts] = useState<DxPart[]>(() => initial.filter((x) => available.includes(x)));
   const [busy, setBusy] = useState<'' | 'pdf' | 'wa'>('');
   const [ready, setReady] = useState<File | null>(null); // المتصفح طلب ضغطة تانية قبل المشاركة — الملف جاهز
+  const [compact, setCompact] = useState(true); // اللي اتحدد بس (الافتراضي) ولا الشيت كامل بكل الاختيارات
   const chosen = DX_PARTS.map((x) => x.id).filter((x) => parts.includes(x));
   const all = available.every((x) => parts.includes(x));
   const phone = patient?.phone ? waPhone(patient.phone) : '';
   const toggle = (id: DxPart) => setParts((xs) => (xs.includes(id) ? xs.filter((x) => x !== id) : [...xs, id]));
 
   async function makeFile() {
-    const blob = await buildDiagnosisPdf(c, patient, visitNo, chosen);
+    const blob = await buildDiagnosisPdf(c, patient, visitNo, chosen, compact);
     const what = chosen.length === available.length ? 'Diagnosis' : chosen.map((x) => ({ nurse: 'Nursing', doctor: 'HipKnee', rx: 'Rx' }[x])).join('-');
     return new File([blob], `${what}-${fileNoText(patient?.fileNo) || 'patient'}-${c.date}.pdf`, { type: 'application/pdf' });
   }
@@ -98,8 +99,13 @@ export function DiagnosisOutput({ c, patient, visitNo, initial, onClose }: {
           })}
         </div>
 
+        <div className="seg" role="radiogroup" aria-label="شكل الشيت">
+          <button type="button" role="radio" aria-checked={compact} className={`seg__btn ${compact ? 'active' : ''}`} onClick={() => setCompact(true)}>اللي اتحدد بس</button>
+          <button type="button" role="radio" aria-checked={!compact} className={`seg__btn ${!compact ? 'active' : ''}`} onClick={() => setCompact(false)}>الشيت كامل بكل الاختيارات</button>
+        </div>
+
         <div className="out-actions">
-          <button type="button" className="out-act" disabled={!chosen.length || !!busy} onClick={() => printDiagnosis(c, patient, visitNo, chosen)}>
+          <button type="button" className="out-act" disabled={!chosen.length || !!busy} onClick={() => printDiagnosis(c, patient, visitNo, chosen, compact)}>
             <Icon name="print" size={22} /><b>طباعة</b><small>على الطابعة على طول</small>
           </button>
           <button type="button" className="out-act" disabled={!chosen.length || !!busy} onClick={() => void download()}>

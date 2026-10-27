@@ -23,14 +23,22 @@ export const hasRx = (c: DxConsult) => c.medications.some((m) => m.name.trim()) 
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 const FONT_HREF = 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap';
 
-function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: number) {
+// compact = «اللي اتحدد بس»: البنود المتعلّمة والخانات المكتوبة بس — الخانة الفاضية والصفحة الفاضية بيختفوا.
+// من غيره = الورقة كاملة بكل الاختيارات (زي الشيت المطبوع).
+function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: number, compact = false) {
   const s: ExamSheet = normSheet(c.sheet);
   const has = (g: string, i: string) => s.on.includes(`${g}|${i}`);
   const v = (k: string) => esc((s.txt[k] ?? '').trim());
   const ck = (on: boolean, label: string) => `<span class="ck${on ? ' on' : ''}"><i>${on ? '✓' : ''}</i>${esc(label)}</span>`;
-  const cks = (g: string, items: string[]) => items.map((i) => ck(has(g, i), i)).join('');
-  const line = (label: string, val: string) => `<div class="ln"><b>${esc(label)}</b><span>${val || '&nbsp;'}</span></div>`;
-  const box = (n: number, title: string, body: string, cls = '') => `<section class="box ${cls}"><h3><span>${n}</span>${title}</h3><div class="bd">${body}</div></section>`;
+  const cks = (g: string, items: string[]) => (compact ? items.filter((i) => has(g, i)) : items).map((i) => ck(has(g, i), i)).join('');
+  const line = (label: string, val: string) => (compact && !val ? '' : `<div class="ln"><b>${esc(label)}</b><span>${val || '&nbsp;'}</span></div>`);
+  const row = (label: string, inner: string) => (compact && !inner ? '' : `<div class="row">${label ? `<b>${esc(label)}</b>` : ''}${inner}</div>`);
+  const lbl = (label: string, inner: string) => (compact && !inner ? '' : `<div class="lbl">${esc(label)}</div>${inner}`);
+  const wrap = (cls: string, inner: string) => (compact && !inner ? '' : `<div class="${cls}">${inner}</div>`);
+  const two = (a: string, b: string) => (compact && (!a || !b) ? a + b : `<div class="two"><div>${a}</div><div>${b}</div></div>`);
+  const table = (headCells: string, rows: string[]) => (compact && !rows.length ? '' : `<table><thead><tr>${headCells}</tr></thead><tbody>${rows.join('')}</tbody></table>`);
+  const box = (n: number, title: string, body: string, cls = '') => (compact && !body.trim() ? '' : `<section class="box ${cls}"><h3><span>${n}</span>${title}</h3><div class="bd">${body}</div></section>`);
+  const bdi = (x: string) => (x ? `<bdi>${x}</bdi>` : '');
   const name = v('n.name') || esc(p?.fullName ?? '');
   const fileNo = esc(fileNoText(p?.fileNo) || '');
   const date = esc(fmtDate(c.date));
@@ -40,47 +48,62 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
     <div class="brand"><b>${esc(DOCTOR.name)}</b><span>${esc(DOCTOR.title)}</span></div>
     <div class="title">${title}${sub ? `<small>${sub}</small>` : ''}</div>
   </header>`;
+  const page = (dir: 'rtl' | 'ltr', header: string, bar: string, boxes: string[]) => {
+    const body = boxes.join('');
+    return compact && !body.trim() ? '' : `<div class="page shp${compact ? ' compact' : ''}" dir="${dir}">${header}<div class="bar">${bar}</div><div class="grid g4">${body}</div></div>`;
+  };
 
   // ---------- صفحة 1: شيت التمريض ----------
   const meds = s.meds.filter((m) => m.name.trim());
-  const nurse = `<div class="page shp" dir="rtl">
-  ${head('شيت التمريض', 'يملأ بواسطة التمريض قبل دخول المريض')}
-  <div class="bar">${cks('n.visit', L.N_VISIT)}<span>اسم المريض: <b>${name || '—'}</b></span><span>رقم الملف: <b>${fileNo || '—'}</b></span><span>رقم الزيارة: <b>${visitNo ?? '—'}</b></span><span>التاريخ: <b>${date}</b></span></div>
-  <div class="grid g4">
-    ${box(1, 'البيانات الأساسية', `${line('الاسم', name)}${line('السن', v('n.age'))}<div class="row"><b>النوع</b>${cks('n.gender', L.N_GENDER)}</div>${line('رقم الهاتف', `<bdi>${v('n.phone')}</bdi>`)}${line('العنوان', v('n.address'))}${line('المهنة', v('n.job'))}<div class="row"><b>الحالة الاجتماعية</b>${cks('n.marital', L.N_MARITAL)}</div>${line('اسم المرافق', v('n.compName'))}${line('رقم المرافق', `<bdi>${v('n.compPhone')}</bdi>`)}`)}
-    ${box(2, 'العلامات الحيوية والقياسات', `${line('ضغط الدم', [v('n.bp.sys'), v('n.bp.dia')].some(Boolean) ? `<bdi>${v('n.bp.sys')} / ${v('n.bp.dia')} mmHg</bdi>` : '')}${line('النبض', v('n.pulse') && `${v('n.pulse')} / دقيقة`)}${line('درجة الحرارة', v('n.temp') && `${v('n.temp')} °C`)}${line('معدل التنفس', v('n.rr') && `${v('n.rr')} / دقيقة`)}${line('الوزن', v('n.wt') && `${v('n.wt')} كجم`)}${line('الطول', v('n.ht') && `${v('n.ht')} سم`)}${line('مؤشر كتلة الجسم (BMI)', bmiOf(s))}`)}
-    ${box(3, 'التاريخ المرضي المعروف', `<div class="cols2">${cks('n.hx', L.N_HX)}</div><div class="row"><b>التدخين</b>${cks('n.smoke', L.YES_NO)}</div>${line('أخرى', v('n.hx.other'))}`)}
-    ${box(4, 'الأدوية الحالية والحساسية', `<table><thead><tr><th>اسم الدواء</th><th>الجرعة</th><th>عدد المرات</th></tr></thead><tbody>${(meds.length ? meds : [{ name: '', dose: '', freq: '' }]).map((m) => `<tr><td>${esc(m.name)}</td><td>${esc(m.dose)}</td><td>${esc(m.freq)}</td></tr>`).join('')}</tbody></table><div class="lbl">الحساسية</div>${cks('n.allergy', L.N_ALLERGY)}${line('مواد أخرى', v('n.allergy.other'))}${line('التفاصيل', v('n.allergy.details'))}`)}
-    ${box(5, 'سبب الزيارة الحالية ومكان الألم وتفاصيل المشكلة', `<div class="g3">
-      <div><div class="lbl">الشكوى</div>${cks('n.cc', L.N_CC)}${line('أخرى', v('n.cc.other'))}</div>
-      <div><div class="lbl">مكان الألم</div>${s.pain.length ? `<ul>${s.pain.map((k) => `<li>${esc(painLabel(k))}</li>`).join('')}</ul>` : '<div class="ln"><span>&nbsp;</span></div>'}
-        <div class="lbl">شدة الألم حاليًا (من 10)</div><div class="vas">${Array.from({ length: 11 }, (_, n) => `<span class="${c.painScore === n ? 'on' : ''}">${n}</span>`).join('')}</div></div>
-      <div><div class="lbl">منذ متى؟</div>${cks('n.since', L.N_SINCE)}${line('بداية المشكلة / كيفية حدوثها', v('n.onset'))}<div class="row"><b>هل توجد إصابة حديثة؟</b>${cks('n.injury', L.YES_NO)}</div>${line('إذا نعم، ما هي؟', v('n.injury.what'))}${line('ماذا تم عمله حتى الآن؟', v('n.done'))}</div>
-    </div>`, 'wide')}
-  </div>
-</div>`;
+  const pain = s.pain.length ? `<ul>${s.pain.map((k) => `<li>${esc(painLabel(k))}</li>`).join('')}</ul>` : compact ? '' : '<div class="ln"><span>&nbsp;</span></div>';
+  const vas = compact && c.painScore === '' ? '' : `<div class="vas">${Array.from({ length: 11 }, (_, n) => `<span class="${c.painScore === n ? 'on' : ''}">${n}</span>`).join('')}</div>`;
+  const visitCols = [
+    lbl('الشكوى', cks('n.cc', L.N_CC)) + line('أخرى', v('n.cc.other')),
+    lbl('مكان الألم', pain) + lbl('شدة الألم حاليًا (من 10)', vas),
+    lbl('منذ متى؟', cks('n.since', L.N_SINCE)) + line('بداية المشكلة / كيفية حدوثها', v('n.onset')) + row('هل توجد إصابة حديثة؟', cks('n.injury', L.YES_NO))
+      + line('إذا نعم، ما هي؟', v('n.injury.what')) + line('ماذا تم عمله حتى الآن؟', v('n.done')),
+  ].filter((x) => !compact || x);
+  const nurse = page('rtl', head('شيت التمريض', 'يملأ بواسطة التمريض قبل دخول المريض'),
+    `${cks('n.visit', L.N_VISIT)}<span>اسم المريض: <b>${name || '—'}</b></span><span>رقم الملف: <b>${fileNo || '—'}</b></span><span>رقم الزيارة: <b>${visitNo ?? '—'}</b></span><span>التاريخ: <b>${date}</b></span>`, [
+      box(1, 'البيانات الأساسية', line('الاسم', name) + line('السن', v('n.age')) + row('النوع', cks('n.gender', L.N_GENDER)) + line('رقم الهاتف', bdi(v('n.phone')))
+        + line('العنوان', v('n.address')) + line('المهنة', v('n.job')) + row('الحالة الاجتماعية', cks('n.marital', L.N_MARITAL)) + line('اسم المرافق', v('n.compName')) + line('رقم المرافق', bdi(v('n.compPhone')))),
+      box(2, 'العلامات الحيوية والقياسات', line('ضغط الدم', v('n.bp.sys') || v('n.bp.dia') ? `<bdi>${v('n.bp.sys')} / ${v('n.bp.dia')} mmHg</bdi>` : '') + line('النبض', v('n.pulse') && `${v('n.pulse')} / دقيقة`)
+        + line('درجة الحرارة', v('n.temp') && `${v('n.temp')} °C`) + line('معدل التنفس', v('n.rr') && `${v('n.rr')} / دقيقة`) + line('الوزن', v('n.wt') && `${v('n.wt')} كجم`)
+        + line('الطول', v('n.ht') && `${v('n.ht')} سم`) + line('مؤشر كتلة الجسم (BMI)', bmiOf(s))),
+      box(3, 'التاريخ المرضي المعروف', wrap('cols2', cks('n.hx', L.N_HX)) + row('التدخين', cks('n.smoke', L.YES_NO)) + line('أخرى', v('n.hx.other'))),
+      box(4, 'الأدوية الحالية والحساسية', table('<th>اسم الدواء</th><th>الجرعة</th><th>عدد المرات</th>', (meds.length || compact ? meds : [{ name: '', dose: '', freq: '' }]).map((m) => `<tr><td>${esc(m.name)}</td><td>${esc(m.dose)}</td><td>${esc(m.freq)}</td></tr>`))
+        + lbl('الحساسية', cks('n.allergy', L.N_ALLERGY)) + line('مواد أخرى', v('n.allergy.other')) + line('التفاصيل', v('n.allergy.details'))),
+      box(5, 'سبب الزيارة الحالية ومكان الألم وتفاصيل المشكلة', visitCols.length ? `<div class="g3" style="grid-template-columns:repeat(${visitCols.length},minmax(0,1fr))">${visitCols.map((x) => `<div>${x}</div>`).join('')}</div>` : '', 'wide'),
+    ]);
 
   // ---------- صفحة 2: Hip & Knee ----------
-  const rtLt = (k: string) => `<td>${v(k + '.rt')}</td><td>${v(k + '.lt')}</td>`;
+  const rtLt = (k: string, unit = '') => [v(k + '.rt'), v(k + '.lt')].map((x) => `<td>${x && x + unit}</td>`).join('');
+  const filled = (k: string) => !compact || !!(v(k + '.rt') || v(k + '.lt'));
   const sex = has('n.gender', 'ذكر') ? 'M' : has('n.gender', 'أنثى') ? 'F' : '';
-  const dr = `<div class="page shp" dir="ltr">
-  ${head('HIP &amp; KNEE CONSULTATION SHEET', '')}
-  <div class="bar">Patient Name: <b>${name || '—'}</b><span>Age: <b>${v('n.age') || '—'}</b></span><span>Sex: ${ck(sex === 'M', 'M')}${ck(sex === 'F', 'F')}</span><span>Date: <b>${dmy(c.date)}</b></span><span>File No.: <b>${fileNo || '—'}</b></span></div>
-  <div class="grid g4">
-    ${box(1, 'Chief Complaint', `<div class="two"><div>${cks('x.cc', L.X_CC)}${line('Other:', v('x.cc.other'))}</div><div><div class="lbl">Duration:</div>${cks('x.dur', L.X_DUR)}</div></div>`)}
-    ${box(2, 'History of Present Illness', `<div class="row"><b>Side:</b>${L.X_SIDE.map(([k, l]) => ck(c.side === k, l)).join('')}</div><div class="row"><b>Onset:</b>${cks('x.onset', L.X_ONSET)}</div><div class="row"><b>Course:</b>${cks('x.course', L.X_COURSE)}</div>${line('Aggravating factors:', v('x.aggr'))}${line('Relieving factors:', v('x.reliev'))}<div class="lbl">Previous treatment:</div><div class="row">${cks('x.prev', L.X_PREV)}</div>${line('Other:', v('x.prev.other'))}`)}
-    ${box(3, '⚠ Red Flags', `${cks('x.rf', L.X_RF)}${line('Others:', v('x.rf.other'))}`, 'red')}
-    ${box(4, 'Dermatomes (Sensation Map)', `<table><thead><tr><th>Root</th><th>Key area</th><th>Rt.</th><th>Lt.</th></tr></thead><tbody>${L.X_DERM.map(([r, area, color]) => `<tr><td><i class="sw" style="background:${color}"></i>${r}</td><td>${esc(area)}</td><td>${has('x.derm', `${r} Rt`) ? '✓' : ''}</td><td>${has('x.derm', `${r} Lt`) ? '✓' : ''}</td></tr>`).join('')}</tbody></table><div class="note">✓ = reduced / lost sensation</div>`)}
-    ${box(5, 'Palpation', `<div class="two"><div><div class="lbl">Hip</div>${cks('x.palp.hip', L.X_PALP_HIP)}${line('Other:', v('x.palp.hip.other'))}</div><div><div class="lbl">Knee</div>${cks('x.palp.knee', L.X_PALP_KNEE)}${line('Other:', v('x.palp.knee.other'))}</div></div>`)}
-    ${box(6, 'Range of Motion', `<table><thead><tr><th>Hip Motion</th><th>Normal</th><th>Rt.</th><th>Lt.</th></tr></thead><tbody>${L.X_ROM_HIP.map(([m, n]) => `<tr><td>${m}</td><td>${n}</td>${rtLt(`x.rom.hip.${m}`)}</tr>`).join('')}</tbody></table><table><thead><tr><th>Knee Motion</th><th>Normal</th><th>Rt.</th><th>Lt.</th></tr></thead><tbody>${L.X_ROM_KNEE.map(([m, n]) => `<tr><td>${m}</td><td>${n}</td>${rtLt(`x.rom.knee.${m}`)}</tr>`).join('')}</tbody></table><div class="row"><b>Patellar mobility:</b>${cks('x.patmob', L.X_PATMOB)}</div><div class="row">${cks('x.sprom', L.X_SPROM)}</div>${line('Other:', v('x.sprom.other'))}`)}
-    ${box(7, 'Neurological Examination', `<table><thead><tr><th>Motor Power (MRC)</th><th>Rt.</th><th>Lt.</th></tr></thead><tbody>${L.X_MRC.map(([r, m]) => `<tr><td>${r} (${m})</td><td>${v(`x.mrc.${r}.rt`) && v(`x.mrc.${r}.rt`) + '/5'}</td><td>${v(`x.mrc.${r}.lt`) && v(`x.mrc.${r}.lt`) + '/5'}</td></tr>`).join('')}</tbody></table><table><thead><tr><th>Reflexes</th><th>Rt.</th><th>Lt.</th></tr></thead><tbody>${L.X_REFLEX.map(([n, root]) => `<tr><td>${n} (${root})</td>${rtLt(`x.refl.${n}`)}</tr>`).join('')}</tbody></table>`)}
-    ${box(8, 'Special Tests (+ve)', `<div class="two"><div><div class="lbl">Hip</div>${cks('x.st.hip', L.X_ST_HIP)}${line('Other:', v('x.st.hip.other'))}</div><div><div class="lbl">Knee</div>${cks('x.st.knee', L.X_ST_KNEE)}${line('Other:', v('x.st.knee.other'))}</div></div>`)}
-    ${box(9, 'Imaging / Investigations', `${L.X_IMG.map((m) => `<div class="row">${ck(has('x.img', m), m + ':')}<span class="fill">${v(`x.img.${m}`)}</span><span>Date: ${v(`x.img.${m}.date`) ? dmy(v(`x.img.${m}.date`)) : '__ / __ / __'}</span></div>`).join('')}${line('Previous imaging:', v('x.img.prev'))}${line('Others:', v('x.img.other'))}`)}
-    ${box(10, 'Diagnosis (Likely / Working)', `<div class="two"><div><div class="lbl">Hip</div>${cks('x.dx.hip', L.X_DX_HIP)}</div><div><div class="lbl">Knee</div>${cks('x.dx.knee', L.X_DX_KNEE)}</div></div>${line('Others:', v('x.dx.other'))}${c.icd10 ? line('ICD-10:', esc(c.icd10)) : ''}`)}
-    ${box(11, 'Plan', `${cks('x.plan', L.X_PLAN)}${line('Follow up after:', v('x.plan.fu'))}${line('Others:', v('x.plan.other'))}${c.followUp ? line('Next visit:', dmy(c.followUp)) : ''}`)}
-    ${box(12, 'Notes', `<div class="notes">${v('x.notes').replace(/\n/g, '<br>') || '&nbsp;'}</div>`)}
-  </div>
-</div>`;
+  const side = (compact ? L.X_SIDE.filter(([k]) => c.side === k) : L.X_SIDE).map(([k, l]) => ck(c.side === k, l)).join('');
+  const derm = L.X_DERM.filter(([r]) => !compact || has('x.derm', `${r} Rt`) || has('x.derm', `${r} Lt`));
+  const imgs = L.X_IMG.filter((m) => !compact || has('x.img', m) || v(`x.img.${m}`) || v(`x.img.${m}.date`));
+  const dr = page('ltr', head('HIP &amp; KNEE CONSULTATION SHEET', ''),
+    `Patient Name: <b>${name || '—'}</b><span>Age: <b>${v('n.age') || '—'}</b></span><span>Sex: ${ck(sex === 'M', 'M')}${ck(sex === 'F', 'F')}</span><span>Date: <b>${dmy(c.date)}</b></span><span>File No.: <b>${fileNo || '—'}</b></span>`, [
+      box(1, 'Chief Complaint', two(cks('x.cc', L.X_CC) + line('Other:', v('x.cc.other')), lbl('Duration:', cks('x.dur', L.X_DUR)))),
+      box(2, 'History of Present Illness', row('Side:', side) + row('Onset:', cks('x.onset', L.X_ONSET)) + row('Course:', cks('x.course', L.X_COURSE)) + line('Aggravating factors:', v('x.aggr'))
+        + line('Relieving factors:', v('x.reliev')) + lbl('Previous treatment:', wrap('row', cks('x.prev', L.X_PREV))) + line('Other:', v('x.prev.other'))),
+      box(3, '⚠ Red Flags', cks('x.rf', L.X_RF) + line('Others:', v('x.rf.other')), 'red'),
+      box(4, 'Dermatomes (Sensation Map)', table('<th>Root</th><th>Key area</th><th>Rt.</th><th>Lt.</th>', derm.map(([r, area, color]) => `<tr><td><i class="sw" style="background:${color}"></i>${r}</td><td>${esc(area)}</td><td>${has('x.derm', `${r} Rt`) ? '✓' : ''}</td><td>${has('x.derm', `${r} Lt`) ? '✓' : ''}</td></tr>`))
+        + (compact && !derm.length ? '' : '<div class="note">✓ = reduced / lost sensation</div>')),
+      box(5, 'Palpation', two(lbl('Hip', cks('x.palp.hip', L.X_PALP_HIP)) + line('Other:', v('x.palp.hip.other')), lbl('Knee', cks('x.palp.knee', L.X_PALP_KNEE)) + line('Other:', v('x.palp.knee.other')))),
+      box(6, 'Range of Motion', table('<th>Hip Motion</th><th>Normal</th><th>Rt.</th><th>Lt.</th>', L.X_ROM_HIP.filter(([m]) => filled(`x.rom.hip.${m}`)).map(([m, n]) => `<tr><td>${m}</td><td>${n}</td>${rtLt(`x.rom.hip.${m}`)}</tr>`))
+        + table('<th>Knee Motion</th><th>Normal</th><th>Rt.</th><th>Lt.</th>', L.X_ROM_KNEE.filter(([m]) => filled(`x.rom.knee.${m}`)).map(([m, n]) => `<tr><td>${m}</td><td>${n}</td>${rtLt(`x.rom.knee.${m}`)}</tr>`))
+        + row('Patellar mobility:', cks('x.patmob', L.X_PATMOB)) + wrap('row', cks('x.sprom', L.X_SPROM)) + line('Other:', v('x.sprom.other'))),
+      box(7, 'Neurological Examination', table('<th>Motor Power (MRC)</th><th>Rt.</th><th>Lt.</th>', L.X_MRC.filter(([r]) => filled(`x.mrc.${r}`)).map(([r, m]) => `<tr><td>${r} (${m})</td>${rtLt(`x.mrc.${r}`, '/5')}</tr>`))
+        + table('<th>Reflexes</th><th>Rt.</th><th>Lt.</th>', L.X_REFLEX.filter(([n]) => filled(`x.refl.${n}`)).map(([n, root]) => `<tr><td>${n} (${root})</td>${rtLt(`x.refl.${n}`)}</tr>`))),
+      box(8, 'Special Tests (+ve)', two(lbl('Hip', cks('x.st.hip', L.X_ST_HIP)) + line('Other:', v('x.st.hip.other')), lbl('Knee', cks('x.st.knee', L.X_ST_KNEE)) + line('Other:', v('x.st.knee.other')))),
+      box(9, 'Imaging / Investigations', imgs.map((m) => `<div class="row">${ck(has('x.img', m), m + ':')}<span class="fill">${v(`x.img.${m}`)}</span><span>Date: ${v(`x.img.${m}.date`) ? dmy(v(`x.img.${m}.date`)) : '__ / __ / __'}</span></div>`).join('')
+        + line('Previous imaging:', v('x.img.prev')) + line('Others:', v('x.img.other'))),
+      box(10, 'Diagnosis (Likely / Working)', two(lbl('Hip', cks('x.dx.hip', L.X_DX_HIP)), lbl('Knee', cks('x.dx.knee', L.X_DX_KNEE))) + line('Others:', v('x.dx.other')) + (c.icd10 ? line('ICD-10:', esc(c.icd10)) : '')),
+      box(11, 'Plan', cks('x.plan', L.X_PLAN) + line('Follow up after:', v('x.plan.fu')) + line('Others:', v('x.plan.other')) + (c.followUp ? line('Next visit:', dmy(c.followUp)) : '')),
+      box(12, 'Notes', compact && !v('x.notes') ? '' : `<div class="notes">${v('x.notes').replace(/\n/g, '<br>') || '&nbsp;'}</div>`),
+    ]);
   return { nurse, doctor: dr };
 }
 
@@ -92,11 +115,12 @@ function legacyHtml(c: DxConsult, p: DxPatient | null | undefined) {
   <div class="legacy">${row('الشكوى', c.complaint)}${row('التاريخ المرضي', c.history)}${row('الفحص', c.examination)}${row('التشخيص', c.diagnosis + (c.icd10 ? ` (${c.icd10})` : ''))}${row('التعليمات', c.plan)}</div></div>`;
 }
 
-export function diagnosisHtml(c: DxConsult, p?: DxPatient | null, visitNo?: number, parts: DxPart[] = ['nurse', 'doctor']): string {
+/** compact = اللي اتحدد بس (المتعلّم والمكتوب)؛ من غيره الورقة كاملة بكل الاختيارات */
+export function diagnosisHtml(c: DxConsult, p?: DxPatient | null, visitNo?: number, parts: DxPart[] = ['nurse', 'doctor'], compact = false): string {
   const pages: string[] = [];
   const sheetParts = parts.filter((x) => x !== 'rx');
   if (sheetParts.length) {
-    if (sheetHasContent(normSheet(c.sheet))) { const sp = sheetPages(c, p, visitNo); sheetParts.forEach((x) => pages.push(sp[x as 'nurse' | 'doctor'])); }
+    if (sheetHasContent(normSheet(c.sheet))) { const sp = sheetPages(c, p, visitNo, compact); sheetParts.forEach((x) => { const pg = sp[x as 'nurse' | 'doctor']; if (pg) pages.push(pg); }); }
     else pages.push(legacyHtml(c, p));
   }
   if (parts.includes('rx')) pages.push(`<div class="page rxw">${rxPageHtml(c, p)}</div>`);
@@ -140,6 +164,7 @@ export function diagnosisHtml(c: DxConsult, p?: DxPatient | null, visitNo?: numb
   .g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .box { border: 1.3px solid #1b4f8f; border-radius: 7px; overflow: hidden; break-inside: avoid; }
   .box.wide { grid-column: 1 / -1; }
+  .compact .grid { align-items: start; }
   .box.red { border-color: #c4372d; }
   .box h3 { display: flex; align-items: center; gap: 6px; margin: 0; background: #1b4f8f; color: #fff; font-size: 10px; padding: 2px 7px; }
   .box.red h3 { background: #c4372d; }
@@ -194,14 +219,14 @@ async function loadFrame(html: string, cssText: string) {
 }
 
 /** لازم تتنادى من الضغطة نفسها (بتفتح تابة الطباعة على طول) */
-export function printDiagnosis(c: DxConsult, p?: DxPatient | null, visitNo?: number, parts?: DxPart[]) {
-  void printHtml(diagnosisHtml(c, p, visitNo, parts), openPrintWindow());
+export function printDiagnosis(c: DxConsult, p?: DxPatient | null, visitNo?: number, parts?: DxPart[], compact = false) {
+  void printHtml(diagnosisHtml(c, p, visitNo, parts, compact), openPrintWindow());
 }
 
 /** نفس الصفحات كملف PDF: الشيتات A4 بالعرض والروشتة A5 — كل صفحة صورة بتتظبط على المساحة المطبوعة */
-export async function buildDiagnosisPdf(c: DxConsult, p?: DxPatient | null, visitNo?: number, parts?: DxPart[]): Promise<Blob> {
+export async function buildDiagnosisPdf(c: DxConsult, p?: DxPatient | null, visitNo?: number, parts?: DxPart[], compact = false): Promise<Blob> {
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import('html2canvas'), import('jspdf')]);
-  const html = diagnosisHtml(c, p, visitNo, parts).replace('<html lang="ar">', '<html lang="ar" class="pdf">');
+  const html = diagnosisHtml(c, p, visitNo, parts, compact).replace('<html lang="ar">', '<html lang="ar" class="pdf">');
   const f = await loadFrame(html, 'position:fixed;top:0;left:-12000px;width:1200px;height:900px;border:0;');
   try {
     const pages = Array.from(f.contentDocument!.querySelectorAll<HTMLElement>('.page'));

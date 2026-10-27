@@ -6,7 +6,8 @@ import { regionById } from '../components/BodyFigure';
 import { Icon } from '../utils/icons';
 import { findCondition } from '../data/bodyRegions';
 import type { DiagnosisRef } from '../types';
-import { fmtDate, fmtDateTime, todayYmd } from '../utils/format';
+import { fmtDate, fmtDateTime, fmtTime, todayYmd } from '../utils/format';
+import { openVisitFor } from './visits';
 import { useToast } from '../hooks/useToast';
 import { IMAGING_KIND, IMAGING_STATUS, REGIONS, SIDE, isIncomplete, ortho, useOrthoVersion, type Attachment, type Consultation, type ImagingKind, type ImagingRequest, type Medication, type Side } from './data';
 import { LAB_GROUPS, MED_PRESETS, XRAY_VIEWS } from './clinicalLists';
@@ -83,19 +84,24 @@ function Section({ icon, title, children, aside }: { icon: string; title: string
 const TABS = [['nurse', 'شيت التمريض'], ['doctor', 'كشف الطبيب — الورك والركبة'], ['rx', 'الروشتة والأشعة والتحاليل']] as const;
 type Tab = typeof TABS[number][0];
 
-export function ConsultModal({ initial, resume, patientId = '', onClose }: { initial?: Consultation; resume?: boolean; patientId?: string; onClose: () => void }) {
+// appointmentId = الزيارة اللي التشخيص الجديد بيتربط بيها (من «بانتظار التشخيص»)؛ من غيرها بيتربط بزيارة النهارده المفتوحة للمريض لو فيه
+export function ConsultModal({ initial, resume, patientId = '', appointmentId, onClose }: { initial?: Consultation; resume?: boolean; patientId?: string; appointmentId?: string | null; onClose: () => void }) {
   const { run, busy } = useRun();
   const toast = useToast();
   const [c, setC] = useState<Draft>(() => {
     const basics = (d: Draft) => ({ ...d, sheet: withPatientBasics(normSheet(d.sheet), d.patientId ? db.patient(d.patientId) : null) });
+    // الزيارة: تاريخ الكشف = تاريخ الزيارة
+    const withVisit = (d: Draft, id?: string | null) => { const a = id ? db.appointment(id) : openVisitFor(d.patientId); return a ? { ...d, appointmentId: a.id, date: a.date } : { ...d, appointmentId: d.appointmentId ?? null }; };
     if (initial) return basics(withSheet({ ...emptyConsult(initial.patientId), ...initial }));
     const draft = resume && loadConsultDraft(patientId);
-    if (draft) return basics(withSheet(draft));
+    if (draft) return basics(withSheet(withVisit(draft, draft.appointmentId ?? appointmentId)));
     // زيارة جديدة ولا متابعة: من الكشوفات السابقة للمريض
     const fresh = emptyConsult(patientId);
     const visit = patientId && ortho.list('consultations', patientId).length ? 'متابعة' : 'زيارة جديدة';
-    return basics({ ...fresh, sheet: { ...emptySheet(), on: [`n.visit|${visit}`] } });
+    return basics(withVisit({ ...fresh, sheet: { ...emptySheet(), on: [`n.visit|${visit}`] } }, appointmentId));
   });
+  const visitAppt = c.appointmentId ? db.appointment(c.appointmentId) : undefined;
+  const savingRef = useRef(false); // ضغطتين ورا بعض على «حفظ» ما يعملوش تشخيصين
   const [tab, setTab] = useState<Tab>(() => (initial || doctorStarted(normSheet(c.sheet)) ? 'doctor' : 'nurse'));
   // خانة 1 وقت الفتح — اللي يتعدّل بعدها بس يروح لملف المريض (لو المريض اتغيّر، الخانات اتملت من ملفه هو فبنقارن بالملف بس)
   const [opened] = useState(() => ({ patientId: c.patientId, sheet: normSheet(c.sheet) }));
@@ -162,6 +168,7 @@ export function ConsultModal({ initial, resume, patientId = '', onClose }: { ini
   }
 
   function save(thenPrint: boolean, complete?: boolean) {
+    if (savingRef.current) return;
     if (complete === undefined && missing.length) { setAsk({ thenPrint }); return; }
     const done = complete ?? true;
     const meds = c.medications.filter((m) => m.name.trim());
@@ -173,6 +180,7 @@ export function ConsultModal({ initial, resume, patientId = '', onClose }: { ini
     // تابة الطباعة بتتفتح دلوقتي (وقت الضغطة) وإلا المتصفح يحجبها بعد انتظار الحفظ — ولو الحفظ فشل بتتقفل
     const printWin = thenPrint ? openPrintWindow() : null;
     let printed = false;
+    savingRef.current = true;
     void run(async () => {
       await ortho.save('consultations', payload);
       // طلبات الأشعة الجديدة بتتسجل في «الأشعة والتحاليل» كـ «مطلوبة» عشان تتابع وصولها وقراءتها
@@ -200,7 +208,7 @@ export function ConsultModal({ initial, resume, patientId = '', onClose }: { ini
       }
       if (thenPrint) { printed = true; printRx({ ...c, ...text, medications: meds, imagingRequests: reqs }, db.patient(c.patientId), printWin); }
       onClose();
-    }).then(() => { if (!printed) printWin?.close(); });
+    }).then(() => { savingRef.current = false; if (!printed) printWin?.close(); });
   }
 
   return (
@@ -213,7 +221,10 @@ export function ConsultModal({ initial, resume, patientId = '', onClose }: { ini
     </>}>
       <div className="cx" ref={bodyRef}>
         <div className="grid-form grid-form--4">
-          <Field label="المريض"><PatientSelect value={c.patientId} onChange={(v) => setC((x) => ({ ...x, patientId: v, sheet: resetPatientBasics(normSheet(x.sheet), v ? db.patient(v) : null) }))} /></Field>
+          <Field label="المريض"><PatientSelect value={c.patientId} onChange={(v) => setC((x) => {
+            const a = initial ? undefined : openVisitFor(v); // مريض تاني ← زيارته هو
+            return { ...x, patientId: v, appointmentId: initial ? x.appointmentId : a?.id ?? null, ...(a ? { date: a.date } : {}), sheet: resetPatientBasics(normSheet(x.sheet), v ? db.patient(v) : null) };
+          })} /></Field>
           <Field label="تاريخ الكشف"><input type="date" className="input" value={c.date} onChange={(e) => set('date', e.target.value)} /></Field>
           <Field label="المنطقة المصابة">
             <select className="input" value={c.region} onChange={(e) => set('region', e.target.value)}>{(REGIONS.includes(c.region) ? REGIONS : [c.region, ...REGIONS]).map((r) => <option key={r}>{r}</option>)}</select>
@@ -221,6 +232,13 @@ export function ConsultModal({ initial, resume, patientId = '', onClose }: { ini
           <Field label="ميعاد المتابعة"><input type="date" className="input" value={c.followUp} min={c.date} onChange={(e) => set('followUp', e.target.value)} /></Field>
         </div>
 
+        {visitAppt && (
+          <div className="sh-visitlink">
+            <Icon name="calendar" size={15} />
+            التشخيص مربوط بزيارة <b className="num">{visitAppt.no}</b> — {fmtDate(visitAppt.date)} <span className="num">{fmtTime(visitAppt.time)}</span>
+            {db.therapist(visitAppt.therapistId)?.name ? <> — {db.therapist(visitAppt.therapistId)?.name}</> : null}
+          </div>
+        )}
         <div className="seg seg--3 sh-tabs" role="tablist" aria-label="أجزاء الكشف">
           {TABS.map(([k, l], i) => (
             <button key={k} type="button" role="tab" aria-selected={tab === k} className={`seg__btn ${tab === k ? 'active' : ''}`} onClick={() => goTab(k)}>

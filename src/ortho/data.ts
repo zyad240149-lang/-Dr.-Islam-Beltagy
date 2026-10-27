@@ -21,6 +21,8 @@ export interface Consultation {
   history: string; painScore: number | ''; icd10: string; medications: Medication[]; labs: string[]; imagingRequests: ImagingRequest[]; attachments: Attachment[]; followUp: string;
   sheet?: ExamSheet; // شيت الكشف الرقمي (التمريض + الورك والركبة) — الكشوفات القديمة من غيره
   complete?: boolean; // false = اتحفظ ناقص «يحتاج استكمال» (هجرة 917)؛ مش موجود = كشف قديم مكتمل
+  appointmentId?: string | null; // الزيارة (الموعد اللي اتعمله حضور) — زيارة واحدة = تشخيص واحد (هجرة 918)
+  createdBy?: string | null; // الطبيب اللي سجّل التشخيص (بيتحدد على الخادم)
 }
 // اختيارات الشيت: on = خانات متعلّمة («المجموعة|البند»)، txt = خانات كتابة، meds = الأدوية الحالية، pain = أماكن الألم على خريطة الجسم («knee:right»)
 export interface CurrentMed { name: string; dose: string; freq: string }
@@ -51,7 +53,7 @@ const todayYmd = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cair
 
 // الأعمدة المسموح إرسالها لكل جدول (أي حاجة غيرها بتتجاهل — created_by والتواريخ بيحددها الخادم)
 const COLUMNS: Record<Kind, string[]> = {
-  consultations: ['patient_id', 'date', 'complaint', 'region', 'side', 'examination', 'diagnosis', 'plan', 'history', 'pain_score', 'icd10', 'medications', 'labs', 'imaging_requests', 'attachments', 'follow_up', 'sheet', 'complete'],
+  consultations: ['patient_id', 'date', 'complaint', 'region', 'side', 'examination', 'diagnosis', 'plan', 'history', 'pain_score', 'icd10', 'medications', 'labs', 'imaging_requests', 'attachments', 'follow_up', 'sheet', 'complete', 'appointment_id'],
   imaging: ['patient_id', 'kind', 'region', 'requested_at', 'status', 'finding', 'attachments'],
   surgeries: ['patient_id', 'procedure', 'region', 'side', 'hospital', 'date', 'implant', 'status', 'notes'],
   fractures: ['patient_id', 'bone', 'side', 'kind', 'injury_date', 'cast_date', 'removal_due', 'status'],
@@ -64,7 +66,8 @@ const camel = (k: string) => k.replace(/_([a-z])/g, (_, c: string) => c.toUpperC
 const snake = (k: string) => k.replace(/[A-Z]/g, (m) => '_' + m.toLowerCase());
 const fromRow = <T,>(r: Row) => Object.fromEntries(Object.entries(r).map(([k, v]) => [camel(k), v ?? ''])) as T;
 const toRow = (kind: Kind, o: object) => Object.fromEntries(Object.entries(o).map(([k, v]) => [snake(k), v]).filter(([k]) => COLUMNS[kind].includes(k as string)));
-const clean = (m: string) => m.replace(/^.*?ERROR:\s*/, '').replace(/new row violates row-level security policy.*/i, 'ليس لديك صلاحية لهذه العملية.');
+const clean = (m: string) => m.replace(/^.*?ERROR:\s*/, '').replace(/new row violates row-level security policy.*/i, 'ليس لديك صلاحية لهذه العملية.')
+  .replace(/.*ortho_consultations_appointment_uq.*/i, 'الزيارة دي ليها تشخيص متسجّل بالفعل — افتحه من «مرضى بانتظار التشخيص» وكمّله.');
 
 const cache: Partial<Record<Kind, Row[]>> = {};          // المعروض = نسخة الخادم + التعديلات المعلّقة
 const server: Partial<Record<Kind, Row[]>> = {};         // نسخة الخادم بس (اللي بتتحفظ على الجهاز)

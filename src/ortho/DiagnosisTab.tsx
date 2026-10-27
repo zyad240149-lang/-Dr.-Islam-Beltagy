@@ -1,12 +1,15 @@
-// تبويب «التشخيص» في ملف المريض: كل تشخيص بتاريخه ورقم الزيارة والتشخيص، وتحته الشيت زي ما اتكتب بالظبط
-// (نفس صفحات الطباعة: شيت التمريض + الورك والركبة + الروشتة) — الأحدث مفتوح، والباقي يتفتح بضغطة.
+// تبويب «التشخيص» في ملف المريض (ونفسه «ملف تشخيصات المريض» في صفحة التشخيص — embedded): كل تشخيص بتاريخه ورقم الزيارة
+// والطبيب اللي سجّله والتشخيص، وتحته الشيت باللي اتحدد واتكتب بس (+ الروشتة والتحاليل والأشعة) والمرفقات.
+// كل تشخيص سجل مستقل — التشخيص الجديد بيتضاف وما بيلمسش القديم.
 import { useEffect, useRef, useState } from 'react';
 import { Button, EmptyState } from '../components/ui';
 import { db } from '../data/db';
 import { fmtDate } from '../utils/format';
 import { isIncomplete, ortho, useOrthoVersion, type Consultation } from './data';
 import { IconBtn, LoadState, confirmDelete, useClinicalCan, useRun } from './kit';
-import { ConsultModal, DraftCard, listConsultDrafts, clearConsultDraft } from './Consultations';
+import { AttachmentThumbs, ConsultModal, DraftCard, listConsultDrafts, clearConsultDraft } from './Consultations';
+import { empName } from '../data/installments';
+import { fmtTime } from '../utils/format';
 import { DiagnosisOutput } from './DiagnosisOutput';
 import { diagnosisHtml, hasRx, type DxPart } from './printDiagnosis';
 
@@ -18,7 +21,7 @@ function SheetPreview({ c, visitNo }: { c: Consultation; visitNo: number }) {
   const [scale, setScale] = useState(1);
   const [height, setHeight] = useState(600);
   const parts: DxPart[] = hasRx(c) ? ['nurse', 'doctor', 'rx'] : ['nurse', 'doctor'];
-  const html = diagnosisHtml(c, db.patient(c.patientId), visitNo, parts);
+  const html = diagnosisHtml(c, db.patient(c.patientId), visitNo, parts, true); // اللي اتحدد بس
   useEffect(() => {
     const el = box.current;
     if (!el) return;
@@ -39,7 +42,8 @@ function SheetPreview({ c, visitNo }: { c: Consultation; visitNo: number }) {
   );
 }
 
-export function DiagnosisTab({ patientId }: { patientId: string }) {
+// embedded = جوّه صفحة التشخيص: زرار «تشخيص» والمسودة فوق في الصفحة نفسها، والتشخيصات كلها مفتوحة بالتفصيل
+export function DiagnosisTab({ patientId, embedded }: { patientId: string; embedded?: boolean }) {
   useOrthoVersion();
   const perm = useClinicalCan();
   const { run } = useRun();
@@ -50,16 +54,16 @@ export function DiagnosisTab({ patientId }: { patientId: string }) {
   const [, setDraftsVersion] = useState(0);
   const items = ortho.list('consultations', patientId).sort((a, b) => b.date.localeCompare(a.date));
   const visitNo = (c: Consultation) => items.length - items.indexOf(c); // الأقدم = زيارة 1
-  const draft = !edit ? listConsultDrafts().find((d) => d.patientId === patientId) : undefined;
+  const draft = !edit && !embedded ? listConsultDrafts().find((d) => d.patientId === patientId) : undefined;
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}>
+      {!embedded && <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}>
         {perm.add && <Button size="sm" icon="stethoscope" onClick={() => {
           if (draft && !window.confirm('فيه تشخيص لم يكتمل للمريض ده — بدء تشخيص جديد هيستبدله. تكمل؟')) return;
           setResume(false); setEdit('new');
         }}>تشخيص جديد</Button>}
-      </div>
+      </div>}
       {perm.add && draft && (
         <div style={{ marginBottom: 12 }}>
           <DraftCard d={draft} onResume={() => { setResume(true); setEdit('new'); }} onDiscard={() => {
@@ -69,15 +73,21 @@ export function DiagnosisTab({ patientId }: { patientId: string }) {
         </div>
       )}
       <LoadState kind="consultations">
-        {items.length === 0 ? (!draft && <EmptyState icon="stethoscope" title="لسه مفيش تشخيص للمريض ده" />) : items.map((c, i) => {
-          const open = shown[c.id] ?? i === 0;
+        {items.length === 0 ? (!draft && <EmptyState icon="stethoscope" title="لسه مفيش تشخيص للمريض ده" text={embedded ? 'اضغط «تشخيص» فوق عشان تبدأ أول تشخيص.' : undefined} />) : items.map((c, i) => {
+          const open = shown[c.id] ?? (embedded || i === 0);
           const n = visitNo(c);
+          const visit = c.appointmentId ? db.appointment(c.appointmentId) : undefined;
+          const by = c.createdBy ? empName(c.createdBy) : '';
           return (
             <div className="item-card dxh" key={c.id}>
               <div className="ortho-row">
                 <div>
                   <div className="dxh__when"><b>{fmtDate(c.date)}</b> <span className="badge badge--brand">زيارة رقم <span className="num">{n}</span></span>
                     {isIncomplete(c) ? <span className="badge badge--warn">يحتاج استكمال</span> : i === 0 && <span className="badge badge--ok">آخر تشخيص</span>}</div>
+                  <div className="ortho-sub">
+                    {by && by !== '—' ? <>سجّله: <b>{by}</b></> : 'سجّله: —'}
+                    {visit && <> · زيارة <span className="num">{visit.no}</span> (<span className="num">{fmtTime(visit.time)}</span>)</>}
+                  </div>
                   <div className="cx-dx"><span className="cx-dx__l">التشخيص</span>{c.diagnosis ? <b dir="auto">{c.diagnosis}</b> : <span className="muted">لسه ما اتحددش</span>}{c.icd10 && <span className="badge badge--brand" dir="ltr">{c.icd10}</span>}</div>
                 </div>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -91,6 +101,7 @@ export function DiagnosisTab({ patientId }: { patientId: string }) {
                 {open ? 'إخفاء الشيت' : 'عرض الشيت زي ما اتكتب'}
               </button>
               {open && <SheetPreview c={c} visitNo={n} />}
+              {open && (c.attachments ?? []).length > 0 && <AttachmentThumbs items={c.attachments} />}
             </div>
           );
         })}

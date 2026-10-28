@@ -11,11 +11,12 @@ import { openVisitFor } from './visits';
 import { SHEET_TAB, activeSheets, regionSheet, removeSheet, sheetFilled, type SheetId } from './regionSheets';
 import { DoctorPainMap, RegionChooser, RegionSheetForm, SheetSwitch } from './RegionSheet';
 import { useToast } from '../hooks/useToast';
-import { IMAGING_KIND, IMAGING_STATUS, REGIONS, SIDE, isIncomplete, ortho, useOrthoVersion, type Attachment, type Consultation, type ImagingKind, type ImagingRequest, type Medication, type Side } from './data';
+import { IMAGING_KIND, IMAGING_STATUS, REGIONS, SIDE, isIncomplete, ortho, useOrthoVersion, type Attachment, type Consultation, type Injection, type ImagingKind, type ImagingRequest, type Medication, type Side } from './data';
 import { LAB_GROUPS, MED_PRESETS, XRAY_VIEWS } from './clinicalLists';
 import { printRx } from './printRx';
 import { openPrintWindow } from '../utils/printDoc';
 import { DiagnosisOutput } from './DiagnosisOutput';
+import { InjectionList, InjectionModal } from './Injections';
 import type { DxPart } from './printDiagnosis';
 import { db } from '../data/db';
 import { Field, IconBtn, LoadState, PageHead, PatientSelect, SearchBox, Tone, confirmDelete, patientFile, patientName, useClinicalCan, useRun } from './kit';
@@ -83,8 +84,8 @@ function Section({ icon, title, children, aside }: { icon: string; title: string
 }
 
 // الكشف = الشيتين بالترتيب (التمريض قبل دخول المريض ← كشف الطبيب) وبعدهم الروشتة والأشعة والتحاليل
-// «كشف الطبيب» بيتسمى بالمنطقة: شيت الطبيب بيتحدد من مكان الألم في شيت التمريض (regionSheets)
-const TABS = [['nurse', 'شيت التمريض'], ['doctor', 'كشف الطبيب'], ['rx', 'الروشتة والأشعة والتحاليل']] as const;
+// «كشف الطبيب» بيتسمى بالمنطقة: شيت الطبيب بيتحدد من مكان الألم في الشيت العام (regionSheets)
+const TABS = [['nurse', 'الشيت العام'], ['doctor', 'كشف الطبيب'], ['rx', 'الروشتة والأشعة والتحاليل'], ['inj', 'الحقن']] as const;
 type Tab = typeof TABS[number][0];
 
 // appointmentId = الزيارة اللي التشخيص الجديد بيتربط بيها (من «بانتظار التشخيص»)؛ من غيرها بيتربط بزيارة النهارده المفتوحة للمريض لو فيه
@@ -120,7 +121,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
   const sheet = normSheet(c.sheet);
   const changeSheet = (f: (s: typeof sheet) => typeof sheet) => setC((x) => ({ ...x, sheet: f(normSheet(x.sheet)) }));
   const sum = sheetSummary(sheet, c.side);
-  // شيتات الطبيب: من مكان الألم في شيت التمريض + اللي اتكتب فيه + اللي الطبيب ضافه
+  // شيتات الطبيب: من مكان الألم في الشيت العام + اللي اتكتب فيه + اللي الطبيب ضافه
   const active = activeSheets(sheet);
   const [docSheet, setDocSheet] = useState<SheetId | null>(null);
   const curSheet = docSheet && active.includes(docSheet) ? docSheet : active[0];
@@ -135,7 +136,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
   // كل حاجة اختيارية: الحفظ محتاج المريض بس. لو فيه حاجة ناقصة بنسأل: «استكمال بعدين» (يتحفظ «يحتاج استكمال») ولا «التشخيص اكتمل»
   const ok = !!c.patientId;
   const missing = [
-    !nurseStarted(sheet) && c.painScore === '' && 'شيت التمريض',
+    !nurseStarted(sheet) && c.painScore === '' && 'الشيت العام',
     !doctorStarted(sheet) && 'كشف الطبيب',
     !sum.complaint && 'الشكوى',
     !sum.diagnosis && 'التشخيص',
@@ -143,6 +144,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
   const [ask, setAsk] = useState<{ thenPrint: boolean } | null>(null);
   const patientConsults = c.patientId ? ortho.list('consultations', c.patientId).sort((a, b) => a.date.localeCompare(b.date)) : [];
   const visitNo = initial ? Math.max(1, patientConsults.findIndex((x) => x.id === initial.id) + 1) : patientConsults.length + 1;
+  const [inj, setInj] = useState<Injection | 'new' | null>(null);
   const goTab = (t: Tab) => { setTab(t); bodyRef.current?.closest('.modal__body')?.scrollTo({ top: 0 }); };
 
   // كشف جديد (مش تعديل كشف محفوظ): نحفظ مسودة محليًا أول بأول عشان لو المستخدم خرج من غير ما يحفظ، يقدر يستكمل بعدين
@@ -254,7 +256,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
             {db.therapist(visitAppt.therapistId)?.name ? <> — {db.therapist(visitAppt.therapistId)?.name}</> : null}
           </div>
         )}
-        <div className="seg seg--3 sh-tabs" role="tablist" aria-label="أجزاء الكشف">
+        <div className="seg seg--4 sh-tabs" role="tablist" aria-label="أجزاء الكشف">
           {TABS.map(([k, l], i) => (
             <button key={k} type="button" role="tab" aria-selected={tab === k} className={`seg__btn ${tab === k ? 'active' : ''}`} onClick={() => goTab(k)}>
               <span className="sh-tabs__n num">{i + 1}</span>{k === 'doctor' && active.length ? `${l} — ${active.map((id) => SHEET_TAB[id]).join(' + ')}` : l}
@@ -267,7 +269,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
             painScore={c.painScore} onPainScore={(v) => set('painScore', v)}
             onFirstPain={(id, side) => setC((x) => ({ ...x, region: regionById(id)?.name ?? x.region, ...(side ? { side } : {}) }))} />
           <div className="sh-next">
-            <Button variant="outline" icon="print" disabled={!c.patientId} onClick={() => setOut(['nurse'])}>طباعة / إرسال شيت التمريض</Button>
+            <Button variant="outline" icon="print" disabled={!c.patientId} onClick={() => setOut(['nurse'])}>طباعة / إرسال الشيت العام</Button>
             <Button icon="chevronLeft" onClick={() => goTab('doctor')}>التالي: كشف الطبيب</Button>
           </div>
         </>}
@@ -283,7 +285,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
                 icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap(`${regionSheet(curSheet)!.prefix}.dx.other`)} />}
           </>}
           <div className="sh-next">
-            <Button variant="outline" icon="chevron" onClick={() => goTab('nurse')}>رجوع: شيت التمريض</Button>
+            <Button variant="outline" icon="chevron" onClick={() => goTab('nurse')}>رجوع: الشيت العام</Button>
             <Button variant="outline" icon="print" disabled={!c.patientId} onClick={() => setOut(['doctor'])}>طباعة / إرسال كشف الطبيب</Button>
             <Button icon="chevronLeft" onClick={() => goTab('rx')}>التالي: الروشتة والأشعة والتحاليل</Button>
           </div>
@@ -365,8 +367,23 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
         <div className="sh-next">
           <Button variant="outline" icon="chevron" onClick={() => goTab('doctor')}>رجوع: كشف الطبيب</Button>
           <Button variant="outline" icon="print" disabled={!c.patientId} onClick={() => setOut(['rx'])}>طباعة / إرسال الروشتة</Button>
+          <Button icon="chevronLeft" onClick={() => goTab('inj')}>التالي: الحقن</Button>
         </div>
         </>}
+
+        {/* الحقن جوّه التشخيص: سجلات الحقن بتاعة المريض + سجل جديد (شيت INJECTION RECORD) */}
+        {tab === 'inj' && <>
+          <Section icon="target" title="سجل الحقن">
+            {c.patientId ? <>
+              <InjectionList items={ortho.list('injections', c.patientId).sort((a, b) => b.date.localeCompare(a.date))} onEdit={(n) => setInj(n)} />
+              <Button icon="plus" onClick={() => setInj('new')} style={{ marginTop: 10 }}>سجل حقن جديد</Button>
+            </> : <p className="muted">اختار المريض الأول.</p>}
+          </Section>
+          <div className="sh-next">
+            <Button variant="outline" icon="chevron" onClick={() => goTab('rx')}>رجوع: الروشتة والأشعة والتحاليل</Button>
+          </div>
+        </>}
+        {inj && <InjectionModal patientId={c.patientId} appointmentId={c.appointmentId ?? null} initial={inj === 'new' ? undefined : inj} onClose={() => setInj(null)} />}
       </div>
       {out && <DiagnosisOutput initial={out} patient={db.patient(c.patientId)} visitNo={visitNo} onClose={() => setOut(null)}
         c={{ ...c, ...sum, plan: c.plan, sheet, medications: c.medications.filter((m) => m.name.trim()), imagingRequests: c.imagingRequests.filter((r) => r.region.trim()) }} />}
@@ -430,7 +447,7 @@ export function DraftCard({ d, onResume, onDiscard }: { d: Draft & { savedAt?: n
   const s = normSheet(d.sheet);
   const sum = sheetSummary(s);
   const steps: [string, boolean][] = [
-    ['شيت التمريض', nurseStarted(s) || d.painScore !== ''],
+    ['الشيت العام', nurseStarted(s) || d.painScore !== ''],
     ['كشف الطبيب', doctorStarted(s)],
     ['الروشتة والأشعة والتحاليل', !!(d.medications.length || d.labs.length || d.imagingRequests.length || d.attachments.length || d.plan.trim())],
   ];

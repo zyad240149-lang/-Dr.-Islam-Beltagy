@@ -1,7 +1,7 @@
 // شيتات كشف الطبيب حسب المنطقة — نفس الورق اللي بعتته العيادة بالظبط (نفس الخانات والترقيم والبنود):
 // الورك/الركبة ← «الورك والركبة» (الشيت الأصلي — ExamSheet.tsx، مفاتيح x.*)، الكاحل والقدم ← «Ankle & Foot»،
 // الرقبة/الكتف ← «Cervical Spine & Shoulder»، الكوع/الرسغ/اليد ← «Elbow, Wrist & Hand»، أسفل الظهر/العجز ← «Lumbar & Sacral Spine».
-// الشيت اللي بيتفتح للطبيب بيتحدد من مكان الألم في شيت التمريض (خانة 5 — جسم الإنسان).
+// الشيت اللي بيتفتح للطبيب بيتحدد من مكان الألم في الشيت العام (خانة 5 — جسم الإنسان).
 // كل شيت ليه بادئة مفاتيح خاصة بيه (af./cs./eh./ls.) عشان أكتر من منطقة في نفس الكشف ما يتلخبطوش.
 import type { ExamSheet, Side } from './data';
 
@@ -204,7 +204,8 @@ export const regionSheet = (id: SheetId) => REGION_SHEETS.find((d) => d.id === i
 
 // كل شيت بالترتيب اللي بيظهر بيه + اسمه في تبويب الطبيب
 export const SHEET_ORDER: SheetId[] = ['hipknee', 'ankle', 'neckshoulder', 'hand', 'lumbar'];
-export const SHEET_TAB: Record<SheetId, string> = { hipknee: 'الورك والركبة', ...Object.fromEntries(REGION_SHEETS.map((d) => [d.id, d.tab])) } as Record<SheetId, string>;
+// اسم الشيت قدام الطبيب: «كشف …»
+export const SHEET_TAB: Record<SheetId, string> = { hipknee: 'كشف الورك والركبة', ...Object.fromEntries(REGION_SHEETS.map((d) => [d.id, `كشف ${d.tab}`])) } as Record<SheetId, string>;
 const PREFIX: Record<SheetId, string> = { hipknee: 'x', ...Object.fromEntries(REGION_SHEETS.map((d) => [d.id, d.prefix])) } as Record<SheetId, string>;
 export const DOCTOR_PREFIXES = Object.values(PREFIX);
 
@@ -236,7 +237,7 @@ export function sheetFilled(s: ExamSheet, id: SheetId): boolean {
   const p = PREFIX[id] + '.';
   return s.on.some((o) => o.startsWith(p)) || Object.entries(s.txt).some(([k, v]) => k.startsWith(p) && v.trim());
 }
-/** الشيتات اللي بتظهر للطبيب: من أماكن الألم في شيت التمريض + أي شيت اتكتب فيه + اللي الطبيب ضافه بنفسه («sheets|...») */
+/** الشيتات اللي بتظهر للطبيب: من أماكن الألم في الشيت العام + أي شيت اتكتب فيه + اللي الطبيب ضافه بنفسه («sheets|...») */
 export function activeSheets(s: ExamSheet): SheetId[] {
   const set = new Set<SheetId>();
   for (const k of s.pain) { const id = REGION_SHEET[k.split(':')[0]]; if (id) set.add(id); }

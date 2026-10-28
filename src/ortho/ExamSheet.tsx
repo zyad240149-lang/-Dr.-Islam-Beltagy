@@ -1,5 +1,5 @@
 // شيت الكشف الرقمي — نفس الورقتين المطبوعتين بتوع العيادة بخاناتهم وترقيمهم:
-// «شيت التمريض» (يتملى قبل دخول المريض — خريطة الجسم خانة فيه لتحديد مكان الألم) و«شيت كشف الورك والركبة» (12 خانة).
+// «الشيت العام» (يتملى قبل دخول المريض — خريطة الجسم خانة فيه لتحديد مكان الألم) و«شيت كشف الورك والركبة» (12 خانة).
 // الاختيارات بتتخزن في consultation.sheet، وsheetSummary بيطلع منها ملخص نصي للشكوى والتاريخ المرضي والفحص والتشخيص
 // (القوايم والروشتة وسجل المريض بيعرضوا الملخص ده زي الكشوفات القديمة).
 import { useState, type ReactNode } from 'react';
@@ -76,7 +76,7 @@ const isAutoOn = (o: string) => o.startsWith('n.visit|') || o.startsWith('n.gend
 export const sheetHasContent = (s: ExamSheet) =>
   s.on.some((o) => !isAutoOn(o)) || s.pain.length > 0 || s.meds.some((m) => m.name.trim())
   || Object.entries(s.txt).some(([k, v]) => !BASIC_KEYS.includes(k) && v.trim());
-/** فيه حاجة اتكتبت في شيت التمريض (غير اللي اتملى تلقائي من ملف المريض) */
+/** فيه حاجة اتكتبت في الشيت العام (غير اللي اتملى تلقائي من ملف المريض) */
 export const nurseStarted = (s: ExamSheet) =>
   s.on.some((o) => o.startsWith('n.') && !isAutoOn(o)) || s.pain.length > 0 || s.meds.some((m) => m.name.trim())
   || Object.entries(s.txt).some(([k, v]) => k.startsWith('n.') && !BASIC_KEYS.includes(k) && v.trim());
@@ -280,7 +280,7 @@ export function Txt({ a, k, label, unit, num, stack, ...rest }: { a: Api; k: str
   return <label className={`sh-line${stack ? ' sh-line--stack' : ''}`}><span className="sh-line__l">{label}</span>{input}{unit && <span className="sh-unit">{unit}</span>}</label>;
 }
 
-// ---------- شيت التمريض ----------
+// ---------- الشيت العام ----------
 export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScore, onPainScore, onFirstPain }: {
   sheet: ExamSheet; onChange: Change; patient?: Patient | null; date: string; visitNo: number;
   painScore: number | ''; onPainScore: (v: number | '') => void;

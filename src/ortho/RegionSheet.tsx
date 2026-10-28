@@ -1,5 +1,5 @@
 // شيت كشف الطبيب لأي منطقة من regionSheets (الكاحل والقدم / الرقبة والكتف / الكوع والرسغ واليد / أسفل الظهر) — نفس شكل وعناصر شيت الورك والركبة.
-// + اختيار الشيت: الشيتات بتيجي من مكان الألم في شيت التمريض، والطبيب يقدر يضيف منطقة تانية.
+// + اختيار الشيت: الشيتات بتيجي من مكان الألم في الشيت العام، والطبيب يقدر يضيف منطقة تانية.
 import { Fragment, useState, type ReactNode } from 'react';
 import { BodyFigure, regionById, type BodyView, type PinSide } from '../components/BodyFigure';
 import { Icon } from '../utils/icons';
@@ -141,7 +141,7 @@ export function RegionChooser({ onPick }: { onPick: (id: SheetId) => void }) {
   return (
     <div className="sh-choose">
       <Icon name="body" size={28} />
-      <b>حدد مكان الألم في شيت التمريض (خانة 5) — والشيت المناسب هيفتح لوحده</b>
+      <b>حدد مكان الألم في الشيت العام (خانة 5) — والشيت المناسب هيفتح لوحده</b>
       <span className="muted">أو اختار المنطقة من هنا:</span>
       <div className="cx-chips">
         {SHEET_ORDER.map((id) => <button key={id} type="button" className="cx-chip" onClick={() => onPick(id)}>{SHEET_TAB[id]}</button>)}
@@ -150,7 +150,7 @@ export function RegionChooser({ onPick }: { onPick: (id: SheetId) => void }) {
   );
 }
 
-/** خريطة الجسم في كشف الطبيب: نفس أماكن الألم بتاعة شيت التمريض (خانة 5) — تعليم/شيل مكان بيغيّر شيت المنطقة اللي بيظهر */
+/** خريطة الجسم في كشف الطبيب: نفس أماكن الألم بتاعة الشيت العام (خانة 5) — تعليم/شيل مكان بيغيّر شيت المنطقة اللي بيظهر */
 export function DoctorPainMap({ sheet, onChange }: { sheet: ExamSheet; onChange: (f: (s: ExamSheet) => ExamSheet) => void }) {
   const [view, setView] = useState<BodyView>('front');
   const [hovered, setHovered] = useState<string | null>(null);

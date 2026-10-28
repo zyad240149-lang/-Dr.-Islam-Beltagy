@@ -1,4 +1,4 @@
-// طباعة / PDF التشخيص: الشيتين متعبّيين بنفس شكل الورق — «شيت التمريض» و«Hip & Knee Consultation Sheet» (A4 بالعرض،
+// طباعة / PDF التشخيص: الشيتين متعبّيين بنفس شكل الورق — «الشيت العام» و«Hip & Knee Consultation Sheet» (A4 بالعرض،
 // الخانات المتعلّمة ✓ والمكتوب على السطور) — والروشتة (A5). المستخدم بيختار أجزاء منهم أو الكل.
 // كشف قديم من غير شيت بيطلع ملخصه النصي. الطباعة في تابة لوحدها (utils/printDoc).
 import { DOCTOR } from '../landing/content';
@@ -15,7 +15,7 @@ export interface DxPatient { fullName: string; fileNo?: string | null; birthDate
 
 export type DxPart = 'nurse' | 'doctor' | 'rx';
 export const DX_PARTS: { id: DxPart; label: string }[] = [
-  { id: 'nurse', label: 'شيت التمريض' }, { id: 'doctor', label: 'كشف الطبيب (شيت المنطقة)' }, { id: 'rx', label: 'الروشتة والأشعة والتحاليل' },
+  { id: 'nurse', label: 'الشيت العام' }, { id: 'doctor', label: 'كشف الطبيب (شيت المنطقة)' }, { id: 'rx', label: 'الروشتة والأشعة والتحاليل' },
 ];
 /** فيه روشتة تتطبع؟ (أدوية/تحاليل/أشعة مطلوبة/تعليمات/متابعة) */
 export const hasRx = (c: DxConsult) => c.medications.some((m) => m.name.trim()) || c.labs.length > 0
@@ -54,7 +54,7 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
     return compact && !body.trim() ? '' : `<div class="page shp${compact ? ' compact' : ''}" dir="${dir}">${header}<div class="bar">${bar}</div><div class="grid g4">${body}</div></div>`;
   };
 
-  // ---------- صفحة 1: شيت التمريض ----------
+  // ---------- صفحة 1: الشيت العام ----------
   const meds = s.meds.filter((m) => m.name.trim());
   const pain = s.pain.length ? `<ul>${s.pain.map((k) => `<li>${esc(painLabel(k))}</li>`).join('')}</ul>` : compact ? '' : '<div class="ln"><span>&nbsp;</span></div>';
   const vas = compact && c.painScore === '' ? '' : `<div class="vas">${Array.from({ length: 11 }, (_, n) => `<span class="${c.painScore === n ? 'on' : ''}">${n}</span>`).join('')}</div>`;
@@ -64,7 +64,7 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
     lbl('منذ متى؟', cks('n.since', L.N_SINCE)) + line('بداية المشكلة / كيفية حدوثها', v('n.onset')) + row('هل توجد إصابة حديثة؟', cks('n.injury', L.YES_NO))
       + line('إذا نعم، ما هي؟', v('n.injury.what')) + line('ماذا تم عمله حتى الآن؟', v('n.done')),
   ].filter((x) => !compact || x);
-  const nurse = page('rtl', head('شيت التمريض', 'يملأ بواسطة التمريض قبل دخول المريض'),
+  const nurse = page('rtl', head('الشيت العام', 'يملأ بواسطة التمريض قبل دخول المريض'),
     `${cks('n.visit', L.N_VISIT)}<span>اسم المريض: <b>${name || '—'}</b></span><span>رقم الملف: <b>${fileNo || '—'}</b></span><span>رقم الزيارة: <b>${visitNo ?? '—'}</b></span><span>التاريخ: <b>${date}</b></span>`, [
       box(1, 'البيانات الأساسية', line('الاسم', name) + line('السن', v('n.age')) + row('النوع', cks('n.gender', L.N_GENDER)) + line('رقم الهاتف', bdi(v('n.phone')))
         + line('العنوان', v('n.address')) + line('المهنة', v('n.job')) + row('الحالة الاجتماعية', cks('n.marital', L.N_MARITAL)) + line('اسم المرافق', v('n.compName')) + line('رقم المرافق', bdi(v('n.compPhone')))),

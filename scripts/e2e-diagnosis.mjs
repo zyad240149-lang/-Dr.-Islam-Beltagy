@@ -178,9 +178,11 @@ try {
   await A.page.locator('.sh-region__x[aria-label="إلغاء منطقة الكاحل والقدم"]').click();
   check('إلغاء المنطقة (✕) بيرجّع لاختيار منطقة تانية', await A.page.locator('.sh-choose').count() === 1);
   await A.page.locator('.sh-choose button', { hasText: 'الكاحل والقدم' }).click();
-  check('زرار «رجوع: شيت التمريض» موجود في كشف الطبيب', await A.page.locator('.modal button', { hasText: 'رجوع: شيت التمريض' }).count() === 1);
+  check('زرار «رجوع: الشيت العام» موجود في كشف الطبيب', await A.page.locator('.modal button', { hasText: 'رجوع: الشيت العام' }).count() === 1);
   await tick(A.page, 'Ankle pain');
   await tick(A.page, 'Ankle sprain (ATFL / CFL)');
+  await A.page.locator('.sh-tabs button', { hasText: 'الحقن' }).click();
+  check('تبويب «الحقن» جوّه التشخيص فيه «سجل حقن جديد»', await A.page.locator('.modal button', { hasText: 'سجل حقن جديد' }).count() === 1);
   await saveAnswer(A.page, 'التشخيص اكتمل');
   cb = await dbConsults(PB);
   check('الاستكمال عدّل نفس السجل (مفيش تشخيص مكرر) وبقى مكتمل بتشخيص الكاحل', cb.length === 1 && cb[0].complete === true && /Ankle sprain \(ATFL \/ CFL\)/.test(cb[0].diagnosis), JSON.stringify(cb));

@@ -65,7 +65,7 @@ export default function Diagnosis() {
   const visits = todaysVisits();
   const pending = visits.filter((x) => x.state !== 'done');
   const doneToday = visits.length - pending.length;
-  // ---------- متابعة المرضى: حضور النهارده لمرضى اتشخصوا + شيت التمريض بتاع الزيارة ----------
+  // ---------- متابعة المرضى: حضور النهارده لمرضى اتشخصوا + الشيت العام بتاع الزيارة ----------
   const followUps = todaysFollowUps();
   const nursing = ortho.list('nursing');
   const sheetOf = (appointmentId: string) => nursing.find((n) => n.appointmentId === appointmentId);
@@ -380,7 +380,7 @@ export default function Diagnosis() {
       {newRec?.open && <InjectionModal patientId={newRec.patientId} onClose={() => setNewRec(null)} />}
       {editInj && <InjectionModal patientId={editInj.patientId} initial={editInj} onClose={() => setEditInj(null)} />}
       {sheet && <NursingModal patientId={sheet.patientId} appointmentId={sheet.appointmentId} initial={sheet.initial} onClose={() => setSheet(null)} />}
-      {/* «تشخيص» بيفتح الشيت على طول: شيت التمريض (وفيه خريطة الجسم لمكان الألم) ← كشف الطبيب ← الروشتة */}
+      {/* «تشخيص» بيفتح الشيت على طول: الشيت العام (وفيه خريطة الجسم لمكان الألم) ← كشف الطبيب ← الروشتة */}
       {edit && patientId && <ConsultModal patientId={patientId} appointmentId={edit === 'new' ? newVisit : undefined} initial={edit === 'new' ? undefined : edit} resume={edit === 'new' && resume} onClose={closeModal} />}
     </div>
   );

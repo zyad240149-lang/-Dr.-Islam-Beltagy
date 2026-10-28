@@ -837,6 +837,8 @@ textarea.input { height: auto; padding-block: 10px; resize: vertical; line-heigh
 .nt-source { display: inline-block; margin-inline-start: 8px; padding: 0 8px; border: 1px solid; border-radius: 999px; font-size: 13.5px; font-weight: 600; direction: rtl; }
 .nt-sources { position: sticky; top: 16px; }
 .seg--3 { grid-template-columns: repeat(3, 1fr); }
+.seg--4 { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 640px) { .seg--4 { grid-template-columns: repeat(2, 1fr); } }
 .nt-sources__sum { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
 .nt-sources__sum > div { display: flex; flex-direction: column; padding: 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line-2); }
 .nt-sources__sum .num { font-size: 26px; font-weight: 700; color: var(--brand-700); line-height: 1.2; }

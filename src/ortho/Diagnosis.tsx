@@ -8,11 +8,10 @@ import { LoadState, PageHead, PatientSelect, SearchBox, patientFile, patientName
 import { ConsultModal, DraftCard, clearConsultDraft, listConsultDrafts } from './Consultations';
 import { DiagnosisTab } from './DiagnosisTab';
 import { todaysVisits } from './visits';
-import { EmptyState } from '../components/ui';
-import { Button } from '../components/ui';
+import { Button, EmptyState, Modal } from '../components/ui';
 import { db } from '../data/db';
 import { useDbVersion } from '../hooks/useDb';
-import { APPT_STATUS, fmtDate, fmtTime } from '../utils/format';
+import { APPT_STATUS, fmtDate, fmtTime, todayYmd } from '../utils/format';
 import { patientMatches } from '../utils/phoneUtils';
 
 export default function Diagnosis() {
@@ -27,6 +26,7 @@ export default function Diagnosis() {
   const [newVisit, setNewVisit] = useState<string | null>(null); // الزيارة اللي التشخيص الجديد بيتربط بيها (من قايمة الانتظار)
   const [fromQueue, setFromQueue] = useState(false); // اتفتح من «بانتظار التشخيص» ← بعد القفل يرجع للقايمة على المريض اللي بعده
   const [q, setQ] = useState('');
+  const [picker, setPicker] = useState<string | null>(null); // نافذة «تشخيص مريض» (مريض مش في قايمة الانتظار) — القيمة = المريض المختار
   const [, setDraftsVersion] = useState(0);
   const pick = (id: string) => setParams(id ? { patient: id } : view === 'done' ? { tab: 'done' } : {}, { replace: true });
   const setView = (v: 'waiting' | 'done') => setParams(v === 'done' ? { tab: 'done' } : {}, { replace: true });
@@ -39,6 +39,12 @@ export default function Diagnosis() {
   const openSaved = (c: Consultation, queue = false) => { setParams({ patient: c.patientId }, { replace: true }); setResume(false); setNewVisit(null); setFromQueue(queue); setEdit(c); };
   const resumeDraft = (id: string, queue = false) => { setParams({ patient: id }, { replace: true }); setResume(true); setNewVisit(null); setFromQueue(queue); setEdit('new'); };
   const startNew = (id: string, appointmentId: string | null) => { setParams({ patient: id }, { replace: true }); setResume(false); setNewVisit(appointmentId); setFromQueue(true); setEdit('new'); };
+  // من «تشخيص مريض»: لو ليه تشخيص لم يكتمل بيتكمّل (مفيش حاجة تضيع)، وإلا تشخيص جديد — وبعد القفل يفضل على ملفه
+  const startPicked = (id: string) => {
+    setPicker(null);
+    setParams({ patient: id }, { replace: true }); setNewVisit(null); setFromQueue(false);
+    setResume(drafts.some((d) => d.patientId === id)); setEdit('new');
+  };
   const closeModal = () => { setEdit(null); setResume(false); setNewVisit(null); if (fromQueue) setParams({}, { replace: true }); setFromQueue(false); };
   const discardDraft = (id: string) => {
     if (!window.confirm(`حذف التشخيص اللي لم يكتمل لـ ${patientName(id)}؟ كل اللي اتكتب فيه هيتمسح.`)) return;
@@ -71,21 +77,27 @@ export default function Diagnosis() {
 
   return (
     <div className="page">
-      <PageHead title="تشخيص المريض" sub="اختار المريض واضغط «تشخيص»." />
-      <section className="card" style={{ marginBottom: 16 }}>
-        <div className="card__body" style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          <div className="field" style={{ flex: '1 1 320px', marginBottom: 0 }}>
-            <label>المريض</label>
-            <PatientSelect value={patientId} onChange={pick} />
+      <PageHead title="تشخيص المريض" sub="المرضى اللي حضروا ومستنيين التشخيص — والبحث في كل المرضى اللي اتشخصوا.">
+        {perm.add && !patientId && <Button icon="stethoscope" onClick={() => setPicker('')}>تشخيص مريض</Button>}
+      </PageHead>
+
+      {patientId && (
+        <section className="card dx-patbar">
+          <Button variant="outline" size="sm" icon="chevron" onClick={() => pick('')}>رجوع</Button>
+          <div className="dx-patbar__who">
+            <b>{selected?.fullName ?? patientName(patientId)}</b>
+            <small>ملف <span className="num">{patientFile(patientId)}</span>{selected?.phone && <> · <bdi dir="ltr" className="num">{selected.phone}</bdi></>}</small>
           </div>
-          {patientId && <span className="badge badge--brand">ملف {patientFile(patientId)}</span>}
-          {perm.add && draft && <Button icon="refresh" variant="outline" onClick={() => resumeDraft(patientId)}>استكمال التشخيص</Button>}
-          {perm.add && <Button icon="stethoscope" disabled={!patientId} onClick={() => {
-            if (draft && !window.confirm('فيه تشخيص لم يكتمل للمريض ده — بدء تشخيص جديد هيستبدله. تكمل؟')) return;
-            setResume(false); setNewVisit(null); setEdit('new');
-          }}>{draft ? 'تشخيص جديد' : 'تشخيص'}</Button>}
-        </div>
-      </section>
+          <div className="dx-patbar__act">
+            <Link to={`/patients/${patientId}`} className="btn btn--outline btn--sm">ملف المريض</Link>
+            {perm.add && draft && <Button size="sm" icon="refresh" variant="outline" onClick={() => resumeDraft(patientId)}>استكمال التشخيص</Button>}
+            {perm.add && <Button size="sm" icon="stethoscope" onClick={() => {
+              if (draft && !window.confirm('فيه تشخيص لم يكتمل للمريض ده — بدء تشخيص جديد هيستبدله. تكمل؟')) return;
+              setResume(false); setNewVisit(null); setFromQueue(false); setEdit('new');
+            }}>{draft ? 'تشخيص جديد' : 'تشخيص'}</Button>}
+          </div>
+        </section>
+      )}
 
       {!patientId && (
         <div className="seg dx-views" role="tablist" aria-label="أقسام التشخيص">
@@ -102,7 +114,7 @@ export default function Diagnosis() {
         <>
           <section className="card" style={{ marginBottom: 16 }}>
             <div className="card__head">
-              <h2>مرضى بانتظار التشخيص</h2>
+              <h2>حضور النهارده <span className="muted dx-date">{fmtDate(todayYmd())}</span></h2>
               {doneToday > 0 && <span className="badge badge--ok">اتشخص النهارده <span className="num">{doneToday}</span></span>}
             </div>
             <div className="card__body">
@@ -158,7 +170,6 @@ export default function Diagnosis() {
 
       {!patientId && view === 'done' && (
         <section className="card">
-          <div className="card__head"><h2>المرضى اللي اتشخصوا</h2></div>
           <div className="filter-bar"><div className="field"><SearchBox value={q} onChange={setQ} placeholder="ابحث باسم المريض (أو جزء منه) أو رقم الموبايل أو رقم الملف" /></div></div>
           <div className="card__body">
             <LoadState kind="consultations">
@@ -190,18 +201,24 @@ export default function Diagnosis() {
 
       {patientId && (
         <section className="card">
-          <div className="card__head">
-            <h2>ملف تشخيصات المريض</h2>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              {selected?.phone && <bdi dir="ltr" className="num muted">{selected.phone}</bdi>}
-              <Link to={`/patients/${patientId}`} className="btn btn--outline btn--sm">ملف المريض</Link>
-            </div>
-          </div>
+          <div className="card__head"><h2>ملف تشخيصات المريض</h2></div>
           <div className="card__body">
             {perm.add && draft && <div style={{ marginBottom: 12 }}><DraftCard d={draft} onResume={() => resumeDraft(patientId)} onDiscard={() => discardDraft(patientId)} /></div>}
             <DiagnosisTab patientId={patientId} embedded />
           </div>
         </section>
+      )}
+      {picker !== null && (
+        <Modal title="تشخيص مريض" onClose={() => setPicker(null)} footer={<>
+          <Button variant="outline" onClick={() => setPicker(null)}>إلغاء</Button>
+          <Button icon="stethoscope" disabled={!picker} onClick={() => picker && startPicked(picker)}>ابدأ التشخيص</Button>
+        </>}>
+          <div className="field" style={{ marginBottom: 0 }}>
+            <label>المريض</label>
+            <PatientSelect value={picker} onChange={setPicker} />
+          </div>
+          <p className="muted" style={{ marginBottom: 0 }}>للمريض اللي مش في قايمة الانتظار (ما اتعملوش حضور). لو اتعمله حضور النهارده، التشخيص بيتربط بزيارته لوحده.</p>
+        </Modal>
       )}
       {/* «تشخيص» بيفتح الشيت على طول: شيت التمريض (وفيه خريطة الجسم لمكان الألم) ← كشف الطبيب ← الروشتة */}
       {edit && patientId && <ConsultModal patientId={patientId} appointmentId={edit === 'new' ? newVisit : undefined} initial={edit === 'new' ? undefined : edit} resume={edit === 'new' && resume} onClose={closeModal} />}

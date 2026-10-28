@@ -937,7 +937,14 @@ textarea.input { height: auto; padding-block: 10px; resize: vertical; line-heigh
 .dxh-sheet { position: relative; margin-top: 10px; overflow: hidden; border-radius: var(--r-sm); border: 1px solid var(--line); background: #e9edf3; }
 .dxh-sheet iframe { position: absolute; top: 0; inset-inline-start: 0; border: 0; background: #e9edf3; transform-origin: top right; }
 [dir="ltr"] .dxh-sheet iframe { transform-origin: top left; }
-.dx-views { margin-bottom: 16px; max-width: 640px; }
+.dx-views { margin-bottom: 16px; }
+.dx-views .seg__btn { height: 44px; font-size: 15.5px; }
+.dx-date { font-size: 14px; font-weight: 500; margin-inline-start: 6px; }
+.dx-patbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; padding: 14px 16px; margin-bottom: 16px; }
+.dx-patbar__who { display: flex; flex-direction: column; min-width: 0; flex: 1 1 200px; }
+.dx-patbar__who b { font-size: 17px; color: var(--brand-700); }
+.dx-patbar__who small { color: var(--muted); }
+.dx-patbar__act { display: flex; flex-wrap: wrap; gap: 8px; }
 .dx-views .seg__btn .badge { margin-inline-start: 6px; }
 .dx-queue__row.dx-pat { width: 100%; grid-template-columns: 112px minmax(0, 1fr) auto auto; font: inherit; text-align: start; color: inherit; cursor: pointer; transition: border-color .15s, background .15s; }
 .dx-pat:hover { border-color: var(--brand-600); background: var(--brand-50); }

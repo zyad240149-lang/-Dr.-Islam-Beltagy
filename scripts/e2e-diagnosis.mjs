@@ -173,7 +173,7 @@ try {
   check('الاستكمال عدّل نفس السجل (مفيش تشخيص مكرر) وبقى مكتمل بتشخيص الكاحل', cb.length === 1 && cb[0].complete === true && /Ankle sprain \(ATFL \/ CFL\)/.test(cb[0].diagnosis), JSON.stringify(cb));
   await A.page.waitForSelector('.dx-views', { timeout: 10000 });
   check('مريض «ب» اختفى من الانتظار بعد الاستكمال', await queueRow(A.page, PB).count() === 0);
-  check('«اتشخص النهارده» بيعد المريضين', /اتشخص النهارده\s*[2-9]/.test((await A.page.locator('.card__head', { hasText: 'مرضى بانتظار التشخيص' }).textContent()) ?? ''));
+  check('«اتشخص النهارده» بيعد المريضين', /اتشخص النهارده\s*[2-9]/.test((await A.page.locator('.card__head', { hasText: 'حضور النهارده' }).textContent()) ?? ''));
 
   section('الواجهة — المرضى اللي اتشخصوا (بحث)');
   await A.page.locator('.dx-views button', { hasText: 'المرضى اللي اتشخصوا' }).click();

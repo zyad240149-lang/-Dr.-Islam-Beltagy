@@ -945,6 +945,7 @@ textarea.input { height: auto; padding-block: 10px; resize: vertical; line-heigh
 .dxh-sheet iframe { position: absolute; top: 0; inset-inline-start: 0; border: 0; background: #e9edf3; transform-origin: top right; }
 [dir="ltr"] .dxh-sheet iframe { transform-origin: top left; }
 .dx-views { margin-bottom: 16px; }
+.dx-subnav { margin: 0; padding: 12px 22px 0; }
 .dx-views .seg__btn { height: 44px; font-size: 15.5px; }
 .dx-date { font-size: 14px; font-weight: 500; margin-inline-start: 6px; }
 .dx-patbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; padding: 14px 16px; margin-bottom: 16px; }

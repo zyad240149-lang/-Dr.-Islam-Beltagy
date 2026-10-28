@@ -34,7 +34,10 @@ import type { InitialAssessment, Package, TreatmentPlan, TreatmentSession } from
 const TABS = ['بيانات المريض', 'مواعيدي', 'الجلسات', 'التقييم', 'خطة العلاج', 'الباقات', 'الفواتير والمدفوعات', 'سجل المريض', 'الملفات والمرفقات', 'سجل الجسم', 'العلاج الطبيعي (Physiotherapy)', 'سجل الكشوفات', 'التشخيص', 'الأشعة والتحاليل', 'الكسور والجبس', 'العمليات الجراحية'];
 // ترتيب العرض (الأرقام فوق ثابتة عشان tab === n). عيادة عظام: «التشخيص» تبويب واحد بالشيت زي ما اتكتب (بدل «الكشوفات والتشخيص»
 // و«سجل الكشوفات»)، والجلسات/التقييم/خطة العلاج/الباقات/العلاج الطبيعي مش معروضين — الكود موجود لو احتاجوهم تاني
-const TAB_ORDER = [0, 12, 13, 14, 15, 1, 6, 8, 9, 7];
+const TAB_ORDER = [0, 12];
+// كل سجلات المريض التانية جوّه «التشخيص» (صف تحت التبويب) بدل ما تبقى تبويبات لوحدها — التشخيصات أولًا
+const DX_SUB: [number, string][] = [[12, 'التشخيصات'], [13, 'الأشعة والتحاليل'], [14, 'الكسور والجبس'], [15, 'العمليات الجراحية'], [1, 'المواعيد'], [6, 'الفواتير والمدفوعات'], [8, 'الملفات والمرفقات'], [9, 'سجل الجسم'], [7, 'سجل المريض']];
+const IN_DX = new Set(DX_SUB.map(([i]) => i));
 const PHYSIO_TAB = 10;
 
 type Confirm = { title: string; message: string; label?: string; run: () => Promise<void> } | null;
@@ -130,7 +133,12 @@ export default function PatientProfile() {
       </section>
 
       <div className="card">
-        <div className="tabs" style={{ overflowX: 'auto' }}>{TAB_ORDER.map((i) => (i === PHYSIO_TAB && !can('physio', 'view')) ? null : <button key={TABS[i]} className={`tab ${tab === i ? 'active' : ''}`} onClick={() => setTab(i)}>{TABS[i]}</button>)}</div>
+        <div className="tabs" style={{ overflowX: 'auto' }}>{TAB_ORDER.map((i) => <button key={TABS[i]} className={`tab ${(i === 12 ? IN_DX.has(tab) : tab === i) ? 'active' : ''}`} onClick={() => setTab(i)}>{TABS[i]}</button>)}</div>
+        {IN_DX.has(tab) && (
+          <div className="cx-chips dx-subnav" role="tablist" aria-label="أقسام التشخيص">
+            {DX_SUB.map(([i, label]) => <button key={i} type="button" role="tab" aria-selected={tab === i} className={`cx-chip ${tab === i ? 'is-on' : ''}`} onClick={() => setTab(i)}>{label}</button>)}
+          </div>
+        )}
         <div className="card__body">
           {tab === 0 && (
             <dl className="dl">

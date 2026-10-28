@@ -72,7 +72,7 @@ export async function executeOp(op: OfflineOp): Promise<ExecResult> {
       case 'ortho.save': {
         // كشف/أشعة/كسر/عملية: إنشاء بمعرّف الجهاز (التكرار = تعارض مفتاح أساسي ← اتنفّذ قبل كده)، تعديل بكشف تعارض مع نسخة الخادم
         const table = String(op.payload.table);
-        if (!/^ortho_(consultations|imaging|fractures|surgeries)$/.test(table)) return { type: 'failed', error: 'نوع سجل غير معروف' };
+        if (!/^ortho_(consultations|imaging|fractures|surgeries|nursing)$/.test(table)) return { type: 'failed', error: 'نوع سجل غير معروف' };
         const row = op.payload.row as Record<string, unknown>;
         if (op.payload.isNew) {
           const { error, status } = await supabase.from(table).insert({ ...row, id: op.entityId });

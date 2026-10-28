@@ -3,7 +3,7 @@ import { useState, type ReactNode } from 'react';
 import { ErrorState, Skeleton } from '../components/ui';
 import { useCan } from '../components/common';
 import { useToast } from '../hooks/useToast';
-import { ortho, useOrthoVersion } from './data';
+import { ortho, useOrthoVersion, type Kind } from './data';
 import { Icon } from '../utils/icons';
 import { db } from '../data/db';
 import { useDbVersion } from '../hooks/useDb';
@@ -97,7 +97,7 @@ export function useRun() {
 }
 
 /** حالة التحميل/الخطأ لقائمة من قوائم العظام */
-export function LoadState({ kind, children }: { kind: 'consultations' | 'imaging' | 'surgeries' | 'fractures'; children: ReactNode }) {
+export function LoadState({ kind, children }: { kind: Kind; children: ReactNode }) {
   useOrthoVersion();
   const err = ortho.error(kind);
   if (err) return <ErrorState onRetry={() => void ortho.reload(kind)} />;

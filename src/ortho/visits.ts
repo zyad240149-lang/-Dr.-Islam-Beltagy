@@ -38,3 +38,13 @@ export function openVisitFor(patientId: string): Appointment | undefined {
 }
 
 export const visitLabel = (a: Appointment) => `زيارة ${a.no}`;
+
+/** «متابعة المرضى»: زيارات النهارده اللي اتعملها حضور لمرضى ليهم تشخيص قبل كده (أو اتشخصوا في نفس الزيارة) — زيارة واحدة لكل مريض */
+export function todaysFollowUps(): Appointment[] {
+  const consults = ortho.list('consultations');
+  const seen = new Set<string>();
+  return db.todayAppointments().filter((a) => ATTENDED.has(a.status)).sort((x, y) => x.time.localeCompare(y.time)).filter((a) => {
+    if (seen.has(a.patientId) || !consults.some((c) => c.patientId === a.patientId && (c.date < a.date || consultForVisit(a, [c])))) return false;
+    seen.add(a.patientId); return true;
+  });
+}

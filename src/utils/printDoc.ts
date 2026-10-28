@@ -21,12 +21,15 @@ async function ready(doc: Document) {
 export async function printHtml(html: string, win?: Window | null) {
   const w = win === undefined ? openPrintWindow() : win;
   if (w && !w.closed) {
-    w.document.open(); w.document.write(html); w.document.close();
-    await ready(w.document);
-    w.addEventListener('afterprint', () => w.close());
-    w.focus();
-    w.print();
-    return;
+    // التطبيق المتثبّت على الموبايل بيفتح التابة في متصفح منفصل مانقدرش نكتب فيه ← نقفلها ونطبع بالطريقة التانية
+    try {
+      w.document.open(); w.document.write(html); w.document.close();
+      await ready(w.document);
+      w.addEventListener('afterprint', () => w.close());
+      w.focus();
+      w.print();
+      return;
+    } catch { try { w.close(); } catch { /* اتقفلت */ } }
   }
   // التابة اتحجبت: iframe مخفي (الطريقة القديمة) — بيتشال بعد الطباعة
   const f = document.createElement('iframe');

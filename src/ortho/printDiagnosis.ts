@@ -154,8 +154,13 @@ export function diagnosisHtml(c: DxConsult, p?: DxPatient | null, visitNo?: numb
   const pages: string[] = [];
   const sheetParts = parts.filter((x) => x !== 'rx');
   if (sheetParts.length) {
-    if (sheetHasContent(normSheet(c.sheet))) { const sp = sheetPages(c, p, visitNo, compact); sheetParts.forEach((x) => { const pg = sp[x as 'nurse' | 'doctor']; if (pg) pages.push(pg); }); }
-    else pages.push(legacyHtml(c, p));
+    // جزء فاضي في «اللي اتحدد بس» ← الشيت الفاضي نفسه (زي الورقة المطبوعة) بدل صفحة بيضا؛ كشف جديد لسه مفيهوش حاجة ← الشيتات فاضية
+    const blank = !sheetHasContent(normSheet(c.sheet)) && !c.complaint.trim() && !c.diagnosis.trim();
+    if (sheetHasContent(normSheet(c.sheet)) || blank) {
+      const sp = sheetPages(c, p, visitNo, compact && !blank);
+      const full = compact && !blank ? sheetPages(c, p, visitNo, false) : sp;
+      sheetParts.forEach((x) => { const k = x as 'nurse' | 'doctor'; const pg = sp[k] || full[k]; if (pg) pages.push(pg); });
+    } else pages.push(legacyHtml(c, p));
   }
   if (parts.includes('rx')) pages.push(`<div class="page rxw">${rxPageHtml(c, p)}</div>`);
   const body = pages.join('');

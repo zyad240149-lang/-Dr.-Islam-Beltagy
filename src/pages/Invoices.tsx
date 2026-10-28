@@ -433,13 +433,7 @@ function InvoiceModal({ invoiceId, canEdit, canDelete, canPay, canEditPay, canDe
     setNote('');
     setAmount(db.invoice(invoice.id)?.remaining ?? 0);
   };
-  const applyCode = async () => {
-    const r = await db.applyDiscountCode(invoice.id, promo);
-    if (!r.ok) { toast.error(r.error); return; }
-    toast.success('تم تطبيق كود الخصم.');
-    setPromo('');
-    const inv = db.invoice(invoice.id);
-    setDiscount(inv?.discount ?? 0); setAmount(inv?.remaining ?? 0);
+  const applyCode = async () => { // أكواد الخصم اتشالت (هجرة 920) — الدالة باقية فاضية عشان باقي الكود ما يتكسرش
   };
   const saveEdits = async () => {
     if (name.trim() !== invoice.serviceName) {
@@ -545,18 +539,8 @@ function InvoiceModal({ invoiceId, canEdit, canDelete, canPay, canEditPay, canDe
               </div>
             </div>
           )}
-          {canEdit && (
-            <div className="form-section">
-              <div className="form-section-title">كود الخصم</div>
-              {invoice.discountCode ? (
-                <p className="muted" style={{ fontSize: 13 }}>كود الخصم المطبّق: <strong dir="ltr">{invoice.discountCode}</strong></p>
-              ) : (
-                <div className="grid-form" style={{ alignItems: 'end' }}>
-                  <Input id="inv-code" label="كود خصم" dir="ltr" placeholder="TAMXXXXXX" value={promo} onChange={(e) => setPromo(normalizeCode(e.target.value))} />
-                  <div className="field"><Button variant="outline" icon="receipt" onClick={applyCode} disabled={!promo}>تطبيق الكود</Button></div>
-                </div>
-              )}
-            </div>
+          {invoice.discountCode && (
+            <p className="muted" style={{ fontSize: 13 }}>كود خصم اتطبّق قبل إلغاء الأكواد: <strong dir="ltr">{invoice.discountCode}</strong></p>
           )}
           {governed && <PackagePaymentPanel invoice={invoice} pkg={fixedPkg} />}
           {canPay && invoice.remaining > 0 && !governed && (

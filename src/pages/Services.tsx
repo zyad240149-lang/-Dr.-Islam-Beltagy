@@ -284,7 +284,7 @@ function ServiceModal({ service, categories, onClose }: { service?: Service; cat
   const toast = useToast();
   const [busy, setBusy] = useState(false);
   const [customDur, setCustomDur] = useState(false);
-  const [f, setF] = useState<Omit<Service, 'id'>>(service ?? { name: '', category: categories[0] ?? '', description: '', price: 0, durationMin: 45, therapistIds: [], active: true, showOnSite: true });
+  const [f, setF] = useState<Omit<Service, 'id'>>(service ?? { name: '', category: categories[0] ?? '', description: '', price: 0, durationMin: 45, therapistIds: [], active: true, showOnSite: false /* خدمة جديدة: إدارة فقط لحد ما تتفعّل للحجز الإلكتروني */ });
   const submit = async () => {
     if (!f.name.trim() || !f.category.trim()) { toast.error('اسم الخدمة والتصنيف مطلوبان.'); return; }
     if (!(f.durationMin >= 5 && f.durationMin <= 480)) { toast.error('مدة الجلسة لازم تكون بين 5 دقائق و8 ساعات.'); return; }

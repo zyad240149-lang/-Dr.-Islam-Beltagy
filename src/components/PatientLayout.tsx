@@ -17,7 +17,6 @@ const NAV = [
   { to: '/me/exams', label: 'سجل الكشوفات', icon: 'stethoscope' },
   { to: '/me/records', label: 'سجلي الطبي', icon: 'doc' },
   { to: '/me/plans', label: 'خطط العلاج', icon: 'target' },
-  { to: '/me/points', label: 'نقاطي', icon: 'spark' },
   { to: '/me/invoices', label: 'الفواتير', icon: 'receipt' },
   { to: '/me/notifications', label: 'الإشعارات', icon: 'bell' },
   { to: '/me/account', label: 'حسابي', icon: 'settings' },

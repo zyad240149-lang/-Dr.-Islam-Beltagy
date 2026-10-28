@@ -24,20 +24,17 @@ const Staff = lazy(() => import('./pages/Staff'));
 const BodyMap = lazy(() => import('./pages/BodyMap'));
 const Requests = lazy(() => import('./pages/Requests'));
 const Support = lazy(() => import('./pages/Support'));
-const Discounts = lazy(() => import('./pages/Discounts'));
 const Campaigns = lazy(() => import('./pages/Campaigns'));
 const WorkHours = lazy(() => import('./pages/WorkHours'));
 const Invoices = lazy(() => import('./pages/Invoices'));
 const Reports = lazy(() => import('./pages/Reports'));
+const Inventory = lazy(() => import('./pages/Inventory'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const Roles = lazy(() => import('./pages/Roles'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Attendance = lazy(() => import('./pages/Attendance'));
-const Loyalty = lazy(() => import('./pages/Loyalty'));
 const MarketingReport = lazy(() => import('./pages/MarketingReport'));
 const Payroll = lazy(() => import('./pages/Payroll'));
-const PayrollStaff = lazy(() => import('./pages/PayrollStaff'));
-const PayrollReports = lazy(() => import('./pages/PayrollReports'));
 const Finance = lazy(() => import('./pages/Finance'));
 const Account = lazy(() => import('./pages/Account'));
 const Consultations = lazy(() => import('./ortho/Consultations'));
@@ -101,20 +98,21 @@ const ROUTES: { path: string; area: Area; anyOf?: Area[]; el: JSX.Element }[] = 
   { path: '/work-hours', area: 'workhours', el: <WorkHours /> },
   { path: '/requests', area: 'requests', el: <Requests /> },
   { path: '/attendance', area: 'attendance', el: <Attendance /> },
-  { path: '/loyalty', area: 'loyalty', el: <Loyalty /> },
+  { path: '/loyalty', area: 'loyalty', el: <Navigate to="/" replace /> }, // اتشالت (هجرة 920)
   { path: '/support', area: 'support', el: <Support /> },
-  { path: '/discounts', area: 'discounts', el: <Discounts /> },
+  { path: '/discounts', area: 'discounts', el: <Navigate to="/" replace /> }, // اتشالت (هجرة 920)
   { path: '/campaigns', area: 'campaigns', el: <Campaigns /> },
   { path: '/therapists', area: 'therapists', el: <Navigate to="/employees" replace /> },
   { path: '/invoices', area: 'invoices', el: <Invoices /> },
   { path: '/finance', area: 'payroll', el: <Finance /> },
   { path: '/payroll', area: 'payroll', el: <Payroll /> },
-  { path: '/payroll/staff', area: 'payroll', el: <PayrollStaff /> },
-  { path: '/payroll/reports', area: 'payroll', el: <PayrollReports /> },
+  { path: '/payroll/staff', area: 'payroll', el: <Navigate to="/payroll" replace /> }, // الرواتب بقت ثابتة بس (922)
+  { path: '/payroll/reports', area: 'payroll', el: <Navigate to="/payroll" replace /> }, // الرواتب بقت ثابتة بس (922)
   { path: '/payments', area: 'invoices', el: <Navigate to="/invoices" replace /> },
   // «بيع المنتجات» و«طلبات تقسيط الباقات» اتشالوا من البرنامج (الصفحات لسه في الكود لو احتاجوهم)
   { path: '/product-sales', area: 'products', el: <Navigate to="/" replace /> },
   { path: '/installments', area: 'installments', el: <Navigate to="/" replace /> },
+  { path: '/inventory', area: 'inventory', el: <Inventory /> },
   { path: '/reports', area: 'reports', el: <Reports /> },
   { path: '/marketing-report', area: 'marketing', el: <MarketingReport /> },
   { path: '/online-accounts', area: 'online_accounts', el: <Navigate to="/patients?tab=online" replace /> },
@@ -133,7 +131,7 @@ const PATIENT_ROUTES: { path: string; el: JSX.Element }[] = [
   { path: '/me/exams', el: <PatientExams /> },
   { path: '/me/records', el: <PatientRecords /> },
   { path: '/me/plans', el: <PatientPlans /> },
-  { path: '/me/points', el: <PatientPoints /> },
+  { path: '/me/points', el: <Navigate to="/me" replace /> }, // نقاط الولاء اتشالت (هجرة 920)
   { path: '/me/invoices', el: <PatientInvoices /> },
   { path: '/me/notifications', el: <PatientNotifications /> },
   { path: '/me/account', el: <Account /> },

@@ -88,8 +88,10 @@ try {
   check('الكشف محفوظ باسم الطبيب', dc.data?.created_by === r2.body?.id, dc.data?.created_by);
   const rr = await recep.from('ortho_consultations').select('id').eq('id', dc.data?.id);
   check('الاستقبال يقرا الكشف (عرض فقط)', (rr.data ?? []).length === 1, rr.error?.message);
-  const emptyDx = await doc.from('ortho_consultations').insert({ ...cons, diagnosis: '  ' }).select();
-  check('تشخيص فاضي مرفوض من القاعدة', !!emptyDx.error, emptyDx.error?.message ?? 'accepted!');
+  // التشخيص كله اختياري (هجرة 917): تشخيص فاضي بيتحفظ «يحتاج استكمال» (complete = false) بدل ما يترفض
+  const emptyDx = await doc.from('ortho_consultations').insert({ ...cons, diagnosis: '', complete: false }).select().single();
+  check('تشخيص فاضي بيتحفظ «يحتاج استكمال»', !emptyDx.error && emptyDx.data?.complete === false, emptyDx.error?.message);
+  if (emptyDx.data?.id) await sql(`delete from ortho_consultations where id = '${emptyDx.data.id}'`);
   const fr = await doc.from('ortho_fractures').insert({ patient_id: created.patient, bone: 'الكعبرة', side: 'left', kind: 'كسر', injury_date: date, cast_date: date, removal_due: cairoDate(-1) }).select();
   check('موعد فك الجبس قبل التركيب مرفوض', !!fr.error, fr.error?.message ?? 'accepted!');
   const recDel = await recep.from('ortho_consultations').delete().eq('id', dc.data?.id).select('id');

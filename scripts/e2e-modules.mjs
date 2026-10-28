@@ -47,7 +47,7 @@ try {
   const ap0 = b.data?.id ?? b.data;
   check('حجز موعد (حالة جديد) لمريض بدون رقم قومي مسموح', !b.error && ap0, err(b));
   const c1 = await recep.rpc('set_appointment_status', { p_id: ap0, p_status: 'confirmed', p_reason: null, p_therapist: null });
-  check('تأكيد الموعد مرفوض والملف ناقص الرقم القومي', /غير مكتملة/.test(err(c1)), err(c1) || 'accepted!');
+  check('تأكيد الموعد مسموح من غير رقم قومي (بقى اختياري — هجرة 915)', !c1.error, err(c1));
   const u1 = await recep.from('patients').update({ national_id: '1234567890' }).eq('id', P0.id).select();
   check('رقم هوية بالشكل السعودي (10 أرقام) مرفوض من القاعدة', !!u1.error, err(u1) || 'saved!');
   const u2 = await recep.from('patients').update({ nationality: 'non_saudi', national_id: '12' }).eq('id', P0.id).select();
@@ -73,8 +73,8 @@ try {
   check('الباقة فعّالة بعدد جلسات وسعر الكتالوج', pkg?.status === 'active' && pkg.total_sessions === 3 && Number(pkg.price) === 900, JSON.stringify(pkg));
   const { data: pinv } = await admin.from('invoices').select('id, total, status').eq('package_id', pkgId).single();
   check('فاتورة الباقة اتعملت بقيمتها', Number(pinv?.total) === 900 && pinv?.status === 'due', JSON.stringify(pinv));
-  const ls1 = await admin.rpc('patient_loyalty_summary', { p_patient: P.id });
-  check('شراء الباقة أضاف 4 نقاط ولاء', ls1.data?.balance === 4, JSON.stringify(ls1.data ?? err(ls1)));
+  const [ls1] = await sql(`select count(*)::int n from loyalty_ledger where patient_id = '${P.id}'`);
+  check('شراء الباقة ما بيضيفش نقاط ولاء (النقاط اتشالت — 920)', ls1.n === 0, JSON.stringify(ls1));
   const ci = await recep.rpc('attendance_check_in', { p_source: 'package', p_id: pkgId, p_appointment: null, p_therapist: made.therapist, p_second: false });
   check('تسجيل حضور جلسة من الباقة (زيارة مباشرة)', !ci.error && ci.data?.sessionNo === 1 && ci.data?.remaining === 2, JSON.stringify(ci.data ?? err(ci)));
   const ci2 = await recep.rpc('attendance_check_in', { p_source: 'package', p_id: pkgId, p_appointment: null, p_therapist: made.therapist, p_second: false });
@@ -90,8 +90,8 @@ try {
   check('المدير يلغي الباقة', !cA.error, err(cA));
   const { data: pinv2 } = await admin.from('invoices').select('status, paid').eq('id', pinv?.id).single();
   check('فاتورة عليها مدفوعات مابتتلغيش مع الباقة', pinv2?.status !== 'cancelled' && Number(pinv2?.paid) === 300, JSON.stringify(pinv2));
-  const ls2 = await admin.rpc('patient_loyalty_summary', { p_patient: P.id });
-  check('نقاط الباقة اتسحبت بعد الإلغاء', ls2.data?.balance === 0, JSON.stringify(ls2.data ?? err(ls2)));
+  const [ls2] = await sql(`select count(*)::int n from loyalty_ledger where patient_id = '${P.id}'`);
+  check('إلغاء الباقة ما بيسجّلش حركات نقاط', ls2.n === 0, JSON.stringify(ls2));
   const ci3 = await recep.rpc('attendance_check_in', { p_source: 'package', p_id: pkgId, p_appointment: null, p_therapist: made.therapist, p_second: false });
   check('حضور على باقة ملغاة مرفوض', !!ci3.error, err(ci3) || 'accepted!');
 
@@ -151,25 +151,16 @@ try {
   check('حذف منتج له مبيعات = تعطيله بس', del.data === 'disabled', del.data ?? err(del));
 
   // ============ 4) نقاط الولاء ============
-  section('نقاط الولاء');
+  section('نقاط الولاء — اتشالت (920)');
   await sql(`select award_loyalty_points('${P.id}', 'adjust', 40, 'رصيد اختبار', null, null)`);
-  const lb = await recep.rpc('patient_loyalty_summary', { p_patient: P.id });
-  check('رصيد المريض 40 نقطة', lb.data?.balance === 40 && lb.data?.availableRewards === 1, JSON.stringify(lb.data ?? err(lb)));
-  const lD = await doc.rpc('redeem_loyalty_points', { p_patient: P.id, p_sessions: 1, p_idempotency_key: randomUUID() });
-  check('الطبيب ما يقدرش يستبدل نقاط', !!lD.error, err(lD) || 'redeemed!');
-  const lkey = randomUUID();
-  const l1 = await recep.rpc('redeem_loyalty_points', { p_patient: P.id, p_sessions: 1, p_idempotency_key: lkey });
-  if (l1.data?.code) made.codes.push(l1.data.code);
-  check('الاستقبال يستبدل 30 نقطة بكود جلسة مجانية', !l1.error && /^FREE-/.test(l1.data?.code ?? '') && l1.data?.remaining === 10, JSON.stringify(l1.data ?? err(l1)));
-  const l1b = await recep.rpc('redeem_loyalty_points', { p_patient: P.id, p_sessions: 1, p_idempotency_key: lkey });
-  const lb2 = await recep.rpc('patient_loyalty_summary', { p_patient: P.id });
-  check('تكرار نفس الاستبدال مابيخصمش مرتين', l1b.data?.code === l1.data?.code && lb2.data?.balance === 10, JSON.stringify(l1b.data ?? err(l1b)));
-  const l2 = await recep.rpc('redeem_loyalty_points', { p_patient: P.id, p_sessions: 1, p_idempotency_key: randomUUID() });
-  check('استبدال برصيد غير كافي مرفوض', !!l2.error, err(l2) || 'redeemed!');
-  const { data: dc } = await admin.from('discount_codes').select('value, max_uses').eq('code', l1.data?.code).single();
-  check('قيمة الكود = سعر جلسة التأهيل (300)', Number(dc?.value) === 300 && dc?.max_uses === 1, JSON.stringify(dc));
-  const led = await recep.rpc('loyalty_ledger_list', { p_patient: P.id, p_limit: 50 });
-  check('سجل النقاط فيه الاستبدال (−30)', rows(led).some?.((r) => r.kind === 'redeem' && r.points === -30), err(led) || JSON.stringify(rows(led)).slice(0, 120));
+  const [lp] = await sql(`select count(*)::int n from loyalty_ledger where patient_id = '${P.id}'`);
+  check('كسب النقاط متوقف من الخادم (award_loyalty_points ما بتعملش حاجة)', lp.n === 0, JSON.stringify(lp));
+  const lR = await recep.rpc('redeem_loyalty_points', { p_patient: P.id, p_sessions: 1, p_idempotency_key: randomUUID() });
+  check('استبدال النقاط بطلب مباشر مرفوض', !!lR.error, err(lR) || 'redeemed!');
+  const lS = await recep.rpc('patient_loyalty_summary', { p_patient: P.id });
+  check('ملخص النقاط بطلب مباشر مرفوض', !!lS.error, err(lS) || 'returned!');
+  const lA = await admin.rpc('update_loyalty_settings', { p: { sessionPoints: 5 } });
+  check('حتى المدير ما يقدرش يرجّع إعدادات النقاط بطلب مباشر', !!lA.error, err(lA) || 'updated!');
 
   // ============ 5) حضور وانصراف الموظفين ============
   section('حضور وانصراف الموظفين');

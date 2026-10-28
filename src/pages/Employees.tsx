@@ -72,7 +72,7 @@ export default function Employees({ embedded = false }: { embedded?: boolean }) 
                   <td className="actions">
                     <RowActions>
                       {can('employees', 'edit') && <IconAction icon="edit" label="تعديل" onClick={() => setEditing(e)} />}
-                      {can('roles', 'edit') && e.role !== 'system_admin' && <IconAction icon="shield" label="صلاحيات إضافية (واتساب / نقاط الولاء)" onClick={() => setExtra(e)} />}
+                      {can('roles', 'edit') && e.role !== 'system_admin' && <IconAction icon="shield" label="صلاحيات إضافية (واتساب)" onClick={() => setExtra(e)} />}
                       {can('requests', 'create') && <Button size="sm" variant="outline" icon="calendarPlus" onClick={() => setRequesting(e.id)}>استئذان / إجازة</Button>}
                       {can('requests', 'edit') && db.activeLeave(e.id) && (
                         <Button size="sm" variant="outline" onClick={async () => { const r = await db.endStaffLeave(db.activeLeave(e.id)!.id); if (r.ok) toast.success('تم إنهاء الإجازة/الاستئذان — يمكن للموظف دخول النظام الحين.'); else toast.error(r.error); }}>إنهاء الإجازة</Button>
@@ -174,7 +174,7 @@ function ExtraPermsModal({ employee, onClose }: { employee: Employee; onClose: (
       <p style={{ marginTop: 0 }}><strong data-no-i18n>{employee.name}</strong> · {ROLE_LABEL[employee.role]}</p>
       <p className="muted-sm">إضافة إلى صلاحيات الدور — لا تحذف شي من صلاحياته الحالية.</p>
       {row(wa, setWa, 'إرسال رسائل واتساب للعملاء', 'تذكير المواعيد، الخطط، أكواد المكافآت والعروض — وتُسجَّل كل رسالة باسمه.')}
-      {row(lo, setLo, 'استبدال نقاط الولاء', 'البحث عن العميل بالاسم أو الجوال، عرض رصيده، واستبدال النقاط بجلسة مجانية له أو لشخص يختاره.')}
+      {false && row(lo, setLo, 'استبدال نقاط الولاء', 'البحث عن العميل بالاسم أو الجوال، عرض رصيده، واستبدال النقاط بجلسة مجانية له أو لشخص يختاره.')}
     </Modal>
   );
 }

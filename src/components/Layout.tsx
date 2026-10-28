@@ -38,10 +38,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
   { title: 'المالية', items: [
     { to: '/invoices', label: 'الفواتير والمدفوعات', icon: 'receipt', area: 'invoices' },
     { to: '/finance', label: 'الفواتير والمدفوعات (المدير)', icon: 'wallet', area: 'payroll' },
-    // خانة واحدة — الأقسام التلاتة (الأخصائيين / الإداريين / التقارير) تبويبات جوه الصفحة، والخانة بتفضل منوّرة في أي واحد فيهم
-    { to: '/payroll', label: 'الرواتب والتارجت', icon: 'target', area: 'payroll' },
-    { to: '/discounts', label: 'أكواد الخصم', icon: 'receipt', area: 'discounts' },
-    { to: '/loyalty', label: 'نقاط الولاء', icon: 'spark', area: 'loyalty' },
+    { to: '/payroll', label: 'الرواتب', icon: 'wallet', area: 'payroll' }, // راتب ثابت بس (922)
   ] },
   { title: 'الموظفون', items: [
     { to: '/employees', label: 'الموظفون', icon: 'user', area: 'employees' },
@@ -49,7 +46,8 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     { to: '/requests', label: 'طلبات الموظفين', icon: 'inbox', area: 'requests' },
     { to: '/work-hours', label: 'مواعيد العمل', icon: 'clock', area: 'workhours' },
   ] },
-  { title: 'التواصل', items: [
+  { title: 'المخزون والتواصل', items: [
+    { to: '/inventory', label: 'المخزون', icon: 'box', area: 'inventory' },
     { to: '/campaigns', label: 'إرسال إشعارات للمرضى', icon: 'bell', area: 'campaigns' },
     { to: '/support', label: 'الدعم الفني', icon: 'lock', area: 'support' },
   ] },

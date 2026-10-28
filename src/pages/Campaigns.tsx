@@ -134,15 +134,7 @@ export default function Campaigns() {
                 <Select id="cm-src" label="مصدر التعرف" value={source} onChange={(e) => setSource(e.target.value as ReferralSource)}
                   options={Object.entries(REFERRAL_SOURCE_LABEL).map(([value, label]) => ({ value, label }))} />
               )}
-              {audience !== 'source' && audience !== 'patient' && (
-                <Select id="cm-code" label="إرفاق كود خصم (اختياري)" value={codeId} onChange={(e) => setCodeId(e.target.value)}
-                  options={[{ value: '', label: 'بدون كود' }, ...codes.map((c) => ({ value: c.id, label: `${c.code} — ${discountLabel(c)}` }))]} />
-              )}
             </div>
-            {(audience === 'source' || audience === 'patient') && (
-              <Select id="cm-code2" label="إرفاق كود خصم (اختياري)" value={codeId} onChange={(e) => setCodeId(e.target.value)}
-                options={[{ value: '', label: 'بدون كود' }, ...codes.map((c) => ({ value: c.id, label: `${c.code} — ${discountLabel(c)}` }))]} />
-            )}
 
             {audience === 'patient' && (
               <div className="field">

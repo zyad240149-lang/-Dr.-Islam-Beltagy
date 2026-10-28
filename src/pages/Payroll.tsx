@@ -1,232 +1,274 @@
+// «الرواتب» — رواتب ثابتة بس (من غير تارجت ولا نسب): لكل موظف راتب شهري ويوم صرف، ولكل شهر سجل واحد مستحق ← مدفوع بتاريخ الدفع.
+// البيانات والصلاحيات على الخادم (salaryApi / هجرة 922). التقرير بيتطبع بتخطيط طباعة مخصّص (مش لقطة من الشاشة).
 import { useCallback, useEffect, useState } from 'react';
+import { db } from '../data/db';
 import { useAuth } from '../services/auth';
+import { useDbVersion } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
-import { Button, EmptyState, ErrorState, Input, Select, Skeleton, StatusBadge } from '../components/ui';
+import { Button, EmptyState, ErrorState, Input, Modal, Select, Skeleton, StatusBadge } from '../components/ui';
 import { FilterBar, IconAction, RowActions, useCan } from '../components/common';
-import { StatCard } from '../components/StatCard';
-import { Icon } from '../utils/icons';
-import { money } from '../utils/format';
-import { payrollApi, currentPeriod, type Overview, type PayrollRow, type RevenueBasis } from '../data/payrollApi';
-import {
-  PayrollHeader, PlanModal, BulkPlanModal, PayModal, SubjectDetailModal, ReasonModal, BonusRateModal, pct, reachedTarget, targetState,
-  CONDITION_LABEL, SYSTEM_LABEL, PAY_STATUS, TARGET_STATE,
-} from '../components/PayrollKit';
+import { ROLE_LABEL } from '../services/permissions';
+import { fmtDate, money, todayYmd } from '../utils/format';
+import { openPrintWindow, printHtml } from '../utils/printDoc';
+import { SALARY_METHOD, dueDateOf, salaryApi, type SalaryMethod, type SalaryPayment, type SalarySetting } from '../data/salaryApi';
+import type { Employee } from '../types';
 
-const BASIS_LABEL: Record<RevenueBasis, string> = {
-  collected: 'المحصّل فعليًا من فواتير المواعيد المؤكدة باسمه',
-  invoiced: 'فواتير المواعيد المؤكدة باسم الأخصائي (كاملة)',
-};
+const thisMonth = () => todayYmd().slice(0, 7);
+const monthLabel = (p: string) => new Date(`${p}-01T12:00:00`).toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
-// مستحق الشهر: المثبّت لو موجود، وإلا الأرقام المباشرة حسب الإعدادات
-const owedOf = (r: PayrollRow) => (r.due ? r.due.salaryDue + r.due.bonusDue : r.live.hasPlan ? r.live.baseSalary + r.live.bonus : 0);
-
-// «رواتب الأخصائيين والتارجت» — للمدير العام بس (الخادم بيرفض أي حد تاني).
 export default function Payroll() {
+  useDbVersion();
+  const toast = useToast();
   const can = useCan();
   const { user } = useAuth();
-  // ولا حتى المدير العام يحدد راتبه أو تارجته هو نفسه — تضارب مصالح
-  const isSelf = (r: PayrollRow) => r.type === 'therapist' && !!user?.therapistId && r.id === user.therapistId;
-  const [period, setPeriod] = useState(currentPeriod());
-  const [data, setData] = useState<Overview | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [q, setQ] = useState('');
-  const [tState, setTState] = useState('');
-  const [editing, setEditing] = useState<PayrollRow | null>(null);
-  const [bulk, setBulk] = useState<PayrollRow[] | null>(null);
-  const [paying, setPaying] = useState<PayrollRow | null>(null);
-  const [payKind, setPayKind] = useState<'salary' | 'bonus' | undefined>(undefined);
-  const [rating, setRating] = useState<PayrollRow | null>(null);
-  const [detail, setDetail] = useState<PayrollRow | null>(null);
-  const [basisTo, setBasisTo] = useState<RevenueBasis | null>(null);
-
-  // من غير toast في الـ deps: كائن الـ toast بيتغيّر مع كل رسالة، فكان هيعيد التحميل في حلقة
-  const load = useCallback(async () => {
-    setError(null);
-    const r = await payrollApi.overview(period);
-    if (!r.ok) { setError(r.error); return; }
-    setData(r.data);
-    setDetail((d) => (d ? r.data.rows.find((x) => x.type === d.type && x.id === d.id) ?? null : d));
-  }, [period]);
-  useEffect(() => { setData(null); load(); }, [load]);
-  const toast = useToast();
-  // مفيش اعتماد شهر: المستحق بيتثبّت لحظة فتح الصرف/المكافأة
-  const prep = async (r: PayrollRow, open: (u: PayrollRow) => void) => {
-    const x = await payrollApi.ensureRow(period, r);
-    if (!x.ok) { toast.error(x.error); return; }
-    load(); open(x.row);
-  };
-  const canPay = (r: PayrollRow) => (r.due ? r.payStatus === 'unpaid' || r.payStatus === 'partial' : r.live.hasPlan && r.live.baseSalary + r.live.bonus > 0);
   const canEdit = can('payroll', 'edit');
+  const [period, setPeriod] = useState(thisMonth());
+  const [empFilter, setEmpFilter] = useState('');
+  const [status, setStatus] = useState('');
+  const [data, setData] = useState<{ settings: SalarySetting[]; payments: SalaryPayment[] } | null>(null);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [setFor, setSetFor] = useState<Employee | null>(null);
+  const [payFor, setPayFor] = useState<SalaryPayment | null>(null);
+  const [editFor, setEditFor] = useState<SalaryPayment | null>(null);
+  const [historyFor, setHistoryFor] = useState<Employee | null>(null);
 
-  // صاحب الحساب لا يظهر في قائمته هو نفسه — مينفعش يدير راتبه، فمفيش داعي يتعرض أصلًا
-  const all = (data?.rows ?? []).filter((r) => r.type === 'therapist' && !isSelf(r));
-  const rows = all.filter((r) => (!q.trim() || r.name.includes(q.trim())) && (!tState || targetState(r) === tState));
-  const sum = (f: (r: PayrollRow) => number) => all.reduce((s, r) => s + f(r), 0);
-  const withTarget = all.filter((r) => targetState(r) !== 'none');
-  const setupNeeded = all.filter((r) => r.active && !r.live.hasPlan && !r.due);
-  const teamTarget = sum((r) => (r.due ?? r.live).target);
-  const teamQual = withTarget.reduce((s, r) => s + (r.due ?? r.live).qualifying, 0);
-  const owed = sum(owedOf), paid = sum((r) => r.paidSalary + r.paidBonus);
-  // ترتيب ثابت: اللي محتاجين إعداد الأول، وبعدين الأعلى إنجازًا
-  const sorted = [...rows].sort((a, b) => Number(a.live.hasPlan || !!a.due) - Number(b.live.hasPlan || !!b.due) || ((b.due ?? b.live).pct ?? -1) - ((a.due ?? a.live).pct ?? -1));
-  const bulkRows = all.filter((r) => r.active || r.live.hasPlan);
+  const reload = useCallback(async () => {
+    const r = await salaryApi.load();
+    if (r.ok) { setData(r.data); setError(''); } else setError(r.error);
+  }, []);
+  useEffect(() => { void reload(); }, [reload]);
+
+  const isSelf = (e: Employee) => e.id === user?.id;
+  const employees = db.employees().filter((e) => e.active || data?.payments.some((p) => p.employeeId === e.id && p.period === period));
+  const settingOf = (id: string) => data?.settings.find((s) => s.employeeId === id);
+  const paymentOf = (id: string) => data?.payments.find((p) => p.employeeId === id && p.period === period);
+  const rows = employees
+    .filter((e) => !empFilter || e.id === empFilter)
+    .map((e) => ({ e, s: settingOf(e.id), p: paymentOf(e.id) }))
+    .filter(({ p }) => !status || (status === 'none' ? !p : p?.status === status));
+  const monthPays = (data?.payments ?? []).filter((p) => p.period === period);
+  const totalDue = monthPays.filter((p) => p.status === 'due').reduce((s, p) => s + p.amount, 0);
+  const totalPaid = monthPays.filter((p) => p.status === 'paid').reduce((s, p) => s + p.amount, 0);
+  const missing = employees.filter((e) => { const s = settingOf(e.id); return s?.active && s.monthlySalary > 0 && !paymentOf(e.id) && !isSelf(e); });
+
+  const run = async (fn: () => Promise<{ ok: boolean; error?: string }>, ok: string) => {
+    setBusy(true);
+    const r = await fn();
+    setBusy(false);
+    if (!r.ok) { toast.error((r as { error: string }).error); return false; }
+    toast.success(ok); await reload(); return true;
+  };
+  const createFor = (e: Employee) => {
+    const s = settingOf(e.id)!;
+    return run(() => salaryApi.create({ employeeId: e.id, employeeName: e.name, period, amount: s.monthlySalary, dueDate: dueDateOf(period, s.payDay) }), `اتسجّل راتب ${monthLabel(period)} لـ ${e.name} (مستحق).`);
+  };
+  const createAll = async () => {
+    setBusy(true);
+    let n = 0; const errs: string[] = [];
+    for (const e of missing) {
+      const s = settingOf(e.id)!;
+      const r = await salaryApi.create({ employeeId: e.id, employeeName: e.name, period, amount: s.monthlySalary, dueDate: dueDateOf(period, s.payDay) });
+      if (r.ok) n++; else errs.push(`${e.name}: ${r.error}`);
+    }
+    setBusy(false);
+    if (n) toast.success(`اتسجّل راتب ${monthLabel(period)} لـ ${n} موظف.`);
+    if (errs.length) toast.error(errs.join(' — '));
+    await reload();
+  };
+  const unpay = (p: SalaryPayment) => { if (window.confirm(`إلغاء صرف راتب ${p.employeeName} لشهر ${monthLabel(p.period)}؟ هيرجع «مستحق».`)) void run(() => salaryApi.update(p.id, { status: 'due', paidOn: null }), 'رجع الراتب «مستحق».'); };
+  const remove = (p: SalaryPayment) => { if (window.confirm(`مسح راتب ${p.employeeName} لشهر ${monthLabel(p.period)} (مستحق — لسه ما اتصرفش)؟`)) void run(() => salaryApi.remove(p.id), 'اتمسح سجل الراتب.'); };
+
+  const print = () => {
+    const win = openPrintWindow();
+    const body = rows.map(({ e, s, p }) => `<tr><td>${esc(e.name)}</td><td>${esc(ROLE_LABEL[e.role] ?? e.role)}</td><td class="n">${s ? esc(money(s.monthlySalary)) : '—'}</td><td class="n">${p ? esc(money(p.amount)) : '—'}</td><td>${p ? esc(fmtDate(p.dueDate)) : '—'}</td><td>${!p ? 'لم يُسجّل' : p.status === 'paid' ? 'مدفوع' : 'مستحق'}</td><td>${p?.paidOn ? esc(fmtDate(p.paidOn)) : '—'}</td><td>${p?.status === 'paid' ? esc(SALARY_METHOD[p.method]) : '—'}</td></tr>`).join('');
+    const filt = [empFilter && `الموظف: ${db.employees().find((e) => e.id === empFilter)?.name ?? ''}`, status && `الحالة: ${({ due: 'مستحق', paid: 'مدفوع', none: 'لم يُسجّل' } as Record<string, string>)[status]}`].filter(Boolean).join(' — ');
+    void printHtml(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>تقرير الرواتب — ${esc(monthLabel(period))}</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap">
+<style>@page{size:A4;margin:12mm}*{box-sizing:border-box}body{font-family:"IBM Plex Sans Arabic",Tahoma,sans-serif;color:#10182f;margin:0;font-size:12px}
+h1{font-size:18px;margin:0 0 4px;color:#1b2a54}.meta{color:#475569;margin-bottom:10px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #cbd5e1;padding:5px 6px;text-align:start}
+th{background:#eef1f9;color:#1b2a54}thead{display:table-header-group}tr{break-inside:avoid}.n{direction:ltr;text-align:left;white-space:nowrap}.tot{margin-top:10px;display:flex;gap:24px;font-weight:700}</style></head><body>
+<h1>تقرير الرواتب — ${esc(monthLabel(period))}</h1>
+<div class="meta">اتطبع: ${esc(new Date().toLocaleString('ar-EG'))}${filt ? ` · ${esc(filt)}` : ''}</div>
+<table><thead><tr><th>الموظف</th><th>الوظيفة</th><th>الراتب الثابت</th><th>راتب الشهر</th><th>الاستحقاق</th><th>الحالة</th><th>تاريخ الدفع</th><th>طريقة الدفع</th></tr></thead><tbody>${body || '<tr><td colspan="8">مفيش بيانات</td></tr>'}</tbody></table>
+<div class="tot"><span>المدفوع: ${esc(money(totalPaid))}</span><span>المستحق (لسه): ${esc(money(totalDue))}</span><span>الإجمالي: ${esc(money(totalPaid + totalDue))}</span></div>
+</body></html>`, win);
+  };
 
   return (
-    <div className="page">
-      <PayrollHeader title="الرواتب والتارجت" subtitle="راتب وتارجت ومكافأة كل أخصائي، والإيراد المؤهل الذي حققه، والصرف — للمدير العام فقط."
-        period={period} onPeriod={setPeriod} overview={data} onChanged={load} />
+    <>
+      <div className="page-head">
+        <div><h1>الرواتب</h1><p>راتب شهري ثابت لكل موظف — تسجيله كمستحق ثم صرفه بتاريخ الدفع. مفيش تارجت ولا نسب.</p></div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <Button variant="outline" icon="print" onClick={print} disabled={!data}>طباعة التقرير</Button>
+          {canEdit && missing.length > 0 && <Button icon="plus" loading={busy} onClick={() => void createAll()}>تسجيل رواتب {monthLabel(period)} ({missing.length})</Button>}
+        </div>
+      </div>
 
-      {error && !data ? <div className="card"><div className="alert alert-danger" style={{ margin: 16 }}>{error}</div><ErrorState onRetry={load} /></div> : !data ? <Skeleton h={320} /> : (
-        <>
-          <div className="kpi-grid pr-kpis">
-            <StatCard icon="wallet" tone="brand" value={money(sum((r) => (r.due ? r.due.salaryDue : r.live.baseSalary)))} label="الرواتب الأساسية" />
-            <StatCard icon="target" tone="info" value={teamTarget > 0 ? money(teamTarget) : '—'} label="إجمالي التارجت"
-              sub={teamTarget > 0 ? <><span>المحقق</span> <span className="num">{money(teamQual)}</span> · <span className="num">{pct(Math.round((teamQual / teamTarget) * 1000) / 10)}</span></> : undefined} />
-            <StatCard icon="spark" tone="ok" value={money(sum((r) => (r.due ? r.due.bonusDue : r.live.bonus)))} label="المكافآت المستحقة" />
-            <StatCard icon="checkCircle" tone="ok" value={`${withTarget.filter((r) => targetState(r) === 'reached').length} / ${withTarget.length}`} label="حققوا التارجت" />
-            <StatCard icon="alert" tone="warn" value={String(all.filter((r) => r.overdue).length)} label="رواتب متأخرة" />
-            <StatCard icon="clock" tone="warn" value={money(Math.max(0, owed - paid))} label="المتبقي للصرف"
-              sub={<><span>المصروف</span> <span className="num">{money(paid)}</span> <span>من</span> <span className="num">{money(owed)}</span></>} />
-          </div>
+      <div className="card" style={{ marginBottom: 14 }}>
+        <FilterBar>
+          <Input id="pr-month" label="شهر الاستحقاق" type="month" value={period} onChange={(e) => e.target.value && setPeriod(e.target.value)} />
+          <Select id="pr-emp" label="الموظف" value={empFilter} onChange={(e) => setEmpFilter(e.target.value)} options={[{ value: '', label: 'كل الموظفين' }, ...employees.map((e) => ({ value: e.id, label: e.name }))]} />
+          <Select id="pr-status" label="الحالة" value={status} onChange={(e) => setStatus(e.target.value)} options={[{ value: '', label: 'الكل' }, { value: 'due', label: 'مستحق' }, { value: 'paid', label: 'مدفوع' }, { value: 'none', label: 'لم يُسجّل' }]} />
+        </FilterBar>
+      </div>
 
-          {setupNeeded.length > 0 && canEdit && (
-            <div className="pr-setup-banner">
-              <span className="pr-setup-banner__ic"><Icon name="settings" size={20} /></span>
-              <div className="pr-setup-banner__txt">
-                <strong><span className="num">{setupNeeded.length}</span> <span>{setupNeeded.length === 1 ? 'أخصائي لم يُحدَّد له راتب وتارجت بعد' : 'أخصائيين لم يُحدَّد لهم راتب وتارجت بعد'}</span></strong>
-                <span className="muted-sm" data-no-i18n>{setupNeeded.map((r) => r.name).join('، ')}</span>
-              </div>
-              <Button icon="edit" onClick={() => setBulk(bulkRows)}>تحديد الرواتب والتارجت</Button>
-            </div>
-          )}
-
-          <div className="card">
-            <FilterBar>
-              <Input id="pr-q" label="بحث" icon="search" placeholder="اسم الأخصائي" value={q} onChange={(e) => setQ(e.target.value)} />
-              <Select id="pr-tstate" label="حالة التارجت" value={tState} onChange={(e) => setTState(e.target.value)}
-                options={[{ value: '', label: 'الكل' }, ...Object.entries(TARGET_STATE).map(([value, x]) => ({ value, label: x.label }))]} />
-              {canEdit && all.length > 0 && <div className="pr-toolbar-btn"><Button variant="outline" icon="settings" onClick={() => setBulk(bulkRows)}>إعداد الرواتب والتارجت للكل</Button></div>}
-            </FilterBar>
-            <div className="card__body">
-              {sorted.length === 0 ? <EmptyState icon="user" title="ما فيه أخصائيون" text="أضف الأخصائيين من قسم «الموظفون» أولًا." /> : (
-                <div className="table-wrap"><table className="table pr-table">
-                  <thead><tr><th>الأخصائي</th><th>الراتب الأساسي</th><th>التارجت الشهري</th><th>الإنجاز</th><th>المكافأة</th><th>الصرف</th><th className="actions" /></tr></thead>
-                  <tbody>{sorted.map((r) => {
-                    const src = r.due ?? r.live;
-                    const target = src.target, qual = src.qualifying, p = src.pct;
-                    const ts = targetState(r);
-                    const visits = r.due ? r.due.visits : r.live.visits;
-                    const bonusAtTarget = src.bonusMethod === 'fixed' ? src.bonusFixed : src.bonusMethod === 'none' ? 0 : Math.round(target * src.bonusRate) / 100;
-                    const set = r.live.hasPlan || !!r.due;
-                    return (
-                      <tr key={r.id} className={set ? '' : 'pr-row--unset'}>
-                        <td style={{ minWidth: 170 }}>
-                          <div className="pr-who">
-                            <span className="avatar" data-no-i18n>{r.name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('')}</span>
-                            <div><strong data-no-i18n>{r.name}</strong>
-                              <div className="muted-sm">{r.account ? <>حساب: <span data-no-i18n>{r.account}</span></> : 'بدون حساب دخول'}{!r.active && <> · <span>غير نشط</span></>}</div></div>
-                          </div>
-                        </td>
-                        {!set ? (
-                          <td colSpan={4}>
-                            <div className="pr-unset">
-                              <div>
-                                <strong>ما تم تحديد الراتب والتارجت</strong>
-                                <div className="muted-sm">
-                                  <span>الإيراد المؤهل للحين</span> <b className="num">{money(qual)}</b> · <span className="num">{visits}</span> <span>زيارة منفذة</span>
-                                  {r.live.booked > 0 && <> · <span className="num">{r.live.booked}</span> <span>حجز مؤكد لم يُنفَّذ بعد</span></>}
-                                </div>
-                              </div>
-                              {canEdit && <Button size="sm" icon="edit" onClick={() => setEditing(r)}>تحديد الراتب والتارجت</Button>}
-                            </div>
-                          </td>
-                        ) : (
-                          <>
-                            <td className="num"><b>{money(r.due ? r.due.salaryDue : r.live.baseSalary)}</b><div className="muted-sm">{SYSTEM_LABEL[r.live.paySystem]}</div>{r.due && <div className="muted-sm">مثبّت للشهر</div>}</td>
-                            <td className="num">{target > 0 ? <b>{money(target)}</b> : <span className="muted">ما تم تحديده</span>}</td>
-                            <td style={{ minWidth: 210 }}>
-                              <div className="pr-prog">
-                                <div className="pr-prog__top"><b className="num">{money(qual)}</b>{target > 0 && <span className={`num pr-prog__pct ${ts === 'reached' ? 'is-ok' : ''}`}>{pct(p)}</span>}</div>
-                                {target > 0 && <div className="progress"><i style={{ width: `${Math.min(100, p ?? 0)}%`, background: ts === 'reached' ? 'var(--ok)' : undefined }} /></div>}
-                                <div className="muted-sm">
-                                  {target > 0 && ts !== 'reached' && <><span>المتبقي</span> <span className="num">{money(Math.max(0, target - qual))}</span> · </>}
-                                  <span className="num">{visits}</span> <span>زيارة منفذة</span>
-                                  {!r.due && r.live.booked > 0 && <> · <span className="num">{r.live.booked}</span> <span>حجز مؤكد لم يُنفَّذ بعد</span></>}
-                                </div>
-                                {target > 0 && <StatusBadge label={TARGET_STATE[ts].label} tone={TARGET_STATE[ts].tone} />}
-                              </div>
-                            </td>
-                            <td style={{ minWidth: 160 }}>
-                              {src.bonusMethod === 'none' || (target <= 0 && src.bonusCondition !== 'always') ? <span className="muted">بدون مكافأة</span> : src.bonusCondition === 'always' ? <>
-                                <div className="num"><b>{money(r.due ? r.due.bonusDue : r.live.bonus)}</b></div>
-                                <div className="muted-sm"><span className="num">{pct(src.bonusRate)}</span> <span>من الإيراد المحقق</span></div>
-                              </> : <>
-                                <div className="num"><b>{money(bonusAtTarget)}</b></div>
-                                <div className="muted-sm">{src.bonusMethod === 'fixed' ? 'مكافأة ثابتة' : <><span className="num">{pct(src.bonusRate)}</span> <span>من التارجت</span></>} · {CONDITION_LABEL[src.bonusCondition]}</div>
-                                {r.due && r.due.bonusDue > 0 ? <div className="pr-bonus-state is-ok"><span>المعتمدة</span> <b className="num">{money(r.due.bonusDue)}</b></div>
-                                  : r.live.eligible ? <div className="pr-bonus-state is-ok">استحقها</div>
-                                  : <div className="pr-bonus-state">لم يستحقها بعد</div>}
-                              </>}
-                            </td>
-                          </>
-                        )}
-                        <td style={{ minWidth: 150 }}>
-                          {!set ? <span className="muted">—</span> : <>
-                            <StatusBadge label={PAY_STATUS[r.payStatus].label} tone={PAY_STATUS[r.payStatus].tone} />
-                            {r.overdue && <StatusBadge label="متأخر" tone="danger" />}
-                            {r.payDate && <div className="muted-sm"><span>موعد الصرف</span> <span className="num">{r.payDate}</span></div>}
-                            <div className="muted-sm" style={{ marginTop: 4 }}><span>المصروف</span> <span className="num">{money(r.paidSalary + r.paidBonus)}</span> <span>من</span> <span className="num">{money(owedOf(r))}</span></div>
-                          </>}
-                        </td>
-                        <td className="actions"><RowActions>
-                          {set && canEdit && <IconAction icon="edit" label="تعديل الراتب والتارجت" onClick={() => setEditing(r)} />}
-                          <IconAction icon="eye" label="التفاصيل" onClick={() => setDetail(r)} />
-                          {reachedTarget(r) && canEdit && <Button size="sm" variant="outline" icon="target" onClick={() => prep(r, setRating)}>نسبة المكافأة</Button>}
-                          {canPay(r) && can('payroll', 'create') && <Button size="sm" icon="wallet" onClick={() => prep(r, setPaying)}>تسجيل صرف</Button>}
-                        </RowActions></td>
-                      </tr>
-                    );
-                  })}</tbody>
-                </table></div>
-              )}
-            </div>
-          </div>
-
-          <div className="card pr-basis">
-            <div className="card__body">
-              <div className="pr-basis__row">
-                <div className="pr-basis__txt">
-                  <span className="muted-sm">قاعدة احتساب الإيراد المؤهل</span>
-                  <strong>{BASIS_LABEL[data.basis]}</strong>
-                </div>
-                {canEdit && <div className="pr-basis__sel">
-                  <Select id="pr-basis" aria-label="تغيير القاعدة" value={data.basis} onChange={(e) => setBasisTo(e.target.value as RevenueBasis)}
-                    options={(Object.keys(BASIS_LABEL) as RevenueBasis[]).map((b) => ({ value: b, label: BASIS_LABEL[b] }))} />
-                </div>}
-              </div>
-              <details style={{ marginTop: 8 }}><summary className="muted-sm" style={{ cursor: 'pointer' }}>كيف يُحسب؟</summary>
-                <ul className="muted-sm" style={{ margin: '6px 0 0', paddingInlineStart: 18, lineHeight: 1.9 }}>
-                  <li>الزيارة المنفذة = موعد حالته «حضر» أو «مكتمل» في الشهر (بتاريخ الزيارة). الحجز المؤكد والملغي و«لم يحضر» غير محسوبة.</li>
-                  <li>تُنسب الزيارة إلى دكتور الموعد، وتُحسب مرة واحدة فقط.</li>
-                  <li>قيمة الزيارة = صافي فاتورتها بعد الخصم ودون الضريبة. الفاتورة الملغاة = صفر، والدفعة الملغاة (استرداد) تُقلّل المحصّل.</li>
-                  <li>الخطة العلاجية أو الباقة (فاتورتها واحدة) تدخل التارجت بكامل صافي سعرها أول ما تتأكد أول زيارة منها، باسم دكتور هالزيارة وفي شهرها. الزيارات اللاحقة من نفس الباقة ما تضيف شي.</li>
-                  <li>المكافأة = نسبة من قيمة التارجت، تُستحق عند الوصول للتارجت (أو تجاوزه حسب الشرط).</li>
-                </ul>
-              </details>
-            </div>
-          </div>
-        </>
+      {data && (
+        <div className="stat-row" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
+          <div className="card" style={{ padding: '12px 16px' }}><div className="muted-sm">المدفوع في {monthLabel(period)}</div><strong className="num">{money(totalPaid)}</strong></div>
+          <div className="card" style={{ padding: '12px 16px' }}><div className="muted-sm">مستحق لسه</div><strong className="num">{money(totalDue)}</strong></div>
+          <div className="card" style={{ padding: '12px 16px' }}><div className="muted-sm">لسه ما اتسجّلش للشهر</div><strong className="num">{missing.length}</strong></div>
+        </div>
       )}
 
-      {editing && <PlanModal row={editing} period={period} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); load(); }} />}
-      {bulk && <BulkPlanModal type="therapist" rows={bulk} period={period} onClose={() => setBulk(null)} onDone={(close) => { if (close) setBulk(null); load(); }} />}
-      {paying && <PayModal row={paying} period={period} defaultKind={payKind} onClose={() => { setPaying(null); setPayKind(undefined); }} onPaid={() => { setPaying(null); setPayKind(undefined); load(); }} />}
-      {rating && <BonusRateModal row={rating} onClose={() => setRating(null)} onDone={(u, pay) => { setRating(null); load(); if (pay) { setPayKind('bonus'); setPaying(u); } }} />}
-      {detail && data && <SubjectDetailModal row={detail} overview={data} onClose={() => setDetail(null)} onChanged={load} />}
-      {basisTo && data && basisTo !== data.basis && <ReasonModal title="تغيير قاعدة احتساب الإيراد المؤهل" confirmLabel="تأكيد التغيير" danger={false} required={false} label="ملاحظة (اختياري)"
-        message={`القاعدة الجديدة: ${BASIS_LABEL[basisTo]}. يؤثر التغيير على الأرقام المباشرة للشهور المفتوحة فقط، أما الشهور المعتمدة فثابتة.`}
-        onClose={() => setBasisTo(null)} successText="تم تغيير القاعدة."
-        onSubmit={async () => { const r = await payrollApi.setBasis(basisTo); if (!r.ok) return r.error; setBasisTo(null); load(); return null; }} />}
-    </div>
+      <div className="card">
+        {error ? <div className="card__body"><p className="alert alert-danger">{error}</p><ErrorState onRetry={() => void reload()} /></div>
+          : !data ? <div className="card__body"><Skeleton h={160} /></div>
+          : rows.length === 0 ? <div className="card__body"><EmptyState icon="wallet" title="مفيش موظفين مطابقين" /></div>
+          : (
+            <div className="table-wrap">
+              <table className="table">
+                <thead><tr><th>الموظف</th><th>الراتب الثابت</th><th>راتب الشهر</th><th>الاستحقاق</th><th>الحالة</th><th>تاريخ الدفع</th><th></th></tr></thead>
+                <tbody>
+                  {rows.map(({ e, s, p }) => {
+                    const self = isSelf(e);
+                    return (
+                      <tr key={e.id}>
+                        <td><strong>{e.name}</strong><div className="muted-sm">{ROLE_LABEL[e.role] ?? e.role}</div></td>
+                        <td className="num">{s ? <>{money(s.monthlySalary)}<div className="muted-sm">يوم الصرف {s.payDay}{!s.active ? ' · متوقف' : ''}</div></> : <span className="muted">لم يُحدد</span>}</td>
+                        <td className="num">{p ? money(p.amount) : '—'}</td>
+                        <td className="num">{p ? fmtDate(p.dueDate) : s ? <span className="muted">{fmtDate(dueDateOf(period, s.payDay))}</span> : '—'}</td>
+                        <td>{!p ? <StatusBadge label="لم يُسجّل" tone="muted" /> : p.status === 'paid' ? <StatusBadge label="مدفوع" tone="ok" /> : <StatusBadge label="مستحق" tone="warn" />}</td>
+                        <td className="num">{p?.paidOn ? <>{fmtDate(p.paidOn)}<div className="muted-sm">{SALARY_METHOD[p.method]}</div></> : '—'}</td>
+                        <td className="actions">
+                          <RowActions>
+                            {canEdit && !self && !p && s && s.monthlySalary > 0 && <Button size="sm" variant="outline" icon="plus" disabled={busy} onClick={() => void createFor(e)}>تسجيل راتب الشهر</Button>}
+                            {canEdit && !self && p?.status === 'due' && <Button size="sm" icon="check" onClick={() => setPayFor(p)}>تسجيل الصرف</Button>}
+                            {canEdit && !self && p?.status === 'paid' && <Button size="sm" variant="outline" onClick={() => unpay(p)}>إلغاء الصرف</Button>}
+                            {canEdit && !self && p && <IconAction icon="edit" label="تعديل راتب الشهر" onClick={() => setEditFor(p)} />}
+                            {canEdit && !self && p?.status === 'due' && <IconAction icon="trash" label="مسح راتب الشهر" danger onClick={() => remove(p)} />}
+                            {canEdit && !self && <IconAction icon="wallet" label="الراتب الثابت ويوم الصرف" onClick={() => setSetFor(e)} />}
+                            <IconAction icon="list" label="سجل الرواتب" onClick={() => setHistoryFor(e)} />
+                            {self && <span className="muted-sm">مالكش تعدّل راتبك</span>}
+                          </RowActions>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+      </div>
+
+      {setFor && <SettingModal e={setFor} s={settingOf(setFor.id)} onClose={() => setSetFor(null)} onSaved={reload} />}
+      {payFor && <PayModal p={payFor} onClose={() => setPayFor(null)} onSaved={reload} />}
+      {editFor && <EditModal p={editFor} onClose={() => setEditFor(null)} onSaved={reload} />}
+      {historyFor && <HistoryModal e={historyFor} payments={(data?.payments ?? []).filter((p) => p.employeeId === historyFor.id)} onClose={() => setHistoryFor(null)} />}
+    </>
+  );
+}
+
+function SettingModal({ e, s, onClose, onSaved }: { e: Employee; s?: SalarySetting; onClose: () => void; onSaved: () => Promise<void> }) {
+  const toast = useToast();
+  const [salary, setSalary] = useState(String(s?.monthlySalary ?? ''));
+  const [day, setDay] = useState(String(s?.payDay ?? 1));
+  const [active, setActive] = useState(s?.active ?? true);
+  const [busy, setBusy] = useState(false);
+  const save = async () => {
+    const amount = Number(salary); const d = Number(day);
+    if (!(amount >= 0) || salary.trim() === '') { toast.error('اكتب الراتب الشهري.'); return; }
+    if (!(d >= 1 && d <= 31)) { toast.error('يوم الصرف من 1 لـ 31.'); return; }
+    setBusy(true);
+    const r = await salaryApi.saveSetting({ employeeId: e.id, monthlySalary: amount, payDay: d, active, note: s?.note ?? '' });
+    setBusy(false);
+    if (!r.ok) { toast.error(r.error); return; }
+    toast.success('تم حفظ الراتب الثابت.'); await onSaved(); onClose();
+  };
+  return (
+    <Modal title={`الراتب الثابت — ${e.name}`} onClose={onClose} footer={<><Button variant="outline" onClick={onClose} disabled={busy}>إلغاء</Button><Button icon="check" loading={busy} onClick={() => void save()}>حفظ</Button></>}>
+      <div className="grid-form">
+        <Input id="ss-salary" label="الراتب الشهري (ج.م)" inputMode="decimal" value={salary} onChange={(ev) => setSalary(ev.target.value.replace(/[^\d.]/g, ''))} />
+        <Input id="ss-day" label="يوم الصرف في الشهر" inputMode="numeric" value={day} onChange={(ev) => setDay(ev.target.value.replace(/\D/g, ''))} />
+        <Select id="ss-active" label="الحالة" value={active ? 'on' : 'off'} onChange={(ev) => setActive(ev.target.value === 'on')} options={[{ value: 'on', label: 'بيتصرف له راتب' }, { value: 'off', label: 'متوقف' }]} />
+      </div>
+      <p className="muted-sm" style={{ marginBottom: 0 }}>تعديل الراتب الثابت ما بيغيّرش رواتب الشهور اللي اتسجّلت قبل كده.</p>
+    </Modal>
+  );
+}
+
+function PayModal({ p, onClose, onSaved }: { p: SalaryPayment; onClose: () => void; onSaved: () => Promise<void> }) {
+  const toast = useToast();
+  const [paidOn, setPaidOn] = useState(todayYmd());
+  const [method, setMethod] = useState<SalaryMethod>('cash');
+  const [note, setNote] = useState(p.note);
+  const [busy, setBusy] = useState(false);
+  const save = async () => {
+    if (!paidOn) { toast.error('تاريخ الدفع مطلوب.'); return; }
+    setBusy(true);
+    const r = await salaryApi.update(p.id, { status: 'paid', paidOn, method, note });
+    setBusy(false);
+    if (!r.ok) { toast.error(r.error); return; }
+    toast.success(`اتسجّل صرف راتب ${p.employeeName}.`); await onSaved(); onClose();
+  };
+  return (
+    <Modal title={`صرف راتب ${p.employeeName} — ${monthLabel(p.period)}`} onClose={onClose} footer={<><Button variant="outline" onClick={onClose} disabled={busy}>إلغاء</Button><Button icon="check" loading={busy} onClick={() => void save()}>تسجيل الصرف</Button></>}>
+      <p style={{ marginTop: 0 }}>المبلغ: <strong className="num">{money(p.amount)}</strong></p>
+      <div className="grid-form">
+        <Input id="py-date" label="تاريخ الدفع الفعلي" type="date" value={paidOn} onChange={(ev) => setPaidOn(ev.target.value)} />
+        <Select id="py-method" label="طريقة الدفع" value={method} onChange={(ev) => setMethod(ev.target.value as SalaryMethod)} options={(Object.keys(SALARY_METHOD) as SalaryMethod[]).map((k) => ({ value: k, label: SALARY_METHOD[k] }))} />
+        <Input id="py-note" label="ملاحظة" value={note} onChange={(ev) => setNote(ev.target.value)} />
+      </div>
+    </Modal>
+  );
+}
+
+function EditModal({ p, onClose, onSaved }: { p: SalaryPayment; onClose: () => void; onSaved: () => Promise<void> }) {
+  const toast = useToast();
+  const [amount, setAmount] = useState(String(p.amount));
+  const [dueDate, setDueDate] = useState(p.dueDate);
+  const [note, setNote] = useState(p.note);
+  const [busy, setBusy] = useState(false);
+  const save = async () => {
+    const a = Number(amount);
+    if (!(a >= 0) || amount.trim() === '') { toast.error('اكتب المبلغ.'); return; }
+    setBusy(true);
+    const r = await salaryApi.update(p.id, { amount: a, dueDate, note });
+    setBusy(false);
+    if (!r.ok) { toast.error(r.error); return; }
+    toast.success('تم تعديل راتب الشهر.'); await onSaved(); onClose();
+  };
+  return (
+    <Modal title={`تعديل راتب ${p.employeeName} — ${monthLabel(p.period)}`} onClose={onClose} footer={<><Button variant="outline" onClick={onClose} disabled={busy}>إلغاء</Button><Button icon="check" loading={busy} onClick={() => void save()}>حفظ</Button></>}>
+      <div className="grid-form">
+        <Input id="pe-amount" label="المبلغ (ج.م)" inputMode="decimal" value={amount} onChange={(ev) => setAmount(ev.target.value.replace(/[^\d.]/g, ''))} />
+        <Input id="pe-due" label="تاريخ الاستحقاق" type="date" value={dueDate} onChange={(ev) => setDueDate(ev.target.value)} />
+        <Input id="pe-note" label="ملاحظة" value={note} onChange={(ev) => setNote(ev.target.value)} />
+      </div>
+    </Modal>
+  );
+}
+
+function HistoryModal({ e, payments, onClose }: { e: Employee; payments: SalaryPayment[]; onClose: () => void }) {
+  return (
+    <Modal wide title={`سجل رواتب ${e.name}`} onClose={onClose} footer={<Button variant="outline" onClick={onClose}>إغلاق</Button>}>
+      {payments.length === 0 ? <EmptyState icon="wallet" title="لسه مفيش رواتب متسجّلة للموظف ده" /> : (
+        <div className="table-wrap">
+          <table className="table">
+            <thead><tr><th>الشهر</th><th>المبلغ</th><th>الاستحقاق</th><th>الحالة</th><th>تاريخ الدفع</th><th>ملاحظة</th></tr></thead>
+            <tbody>
+              {payments.map((p) => (
+                <tr key={p.id}>
+                  <td>{monthLabel(p.period)}</td><td className="num">{money(p.amount)}</td><td className="num">{fmtDate(p.dueDate)}</td>
+                  <td>{p.status === 'paid' ? <StatusBadge label="مدفوع" tone="ok" /> : <StatusBadge label="مستحق" tone="warn" />}</td>
+                  <td className="num">{p.paidOn ? `${fmtDate(p.paidOn)} · ${SALARY_METHOD[p.method]}` : '—'}</td><td>{p.note || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Modal>
   );
 }

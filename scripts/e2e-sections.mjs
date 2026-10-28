@@ -131,27 +131,16 @@ try {
   check('حذف خدمة عليها حجوزات = إيقاف (البيانات القديمة بتفضل)', !sdel.error && svRow && svRow.active === false, err(sdel) || JSON.stringify(svRow));
 
   // ============ 4) أكواد الخصم ============
-  section('أكواد الخصم');
+  section('أكواد الخصم — اتشالت (920)');
   const CODE = 'E2ET' + Math.floor(Math.random() * 1e5);
-  made.codes.push(CODE);
-  const dcBad = await admin.rpc('save_discount_code', { p: { code: CODE + 'X', type: 'percent', value: 150, validFrom: today, validTo: cairoDate(30), maxUses: 1, active: true } });
-  if (!dcBad.error) made.codes.push(CODE + 'X');
-  check('خصم أكبر من 100% مرفوض', !!dcBad.error, err(dcBad) || 'saved!');
-  const dc = await admin.rpc('save_discount_code', { p: { code: CODE.toLowerCase(), type: 'percent', value: 25, validFrom: today, validTo: cairoDate(30), maxUses: 1, active: true, note: 'اختبار' } });
-  check('إنشاء كود خصم 25% (الحروف الصغيرة بتتوحّد)', !dc.error, err(dc));
+  const dc = await admin.rpc('save_discount_code', { p: { code: CODE, type: 'percent', value: 25, validFrom: today, validTo: cairoDate(30), maxUses: 1, active: true } });
+  if (!dc.error) made.codes.push(CODE);
+  check('إنشاء كود خصم بطلب مباشر مرفوض (حتى للمدير)', !!dc.error, err(dc) || 'saved!');
   const dInv = await book(recep, { patientId: Q.id, therapistId: D2, date: cairoDate(9), time: '18:00' });
-  const { data: inv1 } = await recep.from('invoices').select('id, total').eq('appointment_id', idOf(dInv)).single();
-  const ap = await recep.rpc('apply_discount_code', { p_invoice: inv1.id, p_code: CODE.toLowerCase() });
-  const { data: inv1b } = await recep.from('invoices').select('total, discount').eq('id', inv1.id).single();
-  check('تطبيق الكود على فاتورة كشف 400 ← خصم 100', !ap.error && Number(inv1b.discount) === 100 && Number(inv1b.total) === 300, err(ap) || JSON.stringify(inv1b));
-  const ap2 = await recep.rpc('apply_discount_code', { p_invoice: inv1.id, p_code: CODE });
-  check('نفس الكود مرتين على نفس الفاتورة مرفوض', !!ap2.error, err(ap2) || 'applied!');
-  const dInv2 = await book(recep, { patientId: Q.id, therapistId: D2, date: cairoDate(10), time: '18:00' });
-  const { data: inv2 } = await recep.from('invoices').select('id').eq('appointment_id', idOf(dInv2)).single();
-  const ap3 = await recep.rpc('apply_discount_code', { p_invoice: inv2.id, p_code: CODE });
-  check('كود استخدامه مرة واحدة ماينفعش على فاتورة تانية', /استهلاك/.test(err(ap3)), err(ap3) || 'applied!');
-  const apBad = await recep.rpc('apply_discount_code', { p_invoice: inv2.id, p_code: 'NOPE-NOT-REAL' });
-  check('كود مش موجود مرفوض', /غير صحيح/.test(err(apBad)), err(apBad) || 'applied!');
+  const { data: inv1 } = await recep.from('invoices').select('id, total, discount').eq('appointment_id', idOf(dInv)).single();
+  const ap = await recep.rpc('apply_discount_code', { p_invoice: inv1?.id, p_code: CODE });
+  const { data: inv1b } = await recep.from('invoices').select('total, discount').eq('id', inv1?.id).single();
+  check('تطبيق كود خصم على فاتورة بطلب مباشر مرفوض والفاتورة بسعر الخدمة', !!ap.error && Number(inv1b?.discount) === 0 && Number(inv1b?.total) === Number(inv1?.total), err(ap) || JSON.stringify(inv1b));
 
   // ============ 5) الخطط العلاجية ============
   section('الخطط العلاجية وجلساتها');

@@ -1,7 +1,7 @@
 {
-  "at": "2026-10-27T08:22:34.189Z",
-  "passed": 31,
-  "failed": 0,
+  "at": "2026-10-28T19:51:17.995Z",
+  "passed": 30,
+  "failed": 1,
   "results": [
     {
       "name": "الزائر بدون دخول ما يقدر يقرا المرضى",
@@ -26,12 +26,12 @@
     {
       "name": "إنشاء حساب استقبال",
       "ok": true,
-      "detail": "{\"id\":\"277c5211-8f29-4c86-ad93-047d941c6946\",\"name\":\"استقبال اختبار آلي\",\"username\":\"201200000901\",\"role\":\"reception\",\"phone\":\"+201200000901\",\"active\""
+      "detail": "{\"id\":\"dd4b299d-ecf4-46fa-b219-06bcb048b88f\",\"name\":\"استقبال اختبار آلي\",\"username\":\"201200000901\",\"role\":\"reception\",\"phone\":\"+201200000901\",\"active\""
     },
     {
       "name": "إنشاء حساب طبيب مربوط بملفه",
       "ok": true,
-      "detail": "{\"id\":\"bf2850da-357a-4b78-930a-de4a7ae861d5\",\"name\":\"طبيب اختبار آلي\",\"username\":\"201200000902\",\"role\":\"therapist\",\"phone\":\"+201200000902\",\"active\":tr"
+      "detail": "{\"id\":\"7ff4e9cb-dd21-4ef9-b386-c3f3fd83e9ed\",\"name\":\"طبيب اختبار آلي\",\"username\":\"201200000902\",\"role\":\"therapist\",\"phone\":\"+201200000902\",\"active\":tr"
     },
     {
       "name": "رقم موظف مكرر مرفوض",
@@ -51,7 +51,7 @@
     {
       "name": "الاستقبال يضيف مريض ورقم الملف يتولد تلقائي",
       "ok": true,
-      "detail": "TM-2"
+      "detail": "TM-3"
     },
     {
       "name": "المريض محفوظ فعلًا في القاعدة",
@@ -116,7 +116,7 @@
     {
       "name": "لوحة الاستقبال بدون أرقام الإيراد",
       "ok": true,
-      "detail": "{\"openTickets\":0,\"outstanding\":null,\"monthRevenue\":null,\"totalPatients\":2,\"completedToday\":0,\"pendingRequests\":0,\"newPat"
+      "detail": "{\"openTickets\":0,\"outstanding\":null,\"monthRevenue\":null,\"totalPatients\":3,\"completedToday\":0,\"pendingRequests\":0,\"newPat"
     },
     {
       "name": "الاستقبال ما يقدرش يكتب تشخيص",
@@ -131,7 +131,7 @@
     {
       "name": "الكشف محفوظ باسم الطبيب",
       "ok": true,
-      "detail": "bf2850da-357a-4b78-930a-de4a7ae861d5"
+      "detail": "7ff4e9cb-dd21-4ef9-b386-c3f3fd83e9ed"
     },
     {
       "name": "الاستقبال يقرا الكشف (عرض فقط)",
@@ -140,8 +140,8 @@
     },
     {
       "name": "تشخيص فاضي مرفوض من القاعدة",
-      "ok": true,
-      "detail": "new row for relation \"ortho_consultations\" violates check constraint \"ortho_consultations_diagnosis_check\""
+      "ok": false,
+      "detail": "accepted!"
     },
     {
       "name": "موعد فك الجبس قبل التركيب مرفوض",

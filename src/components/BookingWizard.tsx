@@ -40,7 +40,6 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
   const [planChoice, setPlanChoice] = useState<string>('auto');
   const [priceId, setPriceId] = useState('');
   const [notes, setNotes] = useState('');
-  const [discountCode, setDiscountCode] = useState('');
   const [payAmount, setPayAmount] = useState('');
   const [payMethod, setPayMethod] = useState<PaymentMethod>('cash');
   const [result, setResult] = useState<{ no: string; date: string; time: string; therapist: string } | null>(null);
@@ -105,10 +104,9 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
   // «تلقائي» = الخطة اللي خدمتها نفس خدمة الموعد بس — كشف أو متابعة لمريض عنده خطة علاج طبيعي مايتحسبش جلسة منها وليه فاتورته
   const planId = planChoice === 'auto' ? (patientPlans.find((p) => p.serviceId === serviceId)?.id ?? null) : planChoice === 'none' ? null : planChoice;
   const pricedPlan = !packageId && planId ? ((db.plan(planId)?.price ?? 0) > 0) : false;
-  const discountPreview = discountCode.trim() && !pricedPlan ? db.previewDiscountCode(discountCode.trim(), shownPrice) : null;
   // فاتورة مستقلة تُنشأ فقط لو الموعد مش مغطّى بباقة أو خطة علاجية مدفوعة — عندها فقط يصح تسجيل دفعة فورية
   const willHaveInvoice = !packageId && !pricedPlan;
-  const netPrice = Math.max(0, shownPrice - (discountPreview?.ok ? discountPreview.amount : 0));
+  const netPrice = Math.max(0, shownPrice);
 
   const canNext = [
     !!patientId || (mode === 'call' && np.fullName.trim().length >= 2 && phoneOk),
@@ -143,14 +141,8 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
       if (/حجزه للتو|تم حجزه/.test(r.error)) { setTime(''); await db.refresh('appointments'); setStep(visible.includes(3) ? 3 : step); }
       return;
     }
-    const inv = discountCode.trim() || payAmount.trim() ? db.invoices().find((i) => i.appointmentId === r.appointment.id) : undefined;
-    if (discountCode.trim()) {
-      if (inv) {
-        const dr = await db.applyDiscountCode(inv.id, discountCode.trim());
-        if (!dr.ok) toast.error(`تم حجز الموعد، لكن تعذّر تطبيق كود الخصم: ${dr.error}`);
-        else toast.success('تم تطبيق كود الخصم على فاتورة الموعد.');
-      }
-    }
+    // أكواد الخصم اتشالت من النظام (هجرة 920) — الفاتورة بسعر الخدمة
+    const inv = payAmount.trim() ? db.invoices().find((i) => i.appointmentId === r.appointment.id) : undefined;
     const amount = Number(payAmount);
     if (amount > 0 && inv) {
       const pr = await db.recordPayment(inv.id, amount, payMethod);
@@ -390,27 +382,6 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
         {extraPrices.length > 0 && (
           <div style={{ marginTop: 14 }}><Select id="bk-price" label="السعر" value={priceId} onChange={(e) => setPriceId(e.target.value)}
             options={[{ value: '', label: `السعر العادي — ${money(service?.price ?? 0)}` }, ...extraPrices.map((p) => ({ value: p.id, label: `${p.label} — ${money(p.price)}` }))]} /></div>
-        )}
-        {!pricedPlan && (
-          <div style={{ marginTop: 14 }}>
-            <div className="field">
-              <label htmlFor="bk-promo">كود الخصم (اختياري)</label>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <div style={{ flex: 1 }}>
-                  <Input id="bk-promo" dir="ltr" value={discountCode} onChange={(e) => setDiscountCode(e.target.value)} />
-                </div>
-                <Button type="button" variant="outline" disabled={!discountCode.trim()}
-                  onClick={() => { if (discountPreview?.ok) toast.success(`تم تفعيل الكود — سيُخصم ${money(discountPreview.amount)} من الفاتورة.`); else toast.error(discountPreview?.error ?? 'كود غير صالح.'); }}>
-                  تفعيل
-                </Button>
-              </div>
-            </div>
-            {discountCode.trim() && (
-              <p style={{ margin: '4px 0 0', fontSize: 12.5, color: discountPreview?.ok ? 'var(--ok)' : 'var(--danger)', fontWeight: 600 }}>
-                {discountPreview?.ok ? `✓ سيُخصم ${money(discountPreview.amount)} من الفاتورة.` : discountPreview?.error}
-              </p>
-            )}
-          </div>
         )}
         {willHaveInvoice && (
           <div className="grid-form grid-form--3" style={{ marginTop: 14 }}>

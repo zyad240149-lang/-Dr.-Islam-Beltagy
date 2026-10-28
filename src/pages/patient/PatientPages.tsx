@@ -69,7 +69,6 @@ export function PatientDashboard() {
           <StatCard icon="checkCircle" tone="ok" value={d.completedAppointments} label="زيارات مكتملة" />
           <StatCard icon="target" tone="info" value={d.activePlans} label="خطط علاج نشطة" />
           <StatCard icon="receipt" tone="warn" value={money(d.dueAmount)} label={`مستحق (${d.dueInvoices} فاتورة)`} />
-          <PointsKpi live={live} />
         </div>
       )}
 

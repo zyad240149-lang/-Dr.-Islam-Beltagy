@@ -997,6 +997,7 @@ textarea.input { height: auto; padding-block: 10px; resize: vertical; line-heigh
 .sh-row__l { color: var(--brand-700); }
 .sh-inline { display: flex; flex-wrap: wrap; gap: 0 14px; }
 .sh-split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 12px; }
+.sh-split--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .sh-cols { columns: 2 150px; column-gap: 12px; }
 .sh-cols .sh-ck { break-inside: avoid; }
 .sh-line { display: flex; align-items: center; gap: 8px; margin: 2px 0; }
@@ -1035,7 +1036,7 @@ textarea.input { height: auto; padding-block: 10px; resize: vertical; line-heigh
 @media (max-width: 760px) {
   .sh-tabs { top: -16px; }
   .sh-visit { grid-template-columns: minmax(0, 1fr); }
-  .sh-split { grid-template-columns: minmax(0, 1fr); }
+  .sh-split, .sh-split--3 { grid-template-columns: minmax(0, 1fr); }
   .sh-img { grid-template-columns: auto minmax(0, 1fr); }
   .sh-img .sh-in--date { grid-column: 2; }
 }

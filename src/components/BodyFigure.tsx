@@ -1,4 +1,4 @@
-import { BODY_REGIONS } from '../data/bodyRegions';
+import { BODY_REGIONS, MAP_REGION_IDS } from '../data/bodyRegions';
 
 export type BodyView = 'front' | 'back';
 
@@ -37,7 +37,7 @@ export function BodyFigure({ view, selected, hovered, highlighted, marked, onSel
   marked?: Set<string>;
   onSelect: (id: string, side: PinSide) => void; onHover: (id: string | null) => void; compact?: boolean;
 }) {
-  const spots = SPOTS[view];
+  const spots = SPOTS[view].filter(([id]) => MAP_REGION_IDS.has(id)); // المناطق اللي ليها شيت كشف بس
   const order = spots.map((s) => s[0]).filter((id, i, a) => a.indexOf(id) === i);
   return (
     <figure className={`bm-figure bm-skel ${compact ? 'bm-figure--compact' : ''}`}>

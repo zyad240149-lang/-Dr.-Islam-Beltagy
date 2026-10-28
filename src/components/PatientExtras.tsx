@@ -1,7 +1,7 @@
 import { FilePreviewModal, useDetails } from './DetailsHost';
 import { useEffect, useRef, useState } from 'react';
 import { db } from '../data/db';
-import { BODY_REGIONS, SIDE_LABEL, findCondition } from '../data/bodyRegions';
+import { BODY_REGIONS, SIDE_LABEL, findCondition, mapRegions } from '../data/bodyRegions';
 import { Button, EmptyState, Input, Modal, Select, Skeleton } from './ui';
 import { ConfirmDialog, IconAction, RowActions, useCan } from './common';
 import { useToast } from '../hooks/useToast';
@@ -56,7 +56,7 @@ export function BodyRecordModal({ patientId, record, presetRegion, presetConditi
         )}
       </div>
       <div className="grid-form">
-        <Select id="br-region" label="المنطقة المتأثرة *" value={f.regionId} onChange={(e) => setF((x) => ({ ...x, regionId: e.target.value, conditionId: '', side: '' }))} options={[{ value: '', label: 'اختر المنطقة' }, ...BODY_REGIONS.map((r) => ({ value: r.id, label: r.name }))]} />
+        <Select id="br-region" label="المنطقة المتأثرة *" value={f.regionId} onChange={(e) => setF((x) => ({ ...x, regionId: e.target.value, conditionId: '', side: '' }))} options={[{ value: '', label: 'اختر المنطقة' }, ...mapRegions().map((r) => ({ value: r.id, label: r.name }))]} />
         <Select id="br-cond" label="الحالة (من المرجع المعتمد)" value={f.conditionId} disabled={!region} onChange={(e) => set('conditionId', e.target.value)} options={[{ value: '', label: 'غير محددة' }, ...(region?.conditions ?? []).map((c) => ({ value: c.id, label: `${c.name} — ${c.en}` }))]} />
         {region?.sided && <Select id="br-side" label="الجهة" value={f.side} onChange={(e) => set('side', e.target.value)} options={[{ value: '', label: 'غير محددة' }, ...Object.entries(SIDE_LABEL).map(([value, label]) => ({ value, label }))]} />}
         <Select id="br-sev" label="درجة الحالة *" value={String(f.severity)} onChange={(e) => set('severity', Number(e.target.value))} options={SEVERITY.map((label, i) => ({ value: String(i + 1), label }))} />

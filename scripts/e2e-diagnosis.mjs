@@ -167,10 +167,10 @@ try {
   await openDoctor(A.page, 'الكاحل والقدم');
   check('شيت الكاحل والقدم بيفتح لما المنطقة كاحل', await A.page.locator('.modal .sh-box__h', { hasText: 'Special Tests' }).count() === 1 && await A.page.locator('.modal .sh-ck', { hasText: 'Thompson test' }).count() === 1);
   await tick(A.page, 'Ankle pain');
-  await tick(A.page, 'Lateral ankle sprain');
+  await tick(A.page, 'Ankle sprain (ATFL / CFL)');
   await saveAnswer(A.page, 'التشخيص اكتمل');
   cb = await dbConsults(PB);
-  check('الاستكمال عدّل نفس السجل (مفيش تشخيص مكرر) وبقى مكتمل بتشخيص الكاحل', cb.length === 1 && cb[0].complete === true && /Lateral ankle sprain/.test(cb[0].diagnosis), JSON.stringify(cb));
+  check('الاستكمال عدّل نفس السجل (مفيش تشخيص مكرر) وبقى مكتمل بتشخيص الكاحل', cb.length === 1 && cb[0].complete === true && /Ankle sprain \(ATFL \/ CFL\)/.test(cb[0].diagnosis), JSON.stringify(cb));
   await A.page.waitForSelector('.dx-views', { timeout: 10000 });
   check('مريض «ب» اختفى من الانتظار بعد الاستكمال', await queueRow(A.page, PB).count() === 0);
   check('«اتشخص النهارده» بيعد المريضين', /اتشخص النهارده\s*[2-9]/.test((await A.page.locator('.card__head', { hasText: 'مرضى بانتظار التشخيص' }).textContent()) ?? ''));

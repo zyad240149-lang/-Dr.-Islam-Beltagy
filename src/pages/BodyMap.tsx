@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { BODY_REGIONS, type Condition } from '../data/bodyRegions';
+import { mapRegions, type Condition } from '../data/bodyRegions';
 import { Button, EmptyState, Input, Modal } from '../components/ui';
 import { ConfirmDialog, IconAction, useCan } from '../components/common';
 import { useDbVersion } from '../hooks/useDb';
@@ -45,7 +45,7 @@ export default function BodyMap() {
   const [recFor, setRecFor] = useState<{ region: string; cond: string } | null>(null);
 
   const search = q.trim().toLowerCase();
-  const results = useMemo(() => !search ? [] : BODY_REGIONS.flatMap((r) =>
+  const results = useMemo(() => !search ? [] : mapRegions().flatMap((r) =>
     r.conditions.filter((c) => c.name.includes(q.trim()) || c.en.toLowerCase().includes(search) || c.icd10.toLowerCase().includes(search) || r.name.includes(q.trim()) || r.en.toLowerCase().includes(search)).map((c) => ({ region: r, c }))),
   [q, search]);
   const highlighted = useMemo(() => new Set(results.map((x) => x.region.id)), [results]);
@@ -57,7 +57,7 @@ export default function BodyMap() {
   const editAction = (c: Condition, regionId: string) => (can('plans', 'edit') ? () => setEditing({ c, regionId }) : undefined);
   const deleteAction = (c: Condition) => (can('plans', 'delete') ? () => setDeleting(c) : undefined);
   const select = (id: string) => { setSelected(id); setQ(''); };
-  const total = BODY_REGIONS.reduce((s, r) => s + r.conditions.length, 0);
+  const total = mapRegions().reduce((s, r) => s + r.conditions.length, 0);
   const plans = db.raw().plans.filter((p) => p.diagnosisRef);
   const condStats = (id: string) => ({ active: plans.filter((p) => p.diagnosisRef!.conditionId === id && p.status === 'active').length, total: plans.filter((p) => p.diagnosisRef!.conditionId === id).length });
   const regionTotal = (id: string) => plans.filter((p) => p.diagnosisRef!.regionId === id).length;
@@ -72,14 +72,14 @@ export default function BodyMap() {
         <section className="card bm-body">
           <div className="card__head">
             <h2>خريطة الجسم</h2>
-            <span className="muted bm-hint">{preview ? <><strong>{preview.name}</strong> · <span className="num">{preview.conditions.length}</span> حالات</> : <><span className="num">{BODY_REGIONS.length}</span> مناطق · <span className="num">{total}</span> حالة</>}</span>
+            <span className="muted bm-hint">{preview ? <><strong>{preview.name}</strong> · <span className="num">{preview.conditions.length}</span> حالات</> : <><span className="num">{mapRegions().length}</span> مناطق · <span className="num">{total}</span> حالة</>}</span>
           </div>
           <div className="card__body bm-figures">
             <Figure view="front" selected={selected} hovered={hovered} highlighted={highlighted} onSelect={select} onHover={setHovered} />
             <Figure view="back" selected={selected} hovered={hovered} highlighted={highlighted} onSelect={select} onHover={setHovered} />
           </div>
           <div className="bm-chips">
-            {BODY_REGIONS.map((r) => (
+            {mapRegions().map((r) => (
               <button key={r.id} type="button" className={`bm-chip ${selected === r.id && !search ? 'active' : ''} ${highlighted.has(r.id) ? 'match' : ''}`}
                 onClick={() => select(r.id)} onMouseEnter={() => setHovered(r.id)} onMouseLeave={() => setHovered(null)}>
                 {r.name} <span className="num">{r.conditions.length}</span>

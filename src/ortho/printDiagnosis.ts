@@ -114,17 +114,26 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
         case 'pick': return row(f.label, cks(K(f.g), f.items));
         case 'text': return line(f.label, v(K(f.k)));
         case 'side': return row('Side:', side);
-        case 'two': return two(f.a.map(rf).join(''), f.b.map(rf).join(''));
-        case 'rom': return table(`<th>${f.title}</th><th>Normal</th><th>Rt.</th><th>Lt.</th>`, f.rows.filter(([m]) => filled(K(`${f.k}.${m}`))).map(([m, n]) => `<tr><td>${m}</td><td>${n}</td>${rtLt(K(`${f.k}.${m}`))}</tr>`));
+        case 'cols': {
+          const parts = f.cols.map((cl) => { const body = cl.f.map(rf).join(''); return compact && !body ? '' : (cl.title ? `<div class="lbl">${esc(cl.title)}</div>` : '') + body; }).filter((x) => !compact || x);
+          return parts.length ? `<div class="two" style="grid-template-columns:repeat(${parts.length},minmax(0,1fr))">${parts.map((x) => `<div>${x}</div>`).join('')}</div>` : '';
+        }
+        case 'rom': return table(`<th>${f.title}</th>${f.noNormal ? '' : '<th>Normal</th>'}<th>Rt.</th><th>Lt.</th>`, f.rows.filter(([m]) => filled(K(`${f.k}.${m}`))).map(([m, n]) => `<tr><td>${m}</td>${f.noNormal ? '' : `<td>${n}</td>`}${rtLt(K(`${f.k}.${m}`))}</tr>`));
         case 'grade': return table(`<th>${f.title}</th><th>Rt.</th><th>Lt.</th>`, f.rows.filter(([r]) => filled(K(`${f.k}.${r}`))).map(([r, m]) => `<tr><td>${r} (${m})</td>${rtLt(K(`${f.k}.${r}`), f.opts === 'mrc' ? '/5' : '')}</tr>`));
-        case 'ticks': return table(`<th>${f.title}</th><th>Area</th><th>Rt.</th><th>Lt.</th>`, f.rows.filter(([r]) => !compact || has(K(f.g), `${r} Rt`) || has(K(f.g), `${r} Lt`)).map(([r, area]) => `<tr><td>${r}</td><td>${esc(area)}</td><td>${has(K(f.g), `${r} Rt`) ? '✓' : ''}</td><td>${has(K(f.g), `${r} Lt`) ? '✓' : ''}</td></tr>`));
-        case 'imaging': return L.X_IMG.filter((m) => !compact || has(K(f.k), m) || v(K(`${f.k}.${m}`)) || v(K(`${f.k}.${m}.date`))).map((m) => `<div class="row">${ck(has(K(f.k), m), m + ':')}<span class="fill">${v(K(`${f.k}.${m}`))}</span><span>Date: ${v(K(`${f.k}.${m}.date`)) ? dmy(v(K(`${f.k}.${m}.date`))) : '__ / __ / __'}</span></div>`).join('')
+        case 'ticks': {
+          const withSub = f.rows.some(([, sub]) => sub);
+          const rows = f.rows.filter(([r]) => !compact || has(K(f.g), `${r} Rt`) || has(K(f.g), `${r} Lt`));
+          return table(`<th>${f.title}</th>${withSub ? `<th>${f.sub ?? 'Area'}</th>` : ''}<th>Rt.</th><th>Lt.</th>`, rows.map(([r, sub, color]) => `<tr><td>${color ? `<i class="sw" style="background:${color}"></i>` : ''}${r}</td>${withSub ? `<td>${esc(sub)}</td>` : ''}<td>${has(K(f.g), `${r} Rt`) ? '✓' : ''}</td><td>${has(K(f.g), `${r} Lt`) ? '✓' : ''}</td></tr>`))
+            + (f.note && (!compact || rows.length) ? `<div class="note">${esc(f.note)}</div>` : '');
+        }
+        case 'key': return compact ? '' : table(`<th>${f.title}</th><th>Area</th>`, f.rows.map(([r, area, color]) => `<tr><td><i class="sw" style="background:${color}"></i>${r}</td><td>${esc(area)}</td></tr>`));
+        case 'imaging': return f.mods.filter((m) => !compact || has(K(f.k), m) || v(K(`${f.k}.${m}`)) || v(K(`${f.k}.${m}.date`))).map((m) => `<div class="row">${ck(has(K(f.k), m), m + ':')}<span class="fill">${v(K(`${f.k}.${m}`))}</span><span>Date: ${v(K(`${f.k}.${m}.date`)) ? dmy(v(K(`${f.k}.${m}.date`))) : '__ / __ / __'}</span></div>`).join('')
           + line('Previous imaging:', v(K(`${f.k}.prev`))) + line('Others:', v(K(`${f.k}.other`)));
         case 'dxmap': return c.icd10 ? line('ICD-10:', esc(c.icd10)) : '';
         case 'notes': return compact && !v(K(f.k)) ? '' : `<div class="notes">${v(K(f.k)).replace(/\n/g, '<br>') || '&nbsp;'}</div>`;
       }
     };
-    return page('ltr', head(def.title, ''), drBar, def.boxes.map((b, i) => box(i + 1, b.title, b.f.map(rf).join('') + (b.role === 'plan' && c.followUp ? line('Next visit:', dmy(c.followUp)) : ''), b.tone ?? '')));
+    return page('ltr', head(def.title, ''), drBar, def.boxes.map((b, i) => box(i + 1, b.title, b.f.map(rf).join('') + (b.role === 'plan' && c.followUp ? line('Next visit:', dmy(c.followUp)) : ''), [b.tone, b.wide && 'span2'].filter(Boolean).join(' '))));
   };
   // شيت الطبيب = الشيتات النشطة (من مكان الألم + اللي اتكتب فيه)؛ كشف قديم من غير أي منطقة ← الورك والركبة زي الأول
   const ids = activeSheets(s);
@@ -189,6 +198,7 @@ export function diagnosisHtml(c: DxConsult, p?: DxPatient | null, visitNo?: numb
   .g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .box { border: 1.3px solid #1b4f8f; border-radius: 7px; overflow: hidden; break-inside: avoid; }
   .box.wide { grid-column: 1 / -1; }
+  .box.span2 { grid-column: span 2; }
   .compact .grid { align-items: start; }
   .box.red { border-color: #c4372d; }
   .box h3 { display: flex; align-items: center; gap: 6px; margin: 0; background: #1b4f8f; color: #fff; font-size: 10px; padding: 2px 7px; }

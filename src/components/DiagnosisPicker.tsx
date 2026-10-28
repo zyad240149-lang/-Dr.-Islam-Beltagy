@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { BODY_REGIONS, SIDE_EN, SIDE_LABEL, findCondition, type BodyRegion, type Condition } from '../data/bodyRegions';
+import { BODY_REGIONS, SIDE_EN, SIDE_LABEL, findCondition, mapRegions, type BodyRegion, type Condition } from '../data/bodyRegions';
 import { BodyFigure, regionById, type BodyView } from './BodyFigure';
 import { Button, EmptyState, Input, Modal } from './ui';
 import { Icon } from '../utils/icons';
@@ -14,7 +14,7 @@ export const diagnosisText = (c: Condition, side: Side | null) => (side ? `${c.e
 export function DiagnosisDatalist() {
   return (
     <datalist id={DIAGNOSIS_LIST_ID}>
-      {BODY_REGIONS.flatMap((r) => r.conditions.map((c) => <option key={c.id} value={c.en}>{`${r.en} — ${c.name} · ${c.icd10}`}</option>))}
+      {mapRegions().flatMap((r) => r.conditions.map((c) => <option key={c.id} value={c.en}>{`${r.en} — ${c.name} · ${c.icd10}`}</option>))}
     </datalist>
   );
 }
@@ -63,7 +63,7 @@ export function DiagnosisPicker({ onPick, onClose }: { onPick: (text: string, re
   const [pending, setPending] = useState<{ region: BodyRegion; c: Condition } | null>(null);
   const search = q.trim().toLowerCase();
 
-  const results = useMemo(() => !search ? [] : BODY_REGIONS.flatMap((r) =>
+  const results = useMemo(() => !search ? [] : mapRegions().flatMap((r) =>
     r.conditions.filter((c) => c.name.includes(q.trim()) || c.en.toLowerCase().includes(search) || c.icd10.toLowerCase().includes(search)).map((c) => ({ region: r, c }))),
   [q, search]);
   const highlighted = useMemo(() => new Set(results.map((x) => x.region.id)), [results]);

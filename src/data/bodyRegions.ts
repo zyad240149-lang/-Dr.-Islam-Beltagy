@@ -131,6 +131,11 @@ export const BODY_REGIONS: BodyRegion[] = [
   ] },
 ];
 
+// المناطق اللي بتظهر على جسم الإنسان = المناطق اللي ليها شيت كشف بس (الورك والركبة، الكاحل والقدم، الرقبة والكتف،
+// الكوع والرسغ واليد، أسفل الظهر والعجز). باقي المناطق فاضلة في البيانات عشان أي تشخيص قديم مربوط بيها يفضل يتعرض صح.
+export const MAP_REGION_IDS = new Set(['cervical', 'shoulder', 'elbow', 'wrist_hand', 'lumbar', 'sacrum', 'hip', 'knee', 'ankle_foot']);
+export const mapRegions = () => BODY_REGIONS.filter((r) => MAP_REGION_IDS.has(r.id));
+
 export const SIDE_LABEL: Record<'right' | 'left' | 'both', string> = { right: 'يمين', left: 'يسار', both: 'الجهتين' };
 export const SIDE_EN: Record<'right' | 'left' | 'both', string> = { right: 'Right', left: 'Left', both: 'Bilateral' };
 

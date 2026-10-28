@@ -1,4 +1,4 @@
-// شيت كشف الطبيب لأي منطقة من regionSheets (الكاحل/الكتف/العمود الفقري/اليد/عام) — نفس شكل وعناصر شيت الورك والركبة.
+// شيت كشف الطبيب لأي منطقة من regionSheets (الكاحل والقدم / الرقبة والكتف / الكوع والرسغ واليد / أسفل الظهر) — نفس شكل وعناصر شيت الورك والركبة.
 // + اختيار الشيت: الشيتات بتيجي من مكان الألم في شيت التمريض، والطبيب يقدر يضيف منطقة تانية.
 import { Fragment, useState, type ReactNode } from 'react';
 import { BodyFigure, regionById, type BodyView, type PinSide } from '../components/BodyFigure';
@@ -8,7 +8,8 @@ import type { ExamSheet, Side } from './data';
 import { SHEET_ORDER, SHEET_TAB, type Field, type RegionSheetDef, type SheetId } from './regionSheets';
 
 const SIDES: [Side, string][] = [['right', 'Right'], ['left', 'Left'], ['both', 'Bilateral']];
-const IMG = ['X-ray', 'MRI', 'CT', 'Ultrasound'];
+
+const REFLEX4_OPTS: [string, string][] = [...REFLEX_OPTS, ['Brisk', 'Brisk (↑)']];
 
 export function RegionSheetForm({ def, sheet, onChange, side, onSide, icd10, onIcd10, onOpenMap }: {
   def: RegionSheetDef; sheet: ExamSheet; onChange: (f: (s: ExamSheet) => ExamSheet) => void; side: Side; onSide: (s: Side) => void;
@@ -27,12 +28,16 @@ export function RegionSheetForm({ def, sheet, onChange, side, onSide, icd10, onI
       case 'pick': return <Row key={i} label={f.label}><Pick a={a} g={k(f.g)} items={f.items} /></Row>;
       case 'text': return <Txt key={i} a={a} k={k(f.k)} label={f.label} stack={f.stack} />;
       case 'side': return <Row key={i} label="Side:">{SIDES.map(([v, l]) => <Ck key={v} on={side === v} onToggle={() => onSide(side === v ? 'na' : v)}>{l}</Ck>)}</Row>;
-      case 'two': return <div key={i} className="sh-split"><div>{f.a.map(field)}</div><div>{f.b.map(field)}</div></div>;
+      case 'cols': return (
+        <div key={i} className={`sh-split${f.cols.length === 3 ? ' sh-split--3' : ''}`}>
+          {f.cols.map((c, j) => <div key={j}>{c.title && <div className="sh-lbl">{c.title}</div>}{c.f.map(field)}</div>)}
+        </div>
+      );
       case 'rom': return (
         <table key={i} className="sh-tbl">
-          <thead><tr><th>{f.title}</th><th>Normal</th><th>Rt.</th><th>Lt.</th></tr></thead>
+          <thead><tr><th>{f.title}</th>{!f.noNormal && <th>Normal</th>}<th>Rt.</th><th>Lt.</th></tr></thead>
           <tbody>{f.rows.map(([m, normal]) => (
-            <tr key={m}><td>{m}</td><td className="num">{normal}</td>
+            <tr key={m}><td>{m}</td>{!f.noNormal && <td className="num">{normal}</td>}
               {['rt', 'lt'].map((sd) => <td key={sd}><input className="sh-in" dir="ltr" inputMode="numeric" aria-label={`${m} ${sd}`} value={a.txt(k(`${f.k}.${m}.${sd}`))} onChange={(e) => a.set(k(`${f.k}.${m}.${sd}`), e.target.value)} /></td>)}
             </tr>
           ))}</tbody>
@@ -43,27 +48,39 @@ export function RegionSheetForm({ def, sheet, onChange, side, onSide, icd10, onI
           <thead><tr><th>{f.title}</th><th>Rt.</th><th>Lt.</th></tr></thead>
           <tbody>{f.rows.map(([r, label]) => (
             <tr key={r}><td>{r} <small>({label})</small></td>
-              {['rt', 'lt'].map((sd) => <SelCell key={sd} a={a} k={k(`${f.k}.${r}.${sd}`)} label={`${r} ${sd}`} options={f.opts === 'mrc' ? MRC_OPTS : REFLEX_OPTS} />)}
+              {['rt', 'lt'].map((sd) => <SelCell key={sd} a={a} k={k(`${f.k}.${r}.${sd}`)} label={`${r} ${sd}`} options={f.opts === 'mrc' ? MRC_OPTS : f.opts === 'reflex4' ? REFLEX4_OPTS : REFLEX_OPTS} />)}
             </tr>
           ))}</tbody>
         </table>
       );
-      case 'ticks': return (
+      case 'ticks': {
+        const withSub = f.rows.some(([, sub]) => sub);
+        return (
+          <Fragment key={i}>
+            <table className="sh-tbl">
+              <thead><tr><th>{f.title}</th>{withSub && <th>{f.sub ?? 'Area'}</th>}<th>Rt.</th><th>Lt.</th></tr></thead>
+              <tbody>{f.rows.map(([r, sub, color]) => (
+                <tr key={r}><td>{color && <span className="sh-sw" style={{ background: color }} />}{r}</td>{withSub && <td>{sub}</td>}
+                  {['Rt', 'Lt'].map((sd) => <td key={sd}><input type="checkbox" className="sh-tick" aria-label={`${r} ${sd}`} checked={a.has(k(f.g), `${r} ${sd}`)} onChange={() => a.toggle(k(f.g), `${r} ${sd}`)} /></td>)}
+                </tr>
+              ))}</tbody>
+            </table>
+            {f.note && <p className="sh-note">{f.note}</p>}
+          </Fragment>
+        );
+      }
+      case 'key': return (
         <Fragment key={i}>
           <table className="sh-tbl">
-            <thead><tr><th>{f.title}</th><th>Area</th><th>Rt.</th><th>Lt.</th></tr></thead>
-            <tbody>{f.rows.map(([r, area]) => (
-              <tr key={r}><td>{r}</td><td>{area}</td>
-                {['Rt', 'Lt'].map((sd) => <td key={sd}><input type="checkbox" className="sh-tick" aria-label={`${r} ${sd}`} checked={a.has(k(f.g), `${r} ${sd}`)} onChange={() => a.toggle(k(f.g), `${r} ${sd}`)} /></td>)}
-              </tr>
-            ))}</tbody>
+            <thead><tr><th>{f.title}</th><th>Area</th></tr></thead>
+            <tbody>{f.rows.map(([r, area, color]) => <tr key={r}><td><span className="sh-sw" style={{ background: color }} />{r}</td><td>{area}</td></tr>)}</tbody>
           </table>
           {f.note && <p className="sh-note">{f.note}</p>}
         </Fragment>
       );
       case 'imaging': return (
         <Fragment key={i}>
-          {IMG.map((m) => (
+          {f.mods.map((m) => (
             <div className="sh-img" key={m}>
               <Ck on={a.has(k(f.k), m)} onToggle={() => a.toggle(k(f.k), m)}>{m}:</Ck>
               <Txt a={a} k={k(`${f.k}.${m}`)} placeholder="Finding" />
@@ -87,7 +104,7 @@ export function RegionSheetForm({ def, sheet, onChange, side, onSide, icd10, onI
     <div className="sh" dir="ltr">
       <div className="sh-grid sh-grid--3">
         {def.boxes.map((b, i) => (
-          <Box key={i} n={i + 1} tone={b.tone} title={b.tone === 'red' ? <><Icon name="alert" size={15} /> {b.title.replace('⚠ ', '')}</> : b.title}>{b.f.map(field)}</Box>
+          <Box key={i} n={i + 1} tone={b.tone} wide={b.wide} title={b.tone === 'red' ? <><Icon name="alert" size={15} /> {b.title.replace('⚠ ', '')}</> : b.title}>{b.f.map(field)}</Box>
         ))}
       </div>
     </div>

@@ -79,6 +79,7 @@ try {
   section('التجهيز: حساب مدير + 9,000 مريض + كشف ببيانات طبية + نسخة إنتاج');
   // بقايا تشغيلة اتقفلت قبل التنظيف (مرضى الاختبار + المدير المؤقت) — من غيرها التجهيز بيقع على رقم ملف/موظف مكرر
   await sql(`delete from patients where file_no like 'اختبار-%';`);
+  await sql(`delete from patients where full_name in ('${NEW1.first} ${NEW1.father} ${NEW1.family}', '${NEW2.first} ${NEW2.father} ${NEW2.family}');`);
   for (const { id } of await sql(`select id from employees where username = '${ADMIN.digits}'`)) { await sql(`delete from attendance where employee_id = '${id}';`); await deleteEmployee(id); }
   const admin = await loginAdmin();
   const r = await api(admin, 'POST', 'staff', { name: ADMIN.name, phone: ADMIN.phone, country: 'EG', password: PW, role: 'system_admin', workHours: allDayHours() });

@@ -230,25 +230,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         <SecondSessionHost />
         <IncompleteHost />
         <div className="desktop-topbar no-print">
-          {/* بحث موحّد: مرضى / مواعيد / فواتير / أطباء — Enter بيفتح أول نتيجة أو صفحة المرضى بالكلمة */}
-          <form className="gsearch" role="search" onSubmit={onSearch}>
-            <Icon name="search" size={17} />
-            <input className="gsearch__input" type="search" value={q} placeholder="ابحث باسم المريض أو رقم الملف أو الموبايل…" aria-label="بحث"
-              onChange={(e) => { setQ(e.target.value); setSearchOpen(true); }}
-              onFocus={() => setSearchOpen(true)} onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
-              onKeyDown={(e) => { if (e.key === 'Escape') { setSearchOpen(false); (e.target as HTMLInputElement).blur(); } }} />
-            {searchOpen && hits && (
-              <div className="card gsearch__menu">
-                {hits.length ? hits.slice(0, 8).map((h) => (
-                  <button key={`${h.type}-${h.id}`} type="button" className="gsearch__hit" onMouseDown={(e) => e.preventDefault()} onClick={() => goHit(h)}>
-                    <Icon name={HIT_ICON[h.type] ?? 'search'} size={16} />
-                    <span className="gsearch__txt"><strong>{h.title}</strong>{h.sub && <small>{h.sub}</small>}</span>
-                    <span className="gsearch__kind">{HIT_LABEL[h.type]}</span>
-                  </button>
-                )) : <div className="gsearch__empty">لا توجد نتائج مطابقة</div>}
-              </div>
-            )}
-          </form>
+          {/* البحث الموحّد اللي كان هنا اتشال بطلب العيادة — البحث عن المريض جوّه كل صفحة (التشخيص/المرضى/المواعيد) */}
           <span style={{ flex: 1 }} />
           <span className="dt-tools">
             <RefreshButton />

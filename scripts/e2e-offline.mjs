@@ -77,6 +77,9 @@ const nav = (page, path) => page.evaluate((p) => { window.history.pushState({}, 
 
 try {
   section('التجهيز: حساب مدير + 9,000 مريض + كشف ببيانات طبية + نسخة إنتاج');
+  // بقايا تشغيلة اتقفلت قبل التنظيف (مرضى الاختبار + المدير المؤقت) — من غيرها التجهيز بيقع على رقم ملف/موظف مكرر
+  await sql(`delete from patients where file_no like 'اختبار-%';`);
+  for (const { id } of await sql(`select id from employees where username = '${ADMIN.digits}'`)) { await sql(`delete from attendance where employee_id = '${id}';`); await deleteEmployee(id); }
   const admin = await loginAdmin();
   const r = await api(admin, 'POST', 'staff', { name: ADMIN.name, phone: ADMIN.phone, country: 'EG', password: PW, role: 'system_admin', workHours: allDayHours() });
   if (r.body?.id) made.employees.push(r.body.id);

@@ -1,22 +1,22 @@
 {
-  "at": "2026-10-27T15:59:48.998Z",
-  "passed": 38,
-  "failed": 1,
+  "at": "2026-10-28T23:49:00.672Z",
+  "passed": 37,
+  "failed": 3,
   "results": [
     {
       "name": "حساب مدير مؤقت",
       "ok": true,
-      "detail": "{\"id\":\"361ee379-befa-4509-87db-d6dca23636ae\",\"name\":\"مدير أوفلاين اختبار\",\"username\":\"201200000981\","
+      "detail": "{\"id\":\"f71a3d80-ffed-4729-a8a2-a914a43f9bcf\",\"name\":\"مدير أوفلاين اختبار\",\"username\":\"201200000981\","
     },
     {
-      "name": "اتزرع 9,000 مريض (الإجمالي 9,001)",
+      "name": "اتزرع 9,000 مريض (الإجمالي 9,002)",
       "ok": true,
-      "detail": "9001"
+      "detail": "9002"
     },
     {
       "name": "نسخة الإنتاج متبنية ومعاها قايمة ملفات الأوفلاين",
       "ok": true,
-      "detail": "116"
+      "detail": "119"
     },
     {
       "name": "الدخول بإنترنت",
@@ -24,12 +24,12 @@
       "detail": "http://127.0.0.1:4690/"
     },
     {
-      "name": "كل المرضى اتنزّلوا: 9,001 على الجهاز = 9,001 على الخادم",
+      "name": "كل المرضى اتنزّلوا: 9,002 على الجهاز = 9,002 على الخادم",
       "ok": true,
-      "detail": "{\"rows\":9001,\"serverCount\":9001,\"watermark\":\"2026-10-27T15:57:48.913311+00:00\",\"tombAt\":null,\"at\":1793116687625,\"complete\":true,\"mode\":\"full\",\"why\":\"first\"}"
+      "detail": "{\"rows\":9002,\"serverCount\":9002,\"watermark\":\"2026-10-28T23:46:05.977906+00:00\",\"tombAt\":null,\"at\":1793231201645,\"complete\":true,\"mode\":\"full\",\"why\":\"first\"}"
     },
     {
-      "name": "زمن التنزيل الكامل + الحفظ المشفّر: 1.2 ثانية",
+      "name": "زمن التنزيل الكامل + الحفظ المشفّر: 2.4 ثانية",
       "ok": true,
       "detail": ""
     },
@@ -44,7 +44,7 @@
       "detail": "[\"center\",\"blocks\",\"permissions\",\"employees\",\"patients\",\"therapists\",\"services\",\"packagePlans\",\"servicePrices\",\"branches\",\"appointments\",\"sessions\",\"assessments\",\"plans\",\"packages\",\"planServices\",\"inv"
     },
     {
-      "name": "الـ Service Worker خزّن كل ملفات التطبيق (118 ملف)",
+      "name": "الـ Service Worker خزّن كل ملفات التطبيق (121 ملف)",
       "ok": true,
       "detail": ""
     },
@@ -54,12 +54,12 @@
       "detail": "عيادة د. إسلام بلتاجي لجراحة العظام والكسور\nجراحة العظام والكسور\nالرئيسية\nالرئيسية\nالمرضى والمواعيد\nالمرضى\nحجز موعد\nالمواعيد\nجسم الإنسان\nالخدمات\nالعظام والكسور\nتشخيص المريض\nالعمليات الجراحية\nالمالية\nا"
     },
     {
-      "name": "كل المرضى ظاهرين بدون إنترنت (9,001)",
+      "name": "كل المرضى ظاهرين بدون إنترنت (9,002)",
       "ok": true,
-      "detail": "سجل جميع مرضى المركز. — 9001 مريض"
+      "detail": "سجل جميع مرضى المركز. — 9002 مريض"
     },
     {
-      "name": "بحث بالاسم عن مريض قديم من 9,000 بدون إنترنت (460ms)",
+      "name": "بحث بالاسم عن مريض قديم من 9,000 بدون إنترنت (520ms)",
       "ok": true,
       "detail": ""
     },
@@ -71,7 +71,7 @@
     {
       "name": "فتح ملف المريض بدون إنترنت",
       "ok": true,
-      "detail": "http://127.0.0.1:4690/patients/f1f2bfb5-bfc1-4ed2-8c60-669a8baa839e"
+      "detail": "http://127.0.0.1:4690/patients/99fe9b32-4e9c-47ab-b776-0969d069d1cc"
     },
     {
       "name": "التشخيص والروشتة ظاهرين بدون إنترنت",
@@ -86,7 +86,7 @@
     {
       "name": "ملف المريض الجديد اتفتح بعد الحفظ بدون إنترنت",
       "ok": true,
-      "detail": "http://127.0.0.1:4690/patients/08e12693-625f-447b-b8e4-fc9f0a33d783"
+      "detail": "http://127.0.0.1:4690/patients/04b4d347-f0ed-4b2b-938d-f78013da3154"
     },
     {
       "name": "المريض الجديد ظاهر في القايمة فورًا (من غير الخادم)",
@@ -101,12 +101,12 @@
     {
       "name": "اتحفظ في طابور المزامنة على الجهاز (IndexedDB)",
       "ok": true,
-      "detail": "[{\"kind\":\"patient.create\",\"status\":\"pending\",\"entityId\":\"08e12693-625f-447b-b8e4-fc9f0a33d783\"}]"
+      "detail": "[{\"kind\":\"patient.create\",\"status\":\"pending\",\"entityId\":\"04b4d347-f0ed-4b2b-938d-f78013da3154\"}]"
     },
     {
       "name": "تعديلين بدون إنترنت في الطابور",
       "ok": true,
-      "detail": "[{\"kind\":\"patient.create\",\"status\":\"pending\",\"entityId\":\"08e12693-625f-447b-b8e4-fc9f0a33d783\"},{\"kind\":\"patient.update\",\"status\":\"pending\",\"entityId\":\"f1f2bfb5-bfc1-4ed2-8c60-669a8baa839e\"},{\"kind\":\""
+      "detail": "[{\"kind\":\"patient.create\",\"status\":\"pending\",\"entityId\":\"04b4d347-f0ed-4b2b-938d-f78013da3154\"},{\"kind\":\"patient.update\",\"status\":\"pending\",\"entityId\":\"b1bfb990-a11b-4be1-a82e-75db34da1c43\"},{\"kind\":\""
     },
     {
       "name": "المريض اللي اتضاف أوفلاين لسه موجود بعد إعادة الفتح",
@@ -116,7 +116,7 @@
     {
       "name": "الطابور (3 عمليات) لسه محفوظ بعد إعادة الفتح",
       "ok": true,
-      "detail": "[{\"kind\":\"patient.create\",\"status\":\"pending\",\"entityId\":\"08e12693-625f-447b-b8e4-fc9f0a33d783\"},{\"kind\":\"patient.update\",\"status\":\"pending\",\"entityId\":\"f1f2bfb5-bfc1-4ed2-8c60-669a8baa839e\"},{\"kind\":\""
+      "detail": "[{\"kind\":\"patient.create\",\"status\":\"pending\",\"entityId\":\"04b4d347-f0ed-4b2b-938d-f78013da3154\"},{\"kind\":\"patient.update\",\"status\":\"pending\",\"entityId\":\"b1bfb990-a11b-4be1-a82e-75db34da1c43\"},{\"kind\":\""
     },
     {
       "name": "الخادم لسه ماوصلهوش حاجة",
@@ -131,7 +131,7 @@
     {
       "name": "بنفس المعرّف اللي اتعمل على الجهاز (مفيش ملف تاني)",
       "ok": true,
-      "detail": "{\"id\":\"08e12693-625f-447b-b8e4-fc9f0a33d783\",\"file_no\":\"TM-2\"}"
+      "detail": "{\"id\":\"04b4d347-f0ed-4b2b-938d-f78013da3154\",\"file_no\":\"TM-3\"}"
     },
     {
       "name": "التعديل الأوفلاين وصل الخادم",
@@ -141,7 +141,7 @@
     {
       "name": "تعديل نفس المريض من جهازين ← «تعارض» مستني قرار (مفيش كتابة فوق تعديل الجهاز التاني)",
       "ok": true,
-      "detail": "[{\"kind\":\"patient.update\",\"status\":\"conflict\",\"entityId\":\"e1ab92cb-f28f-4b3a-a531-aaf6b2b88b73\",\"lastError\":\"ملف المريض اتعدّل على الخادم بعد ما حفظت تعديلك محليًا.\"}]"
+      "detail": "[{\"kind\":\"patient.update\",\"status\":\"conflict\",\"entityId\":\"b1bfb990-a11b-4be1-a82e-75db34da1c43\",\"lastError\":\"ملف المريض اتعدّل على الخادم بعد ما حفظت تعديلك محليًا.\"}]"
     },
     {
       "name": "قيمة الجهاز التاني على الخادم ماتلمستش",
@@ -161,7 +161,7 @@
     {
       "name": "المزامنة بعد الفتح «تزايدية» (اللي اتغيّر بس) ومكتملة",
       "ok": true,
-      "detail": "{\"rows\":9001,\"serverCount\":9001,\"watermark\":\"2026-10-27T15:58:53.814456+00:00\",\"tombAt\":\"2026-10-27T15:58:54.657378+00:00\",\"at\":1793116739613,\"complete\":true,\"mode\":\"incremental\"}"
+      "detail": "{\"rows\":9002,\"serverCount\":9002,\"watermark\":\"2026-10-28T23:47:36.15304+00:00\",\"tombAt\":\"2026-10-28T23:47:38.55954+00:00\",\"at\":1793231272012,\"complete\":true,\"mode\":\"incremental\"}"
     },
     {
       "name": "تعديل الخادم موجود على الجهاز (بدون إنترنت)",
@@ -179,13 +179,18 @@
       "detail": ""
     },
     {
-      "name": "الطابور خلص بعد 0 محاولات (503 ← رد ضاع ← نجاح)",
+      "name": "المريض اتحفظ في الطابور وهو بدون إنترنت",
       "ok": false,
-      "detail": "attempts=0"
+      "detail": "early POSTs=0"
+    },
+    {
+      "name": "الطابور خلص بعد 1 محاولات (503 ← رد ضاع ← نجاح)",
+      "ok": false,
+      "detail": "attempts=1 early=0 ops=[]"
     },
     {
       "name": "المريض اتسجّل مرة واحدة بس على الخادم (مفيش تكرار رغم إعادة الإرسال)",
-      "ok": true,
+      "ok": false,
       "detail": ""
     },
     {

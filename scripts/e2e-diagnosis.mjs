@@ -19,6 +19,8 @@ const STAFF = {
 // مريض «أ» عنده تشخيصين قدام + زيارة النهارده، مريض «ب» أول زيارة النهارده
 const PA = { first: 'سامح', father: 'عادل', family: 'تشخيصاختبار', phone: '+201200000984', local: '01200000984' };
 const PB = { first: 'منى', father: 'كمال', family: 'تشخيصاختبار', phone: '+201200000985', local: '01200000985' };
+// مريض «ج» اتشخّص قبل كده ومالوش زيارة النهارده — لازم يبان في بحث «متابعة المرضى» ويتعمله شيت متابعة من غير زيارة
+const PC = { first: 'هاني', father: 'رشاد', family: 'تشخيصاختبار', phone: '+201200000986', local: '01200000986' };
 const made = { employees: [], therapist: null, patients: [], appts: [] };
 const NOISE = /Notification|push|ServiceWorker|service worker|WebSocket|realtime|ERR_ABORTED|AbortError|Failed to load resource.*(favicon|manifest)|Download the React DevTools/i;
 const today = cairoToday();
@@ -48,6 +50,12 @@ try {
     await sql(`insert into ortho_consultations (patient_id, date, complaint, region, side, diagnosis, created_by, complete) values ('${PA.id}', '${d}', 'ألم ركبة', 'الركبة', 'right', '${dx}', '${docEmp}', true)`);
   }
   check('تشخيصين قدام لمريض «أ»', (await q1(`select count(*)::int n from ortho_consultations where patient_id = '${PA.id}'`)).n === 2);
+  {
+    const p = await q1(`insert into patients (full_name, first_name, father_name, family_name, phone, gender, nationality, referral_source, file_no)
+      values ('${PC.first} ${PC.father} ${PC.family}', '${PC.first}', '${PC.father}', '${PC.family}', '${PC.phone}', 'male', 'saudi', 'friend', '') returning id, file_no`);
+    PC.id = p.id; PC.fileNo = p.file_no; made.patients.push(p.id);
+    await sql(`insert into ortho_consultations (patient_id, date, complaint, region, side, diagnosis, created_by, complete) values ('${PC.id}', '2026-09-15', 'ألم كتف', 'الكتف', 'left', 'التهاب أوتار الكتف اختبار متابعة', '${docEmp}', true)`);
+  }
   // مواعيد النهارده + تسجيل حضور (حالة «حضر» — نفس دالة الاستقبال)
   // أول ميعاد فاضي النهارده جوّه ساعات عمل المركز (الحجز بيرفض الوقت اللي فات أو برّه المواعيد)
   const SLOTS = ['20:00', '20:30', '21:00', '21:30', '19:00', '19:30', '18:00', '18:30', '17:00', '17:30', '16:00', '16:30'];
@@ -218,6 +226,41 @@ try {
   await saveAnswer(A.page, 'التشخيص اكتمل');
   const ca2 = await dbConsults(PA);
   check('تشخيص جديد من ملف المريض اتضاف كسجل مستقل (4) والقديم زي ما هو', ca2.length === 4 && ca.every((o) => ca2.some((n) => n.id === o.id && n.diagnosis === o.diagnosis)), ca2.length);
+
+  section('الواجهة — متابعة المرضى: بحث في كل اللي اتشخصوا + شيت متابعة');
+  await goto(A.page, '/diagnosis?tab=follow');
+  const allCard = A.page.locator('section.card', { hasText: 'كل المرضى اللي اتشخصوا' });
+  check('«متابعة المرضى» فيه كارت «كل المرضى اللي اتشخصوا» بخانة بحث', await allCard.count() === 1 && await allCard.locator('.filter-bar input').count() === 1);
+  const fRows = () => allCard.locator('.dx-queue__row');
+  check('المريض اللي اتشخّص ومالوش زيارة النهارده ظاهر من غير بحث', await allCard.locator('.dx-queue__row', { hasText: `${PC.first} ${PC.father}` }).count() === 1);
+  await allCard.locator('.filter-bar input').fill(PC.local);
+  await A.page.waitForTimeout(400);
+  check('البحث برقم الموبايل يلاقي مريض «ج» بس', await fRows().count() === 1 && ((await fRows().first().textContent()) ?? '').includes('ما اتعملوش متابعة'));
+  await allCard.locator('.filter-bar input').fill(`${PC.first} ${PC.father}`);
+  await A.page.waitForTimeout(400);
+  check('البحث بالاسم يلاقي مريض «ج»', await fRows().count() === 1);
+  await fRows().first().getByRole('button', { name: 'شيت المتابعة' }).click();
+  await A.page.waitForSelector('.modal');
+  check('زرار «شيت المتابعة» بيفتح شيت التمريض للمريض', ((await A.page.locator('.modal').textContent()) ?? '').includes('شيت متابعة التمريض'));
+  await A.page.locator('.modal .cx-chip', { hasText: /^4$/ }).first().click();
+  await A.page.locator('.modal__foot button', { hasText: /^حفظ$/ }).click();
+  await A.page.waitForFunction(() => !document.querySelector('.modal'), null, { timeout: 20000 });
+  await A.page.waitForTimeout(1200);
+  const nC = await sql(`select appointment_id, sheet->>'pain' pain from ortho_nursing where patient_id = '${PC.id}'`);
+  check('شيت المتابعة اتحفظ لمريض «ج» من غير زيارة (appointment_id فاضي) بدرجة الألم', nC.length === 1 && nC[0].appointment_id === null && nC[0].pain === '4', JSON.stringify(nC));
+  check('الصف بقى «آخر متابعة» بعد الحفظ', ((await fRows().first().textContent()) ?? '').includes('آخر متابعة'));
+  await allCard.locator('.filter-bar input').fill(PB.local);
+  await A.page.waitForTimeout(400);
+  await fRows().first().getByRole('button', { name: 'شيت المتابعة' }).click();
+  await A.page.waitForSelector('.modal');
+  await A.page.locator('.modal__foot button', { hasText: /^حفظ$/ }).click();
+  await A.page.waitForFunction(() => !document.querySelector('.modal'), null, { timeout: 20000 });
+  await A.page.waitForTimeout(1000);
+  const nB = await sql(`select appointment_id from ortho_nursing where patient_id = '${PB.id}'`);
+  check('مريض حضر النهارده: شيت المتابعة من البحث بيتربط بزيارته', nB.length === 1 && nB[0].appointment_id === PB.appt, JSON.stringify(nB));
+  await allCard.locator('.filter-bar input').fill('مريض مش موجود خالص 123');
+  await A.page.waitForTimeout(400);
+  check('بحث المتابعة من غير نتايج بيعرض رسالة واضحة', await allCard.locator('text=مفيش مريض متشخّص بالاسم أو الرقم ده').count() === 1);
   check('صفحة التشخيص بدون أخطاء JavaScript (الكمبيوتر)', A.errors.length === 0, A.errors.join(' | ').slice(0, 300));
   await A.ctx.close();
 
@@ -235,6 +278,9 @@ try {
   await M.page.waitForTimeout(1200);
   const overF = await M.page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   check('ملف تشخيصات المريض على الموبايل من غير سكرول عرضي', overF <= 1, `${overF}px`);
+  await goto(M.page, '/diagnosis?tab=follow');
+  const overN = await M.page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  check('«متابعة المرضى» بالبحث على الموبايل من غير سكرول عرضي', overN <= 1, `${overN}px`);
   check('صفحة التشخيص بدون أخطاء JavaScript (الموبايل)', M.errors.length === 0, M.errors.join(' | ').slice(0, 300));
   await M.ctx.close();
 
@@ -259,7 +305,7 @@ try {
     if (made.patients.length) {
       const ids = made.patients.map((x) => `'${x}'`).join(',');
       // المواعيد والفواتير بتتمسح مع المريض (cascade) — زي e2e-ui
-      await sql(`delete from ortho_consultations where patient_id in (${ids}); delete from ortho_imaging where patient_id in (${ids}); delete from patients where id in (${ids});`);
+      await sql(`delete from ortho_nursing where patient_id in (${ids}); delete from ortho_consultations where patient_id in (${ids}); delete from ortho_imaging where patient_id in (${ids}); delete from patients where id in (${ids});`);
     }
     for (const id of made.employees) { await sql(`delete from attendance where employee_id = '${id}';`); await deleteEmployee(id); }
     if (made.therapist) await sql(`delete from therapist_services where therapist_id = '${made.therapist}'; delete from therapists where id = '${made.therapist}';`);

@@ -1,6 +1,6 @@
 // «تشخيص المريض»: اختار المريض ← زرار واحد «تشخيص» يفتح نموذج الكشف والتشخيص.
 // من غير مريض مختار: تبويبين — «مرضى بانتظار التشخيص» (زيارات النهارده اللي اتعملها حضور ولسه تشخيصها ما اكتملش)
-// و«متابعة المرضى» (حضور النهارده لمرضى اتشخصوا قبل كده ← شيت متابعة التمريض) و«المرضى اللي اتشخصوا» (بحث بالاسم أو جزء منه أو الموبايل أو رقم الملف). مريض مختار ← ملف تشخيصاته كله + تشخيص جديد.
+// و«متابعة المرضى» (حضور النهارده لمرضى اتشخصوا قبل كده + بحث في كل المرضى اللي اتشخصوا ← شيت متابعة التمريض) و«المرضى اللي اتشخصوا» (بحث بالاسم أو جزء منه أو الموبايل أو رقم الملف). مريض مختار ← ملف تشخيصاته كله + تشخيص جديد.
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { isIncomplete, ortho, useOrthoVersion, type Consultation, type Nursing } from './data';
@@ -23,7 +23,7 @@ export default function Diagnosis() {
   const patientId = params.get('patient') ?? '';
   type View = 'waiting' | 'follow' | 'done';
   const view: View = params.get('tab') === 'done' ? 'done' : params.get('tab') === 'follow' ? 'follow' : 'waiting';
-  const [sheet, setSheet] = useState<{ patientId: string; appointmentId: string; initial?: Nursing } | null>(null);
+  const [sheet, setSheet] = useState<{ patientId: string; appointmentId: string | null; initial?: Nursing } | null>(null);
   const [edit, setEdit] = useState<Consultation | 'new' | null>(null);
   const [resume, setResume] = useState(false);
   const [newVisit, setNewVisit] = useState<string | null>(null); // الزيارة اللي التشخيص الجديد بيتربط بيها (من قايمة الانتظار)
@@ -80,6 +80,13 @@ export default function Diagnosis() {
   })();
   const term = q.trim();
   const found = term ? diagnosed.filter((x) => patientMatches(x.p ?? { fullName: patientName(x.id) }, term)) : diagnosed.slice(0, 50);
+  // «متابعة المرضى»: كل المرضى اللي اتشخصوا متاحين لشيت المتابعة (مش بس اللي اتعملهم حضور النهارده) — بحث مستقل عن تبويب «اتشخصوا»
+  const [fq, setFq] = useState('');
+  const fterm = fq.trim();
+  const followFound = fterm ? diagnosed.filter((x) => patientMatches(x.p ?? { fullName: patientName(x.id) }, fterm)) : diagnosed.slice(0, 50);
+  const lastSheet = (id: string) => nursing.filter((n) => n.patientId === id).sort((a, b) => b.date.localeCompare(a.date))[0];
+  // لو المريض اتعمله حضور النهارده الشيت بيتربط بزيارته، وإلا شيت متابعة من غير زيارة (رقم الزيارة يتكتب يدوي)
+  const openSheet = (id: string) => setSheet({ patientId: id, appointmentId: followUps.find((a) => a.patientId === id)?.id ?? null });
 
   const selected = patientId ? db.patient(patientId) : undefined;
 
@@ -108,7 +115,7 @@ export default function Diagnosis() {
       )}
 
       {!patientId && (
-        <div className="seg dx-views" role="tablist" aria-label="أقسام التشخيص">
+        <div className="seg seg--3 dx-views" role="tablist" aria-label="أقسام التشخيص">
           <button type="button" role="tab" aria-selected={view === 'waiting'} className={`seg__btn ${view === 'waiting' ? 'active' : ''}`} onClick={() => setView('waiting')}>
             مرضى بانتظار التشخيص {pending.length > 0 && <span className="badge badge--warn num">{pending.length}</span>}
           </button>
@@ -179,13 +186,13 @@ export default function Diagnosis() {
         </>
       )}
 
-      {!patientId && view === 'follow' && (
-        <section className="card">
+      {!patientId && view === 'follow' && (<>
+        <section className="card" style={{ marginBottom: 16 }}>
           <div className="card__head"><h2>متابعة النهارده <span className="muted dx-date">{fmtDate(todayYmd())}</span></h2></div>
           <div className="card__body">
             <LoadState kind="nursing">
               {followUps.length === 0
-                ? <EmptyState icon="clipboard" title="ما فيه مرضى متابعة حضروا النهارده" text="أي مريض اتشخّص قبل كده وعمله الاستقبال حضور النهارده هيظهر هنا عشان شيت متابعة التمريض." />
+                ? <EmptyState icon="clipboard" title="ما فيه مرضى متابعة حضروا النهارده" text="أي مريض اتشخّص قبل كده وعمله الاستقبال حضور النهارده هيظهر هنا — ولأي مريض تاني اتشخّص ابحث عنه في «كل المرضى اللي اتشخصوا» تحت." />
                 : (
                   <div className="dx-queue">
                     {followUps.map((a) => {
@@ -217,7 +224,43 @@ export default function Diagnosis() {
             </LoadState>
           </div>
         </section>
-      )}
+        <section className="card">
+          <div className="card__head"><h2>كل المرضى اللي اتشخصوا {diagnosed.length > 0 && <span className="badge badge--brand num">{diagnosed.length}</span>}</h2></div>
+          <div className="filter-bar"><div className="field"><SearchBox value={fq} onChange={setFq} placeholder="ابحث عن مريض للمتابعة: الاسم (أو جزء منه) أو رقم الموبايل أو رقم الملف" /></div></div>
+          <div className="card__body">
+            <LoadState kind="consultations">
+              {diagnosed.length === 0 ? <EmptyState icon="stethoscope" title="لا يوجد مرضى متشخّصون بعد" text="أي مريض يتشخّص هيظهر هنا عشان تعمله شيت متابعة." />
+                : followFound.length === 0 ? <EmptyState icon="search" title="مفيش مريض متشخّص بالاسم أو الرقم ده" text="جرّب جزء تاني من الاسم أو الرقم من غير مسافات." />
+                : (
+                  <div className="dx-queue">
+                    {followFound.map((x) => {
+                      const ls = lastSheet(x.id);
+                      return (
+                        <div className="dx-queue__row" key={x.id}>
+                          <span className="dx-queue__time num">{fmtDate(x.last.date)}</span>
+                          <div className="dx-queue__who">
+                            <b>{x.p?.fullName ?? patientName(x.id)}</b>
+                            <small>
+                              {x.p?.phone && <><bdi dir="ltr" className="num">{x.p.phone}</bdi> · </>}ملف <span className="num">{patientFile(x.id)}</span>
+                              {' '}· آخر تشخيص: <bdi>{x.last.diagnosis || 'لسه ما اتحددش'}</bdi>
+                            </small>
+                          </div>
+                          {ls ? <span className="badge badge--ok">آخر متابعة {fmtDate(ls.date)}</span> : <span className="badge badge--warn">ما اتعملوش متابعة</span>}
+                          <div className="dx-queue__act">
+                            {ls && <Button size="sm" variant="outline" icon="print" onClick={() => printNursing(ls)}>طباعة آخر شيت</Button>}
+                            {perm.add && <Button size="sm" icon="clipboard" onClick={() => openSheet(x.id)}>شيت المتابعة</Button>}
+                            <Button size="sm" variant="outline" onClick={() => pick(x.id)}>ملف التشخيص</Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {!fterm && diagnosed.length > followFound.length && <p className="muted" style={{ margin: 0 }}>ظاهر آخر {followFound.length} مريض اتشخّص — اكتب في البحث عشان توصل لأي مريض تاني.</p>}
+                  </div>
+                )}
+            </LoadState>
+          </div>
+        </section>
+      </>)}
 
       {!patientId && view === 'done' && (
         <section className="card">
@@ -241,6 +284,7 @@ export default function Diagnosis() {
                         {x.incomplete > 0 ? <span className="badge badge--warn">فيه تشخيص يحتاج استكمال</span> : <span />}
                         <span className="dx-queue__act" onClick={(e) => e.stopPropagation()}>
                           {perm.add && <Button size="sm" icon="stethoscope" onClick={() => startPicked(x.id)}>{drafts.some((d) => d.patientId === x.id) ? 'استكمال التشخيص' : 'تشخيص جديد'}</Button>}
+                          {perm.add && <Button size="sm" variant="outline" icon="clipboard" onClick={() => openSheet(x.id)}>متابعة</Button>}
                           <Button size="sm" variant="outline" onClick={() => pick(x.id)}>فتح ملف التشخيص</Button>
                         </span>
                       </div>

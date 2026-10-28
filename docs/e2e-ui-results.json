@@ -1,32 +1,32 @@
 {
-  "at": "2026-10-27T08:31:35.988Z",
+  "at": "2026-10-28T16:43:34.536Z",
   "passed": 194,
   "failed": 0,
   "results": [
     {
       "name": "حساب مدير واجهة اختبار",
       "ok": true,
-      "detail": "{\"id\":\"632e4f9f-1600-4dfc-983c-b13409fc99e8\",\"name\":\"مدير واجهة اختبار\",\"username\":\"201200000961\",\"role\":\"system_admin\","
+      "detail": "{\"id\":\"f553ac6a-a714-4b40-b346-b927d8a76051\",\"name\":\"مدير واجهة اختبار\",\"username\":\"201200000961\",\"role\":\"system_admin\","
     },
     {
       "name": "حساب استقبال واجهة اختبار",
       "ok": true,
-      "detail": "{\"id\":\"18a3ad60-2bb4-4068-beb0-f8141205fa20\",\"name\":\"استقبال واجهة اختبار\",\"username\":\"201200000962\",\"role\":\"reception\","
+      "detail": "{\"id\":\"06ffa03d-bd79-4921-b384-cd8117bd7058\",\"name\":\"استقبال واجهة اختبار\",\"username\":\"201200000962\",\"role\":\"reception\","
     },
     {
       "name": "حساب محاسب واجهة اختبار",
       "ok": true,
-      "detail": "{\"id\":\"87bf88de-abc6-4b8c-8f66-7c9551ebdd0c\",\"name\":\"محاسب واجهة اختبار\",\"username\":\"201200000963\",\"role\":\"accountant\",\""
+      "detail": "{\"id\":\"63ec6846-92f9-406b-a698-7d45ba1bc98b\",\"name\":\"محاسب واجهة اختبار\",\"username\":\"201200000963\",\"role\":\"accountant\",\""
     },
     {
       "name": "حساب طبيب واجهة اختبار",
       "ok": true,
-      "detail": "{\"id\":\"ba523772-cba8-4425-bf40-b6461d845f3b\",\"name\":\"طبيب واجهة اختبار\",\"username\":\"201200000964\",\"role\":\"therapist\",\"ph"
+      "detail": "{\"id\":\"22f54bae-85c1-4959-bb9c-e38b2253438a\",\"name\":\"طبيب واجهة اختبار\",\"username\":\"201200000964\",\"role\":\"therapist\",\"ph"
     },
     {
       "name": "حساب مريض الاختبار",
       "ok": true,
-      "detail": "{\"ok\":true,\"patientId\":\"ec6bc9a0-917d-41bc-aef4-b963d9e0c542\",\"customerId\":\"e5f5b724-8178-48bc-85e1-71c58c88d9aa\"}"
+      "detail": "{\"ok\":true,\"patientId\":\"c5ed1c5f-5316-464a-87b9-e6be798c19f7\",\"customerId\":\"17767b48-4ac1-4f7a-82d8-e0c5537c815a\"}"
     },
     {
       "name": "موعد للمريض",
@@ -36,7 +36,7 @@
     {
       "name": "المدير: الدخول من شاشة الدخول",
       "ok": true,
-      "detail": "https://beltagy-ortho.pages.dev/"
+      "detail": "http://127.0.0.1:4689/"
     },
     {
       "name": "المدير: / «مرحبًا، مدير»",
@@ -199,12 +199,12 @@
       "detail": ""
     },
     {
-      "name": "المدير: /product-sales «بيع المنتجات»",
+      "name": "المدير: /product-sales «مرحبًا، مدير»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المدير: /installments «طلبات تقسيط الباقات»",
+      "name": "المدير: /installments «مرحبًا، مدير»",
       "ok": true,
       "detail": ""
     },
@@ -239,7 +239,7 @@
       "detail": ""
     },
     {
-      "name": "المدير: /patients/ec6bc9a0-917d-41bc-aef4-b963d9e0c542 «مريض واجهة اختبار»",
+      "name": "المدير: /patients/c5ed1c5f-5316-464a-87b9-e6be798c19f7 «مريض واجهة اختبار»",
       "ok": true,
       "detail": ""
     },
@@ -251,7 +251,7 @@
     {
       "name": "الاستقبال: الدخول من شاشة الدخول",
       "ok": true,
-      "detail": "https://beltagy-ortho.pages.dev/"
+      "detail": "http://127.0.0.1:4689/"
     },
     {
       "name": "الاستقبال: / «مرحبًا، استقبال»",
@@ -414,12 +414,12 @@
       "detail": ""
     },
     {
-      "name": "الاستقبال: /product-sales «بيع المنتجات»",
+      "name": "الاستقبال: /product-sales «مرحبًا، استقبال»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الاستقبال: /installments «طلبات تقسيط الباقات»",
+      "name": "الاستقبال: /installments «مرحبًا، استقبال»",
       "ok": true,
       "detail": ""
     },
@@ -454,7 +454,7 @@
       "detail": ""
     },
     {
-      "name": "الاستقبال: /patients/ec6bc9a0-917d-41bc-aef4-b963d9e0c542 «مريض واجهة اختبار»",
+      "name": "الاستقبال: /patients/c5ed1c5f-5316-464a-87b9-e6be798c19f7 «مريض واجهة اختبار»",
       "ok": true,
       "detail": ""
     },
@@ -466,7 +466,7 @@
     {
       "name": "المحاسب: الدخول من شاشة الدخول",
       "ok": true,
-      "detail": "https://beltagy-ortho.pages.dev/"
+      "detail": "http://127.0.0.1:4689/"
     },
     {
       "name": "المحاسب: / «مرحبًا، محاسب»",
@@ -614,12 +614,12 @@
       "detail": ""
     },
     {
-      "name": "المحاسب: /product-sales «بيع المنتجات»",
+      "name": "المحاسب: /product-sales «مرحبًا، محاسب»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المحاسب: /installments «طلبات تقسيط الباقات»",
+      "name": "المحاسب: /installments «مرحبًا، محاسب»",
       "ok": true,
       "detail": ""
     },
@@ -666,7 +666,7 @@
     {
       "name": "الطبيب: الدخول من شاشة الدخول",
       "ok": true,
-      "detail": "https://beltagy-ortho.pages.dev/"
+      "detail": "http://127.0.0.1:4689/"
     },
     {
       "name": "الطبيب: / «دكتور اختبار واجهة»",
@@ -859,7 +859,7 @@
       "detail": ""
     },
     {
-      "name": "الطبيب: /patients/ec6bc9a0-917d-41bc-aef4-b963d9e0c542 «مريض واجهة اختبار»",
+      "name": "الطبيب: /patients/c5ed1c5f-5316-464a-87b9-e6be798c19f7 «مريض واجهة اختبار»",
       "ok": true,
       "detail": ""
     },
@@ -871,7 +871,7 @@
     {
       "name": "المريض: الدخول من شاشة الدخول",
       "ok": true,
-      "detail": "https://beltagy-ortho.pages.dev/me"
+      "detail": "http://127.0.0.1:4689/me"
     },
     {
       "name": "المريض: /me «مرحبًا، مريض 👋»",

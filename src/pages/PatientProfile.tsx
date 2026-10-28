@@ -36,7 +36,7 @@ const TABS = ['بيانات المريض', 'المواعيد', 'الجلسات',
 // و«سجل الكشوفات»)، والجلسات/التقييم/خطة العلاج/الباقات/العلاج الطبيعي مش معروضين — الكود موجود لو احتاجوهم تاني
 const TAB_ORDER = [0, 12, 1, 6, 7];
 // كل البيانات الطبية جوّه «التشخيص» (صف تحت التبويب) — التشخيصات أولًا. المواعيد والفواتير وسجل المريض تبويبات لوحدها فوق
-const DX_SUB: [number, string][] = [[12, 'التشخيصات'], [13, 'الأشعة والتحاليل'], [14, 'الكسور والجبس'], [15, 'العمليات الجراحية'], [16, 'متابعة التمريض'], [8, 'الملفات والمرفقات'], [9, 'سجل الجسم']];
+const DX_SUB: [number, string][] = [[12, 'التشخيصات'], [13, 'الأشعة'], [17, 'التحاليل'], [18, 'الحقن'], [14, 'الكسور والجبس'], [15, 'العمليات الجراحية'], [16, 'متابعة التمريض'], [8, 'الملفات والمرفقات'], [9, 'سجل الجسم']];
 const IN_DX = new Set(DX_SUB.map(([i]) => i));
 const PHYSIO_TAB = 10;
 
@@ -174,6 +174,8 @@ export default function PatientProfile() {
           {tab === 14 && <OrthoPatientTab kind="fractures" patientId={id} />}
           {tab === 15 && <OrthoPatientTab kind="surgeries" patientId={id} />}
           {tab === 16 && <OrthoPatientTab kind="nursing" patientId={id} />}
+          {tab === 17 && <OrthoPatientTab kind="labs" patientId={id} />}
+          {tab === 18 && <OrthoPatientTab kind="injections" patientId={id} />}
           {tab === PHYSIO_TAB && can('physio', 'view') && <PhysioTab patientId={id} />}
 
           {tab === 1 && (

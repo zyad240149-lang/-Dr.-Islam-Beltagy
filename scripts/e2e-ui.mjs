@@ -25,9 +25,9 @@ const PATIENT = { phone: '01200000965', digits: '201200000965', name: 'مريض 
 // نفس مسارات src/App.tsx (من غير التحويلات) — /patients/:id بيتفتح على ملف مريض الاختبار
 const STAFF_ROUTES = ['/', '/patients', '/booking', '/appointments', '/body-map', '/sessions', '/services', '/diagnosis', '/consultations', '/imaging', '/fractures',
   '/surgeries', '/employees', '/work-hours', '/requests', '/attendance', '/loyalty', '/support', '/discounts', '/campaigns', '/invoices', '/finance', '/payroll',
-  '/payroll/staff', '/payroll/reports', '/product-sales', '/installments', '/reports', '/marketing-report', '/notifications', '/roles', '/settings', '/account'];
+  '/payroll/staff', '/payroll/reports', '/product-sales', '/installments', '/inventory', '/reports', '/marketing-report', '/notifications', '/roles', '/settings', '/account'];
 const PATIENT_ROUTES = ['/me', '/me/book', '/me/appointments', '/me/file', '/me/exams', '/me/records', '/me/plans', '/me/points', '/me/invoices', '/me/notifications', '/me/account'];
-const MOBILE_CHECK = new Set(['/', '/patients', '/booking', '/appointments', '/consultations', '/invoices', '/work-hours', '/me', '/me/book', '/me/records', '/me/appointments']);
+const MOBILE_CHECK = new Set(['/', '/patients', '/booking', '/appointments', '/consultations', '/invoices', '/work-hours', '/payroll', '/inventory', '/diagnosis', '/me', '/me/book', '/me/records', '/me/appointments']);
 const made = { employees: [], therapist: null, patients: [] };
 // ضوضاء معروفة مش أخطاء في الصفحات: إشعارات المتصفح، Realtime بيعيد الاتصال، وطلبات اتلغت لما الصفحة اتغيرت
 const NOISE = /Notification|push|ServiceWorker|service worker|WebSocket|realtime|ERR_ABORTED|AbortError|Failed to load resource.*(favicon|manifest)|Download the React DevTools/i;

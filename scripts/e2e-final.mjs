@@ -89,6 +89,17 @@ try {
   const sch2 = await sql(`select status from notification_schedule where appointment_id = '${apId}'`);
   check('إلغاء الموعد بيلغي تذكيراته', sch2.length === 3 && sch2.every((x) => x.status === 'cancelled'), JSON.stringify(sch2));
 
+  section('سجل الحقن (923)');
+  const injSheet = { diagnosis: 'خشونة ركبة', site: ['Knee'], side: 'Right', target: ['Intra-articular'], type: ['PRP (Platelet Rich Plasma)'], technique: 'Ultrasound Guided', materials: [{ drug: 'PRP', dose: '4 ml', batch: 'B1', expiry: '12/2027' }], consent: ['Informed consent obtained'], complications: 'None' };
+  const inj = await admin.from('ortho_injections').insert({ patient_id: pat.id, date: cairoDate(0), sheet: injSheet }).select().single();
+  check('حفظ سجل حقن للمريض الصحيح', !inj.error && inj.data?.patient_id === pat.id && inj.data?.sheet?.site?.[0] === 'Knee', err(inj));
+  const injR = await recep.from('ortho_injections').select('id').eq('patient_id', pat.id);
+  check('الاستقبال يقرا سجل الحقن (عرض فقط)', !injR.error && (injR.data ?? []).length === 1, err(injR));
+  const injW = await recep.from('ortho_injections').insert({ patient_id: pat.id, sheet: injSheet }).select();
+  check('الاستقبال ما يقدرش يسجّل حقنة', !!injW.error || (injW.data ?? []).length === 0, err(injW) || 'inserted!');
+  const injB = await admin.from('ortho_injections').insert({ patient_id: pat.id, sheet: [] }).select();
+  check('محتوى الشيت لازم يكون كائن (حماية من بيانات بايظة)', !!injB.error, err(injB) || 'accepted!');
+
   section('Push — دالة الإرسال على الخادم');
   const [cfg] = await sql(`select notify_url, hook_secret is not null as has_secret from push_config where id = 1`);
   check('قاعدة البيانات متوصّلة بدالة push (push_config)', !!cfg?.notify_url && cfg.has_secret, JSON.stringify(cfg ?? null));
@@ -106,7 +117,7 @@ try {
 } finally {
   console.log('— تنظيف');
   try {
-    if (made.patient) await sql(`delete from notification_schedule where patient_id = '${made.patient}'; delete from patients where id = '${made.patient}';`);
+    if (made.patient) await sql(`delete from ortho_injections where patient_id = '${made.patient}'; delete from notification_schedule where patient_id = '${made.patient}'; delete from patients where id = '${made.patient}';`);
     if (made.item) await sql(`delete from stock_movements where item_id = '${made.item}'; delete from inventory_items where id = '${made.item}';`);
     if (made.service) await sql(`delete from services where id = '${made.service}';`);
     for (const id of made.employees) { await sql(`delete from salary_payments where employee_id = '${id}'; delete from salary_settings where employee_id = '${id}'; delete from attendance where employee_id = '${id}'; delete from notifications where employee_id = '${id}';`); await deleteEmployee(id); }

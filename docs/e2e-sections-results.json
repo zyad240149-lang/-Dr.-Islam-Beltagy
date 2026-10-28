@@ -1,7 +1,7 @@
 {
-  "at": "2026-10-28T19:53:07.518Z",
-  "passed": 36,
-  "failed": 1,
+  "at": "2026-10-28T20:16:25.436Z",
+  "passed": 79,
+  "failed": 0,
   "results": [
     {
       "name": "دكتورين للاختبار",
@@ -11,12 +11,12 @@
     {
       "name": "حساب استقبال اختبار أقسام",
       "ok": true,
-      "detail": "{\"id\":\"ae873338-b25b-47c8-afcc-05cc439fa857\",\"name\":\"استقبال اختبار أقسام\",\"username\":\"201200000951\",\"role\":\"reception\","
+      "detail": "{\"id\":\"cd510856-99d1-4a17-8a2f-1baed8437028\",\"name\":\"استقبال اختبار أقسام\",\"username\":\"201200000951\",\"role\":\"reception\","
     },
     {
       "name": "حساب طبيب اختبار أقسام",
       "ok": true,
-      "detail": "{\"id\":\"d0a4e194-5c00-4f3c-be92-a0e61b33bb82\",\"name\":\"طبيب اختبار أقسام\",\"username\":\"201200000952\",\"role\":\"therapist\",\"ph"
+      "detail": "{\"id\":\"5ea58560-a2a0-49bc-939d-de25d2b902a3\",\"name\":\"طبيب اختبار أقسام\",\"username\":\"201200000952\",\"role\":\"therapist\",\"ph"
     },
     {
       "name": "حجز المريض مع الدكتور الأول 17:00 (كشف 30 دقيقة)",
@@ -164,29 +164,239 @@
       "detail": "{\"active\":false}"
     },
     {
-      "name": "خصم أكبر من 100% مرفوض",
+      "name": "إنشاء كود خصم بطلب مباشر مرفوض (حتى للمدير)",
       "ok": true,
-      "detail": "نسبة الخصم لا تتجاوز 100%"
+      "detail": "permission denied for function save_discount_code"
     },
     {
-      "name": "إنشاء كود خصم 25% (الحروف الصغيرة بتتوحّد)",
+      "name": "تطبيق كود خصم على فاتورة بطلب مباشر مرفوض والفاتورة بسعر الخدمة",
+      "ok": true,
+      "detail": "permission denied for function apply_discount_code"
+    },
+    {
+      "name": "إنشاء خطة علاج (جلستين)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "تطبيق الكود على فاتورة كشف 400 ← خصم 100",
+      "name": "جلسة خطة في وقت المريض مشغول فيه مرفوضة",
       "ok": true,
-      "detail": "{\"total\":300,\"discount\":100}"
+      "detail": "عند المريض موعد تاني في هالوقت يوم 2026-11-09 — اختر وقتًا مختلفًا"
     },
     {
-      "name": "نفس الكود مرتين على نفس الفاتورة مرفوض",
+      "name": "كشف لمريض عنده خطة علاج طبيعي مابيتحسبش جلسة منها وليه فاتورته",
       "ok": true,
-      "detail": "تم تطبيق الكود E2ET47071 على هالفاتورة بالفعل"
+      "detail": "{\"busyRow\":{\"plan_id\":null},\"busyInv\":{\"total\":400}}"
     },
     {
-      "name": "تنفيذ الاختبارات بدون أخطاء غير متوقعة",
-      "ok": false,
-      "detail": "Cannot read properties of null (reading 'id')"
+      "name": "حجز جلستين الخطة",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "جلسة زيادة عن عدد جلسات الخطة مرفوضة",
+      "ok": true,
+      "detail": "كل جلسات الخطة محجوزة بالفعل (2 من 2) — عدّل موعد موجود أو زوّد عدد جلسات الخطة"
+    },
+    {
+      "name": "الخطة محفوظة بعدد الجلسات والحالة",
+      "ok": true,
+      "detail": "{\"total_sessions\":2,\"status\":\"active\"}"
+    },
+    {
+      "name": "الطبيب يطلب أشعة رنين",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب يسجّل نتيجة الأشعة",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال ما يطلبش أشعة",
+      "ok": true,
+      "detail": "new row violates row-level security policy for table \"ortho_imaging\""
+    },
+    {
+      "name": "نوع أشعة مش من القائمة مرفوض",
+      "ok": true,
+      "detail": "new row for relation \"ortho_imaging\" violates check constraint \"ortho_imaging_kind_check\""
+    },
+    {
+      "name": "الطبيب يحدد عملية",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "عملية من غير اسم مرفوضة",
+      "ok": true,
+      "detail": "null value in column \"date\" of relation \"ortho_surgeries\" violates not-null constraint"
+    },
+    {
+      "name": "الطبيب يسجّل كسر وجبس وميعاد الفك",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال يشوف الكسور (عرض فقط)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال يفتح تذكرة دعم برقم تلقائي",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير يرد ويقفل التذكرة",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "تذكرة من غير عنوان مرفوضة",
+      "ok": true,
+      "detail": "new row for relation \"support_tickets\" violates check constraint \"support_tickets_subject_check\""
+    },
+    {
+      "name": "استئذان وقت بدايته بعد نهايته مرفوض",
+      "ok": true,
+      "detail": "وقت بداية الاستئذان لازم يسبق نهايته"
+    },
+    {
+      "name": "الموظف يقدّم طلب إجازة لنفسه",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال ما يقدّمش طلب باسم موظف تاني",
+      "ok": true,
+      "detail": "تقدر تقديم طلب لنفسك فقط"
+    },
+    {
+      "name": "إعدادات الإشعارات التلقائية بتفتح للمدير",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال ما يعدّلش إعدادات الإشعارات",
+      "ok": true,
+      "detail": "ما فيه صلاحية لهذه العملية"
+    },
+    {
+      "name": "تقرير الإيرادات والمواعيد يفتح للمدير",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "لوحة المدير فيها الإيراد",
+      "ok": true,
+      "detail": "{\"openTickets\":0,\"outstanding\":3650,\"monthRevenue\":0,\"totalPatients\":5,\"completedToday\":0,\"pendingRe"
+    },
+    {
+      "name": "تقرير التسويق يفتح",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "البحث العام بيلاقي المريض",
+      "ok": true,
+      "detail": "[{\"id\":\"74129ad3-fc34-4333-a30c-b90083981e1c\",\"sub\":\"TM-4 · +201281401810\",\"link\":\"/patients/74129ad"
+    },
+    {
+      "name": "دليل الموظفين بالأسماء بس (من غير موبايلات)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "إنشاء حساب مريض من الموقع",
+      "ok": true,
+      "detail": "{\"ok\":true,\"patientId\":\"7995e5de-55b3-45a1-b034-da026f929dab\",\"customerId\":\"2e495f39-e328-4879-9be0-17d26a3bb880\"}"
+    },
+    {
+      "name": "سجل طبي فاضي قبل الكشف",
+      "ok": true,
+      "detail": "{\"imaging\":[],\"patient\":{\"name\":\"مريض سجل اختبار\",\"fileNo\":\"TM-6\",\"gender\":null,\"birthDate\":null},\"f"
+    },
+    {
+      "name": "الطبيب يكتب كشف وروشتة وميعاد متابعة للمريض",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المريض يشوف التشخيص والروشتة في «سجلي الطبي»",
+      "ok": true,
+      "detail": "{\"id\":\"8a1ba25e-e13b-4d31-a94f-41a480069e10\",\"date\":\"2026-10-28\",\"labs\":[\"CBC\"],\"plan\":\"راحة وثلج\",\"side\":\"right\",\"icd10\":\"M75.1\",\"doctor\":\"طبيب اختبا"
+    },
+    {
+      "name": "اسم الطبيب وميعاد المتابعة ظاهرين",
+      "ok": true,
+      "detail": "{\"doctor\":\"طبيب اختبار أقسام\",\"next\":\"2026-11-11\"}"
+    },
+    {
+      "name": "ملاحظات الفحص الداخلية مش ظاهرة للمريض",
+      "ok": true,
+      "detail": "examination leaked"
+    },
+    {
+      "name": "طلب الأشعة ظاهر في سجله",
+      "ok": true,
+      "detail": "[{\"id\":\"ec0c64b6-6a13-4b92-81c2-9ca13c2a24ab\",\"kind\":\"xray\",\"region\":\"الكتف\",\"status\":\"requested\",\"finding\":\"\",\"requestedAt\":\"2026-10-28\"}]"
+    },
+    {
+      "name": "المريض مايشوفش سجل مريض تاني",
+      "ok": true,
+      "detail": "other patient leaked"
+    },
+    {
+      "name": "المريض مايقراش جداول العظام مباشرة (من الدالة بس)",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "الدالة للمريض بس (الموظف مرفوض)",
+      "ok": true,
+      "detail": "سجّل الدخول بحساب مريض"
+    },
+    {
+      "name": "إشعار لمريض محدد بيوصل لحسابه",
+      "ok": true,
+      "detail": "{\"id\":\"35784287-af31-46b5-a74c-c4d97d84442c\",\"delivered\":1,\"recipients\":1}"
+    },
+    {
+      "name": "المريض شايف الإشعار في بوابته",
+      "ok": true,
+      "detail": "[{\"title\":\"عرض اختبار\"}]"
+    },
+    {
+      "name": "المريض يحجز كشف أونلاين",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "موعد أونلاين واحد في اليوم",
+      "ok": true,
+      "detail": "عندك موعد محجوز في اليوم نفسه — الحجز الإلكتروني موعد واحد في اليوم. للحجز الإضافي تواصل مع المركز"
+    },
+    {
+      "name": "الموعد اللي اتعادت جدولته بيتحسب (مايتحجزش موعد تاني أونلاين في يومه)",
+      "ok": true,
+      "detail": "عندك موعد محجوز في اليوم نفسه — الحجز الإلكتروني موعد واحد في اليوم. للحجز الإضافي تواصل مع المركز"
+    },
+    {
+      "name": "المريض يغيّر موعده بنفسه",
+      "ok": true,
+      "detail": "{\"id\":\"621ac660-a8a3-423c-b42e-c62efd26190c\",\"no\":\"MV-1174\",\"date\":\"2026-11-08\",\"time\":\"19:00\",\"notes\":\"\",\"price\":400,\"doctor\":\"د. اختبار أقسام أول\",\"status\":\"rescheduled\",\"service\":\"كشف عظام\",\"servic"
+    },
+    {
+      "name": "المريض يلغي موعده",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المريض مايلغيش موعد مريض تاني",
+      "ok": true,
+      "detail": "الموعد غير موجود"
     }
   ]
 }

@@ -7,10 +7,11 @@ import { AttachmentThumbs } from './Consultations';
 import { IMAGING_KIND, IMAGING_STATUS, ortho, useOrthoVersion, type Attachment, type Imaging, type ImagingKind, type ImagingStatus } from './data';
 import { Field, IconBtn, LoadState, PageHead, PatientSelect, PillTabs, Tone, confirmDelete, patientName, useClinicalCan, useRun } from './kit';
 
-export function ImagingModal({ initial, patientId = '', onClose }: { initial?: Imaging; patientId?: string; onClose: () => void }) {
+// defaultKind: نوع الطلب الجديد (من «التحاليل» بيبدأ «تحليل معملي»)
+export function ImagingModal({ initial, patientId = '', defaultKind = 'xray', onClose }: { initial?: Imaging; patientId?: string; defaultKind?: Imaging['kind']; onClose: () => void }) {
   const { run, busy } = useRun();
   const toast = useToast();
-  const [m, setM] = useState<Omit<Imaging, 'id'> & { id?: string }>(initial ?? { patientId, kind: 'xray', region: '', requestedAt: todayYmd(), status: 'requested', finding: '', attachments: [] });
+  const [m, setM] = useState<Omit<Imaging, 'id'> & { id?: string }>(initial ?? { patientId, kind: defaultKind, region: '', requestedAt: todayYmd(), status: 'requested', finding: '', attachments: [] });
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const set = <K extends keyof Imaging>(k: K, v: Imaging[K]) => setM((x) => ({ ...x, [k]: v }));

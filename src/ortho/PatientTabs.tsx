@@ -1,7 +1,8 @@
 // تبويبات العظام داخل ملف المريض
 import { useState } from 'react';
 import { Button } from '../components/ui';
-import { ortho, useOrthoVersion, type Consultation, type Fracture, type Imaging, type Nursing, type Surgery } from './data';
+import { ortho, useOrthoVersion, type Consultation, type Fracture, type Imaging, type Injection, type Nursing, type Surgery } from './data';
+import { InjectionList, InjectionModal } from './Injections';
 import { LoadState, useClinicalCan } from './kit';
 import { ConsultList, ConsultModal } from './Consultations';
 import { ImagingModal, ImagingTable } from './Imaging';
@@ -9,8 +10,9 @@ import { FractureCards, FractureModal } from './Fractures';
 import { SurgeryCards, SurgeryModal } from './Surgeries';
 import { NursingList, NursingModal } from './Nursing';
 
-export type OrthoKind = 'consultations' | 'imaging' | 'fractures' | 'surgeries' | 'nursing';
-const ADD: Record<OrthoKind, string> = { consultations: 'كشف جديد', imaging: 'طلب أشعة', fractures: 'تسجيل كسر', surgeries: 'عملية جديدة', nursing: 'شيت متابعة' };
+// labs = طلبات التحاليل بس، imaging = الأشعة بس (نفس الجدول ortho_imaging)
+export type OrthoKind = 'consultations' | 'imaging' | 'labs' | 'fractures' | 'surgeries' | 'nursing' | 'injections';
+const ADD: Record<OrthoKind, string> = { consultations: 'كشف جديد', imaging: 'طلب أشعة', labs: 'طلب تحليل', fractures: 'تسجيل كسر', surgeries: 'عملية جديدة', nursing: 'شيت متابعة', injections: 'سجل حقن' };
 
 export function OrthoPatientTab({ kind, patientId }: { kind: OrthoKind; patientId: string }) {
   useOrthoVersion();
@@ -23,9 +25,11 @@ export function OrthoPatientTab({ kind, patientId }: { kind: OrthoKind; patientI
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}>
         {perm.add && <Button size="sm" icon="plus" onClick={() => setEdit('new')}>{ADD[kind]}</Button>}
       </div>
-      <LoadState kind={kind}>
+      <LoadState kind={kind === 'labs' ? 'imaging' : kind}>
       {kind === 'consultations' && <ConsultList hidePatient items={ortho.list('consultations', patientId).sort((a, b) => b.date.localeCompare(a.date))} onEdit={(c: Consultation) => setEdit(c)} />}
-      {kind === 'imaging' && <ImagingTable hidePatient items={ortho.list('imaging', patientId)} onEdit={(m: Imaging) => setEdit(m)} />}
+      {kind === 'imaging' && <ImagingTable hidePatient items={ortho.list('imaging', patientId).filter((m) => m.kind !== 'lab')} onEdit={(m: Imaging) => setEdit(m)} />}
+      {kind === 'labs' && <ImagingTable hidePatient items={ortho.list('imaging', patientId).filter((m) => m.kind === 'lab')} onEdit={(m: Imaging) => setEdit(m)} />}
+      {kind === 'injections' && <InjectionList items={ortho.list('injections', patientId).sort((a, b) => b.date.localeCompare(a.date))} onEdit={(n: Injection) => setEdit(n)} />}
       {kind === 'fractures' && <FractureCards items={ortho.list('fractures', patientId)} onEdit={(f: Fracture) => setEdit(f)} />}
       {kind === 'surgeries' && <SurgeryCards items={ortho.list('surgeries', patientId)} onEdit={(s: Surgery) => setEdit(s)} />}
       {kind === 'nursing' && <NursingList items={ortho.list('nursing', patientId).sort((a, b) => b.date.localeCompare(a.date))} onEdit={(n: Nursing) => setEdit(n)} />}
@@ -33,6 +37,8 @@ export function OrthoPatientTab({ kind, patientId }: { kind: OrthoKind; patientI
       {edit && kind === 'nursing' && <NursingModal patientId={patientId} initial={init} onClose={close} />}
       {edit && kind === 'consultations' && <ConsultModal patientId={patientId} initial={init} onClose={close} />}
       {edit && kind === 'imaging' && <ImagingModal patientId={patientId} initial={init} onClose={close} />}
+      {edit && kind === 'labs' && <ImagingModal patientId={patientId} initial={init} defaultKind="lab" onClose={close} />}
+      {edit && kind === 'injections' && <InjectionModal patientId={patientId} initial={init} onClose={close} />}
       {edit && kind === 'fractures' && <FractureModal patientId={patientId} initial={init} onClose={close} />}
       {edit && kind === 'surgeries' && <SurgeryModal patientId={patientId} initial={init} onClose={close} />}
     </div>

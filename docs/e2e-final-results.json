@@ -1,0 +1,132 @@
+{
+  "at": "2026-10-28T20:11:27.253Z",
+  "passed": 25,
+  "failed": 0,
+  "results": [
+    {
+      "name": "حساب محاسب نهائي اختبار",
+      "ok": true,
+      "detail": "{\"id\":\"6eca55c0-b3fb-472e-856c-aa3f649ca7e9\",\"name\":\"محاسب نهائي اختبار\",\"username\":\"201200000971\",\"role\":\"accountant\",\""
+    },
+    {
+      "name": "حساب استقبال نهائي اختبار",
+      "ok": true,
+      "detail": "{\"id\":\"5677d10e-6e69-4dcb-ac41-f7d9650515c6\",\"name\":\"استقبال نهائي اختبار\",\"username\":\"201200000972\",\"role\":\"reception\","
+    },
+    {
+      "name": "المدير يحدد راتب ثابت ويوم صرف للموظف",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "تسجيل راتب الشهر «مستحق»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "تسجيل نفس الشهر مرتين مرفوض (فهرس فريد)",
+      "ok": true,
+      "detail": "duplicate key value violates unique constraint \"salary_payments_one_per_month\""
+    },
+    {
+      "name": "«مدفوع» من غير تاريخ دفع مرفوض",
+      "ok": true,
+      "detail": "new row for relation \"salary_payments\" violates check constraint \"salary_paid_has_date\""
+    },
+    {
+      "name": "تسجيل الصرف بتاريخ الدفع الفعلي",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الراتب المدفوع ما بيتمسحش",
+      "ok": true,
+      "detail": "deleted!"
+    },
+    {
+      "name": "الاستقبال ما يشوفش الرواتب",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال ما يقدرش يسجّل راتب",
+      "ok": true,
+      "detail": "new row violates row-level security policy for table \"salary_payments\""
+    },
+    {
+      "name": "محدش يحدد راتبه هو (حتى المدير)",
+      "ok": true,
+      "detail": "new row violates row-level security policy for table \"salary_settings\""
+    },
+    {
+      "name": "تقرير الشهر بيرجّع الراتب بحالته",
+      "ok": true,
+      "detail": "[{\"employee_name\":\"محاسب نهائي اختبار\",\"amount\":6000,\"status\":\"paid\"}]"
+    },
+    {
+      "name": "إضافة صنف بكمية 10",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "توريد 5 وصرف 4 ← الكمية 11",
+      "ok": true,
+      "detail": "11.00"
+    },
+    {
+      "name": "صرف أكتر من المتاح مرفوض",
+      "ok": true,
+      "detail": "الكمية المتاحة 11.00 لفة فقط"
+    },
+    {
+      "name": "كل حركة متسجّلة (افتتاحي + توريد + صرف)",
+      "ok": true,
+      "detail": "3"
+    },
+    {
+      "name": "الاستقبال ما يقدرش يمسح صنف",
+      "ok": true,
+      "detail": "ما فيه صلاحية لهذه العملية"
+    },
+    {
+      "name": "خدمة جديدة من غير اختيار الظهور ← «إدارة فقط»",
+      "ok": true,
+      "detail": "{\"id\":\"sv_b30c23a5\",\"show_on_site\":false}"
+    },
+    {
+      "name": "الخدمة الجديدة مش ظاهرة في قايمة الحجز الإلكتروني",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الإعداد = 4 و2 و1 ساعة",
+      "ok": true,
+      "detail": "[4,2,1]"
+    },
+    {
+      "name": "الحجز بيجدول 3 تذكيرات بس: قبلها بـ 4 و2 و1 ساعة",
+      "ok": true,
+      "detail": "[{\"offset_minutes\":240,\"status\":\"pending\"},{\"offset_minutes\":120,\"status\":\"pending\"},{\"offset_minutes\":60,\"status\":\"pending\"}]"
+    },
+    {
+      "name": "إلغاء الموعد بيلغي تذكيراته",
+      "ok": true,
+      "detail": "[{\"status\":\"cancelled\"},{\"status\":\"cancelled\"},{\"status\":\"cancelled\"}]"
+    },
+    {
+      "name": "قاعدة البيانات متوصّلة بدالة push (push_config)",
+      "ok": true,
+      "detail": "{\"notify_url\":\"https://jdhnxfhwwszxykizrahb.supabase.co/functions/v1/push\",\"has_secret\":true}"
+    },
+    {
+      "name": "دالة push بترفض الطلب من غير السر الصحيح",
+      "ok": true,
+      "detail": "401"
+    },
+    {
+      "name": "إشعار لموظف من غير جهاز مشترك ← الدالة اشتغلت وسجّلت «مفيش جهاز»",
+      "ok": true,
+      "detail": "no_device"
+    }
+  ]
+}

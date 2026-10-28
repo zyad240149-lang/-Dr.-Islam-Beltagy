@@ -83,6 +83,34 @@ try {
   }
   const toast = await page.locator('.toast, [role=status], [role=alert]').allTextContents().catch(() => []);
   check('مفيش أخطاء JavaScript', errors.length === 0, (errors.join(' | ') + ' || ' + toast.join(' / ')).slice(0, 400));
+
+  // التقارير: الطباعة بتخطيط مخصّص — وقت الطباعة القايمة الجانبية والأزرار بيختفوا وورقة التقرير (عنوان + فترة + تاريخ إصدار) بتظهر
+  section('طباعة التقارير');
+  await page.evaluate(() => { window.history.pushState({}, '', '/reports'); window.dispatchEvent(new PopStateEvent('popstate')); });
+  await page.waitForSelector('.page h1', { timeout: 20000 });
+  await page.waitForTimeout(1500);
+  await page.emulateMedia({ media: 'print' });
+  const pr = await page.evaluate(() => {
+    const shown = (el) => !!el && getComputedStyle(el).display !== 'none' && getComputedStyle(el).visibility !== 'hidden' && el.getBoundingClientRect().height > 0;
+    const sidebar = document.querySelector('.sidebar, aside, nav');
+    const doc = document.querySelector('.rp-doc, .print-only, .print-area');
+    return { sidebar: shown(sidebar), doc: shown(doc), text: (doc?.innerText ?? '').slice(0, 160) };
+  });
+  await page.emulateMedia({ media: 'screen' });
+  check('طباعة التقرير: القايمة الجانبية مخفية', !pr.sidebar, JSON.stringify(pr));
+  check('طباعة التقرير: ورقة التقرير المخصّصة ظاهرة', pr.doc, JSON.stringify(pr));
+
+  // تقرير الرواتب: بيتطبع في تابة لوحدها بجدول
+  await page.evaluate(() => { window.history.pushState({}, '', '/payroll'); window.dispatchEvent(new PopStateEvent('popstate')); });
+  await page.waitForSelector('.page-head h1', { timeout: 20000 });
+  await page.waitForTimeout(1500);
+  const payP = ctx.waitForEvent('page', { timeout: 15000 }).catch(() => null);
+  await page.locator('button', { hasText: 'طباعة التقرير' }).click();
+  const payPop = await payP;
+  const payOk = payPop ? await payPop.waitForFunction(() => window.__printed > 0 && document.querySelector('table'), null, { timeout: 15000 }).then(() => true).catch(() => false) : false;
+  const payTitle = payPop ? await payPop.evaluate(() => document.querySelector('h1')?.textContent ?? '').catch(() => '') : '';
+  check('تقرير الرواتب بيتطبع بجدول وعنوان في تابة لوحدها', payOk && /تقرير الرواتب/.test(payTitle), payTitle);
+  await payPop?.close().catch(() => {});
 } catch (e) {
   check('تنفيذ الاختبار بدون أخطاء غير متوقعة', false, e.message);
 } finally {

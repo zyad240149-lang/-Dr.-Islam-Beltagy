@@ -1,7 +1,7 @@
 {
-  "at": "2026-10-28T19:51:51.191Z",
-  "passed": 80,
-  "failed": 1,
+  "at": "2026-10-28T20:12:15.584Z",
+  "passed": 78,
+  "failed": 0,
   "results": [
     {
       "name": "ملف طبيب الاختبار",
@@ -11,17 +11,17 @@
     {
       "name": "حساب استقبال اختبار وحدات",
       "ok": true,
-      "detail": "{\"id\":\"d25a27bf-6e18-40b5-a78a-a8c2b7d73adf\",\"name\":\"استقبال اختبار وحدات\",\"username\":\"201200000911\",\"role\":\"reception\","
+      "detail": "{\"id\":\"b2a035da-95a6-410d-ae3c-9f308e1ca93a\",\"name\":\"استقبال اختبار وحدات\",\"username\":\"201200000911\",\"role\":\"reception\","
     },
     {
       "name": "حساب محاسب اختبار وحدات",
       "ok": true,
-      "detail": "{\"id\":\"627977a5-ee19-4297-86a9-12144d26f42a\",\"name\":\"محاسب اختبار وحدات\",\"username\":\"201200000912\",\"role\":\"accountant\",\""
+      "detail": "{\"id\":\"22984871-9923-4f9f-8bf5-1431c052c840\",\"name\":\"محاسب اختبار وحدات\",\"username\":\"201200000912\",\"role\":\"accountant\",\""
     },
     {
       "name": "حساب طبيب اختبار وحدات",
       "ok": true,
-      "detail": "{\"id\":\"1a812220-bc81-4704-94fc-fd79e66c178c\",\"name\":\"طبيب اختبار وحدات\",\"username\":\"201200000913\",\"role\":\"therapist\",\"ph"
+      "detail": "{\"id\":\"09bf0c20-2f13-4ba6-a0ba-6e4de9361ec6\",\"name\":\"طبيب اختبار وحدات\",\"username\":\"201200000913\",\"role\":\"therapist\",\"ph"
     },
     {
       "name": "حجز موعد (حالة جديد) لمريض بدون رقم قومي مسموح",
@@ -29,9 +29,9 @@
       "detail": ""
     },
     {
-      "name": "تأكيد الموعد مرفوض والملف ناقص الرقم القومي",
-      "ok": false,
-      "detail": "accepted!"
+      "name": "تأكيد الموعد مسموح من غير رقم قومي (بقى اختياري — هجرة 915)",
+      "ok": true,
+      "detail": ""
     },
     {
       "name": "رقم هوية بالشكل السعودي (10 أرقام) مرفوض من القاعدة",
@@ -76,17 +76,17 @@
     {
       "name": "فاتورة الباقة اتعملت بقيمتها",
       "ok": true,
-      "detail": "{\"id\":\"1c3df0e7-386a-41c6-b85e-1ac835d43ccb\",\"total\":900,\"status\":\"due\"}"
+      "detail": "{\"id\":\"dfdc6ecc-642c-4be7-bc0e-59c9c5b00247\",\"total\":900,\"status\":\"due\"}"
     },
     {
-      "name": "شراء الباقة أضاف 4 نقاط ولاء",
+      "name": "شراء الباقة ما بيضيفش نقاط ولاء (النقاط اتشالت — 920)",
       "ok": true,
-      "detail": "{\"balance\":4,\"redeemCost\":30,\"totalEarned\":4,\"totalRedeemed\":0,\"availableRewards\":0,\"redemptionsCount\":0}"
+      "detail": "{\"n\":0}"
     },
     {
       "name": "تسجيل حضور جلسة من الباقة (زيارة مباشرة)",
       "ok": true,
-      "detail": "{\"id\":\"10b23c84-45f8-478a-96ef-a483e2741ab6\",\"total\":3,\"walkIn\":true,\"remaining\":2,\"sessionNo\":1}"
+      "detail": "{\"id\":\"f3d22b0a-9e10-4d6b-b2a2-3e2b47903087\",\"total\":3,\"walkIn\":true,\"remaining\":2,\"sessionNo\":1}"
     },
     {
       "name": "جلسة ثانية في نفس اليوم مرفوضة بدون موافقة المدير",
@@ -96,7 +96,7 @@
     {
       "name": "قائمة حضور الباقات بتعرض المتبقي صح",
       "ok": true,
-      "detail": "{\"name\":\"مريض اختبار وحدات\",\"next\":null,\"used\":0,\"phone\":\"+201281207556\",\"today\":{\"no\":\"MV-1140\",\"time\":\"22:51\",\"doctor\":\"د. اختبار وحدات\",\"status\":\"a"
+      "detail": "{\"name\":\"مريض اختبار وحدات\",\"next\":null,\"used\":0,\"phone\":\"+201216854446\",\"today\":{\"no\":\"MV-1158\",\"time\":\"23:11\",\"doctor\":\"د. اختبار وحدات\",\"status\":\"a"
     },
     {
       "name": "دفعة جزئية على فاتورة الباقة",
@@ -119,9 +119,9 @@
       "detail": "{\"status\":\"partial\",\"paid\":300}"
     },
     {
-      "name": "نقاط الباقة اتسحبت بعد الإلغاء",
+      "name": "إلغاء الباقة ما بيسجّلش حركات نقاط",
       "ok": true,
-      "detail": "{\"balance\":0,\"redeemCost\":30,\"totalEarned\":4,\"totalRedeemed\":0,\"availableRewards\":0,\"redemptionsCount\":0}"
+      "detail": "{\"n\":0}"
     },
     {
       "name": "حضور على باقة ملغاة مرفوض",
@@ -166,7 +166,7 @@
     {
       "name": "كود منتج (SKU) مكرر مرفوض",
       "ok": true,
-      "detail": "كود المنتج TST-EX0QWX مستخدم لمنتج آخر"
+      "detail": "كود المنتج TST-399FYT مستخدم لمنتج آخر"
     },
     {
       "name": "سعر سالب مرفوض",
@@ -181,7 +181,7 @@
     {
       "name": "الاستقبال يبيع 2 لعميل بدون جنسية (مصري افتراضي)",
       "ok": true,
-      "detail": "{\"id\":\"e0b05088-2aba-4b29-a7d9-a4ade07c3eae\",\"invoiceNo\":\"PS-000013\",\"remaining\":1}"
+      "detail": "{\"id\":\"ccd7ef75-344a-4705-a5a6-fbdf41380710\",\"invoiceNo\":\"PS-000015\",\"remaining\":1}"
     },
     {
       "name": "إجمالي البيع 300 بدون ضريبة",
@@ -191,7 +191,7 @@
     {
       "name": "تكرار نفس العملية (نفس المفتاح) مابيخصمش مرتين",
       "ok": true,
-      "detail": "{\"id\":\"e0b05088-2aba-4b29-a7d9-a4ade07c3eae\",\"duplicate\":true,\"invoiceNo\":\"PS-000013\"} qty=1"
+      "detail": "{\"id\":\"ccd7ef75-344a-4705-a5a6-fbdf41380710\",\"duplicate\":true,\"invoiceNo\":\"PS-000015\"} qty=1"
     },
     {
       "name": "بيع كمية أكبر من المتاح مرفوض",
@@ -201,7 +201,7 @@
     {
       "name": "بيعتين متزامنتين لآخر قطعة: واحدة بس تنجح",
       "ok": true,
-      "detail": "ok | المنتج «منتج اختبار» غير متوفر — الكمية صفر"
+      "detail": "المنتج «منتج اختبار» غير متوفر — الكمية صفر | ok"
     },
     {
       "name": "المخزون صفر بعد البيع",
@@ -229,39 +229,24 @@
       "detail": "disabled"
     },
     {
-      "name": "رصيد المريض 40 نقطة",
+      "name": "كسب النقاط متوقف من الخادم (award_loyalty_points ما بتعملش حاجة)",
       "ok": true,
-      "detail": "{\"balance\":40,\"redeemCost\":30,\"totalEarned\":44,\"totalRedeemed\":0,\"availableRewards\":1,\"redemptionsCount\":0}"
+      "detail": "{\"n\":0}"
     },
     {
-      "name": "الطبيب ما يقدرش يستبدل نقاط",
+      "name": "استبدال النقاط بطلب مباشر مرفوض",
       "ok": true,
-      "detail": "ما فيه صلاحية لهذه العملية"
+      "detail": "permission denied for function redeem_loyalty_points"
     },
     {
-      "name": "الاستقبال يستبدل 30 نقطة بكود جلسة مجانية",
+      "name": "ملخص النقاط بطلب مباشر مرفوض",
       "ok": true,
-      "detail": "{\"code\":\"FREE-7E23B9\",\"points\":30,\"sessions\":1,\"remaining\":10}"
+      "detail": "permission denied for function patient_loyalty_summary"
     },
     {
-      "name": "تكرار نفس الاستبدال مابيخصمش مرتين",
+      "name": "حتى المدير ما يقدرش يرجّع إعدادات النقاط بطلب مباشر",
       "ok": true,
-      "detail": "{\"code\":\"FREE-7E23B9\",\"sessions\":1,\"remaining\":10}"
-    },
-    {
-      "name": "استبدال برصيد غير كافي مرفوض",
-      "ok": true,
-      "detail": "رصيد النقاط أقل من 30 نقطة — الرصيد الحالي 10 نقطة"
-    },
-    {
-      "name": "قيمة الكود = سعر جلسة التأهيل (300)",
-      "ok": true,
-      "detail": "{\"value\":300,\"max_uses\":1}"
-    },
-    {
-      "name": "سجل النقاط فيه الاستبدال (−30)",
-      "ok": true,
-      "detail": "[{\"id\":\"90a2c2b4-8eb2-47ca-a883-bea9cbbc1d3c\",\"patient_id\":\"a90be44e-2e70-4d7c-929c-6bf780bc118a\",\"patient_name\":\"مريض ا"
+      "detail": "Could not find the function public.update_loyalty_settings(p) in the schema cache"
     },
     {
       "name": "مفيش حضور مسجّل في البداية",
@@ -281,7 +266,7 @@
     {
       "name": "تسجيل الحضور مرتين بيحتفظ بأول وقت",
       "ok": true,
-      "detail": "2026-10-28T19:51:34.981363+00:00 vs 2026-10-28T19:51:34.981363+00:00"
+      "detail": "2026-10-28T20:12:01.190523+00:00 vs 2026-10-28T20:12:01.190523+00:00"
     },
     {
       "name": "تسجيل الانصراف",
@@ -301,7 +286,7 @@
     {
       "name": "المدير يشوف حضور الموظف في التقرير",
       "ok": true,
-      "detail": "{\"employee_id\":\"d25a27bf-6e18-40b5-a78a-a8c2b7d73adf\",\"employee_name\":\"استقبال اختبار وحدات\",\"role\":\"reception\",\"date\":\"2026-10-28\",\"check_in\":\"2026-10-28T19:51:34.981363+00:00\",\"check_out\":\"2026-10-2"
+      "detail": "{\"employee_id\":\"b2a035da-95a6-410d-ae3c-9f308e1ca93a\",\"employee_name\":\"استقبال اختبار وحدات\",\"role\":\"reception\",\"date\":\"2026-10-28\",\"check_in\":\"2026-10-28T20:12:01.190523+00:00\",\"check_out\":\"2026-10-2"
     },
     {
       "name": "الاستقبال ما يقدرش يحدد رواتب",
@@ -351,17 +336,17 @@
     {
       "name": "مستحق الاستقبال: راتب 2500",
       "ok": true,
-      "detail": "{\"autoSync\":true,\"bonusDue\":0,\"salaryDue\":2500,\"updatedAt\":null,\"approvedAt\":\"2026-10-28T19:51:38.13"
+      "detail": "{\"autoSync\":true,\"bonusDue\":0,\"salaryDue\":2500,\"updatedAt\":null,\"approvedAt\":\"2026-10-28T20:12:05.17"
     },
     {
       "name": "صرف راتب الطبيب",
       "ok": true,
-      "detail": "{\"id\":\"2296ae73-4d8f-4dfa-a94e-04608e67af3a\",\"no\":\"PR-000013\",\"amount\":3000,\"remaining\":0}"
+      "detail": "{\"id\":\"596ce2b2-d960-44f1-ba8e-ec35b61447fa\",\"no\":\"PR-000015\",\"amount\":3000,\"remaining\":0}"
     },
     {
       "name": "تكرار نفس الصرف (نفس المفتاح) مابيتسجّلش مرتين",
       "ok": true,
-      "detail": "{\"id\":\"2296ae73-4d8f-4dfa-a94e-04608e67af3a\",\"no\":\"PR-000013\",\"amount\":3000,\"duplicate\":true}"
+      "detail": "{\"id\":\"596ce2b2-d960-44f1-ba8e-ec35b61447fa\",\"no\":\"PR-000015\",\"amount\":3000,\"duplicate\":true}"
     },
     {
       "name": "صرف أكتر من المستحق مرفوض",

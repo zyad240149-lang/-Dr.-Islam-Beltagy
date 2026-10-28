@@ -34,7 +34,7 @@ export default function Inventory() {
   const value = all.filter((it) => it.active).reduce((s, it) => s + it.quantity * it.costPrice, 0);
 
   return (
-    <>
+    <div className="page">
       <div className="page-head">
         <div><h1>المخزون</h1><p>{all.length} صنف{lowCount > 0 ? ` — ${lowCount} وصل للحد الأدنى` : ''} · قيمة المخزون بسعر التكلفة {money(value)}</p></div>
         {can('inventory', 'create') && <Button icon="plus" onClick={() => setEditing('new')}>إضافة صنف</Button>}
@@ -89,7 +89,7 @@ export default function Inventory() {
           onClose={() => setDeleting(null)}
           onConfirm={async () => { try { await db.deleteItem(deleting.id); toast.success('تم حذف الصنف.'); setDeleting(null); } catch (e) { toast.error((e as Error).message); } }} />
       )}
-    </>
+    </div>
   );
 }
 

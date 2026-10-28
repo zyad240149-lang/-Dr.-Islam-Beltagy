@@ -97,7 +97,7 @@ th{background:#eef1f9;color:#1b2a54}thead{display:table-header-group}tr{break-in
   };
 
   return (
-    <>
+    <div className="page">
       <div className="page-head">
         <div><h1>الرواتب</h1><p>راتب شهري ثابت لكل موظف — تسجيله كمستحق ثم صرفه بتاريخ الدفع. مفيش تارجت ولا نسب.</p></div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -166,7 +166,7 @@ th{background:#eef1f9;color:#1b2a54}thead{display:table-header-group}tr{break-in
       {payFor && <PayModal p={payFor} onClose={() => setPayFor(null)} onSaved={reload} />}
       {editFor && <EditModal p={editFor} onClose={() => setEditFor(null)} onSaved={reload} />}
       {historyFor && <HistoryModal e={historyFor} payments={(data?.payments ?? []).filter((p) => p.employeeId === historyFor.id)} onClose={() => setHistoryFor(null)} />}
-    </>
+    </div>
   );
 }
 

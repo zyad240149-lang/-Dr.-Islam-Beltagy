@@ -2,7 +2,7 @@
 //   UI_BASE=https://beltagy-ortho.pages.dev node scripts/shot-layout.mjs /diagnosis 1494 1175
 import { fileURLToPath } from 'node:url';
 import { mkdirSync } from 'node:fs';
-import { chromium } from 'playwright-core';
+import { launchEdge } from './_edge.mjs';
 import { allDayHours, api, deleteEmployee, loginAdmin, randomPassword, sql } from './_harness.mjs';
 
 const [path = '/diagnosis', w = '1494', h = '1175'] = process.argv.slice(2);
@@ -14,7 +14,7 @@ try {
   const admin = await loginAdmin();
   const r = await api(admin, 'POST', 'staff', { name: 'مدير لقطات اختبار', phone, country: 'EG', password: PW, role: 'system_admin', workHours: allDayHours() });
   empId = r.body?.id;
-  browser = await chromium.launch({ channel: 'msedge', headless: true });
+  browser = await launchEdge();
   const page = await (await browser.newContext({ viewport: { width: +w, height: +h }, locale: 'ar-EG' })).newPage();
   await page.goto(BASE + '/login');
   await page.fill('#al-phone', phone);

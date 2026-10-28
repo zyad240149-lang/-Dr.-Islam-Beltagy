@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { preview } from 'vite';
-import { chromium } from 'playwright-core';
+import { launchEdge } from './_edge.mjs';
 import { allDayHours, api, deleteEmployee, env, loginAdmin, randomPassword, sql, suite, URL_ } from './_harness.mjs';
 
 const { check, section, save } = suite();
@@ -49,17 +49,21 @@ const idb = (page) => page.evaluate(() => new Promise((resolve) => {
 const patientCount = async () => (await sql(`select count(*)::int n from patients`))[0].n;
 
 let ctx = null;
+let edgeApp = null;
 let lastPage = null; // لصورة الشاشة لو حصل خطأ غير متوقع
 const profile = mkdtempSync(join(tmpdir(), 'ortho-offline-'));
 const openApp = async (offlineMode) => {
-  ctx = await chromium.launchPersistentContext(profile, { channel: 'msedge', headless: true, viewport: { width: 1366, height: 860 }, locale: 'ar-EG', offline: !!offlineMode });
+  edgeApp = await launchEdge({ userDataDir: profile });
+  ctx = edgeApp.contexts()[0];
+  if (offlineMode) await ctx.setOffline(true);
   const page = ctx.pages()[0] ?? await ctx.newPage();
+  await page.setViewportSize({ width: 1366, height: 860 });
   page.errors = [];
   page.on('pageerror', (e) => page.errors.push(e.message));
   lastPage = page;
   return page;
 };
-const closeApp = async () => { await ctx?.close(); ctx = null; };
+const closeApp = async () => { await edgeApp?.close(); edgeApp = null; ctx = null; };
 const goOffline = async () => { await stopServer(); await ctx?.setOffline(true); };
 const goOnline = async () => { await startServer(); await ctx?.setOffline(false); };
 const searchPatients = async (page, q) => {
@@ -221,7 +225,7 @@ try {
   // ============ 7) فشل الخادم + ضياع الرد بعد ما الخادم حفظ ============
   section('7) فشل الخادم مؤقتًا + انقطاع الاتصال بعد ما الخادم حفظ (من غير تكرار)');
   await startServer();
-  const ctx2 = await chromium.launch({ channel: 'msedge', headless: true }).then((b) => b.newContext({ viewport: { width: 1366, height: 860 }, locale: 'ar-EG', serviceWorkers: 'block' }));
+  const ctx2 = await launchEdge().then((b) => b.newContext({ viewport: { width: 1366, height: 860 }, locale: 'ar-EG', serviceWorkers: 'block' }));
   const p2 = await ctx2.newPage();
   lastPage = p2;
   let attempt = 0, armed = false, early = 0;

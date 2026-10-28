@@ -7,7 +7,7 @@
 import { mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
-import { chromium } from 'playwright-core';
+import { launchEdge } from './_edge.mjs';
 import { allDayHours, api, cairoDate, deleteEmployee, env, fakeEgyptianId, loginAdmin, randomPassword, sql, suite, URL_ } from './_harness.mjs';
 
 const { check, section, save } = suite();
@@ -57,7 +57,7 @@ try {
 
   if (!process.env.UI_BASE) server = await createServer({ configFile: fileURLToPath(new URL('../vite.config.ts', import.meta.url)), root: fileURLToPath(new URL('..', import.meta.url)), logLevel: 'error', server: { port: PORT, strictPort: true, host: '127.0.0.1' } });
   await server?.listen();
-  browser = await chromium.launch({ channel: 'msedge', headless: true });
+  browser = await launchEdge();
   mkdirSync(SHOTS, { recursive: true });
 
   // دخول من الشاشة نفسها + زيارة كل مسار بالتنقل جوّه التطبيق (من غير إعادة تحميل)

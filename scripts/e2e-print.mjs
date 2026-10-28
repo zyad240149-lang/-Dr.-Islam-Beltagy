@@ -5,7 +5,7 @@
 import { fileURLToPath } from 'node:url';
 import { readFileSync } from 'node:fs';
 import { createServer } from 'vite';
-import { chromium } from 'playwright-core';
+import { launchEdge } from './_edge.mjs';
 import { allDayHours, api, deleteEmployee, loginAdmin, randomPassword, sql, suite } from './_harness.mjs';
 
 const { check, section, save } = suite();
@@ -35,7 +35,7 @@ try {
     server = await createServer({ configFile: fileURLToPath(new URL('../vite.config.ts', import.meta.url)), root: fileURLToPath(new URL('..', import.meta.url)), logLevel: 'error', server: { port: PORT, strictPort: true, host: '127.0.0.1' } });
     await server.listen();
   }
-  browser = await chromium.launch({ channel: 'msedge', headless: true });
+  browser = await launchEdge();
   const ctx = await browser.newContext({ viewport: { width: 1366, height: 860 }, locale: 'ar-EG', acceptDownloads: true });
   // print() في كل صفحة (والتابات الجديدة) بيتعدّ بدل ما يفتح نافذة الطباعة
   await ctx.addInitScript(() => { window.__printed = 0; window.print = () => { window.__printed++; }; });

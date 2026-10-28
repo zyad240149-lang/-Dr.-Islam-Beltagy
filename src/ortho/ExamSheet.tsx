@@ -541,9 +541,11 @@ export function DoctorSheet({ sheet, onChange, side, onSide, icd10, onIcd10, onO
         <Box n={9} title="Imaging / Investigations">
           {X_IMG.map((m) => (
             <div className="sh-img" key={m}>
-              <Ck on={a.has('x.img', m)} onToggle={() => a.toggle('x.img', m)}>{m}:</Ck>
-              <Txt a={a} k={`x.img.${m}`} placeholder="Finding" />
-              <input type="date" className="sh-in sh-in--date" aria-label={`${m} date`} value={a.txt(`x.img.${m}.date`)} onChange={(e) => a.set(`x.img.${m}.date`, e.target.value)} />
+              <div className="sh-img__top">
+                <Ck on={a.has('x.img', m)} onToggle={() => a.toggle('x.img', m)}>{m}:</Ck>
+                <label className="sh-img__date">Date: <input className="sh-in sh-in--date" dir="ltr" placeholder="dd/mm/yyyy" aria-label={`${m} date`} value={a.txt(`x.img.${m}.date`)} onChange={(e) => a.set(`x.img.${m}.date`, e.target.value)} /></label>
+              </div>
+              <Txt a={a} k={`x.img.${m}`} placeholder="Finding — اكتب النتيجة" />
             </div>
           ))}
           <Txt a={a} k="x.img.prev" label="Previous imaging:" stack />

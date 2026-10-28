@@ -1022,7 +1022,7 @@ textarea.input { height: auto; padding-block: 10px; resize: vertical; line-heigh
 .sh-in { flex: 1; min-width: 0; height: 32px; padding: 0 6px; border: 0; border-bottom: 1.5px solid var(--line); border-radius: 0; background: transparent; font: inherit; color: var(--text); }
 .sh-in:focus { outline: none; border-bottom-color: var(--brand-600); background: var(--brand-50); }
 .sh-in--num { flex: 0 0 76px; width: 76px; text-align: center; }
-.sh-in--date { flex: none; width: 140px; }
+.sh-in--date { flex: none; width: 104px; text-align: center; }
 .sh-unit { color: var(--muted); font-size: 13px; }
 .sh-bmi { min-width: 76px; padding: 4px 10px; border-radius: 8px; background: var(--ok-bg); color: var(--ok); font-weight: 700; text-align: center; }
 .sh-note { margin: 0 0 2px; font-size: 12.5px; color: var(--muted); }
@@ -1040,7 +1040,10 @@ textarea.input { height: auto; padding-block: 10px; resize: vertical; line-heigh
 .sh-tbl .sh-in { width: 100%; height: 28px; border-bottom: 0; text-align: center; }
 .sh-sel { width: 100%; height: 28px; border: 0; background: transparent; font: inherit; font-size: 13px; color: var(--text); cursor: pointer; }
 .sh-sw { display: inline-block; width: 10px; height: 10px; margin-inline-end: 6px; border-radius: 3px; vertical-align: -1px; }
-.sh-img { display: grid; grid-template-columns: 112px minmax(0, 1fr) auto; align-items: center; gap: 6px; }
+.sh-img { margin-bottom: 6px; }
+.sh-img__top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 2px 8px; }
+.sh-img__date { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: 13px; }
+.sh-img > .sh-in { display: block; width: 100%; }
 .sh-dxmap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin-top: 4px; }
 .sh-notes { height: auto; min-height: 150px; flex: 1; padding: 8px; border: 1px solid var(--line); border-radius: 8px; resize: vertical; line-height: 1.6; }
 .sh-visit { display: grid; grid-template-columns: minmax(0, .9fr) minmax(230px, 260px) minmax(0, 1.4fr); gap: 18px; }
@@ -1052,8 +1055,6 @@ textarea.input { height: auto; padding-block: 10px; resize: vertical; line-heigh
   .sh-tabs { top: -16px; }
   .sh-visit { grid-template-columns: minmax(0, 1fr); }
   .sh-split, .sh-split--3 { grid-template-columns: minmax(0, 1fr); }
-  .sh-img { grid-template-columns: auto minmax(0, 1fr); }
-  .sh-img .sh-in--date { grid-column: 2; }
 }
 
 /* ---------- Diagnosis picker ---------- */

@@ -82,9 +82,11 @@ export function RegionSheetForm({ def, sheet, onChange, side, onSide, icd10, onI
         <Fragment key={i}>
           {f.mods.map((m) => (
             <div className="sh-img" key={m}>
-              <Ck on={a.has(k(f.k), m)} onToggle={() => a.toggle(k(f.k), m)}>{m}:</Ck>
-              <Txt a={a} k={k(`${f.k}.${m}`)} placeholder="Finding" />
-              <input type="date" className="sh-in sh-in--date" aria-label={`${m} date`} value={a.txt(k(`${f.k}.${m}.date`))} onChange={(e) => a.set(k(`${f.k}.${m}.date`), e.target.value)} />
+              <div className="sh-img__top">
+                <Ck on={a.has(k(f.k), m)} onToggle={() => a.toggle(k(f.k), m)}>{m}:</Ck>
+                <label className="sh-img__date">Date: <input className="sh-in sh-in--date" dir="ltr" placeholder="dd/mm/yyyy" aria-label={`${m} date`} value={a.txt(k(`${f.k}.${m}.date`))} onChange={(e) => a.set(k(`${f.k}.${m}.date`), e.target.value)} /></label>
+              </div>
+              <Txt a={a} k={k(`${f.k}.${m}`)} placeholder="Finding — اكتب النتيجة" />
             </div>
           ))}
           <Txt a={a} k={k(`${f.k}.prev`)} label="Previous imaging:" stack />

@@ -9,6 +9,7 @@ import { Icon } from '../utils/icons';
 import { APPT_STATUS, fmtTime, riyadhNow, todayYmd } from '../utils/format';
 import type { Appointment, AppointmentStatus } from '../types';
 import { bookedTitle, isOnline, Who } from './AppointmentActor';
+import { branchForDate } from './WorkHoursEditor';
 
 const ROW_H = 58; // ارتفاع خانة واحدة (بكسل)
 const toMin = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + (m || 0); };
@@ -158,6 +159,7 @@ export default function ScheduleGrid({ mode, date, doctorId, scopedDoctorId, mat
             <div key={c.key} className={`tg-head ${c.date === today && mode === 'week' ? 'is-today' : ''}`}>
               <strong>{c.title}</strong>
               <span className="muted-sm">{c.sub ? `${c.sub} · ` : ''}<span className="num">{list.length}</span> موعد · <span className="num">{cells.filter((x) => x.state === 'free').length}</span> متاح</span>
+              {(() => { const b = branchForDate(db.therapist(c.therapistId)?.workHours ?? [], c.date); return b && <span className="muted-sm"><Icon name="pin" size={11} /> الفرع: <strong>{b.name}</strong></span>; })()}
               {c.win.status === 'ok'
                 ? <span className="muted-sm">الدوام: <span className="num">{fmtTime(c.win.doctorFrom!)} – {fmtTime(c.win.doctorTo!)}</span></span>
                 : c.win.status !== 'closed' && <span className="tg-tag"><Icon name="alert" size={11} /> {c.win.status === 'leave' ? 'في إجازة' : DOCTOR_DAY_LABEL[c.win.status]}</span>}

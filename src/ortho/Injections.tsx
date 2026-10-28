@@ -9,6 +9,7 @@ import { fmtDate, todayYmd } from '../utils/format';
 import { fileNoText } from '../utils/phoneUtils';
 import { openPrintWindow, printHtml } from '../utils/printDoc';
 import { ortho, type Injection, type InjectionSheet } from './data';
+import { Icon } from '../utils/icons';
 import { Field, IconBtn, confirmDelete, useClinicalCan, useRun } from './kit';
 
 const L = {
@@ -36,11 +37,12 @@ function Multi({ options, value, onChange }: { options: string[]; value: string[
 function One({ options, value, onChange }: { options: string[]; value: string; onChange: (v: string) => void }) {
   return <div className="cx-chips" dir="ltr" role="radiogroup">{options.map((o) => <button key={o} type="button" role="radio" aria-checked={value === o} className={`cx-chip ${value === o ? 'is-on' : ''}`} onClick={() => onChange(value === o ? '' : o)}>{o}</button>)}</div>;
 }
-const Box = ({ title, children }: { title: string; children: ReactNode }) => (
-  <fieldset className="card" style={{ padding: 14, margin: '0 0 12px', border: '1px solid var(--line, #e2e8f0)' }} dir="ltr">
-    <legend style={{ fontWeight: 700, padding: '0 6px' }}>{title}</legend>
-    {children}
-  </fieldset>
+// كل قسم زي الورقة: شريط أزرق بأيقونة وعنوان وتحته المحتوى
+const Box = ({ title, icon, children }: { title: string; icon: string; children: ReactNode }) => (
+  <section className="inj-box" dir="ltr">
+    <h3 className="inj-box__head"><Icon name={icon} size={18} />{title}</h3>
+    <div className="inj-box__body">{children}</div>
+  </section>
 );
 const T = ({ label, value, onChange, area }: { label: string; value: string; onChange: (v: string) => void; area?: boolean }) => (
   <Field label={label}>{area ? <textarea className="input" rows={2} dir="auto" value={value} onChange={(e) => onChange(e.target.value)} /> : <input className="input" dir="auto" value={value} onChange={(e) => onChange(e.target.value)} />}</Field>
@@ -69,27 +71,41 @@ export function InjectionModal({ patientId, appointmentId = null, initial, onClo
       <Button variant="outline" icon="print" loading={busy} onClick={() => save(true)}>حفظ وطباعة</Button>
       <Button icon="check" loading={busy} onClick={() => save(false)}>حفظ</Button>
     </>}>
-      <div className="grid-form grid-form--3" style={{ marginBottom: 12 }}>
-        <Field label="المريض"><input className="input" value={`${p?.fullName ?? ''} — ملف ${fileNoText(p?.fileNo)}`} readOnly /></Field>
-        <Field label="التاريخ"><input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} /></Field>
-        <T label="Diagnosis — التشخيص" value={s.diagnosis} onChange={(v) => set('diagnosis', v)} />
-      </div>
-      <div className="grid-form">
-        <Box title="Injection Site / Region">
+      <div className="inj-sheet" dir="ltr">
+      <header className="inj-letter">
+        <div dir="ltr"><small>Doctor</small><b>Islam Gomaa Beltagy</b><span>Consultant of Orthopedic Surgery</span></div>
+        <img src={`${import.meta.env.BASE_URL}brand/logo.svg`} alt="" />
+        <div dir="rtl"><small>دكتور</small><b>{DOCTOR.name}</b><span>{DOCTOR.title}</span></div>
+      </header>
+      <div className="inj-title" dir="ltr"><span className="inj-title__ic"><Icon name="target" size={26} /></span><b>INJECTION RECORD</b><small>MSK Injection Documentation</small></div>
+      <Box title="Patient Information" icon="user">
+        <div className="grid-form grid-form--3">
+          <Field label="Name"><input className="input" value={`${p?.fullName ?? ''} — File ${fileNoText(p?.fileNo)}`} readOnly /></Field>
+          <Field label="Date"><input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} /></Field>
+          <Field label="Phone"><input className="input" dir="ltr" value={p?.phone ?? ''} readOnly /></Field>
+        </div>
+      </Box>
+      <Box title="Diagnosis" icon="clipboard">
+        <input className="input" dir="auto" aria-label="Diagnosis" value={s.diagnosis} onChange={(e) => set('diagnosis', e.target.value)} />
+      </Box>
+      <div className="inj-grid inj-grid--3">
+        <Box title="Injection Site / Region" icon="pin">
           <Multi options={L.site} value={s.site} onChange={(v) => set('site', v)} />
           <T label="Other" value={s.siteOther} onChange={(v) => set('siteOther', v)} />
           <div className="field"><label>Side</label><One options={L.side} value={s.side} onChange={(v) => set('side', v)} /></div>
         </Box>
-        <Box title="Target Structure">
+        <Box title="Target Structure" icon="target">
           <Multi options={L.target} value={s.target} onChange={(v) => set('target', v)} />
           <T label="Other" value={s.targetOther} onChange={(v) => set('targetOther', v)} />
         </Box>
-        <Box title="Injection Type / Injectate">
+        <Box title="Injection Type / Injectate" icon="spark">
           <Multi options={L.type} value={s.type} onChange={(v) => set('type', v)} />
           <T label="Combination" value={s.combination} onChange={(v) => set('combination', v)} />
           <T label="Other" value={s.typeOther} onChange={(v) => set('typeOther', v)} />
         </Box>
-        <Box title="Injection Technique">
+      </div>
+      <div className="inj-grid inj-grid--3">
+        <Box title="Injection Technique" icon="scan">
           <One options={L.technique} value={s.technique} onChange={(v) => set('technique', v)} />
           <div className="grid-form">
             <T label="Approach" value={s.approach} onChange={(v) => set('approach', v)} />
@@ -98,8 +114,7 @@ export function InjectionModal({ patientId, appointmentId = null, initial, onClo
             <T label="Syringe Size" value={s.syringe} onChange={(v) => set('syringe', v)} />
           </div>
         </Box>
-      </div>
-      <Box title="Injected Material Details">
+      <Box title="Injected Material Details" icon="box">
         <div className="cx-rows">
           {s.materials.map((m, i) => (
             <div className="cx-row" key={i} style={{ gridTemplateColumns: 'minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) auto' }}>
@@ -113,19 +128,20 @@ export function InjectionModal({ patientId, appointmentId = null, initial, onClo
         </div>
         <Button size="sm" variant="outline" icon="plus" onClick={() => set('materials', [...s.materials, { drug: '', dose: '', batch: '', expiry: '' }])}>Add row</Button>
       </Box>
-      <div className="grid-form">
-        <Box title="Pre-injection Assessment / Consent">
+        <Box title="Pre-injection Assessment / Consent" icon="doc">
           <Multi options={L.consent} value={s.consent} onChange={(v) => set('consent', v)} />
           <T label="Notes" value={s.consentNotes} onChange={(v) => set('consentNotes', v)} area />
         </Box>
-        <Box title="Aseptic & Procedure Notes">
+      </div>
+      <div className="inj-grid">
+        <Box title="Aseptic & Procedure Notes" icon="settings">
           <label className="sh-ck" style={{ display: 'flex', gap: 6 }}><input type="checkbox" checked={s.aseptic} onChange={(e) => set('aseptic', e.target.checked)} /> Aseptic preparation done</label>
           <label className="sh-ck" style={{ display: 'flex', gap: 6 }}><input type="checkbox" checked={s.usConfirm} onChange={(e) => set('usConfirm', e.target.checked)} /> Ultrasound findings / target confirmation</label>
           <T label="Ultrasound findings" value={s.usFindings} onChange={(v) => set('usFindings', v)} />
           <T label="Procedure notes" value={s.procedureNotes} onChange={(v) => set('procedureNotes', v)} area />
           <T label="Immediate response" value={s.immediate} onChange={(v) => set('immediate', v)} />
         </Box>
-        <Box title="Outcome & Follow-up">
+        <Box title="Outcome & Follow-up" icon="trend">
           <div className="field"><label>Complications</label><One options={L.none} value={s.complications} onChange={(v) => set('complications', v)} /></div>
           {s.complications === 'Yes' && <T label="Complications details" value={s.complicationsText} onChange={(v) => set('complicationsText', v)} />}
           <div className="field"><label>Post-injection instructions given</label><One options={L.yesNo} value={s.instructions} onChange={(v) => set('instructions', v)} /></div>
@@ -133,10 +149,11 @@ export function InjectionModal({ patientId, appointmentId = null, initial, onClo
           <T label="Response at follow-up" value={s.response} onChange={(v) => set('response', v)} />
           <T label="Further treatment plan" value={s.furtherPlan} onChange={(v) => set('furtherPlan', v)} />
         </Box>
-        <Box title="Doctor's Signature / Additional Notes">
+        <Box title="Doctor's Signature / Additional Notes" icon="edit">
           <T label="Doctor's Signature" value={s.signature} onChange={(v) => set('signature', v)} />
           <T label="Additional Notes" value={s.notes} onChange={(v) => set('notes', v)} area />
         </Box>
+      </div>
       </div>
     </Modal>
   );
@@ -191,21 +208,22 @@ export function injectionHtml(n: Omit<Injection, 'id'>): string {
   @page { size: A4; margin: 9mm; }
   * { box-sizing: border-box; }
   body { margin: 0; font-family: "IBM Plex Sans", "IBM Plex Sans Arabic", Tahoma, sans-serif; color: #10182f; font-size: 11.5px; line-height: 1.5; }
-  header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1b4f8f; padding-bottom: 6px; }
+  header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1b5fb4; padding-bottom: 6px; }
   header .ar { direction: rtl; text-align: right; font-family: "IBM Plex Sans Arabic", Tahoma, sans-serif; }
-  header h1 { margin: 0; font-size: 17px; color: #1b4f8f; } header .t { color: #475569; font-size: 11px; }
-  .bar { background: #1b4f8f; color: #fff; border-radius: 8px; padding: 6px 12px; margin: 8px 0 6px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 17px; }
+  header h1 { margin: 0; font-size: 18px; color: #d6202a; } header .dr { color: #1b5fb4; font-size: 13px; font-weight: 700; } header .t { color: #475569; font-size: 11px; }
+  .bar { background: #1b5fb4; color: #fff; border-radius: 8px; padding: 6px 12px; margin: 8px 0 6px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 17px; }
   .bar small { font-size: 12px; font-weight: 600; opacity: .9; }
-  .sec { border: 1px solid #b9cbe4; border-radius: 8px; padding: 6px 9px; margin-bottom: 6px; break-inside: avoid; }
-  .sec > b.h { display: block; color: #fff; background: #1b4f8f; margin: -6px -9px 5px; padding: 3px 9px; border-radius: 7px 7px 0 0; }
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .sec { background: #fff; border: 1px solid #9fbde6; border-radius: 8px; padding: 6px 9px; margin-bottom: 6px; break-inside: avoid; }
+  .sec > b.h { display: block; color: #fff; background: #1b5fb4; margin: -6px -9px 5px; padding: 3px 9px; border-radius: 7px 7px 0 0; }
   .row { display: grid; gap: 6px; } .c2 { grid-template-columns: 1fr 1fr; } .c3 { grid-template-columns: repeat(3, 1fr); }
   .ck { display: inline-block; margin-inline-end: 12px; white-space: nowrap; color: #475569; } .ck.on { color: #10182f; font-weight: 700; }
   .ln { display: inline-block; min-width: 120px; border-bottom: 1px dotted #64748b; height: 1em; }
   .txt { min-height: 30px; border-bottom: 1px dotted #64748b; white-space: pre-wrap; }
-  table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid #b9cbe4; padding: 3px 5px; height: 18px; } th { background: #eef4fb; color: #1b4f8f; }
+  table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid #9fbde6; padding: 3px 5px; height: 18px; } th { background: #eef4fb; color: #1b5fb4; }
   footer { margin-top: 8px; border-top: 1px solid #cbd5e1; padding-top: 4px; font-size: 10.5px; color: #64748b; display: flex; justify-content: space-between; }
 </style></head><body>
-<header><div><h1>Dr. Islam Gomaa Beltagy</h1><div class="t">Consultant of Orthopedic Surgery</div></div><div class="ar"><h1>${esc(DOCTOR.name)}</h1><div class="t">${esc(DOCTOR.title)}</div></div></header>
+<header><div><div class="dr">Doctor</div><h1> Islam Gomaa Beltagy</h1><div class="t">Consultant of Orthopedic Surgery</div></div><div class="ar"><div class="dr">دكتور</div><h1>${esc(DOCTOR.name)}</h1><div class="t">${esc(DOCTOR.title)}</div></div></header>
 <div class="bar">INJECTION RECORD <small>MSK Injection Documentation</small></div>
 <div class="sec"><b class="h">Patient Information</b><div class="row c3">
   <div>Name: ${ln(p?.fullName ?? '')}</div><div>Age: ${ln(ageOf(p?.birthDate))}</div><div>Gender: ${cks(['M', 'F'], p?.genderUnknown ? '' : p?.gender === 'male' ? 'M' : p?.gender === 'female' ? 'F' : '')}</div>

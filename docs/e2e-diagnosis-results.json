@@ -1,6 +1,6 @@
 {
-  "at": "2026-10-28T20:13:28.396Z",
-  "passed": 60,
+  "at": "2026-10-28T21:03:24.382Z",
+  "passed": 64,
   "failed": 0,
   "results": [
     {
@@ -11,17 +11,17 @@
     {
       "name": "حساب مدير تشخيص اختبار",
       "ok": true,
-      "detail": "{\"id\":\"ea13ca73-6def-449f-bf1a-777dfdc02d24\",\"name\":\"مدير تشخيص اختبار\",\"username\":\"201200000981\",\"role\":\"system_admin\","
+      "detail": "{\"id\":\"cab54286-af53-4de0-9f01-b4bbacd0fcd3\",\"name\":\"مدير تشخيص اختبار\",\"username\":\"201200000981\",\"role\":\"system_admin\","
     },
     {
       "name": "حساب طبيب تشخيص اختبار",
       "ok": true,
-      "detail": "{\"id\":\"610453d7-977d-4fb4-b5e3-5d757feeb140\",\"name\":\"طبيب تشخيص اختبار\",\"username\":\"201200000982\",\"role\":\"therapist\",\"ph"
+      "detail": "{\"id\":\"ddbd6247-05af-4ac0-84c0-8c58f64093cb\",\"name\":\"طبيب تشخيص اختبار\",\"username\":\"201200000982\",\"role\":\"therapist\",\"ph"
     },
     {
       "name": "حساب استقبال تشخيص اختبار",
       "ok": true,
-      "detail": "{\"id\":\"628e113e-d7af-4f25-8d12-7c6d97abf0c7\",\"name\":\"استقبال تشخيص اختبار\",\"username\":\"201200000983\",\"role\":\"reception\","
+      "detail": "{\"id\":\"096b3f3d-e2d9-4ca4-961b-3779f393829e\",\"name\":\"استقبال تشخيص اختبار\",\"username\":\"201200000983\",\"role\":\"reception\","
     },
     {
       "name": "مريضين للاختبار",
@@ -86,7 +86,7 @@
     {
       "name": "الصف فيه الموبايل ورقم الملف ورقم الزيارة والطبيب",
       "ok": true,
-      "detail": "8:00 مسامح عادل تشخيصاختبار+201200000984 · ملف 4 · زيارة MV-1156 · كشف عظام · د. تشخيص اختبارحضرتشخيص"
+      "detail": "8:00 مسامح عادل تشخيصاختبار+201200000984 · ملف 3 · زيارة MV-1177 · كشف عظام · د. تشخيص اختبارحضرتشخيص"
     },
     {
       "name": "نافذة التشخيص مربوطة بزيارة «أ»",
@@ -96,7 +96,7 @@
     {
       "name": "التشخيص الجديد اتحفظ مربوط بزيارة «أ» ومكتمل",
       "ok": true,
-      "detail": "{\"id\":\"ceb9d796-1075-4473-8674-455d7053a63c\",\"appointment_id\":\"32f329e1-8f5c-4a72-8f76-09d9713c7987\",\"complete\":true,\"diagnosis\":\"Knee: Meniscal tear\",\"complaint\":\"Knee pain\",\"created_by\":\"ea13ca73-6d"
+      "detail": "{\"id\":\"3d4287bb-8d1d-4b1c-90cc-078bf266f180\",\"appointment_id\":\"d129bea7-39ec-407a-bb57-3c369a27a3a7\",\"complete\":true,\"diagnosis\":\"Knee: Meniscal tear\",\"complaint\":\"Knee pain\",\"created_by\":\"cab54286-af"
     },
     {
       "name": "التشخيصات القديمة لمريض «أ» لسه موجودة (3 تشخيصات)",
@@ -106,7 +106,7 @@
     {
       "name": "الطبيب اللي سجّل التشخيص اتسجّل (created_by)",
       "ok": true,
-      "detail": "ea13ca73-6def-449f-bf1a-777dfdc02d24"
+      "detail": "cab54286-af53-4de0-9f01-b4bbacd0fcd3"
     },
     {
       "name": "بعد الحفظ رجع لقايمة «بانتظار التشخيص» و«ب» لسه فيها",
@@ -121,7 +121,7 @@
     {
       "name": "التشخيص الناقص اتحفظ «يحتاج استكمال» ومربوط بزيارة «ب»",
       "ok": true,
-      "detail": "[{\"id\":\"329219dc-7e3e-44b5-bd32-f303fab2af4d\",\"appointment_id\":\"ff5c1d8b-2854-4066-bd45-b2f9f26805a3\",\"complete\":false,\"diagnosis\":\"\",\"complaint\":\"\",\"created_by\":\"ea13ca73-6def-449f-bf1a-777dfdc02d24\""
+      "detail": "[{\"id\":\"6f25f436-267f-4c23-8637-d2e7b48e7e53\",\"appointment_id\":\"4b65b59d-8232-4ae8-8557-7766789b11a8\",\"complete\":false,\"diagnosis\":\"\",\"complaint\":\"\",\"created_by\":\"cab54286-af53-4de0-9f01-b4bbacd0fcd3\""
     },
     {
       "name": "مريض «ب» فاضل في الانتظار بعلامة «يحتاج استكمال» وزرار «استكمال»",
@@ -146,7 +146,7 @@
     {
       "name": "الاستكمال عدّل نفس السجل (مفيش تشخيص مكرر) وبقى مكتمل بتشخيص الكاحل",
       "ok": true,
-      "detail": "[{\"id\":\"329219dc-7e3e-44b5-bd32-f303fab2af4d\",\"appointment_id\":\"ff5c1d8b-2854-4066-bd45-b2f9f26805a3\",\"complete\":true,\"diagnosis\":\"Ankle: Ankle sprain (ATFL / CFL)\",\"complaint\":\"Ankle pain\",\"created_b"
+      "detail": "[{\"id\":\"6f25f436-267f-4c23-8637-d2e7b48e7e53\",\"appointment_id\":\"4b65b59d-8232-4ae8-8557-7766789b11a8\",\"complete\":true,\"diagnosis\":\"Ankle: Ankle sprain (ATFL / CFL)\",\"complaint\":\"Ankle pain\",\"created_b"
     },
     {
       "name": "مريض «ب» اختفى من الانتظار بعد الاستكمال",
@@ -251,10 +251,30 @@
     {
       "name": "مريض حضر النهارده: المتابعة بتتربط بزيارته",
       "ok": true,
-      "detail": "[{\"appointment_id\":\"ff5c1d8b-2854-4066-bd45-b2f9f26805a3\"}]"
+      "detail": "[{\"appointment_id\":\"4b65b59d-8232-4ae8-8557-7766789b11a8\"}]"
     },
     {
       "name": "بحث المتابعة من غير نتايج بيعرض رسالة واضحة",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "تبويب «الأشعة» ظاهر بزرار «طلب أشعة» وبحث",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "تبويب «التحاليل» ظاهر بزرار «طلب تحليل» وبحث",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "تبويب «الحقن» ظاهر بزرار «سجل حقن جديد» وبحث",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "«سجل حقن جديد» بيطلب اختيار المريض الأول",
       "ok": true,
       "detail": ""
     },

@@ -148,7 +148,7 @@ const summary = (s: InjectionSheet) => [
   s.technique,
 ].filter(Boolean).join(' · ');
 
-export function InjectionList({ items, onEdit }: { items: Injection[]; onEdit: (n: Injection) => void }) {
+export function InjectionList({ items, onEdit, showPatient }: { items: Injection[]; onEdit: (n: Injection) => void; showPatient?: boolean }) {
   const { run } = useRun();
   const perm = useClinicalCan();
   if (!items.length) return <EmptyState icon="target" title="لا توجد سجلات حقن" text="سجل الحقن بيتملى مع كل حقنة (مكانها ونوع المادة والتقنية والمتابعة)." />;
@@ -158,6 +158,7 @@ export function InjectionList({ items, onEdit }: { items: Injection[]; onEdit: (
         <div className="dx-queue__row" key={n.id}>
           <span className="dx-queue__time num">{fmtDate(n.date)}</span>
           <div className="dx-queue__who">
+            {showPatient && <b>{db.patient(n.patientId)?.fullName ?? '—'} <span className="muted-sm">ملف {fileNoText(db.patient(n.patientId)?.fileNo)}</span></b>}
             <b dir="ltr" style={{ textAlign: 'start' }}>{summary(s) || 'حقنة'}</b>
             <small>{s.diagnosis || '—'}{s.complications === 'Yes' ? ' · مضاعفات' : ''}</small>
           </div>

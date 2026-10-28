@@ -3,7 +3,9 @@
 // و«متابعة المرضى» (حضور النهارده لمرضى اتشخصوا قبل كده + بحث في كل المرضى اللي اتشخصوا ← شيت متابعة التمريض) و«المرضى اللي اتشخصوا» (بحث بالاسم أو جزء منه أو الموبايل أو رقم الملف). مريض مختار ← ملف تشخيصاته كله + تشخيص جديد.
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { isIncomplete, ortho, useOrthoVersion, type Consultation, type Nursing } from './data';
+import { isIncomplete, ortho, useOrthoVersion, type Consultation, type Imaging, type Injection, type Nursing } from './data';
+import { ImagingModal, ImagingTable } from './Imaging';
+import { InjectionList, InjectionModal } from './Injections';
 import { LoadState, PageHead, PatientSelect, SearchBox, patientFile, patientName, useClinicalCan } from './kit';
 import { ConsultModal, DraftCard, clearConsultDraft, listConsultDrafts } from './Consultations';
 import { DiagnosisTab } from './DiagnosisTab';
@@ -21,8 +23,14 @@ export default function Diagnosis() {
   const perm = useClinicalCan();
   const [params, setParams] = useSearchParams();
   const patientId = params.get('patient') ?? '';
-  type View = 'waiting' | 'follow' | 'done';
-  const view: View = params.get('tab') === 'done' ? 'done' : params.get('tab') === 'follow' ? 'follow' : 'waiting';
+  // الأشعة / التحاليل / الحقن: كل واحدة تبويب لوحده جنب «متابعة المرضى» — لكل المرضى، ببحث وزرار طلب/سجل جديد
+  type View = 'waiting' | 'follow' | 'imaging' | 'labs' | 'inj' | 'done';
+  const VIEWS: View[] = ['waiting', 'follow', 'imaging', 'labs', 'inj', 'done'];
+  const view: View = VIEWS.includes(params.get('tab') as View) ? params.get('tab') as View : 'waiting';
+  const [rq, setRq] = useState(''); // بحث في الأشعة / التحاليل / الحقن
+  const [newRec, setNewRec] = useState<{ kind: 'imaging' | 'labs' | 'inj'; patientId: string; open: boolean } | null>(null);
+  const [editImg, setEditImg] = useState<Imaging | null>(null);
+  const [editInj, setEditInj] = useState<Injection | null>(null);
   const [sheet, setSheet] = useState<{ patientId: string; appointmentId: string | null; initial?: Nursing } | null>(null);
   const [edit, setEdit] = useState<Consultation | 'new' | null>(null);
   const [resume, setResume] = useState(false);
@@ -128,6 +136,9 @@ export default function Diagnosis() {
           <button type="button" role="tab" aria-selected={view === 'follow'} className={`seg__btn ${view === 'follow' ? 'active' : ''}`} onClick={() => setView('follow')}>
             متابعة المرضى {followLeft > 0 && <span className="badge badge--warn num">{followLeft}</span>}
           </button>
+          {([['imaging', 'الأشعة'], ['labs', 'التحاليل'], ['inj', 'الحقن']] as const).map(([v, l]) => (
+            <button key={v} type="button" role="tab" aria-selected={view === v} className={`seg__btn ${view === v ? 'active' : ''}`} onClick={() => setView(v)}>{l}</button>
+          ))}
           <button type="button" role="tab" aria-selected={view === 'done'} className={`seg__btn ${view === 'done' ? 'active' : ''}`} onClick={() => setView('done')}>
             المرضى اللي اتشخصوا {diagnosed.length > 0 && <span className="badge badge--brand num">{diagnosed.length}</span>}
           </button>
@@ -289,6 +300,28 @@ export default function Diagnosis() {
         </section>
       </>)}
 
+      {!patientId && (view === 'imaging' || view === 'labs' || view === 'inj') && (() => {
+        const t = rq.trim();
+        const match = (pid: string) => !t || patientMatches(db.patient(pid) ?? { fullName: patientName(pid) }, t);
+        const imgs = view === 'inj' ? [] : ortho.list('imaging').filter((m) => (view === 'labs') === (m.kind === 'lab') && match(m.patientId)).sort((a, b) => b.requestedAt.localeCompare(a.requestedAt));
+        const injs = view === 'inj' ? ortho.list('injections').filter((n) => match(n.patientId)).sort((a, b) => b.date.localeCompare(a.date)) : [];
+        const label = view === 'imaging' ? 'طلب أشعة' : view === 'labs' ? 'طلب تحليل' : 'سجل حقن جديد';
+        return (
+          <section className="card">
+            <div className="card__head">
+              <h2>{view === 'imaging' ? 'الأشعة' : view === 'labs' ? 'التحاليل' : 'الحقن'}</h2>
+              {perm.add && <Button size="sm" icon="plus" onClick={() => setNewRec({ kind: view, patientId: '', open: false })}>{label}</Button>}
+            </div>
+            <div className="filter-bar"><div className="field"><SearchBox value={rq} onChange={setRq} placeholder="ابحث باسم المريض (أو جزء منه) أو رقم الموبايل أو رقم الملف" /></div></div>
+            <div className="card__body">
+              <LoadState kind={view === 'inj' ? 'injections' : 'imaging'}>
+                {view === 'inj' ? <InjectionList items={injs} showPatient onEdit={(n) => setEditInj(n)} /> : <ImagingTable items={imgs} onEdit={(m) => setEditImg(m)} />}
+              </LoadState>
+            </div>
+          </section>
+        );
+      })()}
+
       {!patientId && view === 'done' && (
         <section className="card">
           <div className="filter-bar"><div className="field"><SearchBox value={q} onChange={setQ} placeholder="ابحث باسم المريض (أو جزء منه) أو رقم الموبايل أو رقم الملف" /></div></div>
@@ -345,6 +378,18 @@ export default function Diagnosis() {
           <p className="muted" style={{ marginBottom: 0 }}>للمريض اللي مش في قايمة الانتظار (ما اتعملوش حضور). لو اتعمله حضور النهارده، التشخيص بيتربط بزيارته لوحده.</p>
         </Modal>
       )}
+      {newRec && !newRec.open && (
+        <Modal title={newRec.kind === 'imaging' ? 'طلب أشعة' : newRec.kind === 'labs' ? 'طلب تحليل' : 'سجل حقن جديد'} onClose={() => setNewRec(null)} footer={<>
+          <Button variant="outline" onClick={() => setNewRec(null)}>إلغاء</Button>
+          <Button icon="check" disabled={!newRec.patientId} onClick={() => setNewRec({ ...newRec, open: true })}>متابعة</Button>
+        </>}>
+          <div className="field" style={{ marginBottom: 0 }}><label>المريض</label><PatientSelect value={newRec.patientId} onChange={(v) => setNewRec({ ...newRec, patientId: v })} /></div>
+        </Modal>
+      )}
+      {newRec?.open && newRec.kind !== 'inj' && <ImagingModal patientId={newRec.patientId} defaultKind={newRec.kind === 'labs' ? 'lab' : 'xray'} onClose={() => setNewRec(null)} />}
+      {newRec?.open && newRec.kind === 'inj' && <InjectionModal patientId={newRec.patientId} onClose={() => setNewRec(null)} />}
+      {editImg && <ImagingModal patientId={editImg.patientId} initial={editImg} onClose={() => setEditImg(null)} />}
+      {editInj && <InjectionModal patientId={editInj.patientId} initial={editInj} onClose={() => setEditInj(null)} />}
       {sheet && <NursingModal patientId={sheet.patientId} appointmentId={sheet.appointmentId} initial={sheet.initial} onClose={() => setSheet(null)} />}
       {/* «تشخيص» بيفتح الشيت على طول: شيت التمريض (وفيه خريطة الجسم لمكان الألم) ← كشف الطبيب ← الروشتة */}
       {edit && patientId && <ConsultModal patientId={patientId} appointmentId={edit === 'new' ? newVisit : undefined} initial={edit === 'new' ? undefined : edit} resume={edit === 'new' && resume} onClose={closeModal} />}

@@ -963,7 +963,7 @@ textarea.input { height: auto; padding-block: 10px; resize: vertical; line-heigh
 .dx-queue__who { display: flex; flex-direction: column; min-width: 0; }
 .dx-queue__who b { color: var(--text-strong, var(--brand-700)); }
 .dx-queue__who small { color: var(--muted); font-size: 13px; }
-.dx-queue__act { display: flex; justify-content: flex-end; }
+.dx-queue__act { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
 @media (max-width: 640px) {
   .dx-queue__row { grid-template-columns: auto minmax(0, 1fr); }
   .dx-queue__row.dx-pat { grid-template-columns: auto minmax(0, 1fr); }

@@ -178,7 +178,7 @@ export default function Diagnosis() {
                 : (
                   <div className="dx-queue">
                     {found.map((x) => (
-                      <button type="button" className="dx-queue__row dx-pat" key={x.id} onClick={() => pick(x.id)}>
+                      <div className="dx-queue__row dx-pat" key={x.id} onClick={() => pick(x.id)}>
                         <span className="dx-queue__time num">{fmtDate(x.last.date)}</span>
                         <div className="dx-queue__who">
                           <b>{x.p?.fullName ?? patientName(x.id)}</b>
@@ -188,8 +188,11 @@ export default function Diagnosis() {
                           </small>
                         </div>
                         {x.incomplete > 0 ? <span className="badge badge--warn">فيه تشخيص يحتاج استكمال</span> : <span />}
-                        <span className="dx-queue__act"><span className="btn btn--outline btn--sm">فتح ملف التشخيص</span></span>
-                      </button>
+                        <span className="dx-queue__act" onClick={(e) => e.stopPropagation()}>
+                          {perm.add && <Button size="sm" icon="stethoscope" onClick={() => startPicked(x.id)}>{drafts.some((d) => d.patientId === x.id) ? 'استكمال التشخيص' : 'تشخيص جديد'}</Button>}
+                          <Button size="sm" variant="outline" onClick={() => pick(x.id)}>فتح ملف التشخيص</Button>
+                        </span>
+                      </div>
                     ))}
                     {!term && diagnosed.length > found.length && <p className="muted" style={{ margin: 0 }}>ظاهر آخر {found.length} مريض — اكتب في البحث عشان توصل لأي مريض تاني.</p>}
                   </div>

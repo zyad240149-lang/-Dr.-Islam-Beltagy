@@ -6,6 +6,10 @@
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { chromium } from 'playwright-core';
+import { spawn } from 'node:child_process';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+let edge;
 import { allDayHours, api, cairoToday, deleteEmployee, login, loginAdmin, randomPassword, sql, suite } from './_harness.mjs';
 
 const { check, section, save } = suite();
@@ -89,7 +93,10 @@ try {
 
   server = await createServer({ configFile: fileURLToPath(new URL('../vite.config.ts', import.meta.url)), root: fileURLToPath(new URL('..', import.meta.url)), logLevel: 'error', server: { port: PORT, strictPort: true, host: '127.0.0.1' } });
   await server.listen();
-  browser = await chromium.launch({ channel: 'msedge', headless: true });
+  // Edge 156 مابقاش بيقوم بـ chromium.launch (الـ headless القديم اتشال) — بنشغّله إحنا ونوصل له بـ CDP
+  edge = spawn('C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', ['--headless=new', '--remote-debugging-port=9333', `--user-data-dir=${join(tmpdir(), 'e2e-edge-' + Date.now())}`, '--no-first-run', 'about:blank']);
+  for (let i = 0; !browser && i < 30; i++) { await new Promise((r) => setTimeout(r, 500)); browser = await chromium.connectOverCDP('http://127.0.0.1:9333').catch(() => null); }
+  if (!browser) throw new Error('Edge ما اشتغلش');
 
   const open = async (who, viewport = { width: 1366, height: 860 }) => {
     const ctx = await browser.newContext({ viewport, locale: 'ar-EG' });
@@ -175,7 +182,7 @@ try {
   await openDoctor(A.page, 'الكاحل والقدم');
   check('شيت الكاحل والقدم بيفتح لما المنطقة كاحل', await A.page.locator('.modal .sh-box__h', { hasText: 'Special Tests' }).count() === 1 && await A.page.locator('.modal .sh-ck', { hasText: 'Thompson test' }).count() === 1);
   // إلغاء المنطقة (✕) ← اختيار منطقة من الأول ← تاني الكاحل
-  await A.page.locator('.sh-region__x[aria-label="إلغاء منطقة الكاحل والقدم"]').click();
+  await A.page.locator('.sh-region__x[aria-label="إلغاء منطقة كشف الكاحل والقدم"]').click();
   check('إلغاء المنطقة (✕) بيرجّع لاختيار منطقة تانية', await A.page.locator('.sh-choose').count() === 1);
   await A.page.locator('.sh-choose button', { hasText: 'الكاحل والقدم' }).click();
   check('زرار «رجوع: الشيت العام» موجود في كشف الطبيب', await A.page.locator('.modal button', { hasText: 'رجوع: الشيت العام' }).count() === 1);
@@ -323,6 +330,7 @@ try {
   }
 } finally {
   await browser?.close().catch(() => {});
+  edge?.kill();
   await server?.close().catch(() => {});
   section('تنظيف بيانات الاختبار');
   try {

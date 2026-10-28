@@ -8,7 +8,7 @@ import { findCondition } from '../data/bodyRegions';
 import type { DiagnosisRef } from '../types';
 import { fmtDate, fmtDateTime, fmtTime, todayYmd } from '../utils/format';
 import { openVisitFor } from './visits';
-import { SHEET_TAB, activeSheets, regionSheet, type SheetId } from './regionSheets';
+import { SHEET_TAB, activeSheets, regionSheet, removeSheet, sheetFilled, type SheetId } from './regionSheets';
 import { DoctorPainMap, RegionChooser, RegionSheetForm, SheetSwitch } from './RegionSheet';
 import { useToast } from '../hooks/useToast';
 import { IMAGING_KIND, IMAGING_STATUS, REGIONS, SIDE, isIncomplete, ortho, useOrthoVersion, type Attachment, type Consultation, type ImagingKind, type ImagingRequest, type Medication, type Side } from './data';
@@ -124,6 +124,11 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
   const active = activeSheets(sheet);
   const [docSheet, setDocSheet] = useState<SheetId | null>(null);
   const curSheet = docSheet && active.includes(docSheet) ? docSheet : active[0];
+  const dropSheet = (id: SheetId) => {
+    if (sheetFilled(sheet, id) && !window.confirm(`إلغاء منطقة «${SHEET_TAB[id]}»؟ اللي اتكتب في شيتها هيتمسح، ومكان الألم ده هيتشال من جسم الإنسان.`)) return;
+    changeSheet((x) => removeSheet(x, id));
+    setDocSheet(null);
+  };
   const addSheet = (id: SheetId) => { changeSheet((x) => (x.on.includes(`sheets|${id}`) ? x : { ...x, on: [...x.on, `sheets|${id}`] })); setDocSheet(id); };
   const [mapKey, setMapKey] = useState('x.dx.other'); // خريطة الجسم بتكتب في «Others» بتاع الشيت اللي اتفتحت منه
   const openMap = (key: string) => { setMapKey(key); setMapOpen(true); };
@@ -270,7 +275,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
         {tab === 'doctor' && <>
           <DoctorPainMap sheet={sheet} onChange={changeSheet} />
           {!curSheet ? <RegionChooser onPick={addSheet} /> : <>
-            <SheetSwitch active={active} current={curSheet} onPick={setDocSheet} onAdd={addSheet} />
+            <SheetSwitch active={active} current={curSheet} onPick={setDocSheet} onAdd={addSheet} onRemove={dropSheet} />
             {curSheet === 'hipknee'
               ? <DoctorSheet sheet={sheet} onChange={changeSheet} side={c.side} onSide={(v) => set('side', v)}
                 icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap('x.dx.other')} />
@@ -278,6 +283,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
                 icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap(`${regionSheet(curSheet)!.prefix}.dx.other`)} />}
           </>}
           <div className="sh-next">
+            <Button variant="outline" icon="chevron" onClick={() => goTab('nurse')}>رجوع: شيت التمريض</Button>
             <Button variant="outline" icon="print" disabled={!c.patientId} onClick={() => setOut(['doctor'])}>طباعة / إرسال كشف الطبيب</Button>
             <Button icon="chevronLeft" onClick={() => goTab('rx')}>التالي: الروشتة والأشعة والتحاليل</Button>
           </div>
@@ -356,7 +362,10 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
         <Section icon="doc" title="التعليمات وملاحظات الطبيب">
           <textarea className="input" rows={3} placeholder="مثال: راحة وتجنب طلوع السلم، كمادات تلج 15 دقيقة 3 مرات يوميًا، جلسات علاج طبيعي، رباط ضاغط…" value={c.plan} onChange={(e) => set('plan', e.target.value)} />
         </Section>
-        <div className="sh-next"><Button variant="outline" icon="print" disabled={!c.patientId} onClick={() => setOut(['rx'])}>طباعة / إرسال الروشتة</Button></div>
+        <div className="sh-next">
+          <Button variant="outline" icon="chevron" onClick={() => goTab('doctor')}>رجوع: كشف الطبيب</Button>
+          <Button variant="outline" icon="print" disabled={!c.patientId} onClick={() => setOut(['rx'])}>طباعة / إرسال الروشتة</Button>
+        </div>
         </>}
       </div>
       {out && <DiagnosisOutput initial={out} patient={db.patient(c.patientId)} visitNo={visitNo} onClose={() => setOut(null)}

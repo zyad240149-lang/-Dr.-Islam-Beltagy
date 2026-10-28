@@ -166,6 +166,11 @@ try {
   // «ب» بيشتكي من الكاحل ← شيت «الكاحل والقدم»
   await openDoctor(A.page, 'الكاحل والقدم');
   check('شيت الكاحل والقدم بيفتح لما المنطقة كاحل', await A.page.locator('.modal .sh-box__h', { hasText: 'Special Tests' }).count() === 1 && await A.page.locator('.modal .sh-ck', { hasText: 'Thompson test' }).count() === 1);
+  // إلغاء المنطقة (✕) ← اختيار منطقة من الأول ← تاني الكاحل
+  await A.page.locator('.sh-region__x[aria-label="إلغاء منطقة الكاحل والقدم"]').click();
+  check('إلغاء المنطقة (✕) بيرجّع لاختيار منطقة تانية', await A.page.locator('.sh-choose').count() === 1);
+  await A.page.locator('.sh-choose button', { hasText: 'الكاحل والقدم' }).click();
+  check('زرار «رجوع: شيت التمريض» موجود في كشف الطبيب', await A.page.locator('.modal button', { hasText: 'رجوع: شيت التمريض' }).count() === 1);
   await tick(A.page, 'Ankle pain');
   await tick(A.page, 'Ankle sprain (ATFL / CFL)');
   await saveAnswer(A.page, 'التشخيص اكتمل');

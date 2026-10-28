@@ -112,16 +112,20 @@ export function RegionSheetForm({ def, sheet, onChange, side, onSide, icd10, onI
 }
 
 /** شيتات المناطق اللي ظاهرة (من مكان الألم) + إضافة منطقة تانية */
-export function SheetSwitch({ active, current, onPick, onAdd }: { active: SheetId[]; current: SheetId; onPick: (id: SheetId) => void; onAdd: (id: SheetId) => void }) {
+// ✕ جنب كل منطقة = إلغاءها (ولو هي الوحيدة بيظهر اختيار منطقة تانية)، و«+ منطقة تانية» = إضافة/تغيير
+export function SheetSwitch({ active, current, onPick, onAdd, onRemove }: { active: SheetId[]; current: SheetId; onPick: (id: SheetId) => void; onAdd: (id: SheetId) => void; onRemove: (id: SheetId) => void }) {
   const rest = SHEET_ORDER.filter((id) => !active.includes(id));
   return (
     <div className="sh-regions" role="tablist" aria-label="شيت المنطقة">
       <span className="sh-regions__l">شيت المنطقة:</span>
       {active.map((id) => (
-        <button key={id} type="button" role="tab" aria-selected={current === id} className={`cx-chip ${current === id ? 'is-on' : ''}`} onClick={() => onPick(id)}>{SHEET_TAB[id]}</button>
+        <span key={id} className={`sh-region${current === id ? ' is-on' : ''}`}>
+          <button type="button" role="tab" aria-selected={current === id} className="sh-region__pick" onClick={() => onPick(id)}>{SHEET_TAB[id]}</button>
+          <button type="button" className="sh-region__x" aria-label={`إلغاء منطقة ${SHEET_TAB[id]}`} title="إلغاء المنطقة" onClick={() => onRemove(id)}><Icon name="close" size={14} /></button>
+        </span>
       ))}
       {rest.length > 0 && (
-        <select className="input sh-regions__add" aria-label="إضافة شيت منطقة تانية" value="" onChange={(e) => { if (e.target.value) onAdd(e.target.value as SheetId); }}>
+        <select className="input sh-regions__add" aria-label="إضافة أو تغيير منطقة" value="" onChange={(e) => { if (e.target.value) onAdd(e.target.value as SheetId); }}>
           <option value="">+ منطقة تانية…</option>
           {rest.map((id) => <option key={id} value={id}>{SHEET_TAB[id]}</option>)}
         </select>

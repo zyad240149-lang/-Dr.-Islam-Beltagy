@@ -925,7 +925,14 @@ textarea.input { height: auto; padding-block: 10px; resize: vertical; line-heigh
 .sh-docmap__body { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 0 12px 12px; max-width: 320px; margin: 0 auto; }
 .sh-docmap__body .seg { width: 100%; }
 .sh-regions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
-.sh-regions .cx-chip { margin: 0; }
+.sh-region { display: inline-flex; align-items: center; height: 32px; border: 1px solid var(--line); border-radius: var(--r-pill); background: var(--surface); overflow: hidden; }
+.sh-region__pick { height: 100%; padding: 0 6px 0 12px; border: 0; background: none; font: inherit; font-size: 13.5px; font-weight: 600; color: var(--text); cursor: pointer; }
+[dir="rtl"] .sh-region__pick { padding: 0 12px 0 6px; }
+.sh-region__x { display: grid; place-items: center; width: 28px; height: 100%; border: 0; background: none; color: var(--muted); cursor: pointer; }
+.sh-region__x:hover { background: var(--danger-bg); color: var(--danger); }
+.sh-region.is-on { background: var(--brand-700); border-color: var(--brand-700); }
+.sh-region.is-on .sh-region__pick, .sh-region.is-on .sh-region__x { color: #fff; }
+.sh-region.is-on .sh-region__x:hover { background: rgba(255, 255, 255, .18); color: #fff; }
 .sh-regions__l { font-weight: 700; color: var(--brand-700); }
 .sh-regions__add { width: auto; height: 32px; padding: 0 10px; font-size: 13.5px; border-radius: var(--r-pill); }
 .sh-choose { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 28px 16px; border: 1.5px dashed var(--brand-100); border-radius: var(--r); background: var(--brand-50); color: var(--brand-700); text-align: center; }

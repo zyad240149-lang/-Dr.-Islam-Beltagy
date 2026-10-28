@@ -1,6 +1,6 @@
 {
-  "at": "2026-10-28T10:26:19.715Z",
-  "passed": 46,
+  "at": "2026-10-28T10:44:15.847Z",
+  "passed": 48,
   "failed": 0,
   "results": [
     {
@@ -11,17 +11,17 @@
     {
       "name": "حساب مدير تشخيص اختبار",
       "ok": true,
-      "detail": "{\"id\":\"61f22657-c876-4987-87ed-0452cdde4d4a\",\"name\":\"مدير تشخيص اختبار\",\"username\":\"201200000981\",\"role\":\"system_admin\","
+      "detail": "{\"id\":\"cb1947f9-b364-4225-ad9e-c13b408213f8\",\"name\":\"مدير تشخيص اختبار\",\"username\":\"201200000981\",\"role\":\"system_admin\","
     },
     {
       "name": "حساب طبيب تشخيص اختبار",
       "ok": true,
-      "detail": "{\"id\":\"f5a087f6-7990-43cc-8851-7d97d60eeeee\",\"name\":\"طبيب تشخيص اختبار\",\"username\":\"201200000982\",\"role\":\"therapist\",\"ph"
+      "detail": "{\"id\":\"e7a67711-f021-4966-8825-0f25ea98613f\",\"name\":\"طبيب تشخيص اختبار\",\"username\":\"201200000982\",\"role\":\"therapist\",\"ph"
     },
     {
       "name": "حساب استقبال تشخيص اختبار",
       "ok": true,
-      "detail": "{\"id\":\"dcb7fda1-a74c-4dcf-afb0-403e6debb736\",\"name\":\"استقبال تشخيص اختبار\",\"username\":\"201200000983\",\"role\":\"reception\","
+      "detail": "{\"id\":\"bee6bfea-9519-42fa-9c92-ea46b17958f5\",\"name\":\"استقبال تشخيص اختبار\",\"username\":\"201200000983\",\"role\":\"reception\","
     },
     {
       "name": "مريضين للاختبار",
@@ -86,7 +86,7 @@
     {
       "name": "الصف فيه الموبايل ورقم الملف ورقم الزيارة والطبيب",
       "ok": true,
-      "detail": "8:00 مسامح عادل تشخيصاختبار+201200000984 · ملف 3 · زيارة MV-1126 · كشف عظام · د. تشخيص اختبارحضرتشخيص"
+      "detail": "8:00 مسامح عادل تشخيصاختبار+201200000984 · ملف 3 · زيارة MV-1128 · كشف عظام · د. تشخيص اختبارحضرتشخيص"
     },
     {
       "name": "نافذة التشخيص مربوطة بزيارة «أ»",
@@ -96,7 +96,7 @@
     {
       "name": "التشخيص الجديد اتحفظ مربوط بزيارة «أ» ومكتمل",
       "ok": true,
-      "detail": "{\"id\":\"807bdd93-6d3b-4a49-91a7-fc43a17ebcc0\",\"appointment_id\":\"2e2c36a7-ce22-48ce-bca2-b1b6476dd9e6\",\"complete\":true,\"diagnosis\":\"Knee: Meniscal tear\",\"complaint\":\"Knee pain\",\"created_by\":\"61f22657-c8"
+      "detail": "{\"id\":\"bbe5455f-d9de-432f-a5af-afc08ed7d1f9\",\"appointment_id\":\"e8d5be18-6567-4482-a83b-8cd9af57af6a\",\"complete\":true,\"diagnosis\":\"Knee: Meniscal tear\",\"complaint\":\"Knee pain\",\"created_by\":\"cb1947f9-b3"
     },
     {
       "name": "التشخيصات القديمة لمريض «أ» لسه موجودة (3 تشخيصات)",
@@ -106,7 +106,7 @@
     {
       "name": "الطبيب اللي سجّل التشخيص اتسجّل (created_by)",
       "ok": true,
-      "detail": "61f22657-c876-4987-87ed-0452cdde4d4a"
+      "detail": "cb1947f9-b364-4225-ad9e-c13b408213f8"
     },
     {
       "name": "بعد الحفظ رجع لقايمة «بانتظار التشخيص» و«ب» لسه فيها",
@@ -121,7 +121,7 @@
     {
       "name": "التشخيص الناقص اتحفظ «يحتاج استكمال» ومربوط بزيارة «ب»",
       "ok": true,
-      "detail": "[{\"id\":\"624c4557-9a42-4414-94ce-718d6cdacccc\",\"appointment_id\":\"9c81d93d-81a8-4503-ae65-495b7fad01d9\",\"complete\":false,\"diagnosis\":\"\",\"complaint\":\"\",\"created_by\":\"61f22657-c876-4987-87ed-0452cdde4d4a\""
+      "detail": "[{\"id\":\"2630c498-fcb9-4426-85f1-e166598a6e06\",\"appointment_id\":\"bbd7dc62-5163-4f70-848c-2d88130fcf41\",\"complete\":false,\"diagnosis\":\"\",\"complaint\":\"\",\"created_by\":\"cb1947f9-b364-4225-ad9e-c13b408213f8\""
     },
     {
       "name": "مريض «ب» فاضل في الانتظار بعلامة «يحتاج استكمال» وزرار «استكمال»",
@@ -134,9 +134,19 @@
       "detail": ""
     },
     {
+      "name": "إلغاء المنطقة (✕) بيرجّع لاختيار منطقة تانية",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "زرار «رجوع: شيت التمريض» موجود في كشف الطبيب",
+      "ok": true,
+      "detail": ""
+    },
+    {
       "name": "الاستكمال عدّل نفس السجل (مفيش تشخيص مكرر) وبقى مكتمل بتشخيص الكاحل",
       "ok": true,
-      "detail": "[{\"id\":\"624c4557-9a42-4414-94ce-718d6cdacccc\",\"appointment_id\":\"9c81d93d-81a8-4503-ae65-495b7fad01d9\",\"complete\":true,\"diagnosis\":\"Ankle: Ankle sprain (ATFL / CFL)\",\"complaint\":\"Ankle pain\",\"created_b"
+      "detail": "[{\"id\":\"2630c498-fcb9-4426-85f1-e166598a6e06\",\"appointment_id\":\"bbd7dc62-5163-4f70-848c-2d88130fcf41\",\"complete\":true,\"diagnosis\":\"Ankle: Ankle sprain (ATFL / CFL)\",\"complaint\":\"Ankle pain\",\"created_b"
     },
     {
       "name": "مريض «ب» اختفى من الانتظار بعد الاستكمال",

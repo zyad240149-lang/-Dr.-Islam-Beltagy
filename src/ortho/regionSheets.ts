@@ -218,6 +218,19 @@ const REGION_SHEET: Record<string, SheetId> = {
   thoracic: 'lumbar', lumbar: 'lumbar', sacrum: 'lumbar',
 };
 
+/** الشيت اللي بيفتحه مكان ألم («knee:right») */
+export const sheetForPain = (painKey: string): SheetId | undefined => REGION_SHEET[painKey.split(':')[0]];
+/** إلغاء منطقة: شيلها من أماكن الألم + اللي اتضاف بإيد الطبيب + كل اللي اتكتب في شيتها */
+export function removeSheet(s: ExamSheet, id: SheetId): ExamSheet {
+  const p = PREFIX[id] + '.';
+  return {
+    ...s,
+    pain: s.pain.filter((k) => sheetForPain(k) !== id),
+    on: s.on.filter((o) => o !== `sheets|${id}` && !o.startsWith(p)),
+    txt: Object.fromEntries(Object.entries(s.txt).filter(([k]) => !k.startsWith(p))),
+  };
+}
+
 /** فيه حاجة متكتبة في شيت المنطقة دي */
 export function sheetFilled(s: ExamSheet, id: SheetId): boolean {
   const p = PREFIX[id] + '.';

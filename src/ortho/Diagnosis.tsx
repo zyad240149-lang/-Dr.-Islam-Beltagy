@@ -83,8 +83,14 @@ export default function Diagnosis() {
   // «متابعة المرضى»: كل المرضى اللي اتشخصوا متاحين لشيت المتابعة (مش بس اللي اتعملهم حضور النهارده) — بحث مستقل عن تبويب «اتشخصوا»
   const [fq, setFq] = useState('');
   const fterm = fq.trim();
-  const followFound = fterm ? diagnosed.filter((x) => patientMatches(x.p ?? { fullName: patientName(x.id) }, fterm)) : diagnosed.slice(0, 50);
-  const lastSheet = (id: string) => nursing.filter((n) => n.patientId === id).sort((a, b) => b.date.localeCompare(a.date))[0];
+  const followFound = fterm ? diagnosed.filter((x) => patientMatches(x.p ?? { fullName: patientName(x.id) }, fterm)) : diagnosed;
+  const sheetsOf = (id: string) => nursing.filter((n) => n.patientId === id).sort((a, b) => b.date.localeCompare(a.date));
+  const lastSheet = (id: string) => sheetsOf(id)[0];
+  // اتشخصوا ولسه ما اتعملهمش ولا متابعة ← «محتاجين متابعة»؛ اللي ليهم متابعة (واحدة أو أكتر) ← «مرضى المتابعة» (آخر متابعة أولًا)
+  const needFollow = followFound.filter((x) => !lastSheet(x.id));
+  const followed = followFound.filter((x) => lastSheet(x.id)).sort((a, b) => lastSheet(b.id)!.date.localeCompare(lastSheet(a.id)!.date));
+  const followTodayShown = fterm ? followUps.filter((a) => patientMatches(db.patient(a.patientId) ?? { fullName: patientName(a.patientId) }, fterm)) : followUps;
+  const LIMIT = 50;
   // لو المريض اتعمله حضور النهارده الشيت بيتربط بزيارته، وإلا شيت متابعة من غير زيارة (رقم الزيارة يتكتب يدوي)
   const openSheet = (id: string) => setSheet({ patientId: id, appointmentId: followUps.find((a) => a.patientId === id)?.id ?? null });
 
@@ -188,73 +194,94 @@ export default function Diagnosis() {
 
       {!patientId && view === 'follow' && (<>
         <section className="card" style={{ marginBottom: 16 }}>
-          <div className="card__head"><h2>متابعة النهارده <span className="muted dx-date">{fmtDate(todayYmd())}</span></h2></div>
+          <div className="filter-bar"><div className="field"><SearchBox value={fq} onChange={setFq} placeholder="ابحث في مرضى المتابعة: الاسم (أو جزء منه) أو رقم الموبايل أو رقم الملف" /></div></div>
+        </section>
+
+        {followTodayShown.length > 0 && (
+          <section className="card" style={{ marginBottom: 16 }}>
+            <div className="card__head"><h2>متابعة النهارده <span className="muted dx-date">{fmtDate(todayYmd())}</span></h2></div>
+            <div className="card__body">
+              <div className="dx-queue">
+                {followTodayShown.map((a) => {
+                  const p = db.patient(a.patientId);
+                  const done = sheetOf(a.id);
+                  return (
+                    <div className="dx-queue__row" key={a.id}>
+                      <span className="dx-queue__time num">{fmtTime(a.time)}</span>
+                      <div className="dx-queue__who">
+                        <b>{patientName(a.patientId)}</b>
+                        <small>{p?.phone && <><bdi dir="ltr" className="num">{p.phone}</bdi> · </>}ملف <span className="num">{patientFile(a.patientId)}</span> · زيارة <span className="num">{a.no}</span></small>
+                      </div>
+                      {done ? <span className="badge badge--ok">اتعملت متابعة الزيارة</span> : <span className="badge badge--warn">مستني المتابعة</span>}
+                      <div className="dx-queue__act">
+                        {done && <Button size="sm" variant="outline" icon="print" onClick={() => printNursing(done)}>طباعة</Button>}
+                        {done ? perm.edit && <Button size="sm" variant="outline" icon="edit" onClick={() => setSheet({ patientId: a.patientId, appointmentId: a.id, initial: done })}>تعديل</Button>
+                          : perm.add && <Button size="sm" icon="clipboard" onClick={() => setSheet({ patientId: a.patientId, appointmentId: a.id })}>متابعة</Button>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        )}
+
+        <section className="card" style={{ marginBottom: 16 }}>
+          <div className="card__head"><h2>محتاجين متابعة {needFollow.length > 0 && <span className="badge badge--warn num">{needFollow.length}</span>}</h2></div>
           <div className="card__body">
             <LoadState kind="nursing">
-              {followUps.length === 0
-                ? <EmptyState icon="clipboard" title="ما فيه مرضى متابعة حضروا النهارده" text="أي مريض اتشخّص قبل كده وعمله الاستقبال حضور النهارده هيظهر هنا — ولأي مريض تاني اتشخّص ابحث عنه في «كل المرضى اللي اتشخصوا» تحت." />
+              {needFollow.length === 0
+                ? <EmptyState icon="checkCircle" title={fterm ? 'مفيش مريض محتاج متابعة بالاسم أو الرقم ده' : 'كل المرضى اللي اتشخصوا اتعملهم متابعة ✓'} />
                 : (
                   <div className="dx-queue">
-                    {followUps.map((a) => {
-                      const p = db.patient(a.patientId);
-                      const done = sheetOf(a.id);
-                      const last = ortho.list('consultations', a.patientId).sort((x, y) => y.date.localeCompare(x.date))[0];
-                      return (
-                        <div className="dx-queue__row" key={a.id}>
-                          <span className="dx-queue__time num">{fmtTime(a.time)}</span>
-                          <div className="dx-queue__who">
-                            <b>{patientName(a.patientId)}</b>
-                            <small>
-                              {p?.phone && <><bdi dir="ltr" className="num">{p.phone}</bdi> · </>}ملف <span className="num">{patientFile(a.patientId)}</span> · زيارة <span className="num">{a.no}</span>
-                              {last && <>{' '}· آخر تشخيص: <bdi>{last.diagnosis || 'لسه ما اتحددش'}</bdi> ({fmtDate(last.date)})</>}
-                            </small>
-                          </div>
-                          {done ? <span className="badge badge--ok">اتملى شيت المتابعة</span> : <span className="badge badge--warn">مستني شيت المتابعة</span>}
-                          <div className="dx-queue__act">
-                            {done && <Button size="sm" variant="outline" icon="print" onClick={() => printNursing(done)}>طباعة</Button>}
-                            {done ? perm.edit && <Button size="sm" variant="outline" icon="edit" onClick={() => setSheet({ patientId: a.patientId, appointmentId: a.id, initial: done })}>تعديل</Button>
-                              : perm.add && <Button size="sm" icon="clipboard" onClick={() => setSheet({ patientId: a.patientId, appointmentId: a.id })}>شيت المتابعة</Button>}
-                            <Button size="sm" variant="outline" onClick={() => pick(a.patientId)}>ملف التشخيص</Button>
-                          </div>
+                    {needFollow.slice(0, fterm ? undefined : LIMIT).map((x) => (
+                      <div className="dx-queue__row" key={x.id}>
+                        <span className="dx-queue__time num">{fmtDate(x.last.date)}</span>
+                        <div className="dx-queue__who">
+                          <b>{x.p?.fullName ?? patientName(x.id)}</b>
+                          <small>{x.p?.phone && <><bdi dir="ltr" className="num">{x.p.phone}</bdi> · </>}ملف <span className="num">{patientFile(x.id)}</span> · آخر تشخيص: <bdi>{x.last.diagnosis || 'لسه ما اتحددش'}</bdi></small>
                         </div>
-                      );
-                    })}
+                        <span className="badge badge--warn">ما اتعملوش متابعة</span>
+                        <div className="dx-queue__act">
+                          {perm.add && <Button size="sm" icon="clipboard" onClick={() => openSheet(x.id)}>متابعة</Button>}
+                          <Button size="sm" variant="outline" onClick={() => pick(x.id)}>ملف التشخيص</Button>
+                        </div>
+                      </div>
+                    ))}
+                    {!fterm && needFollow.length > LIMIT && <p className="muted" style={{ margin: 0 }}>ظاهر أحدث {LIMIT} — اكتب في البحث فوق عشان توصل لأي مريض تاني.</p>}
                   </div>
                 )}
             </LoadState>
           </div>
         </section>
+
         <section className="card">
-          <div className="card__head"><h2>كل المرضى اللي اتشخصوا {diagnosed.length > 0 && <span className="badge badge--brand num">{diagnosed.length}</span>}</h2></div>
-          <div className="filter-bar"><div className="field"><SearchBox value={fq} onChange={setFq} placeholder="ابحث عن مريض للمتابعة: الاسم (أو جزء منه) أو رقم الموبايل أو رقم الملف" /></div></div>
+          <div className="card__head"><h2>مرضى المتابعة {followed.length > 0 && <span className="badge badge--brand num">{followed.length}</span>}</h2></div>
           <div className="card__body">
-            <LoadState kind="consultations">
-              {diagnosed.length === 0 ? <EmptyState icon="stethoscope" title="لا يوجد مرضى متشخّصون بعد" text="أي مريض يتشخّص هيظهر هنا عشان تعمله شيت متابعة." />
-                : followFound.length === 0 ? <EmptyState icon="search" title="مفيش مريض متشخّص بالاسم أو الرقم ده" text="جرّب جزء تاني من الاسم أو الرقم من غير مسافات." />
+            <LoadState kind="nursing">
+              {followed.length === 0
+                ? <EmptyState icon="clipboard" title={fterm ? 'مفيش مريض متابعة بالاسم أو الرقم ده' : 'لسه مفيش مرضى اتعملهم متابعة'} text={fterm ? undefined : 'أول ما تعمل متابعة لمريض هيظهر هنا، وتقدر تعمله متابعة تانية وتالتة.'} />
                 : (
                   <div className="dx-queue">
-                    {followFound.map((x) => {
-                      const ls = lastSheet(x.id);
+                    {followed.slice(0, fterm ? undefined : LIMIT).map((x) => {
+                      const all = sheetsOf(x.id);
                       return (
                         <div className="dx-queue__row" key={x.id}>
-                          <span className="dx-queue__time num">{fmtDate(x.last.date)}</span>
+                          <span className="dx-queue__time num">{fmtDate(all[0].date)}</span>
                           <div className="dx-queue__who">
                             <b>{x.p?.fullName ?? patientName(x.id)}</b>
-                            <small>
-                              {x.p?.phone && <><bdi dir="ltr" className="num">{x.p.phone}</bdi> · </>}ملف <span className="num">{patientFile(x.id)}</span>
-                              {' '}· آخر تشخيص: <bdi>{x.last.diagnosis || 'لسه ما اتحددش'}</bdi>
-                            </small>
+                            <small>{x.p?.phone && <><bdi dir="ltr" className="num">{x.p.phone}</bdi> · </>}ملف <span className="num">{patientFile(x.id)}</span> · آخر تشخيص: <bdi>{x.last.diagnosis || 'لسه ما اتحددش'}</bdi></small>
                           </div>
-                          {ls ? <span className="badge badge--ok">آخر متابعة {fmtDate(ls.date)}</span> : <span className="badge badge--warn">ما اتعملوش متابعة</span>}
+                          <span className="badge badge--ok"><span className="num">{all.length}</span> {all.length > 1 ? 'متابعات' : 'متابعة'} — آخرها {fmtDate(all[0].date)}</span>
                           <div className="dx-queue__act">
-                            {ls && <Button size="sm" variant="outline" icon="print" onClick={() => printNursing(ls)}>طباعة آخر شيت</Button>}
-                            {perm.add && <Button size="sm" icon="clipboard" onClick={() => openSheet(x.id)}>شيت المتابعة</Button>}
-                            <Button size="sm" variant="outline" onClick={() => pick(x.id)}>ملف التشخيص</Button>
+                            <Button size="sm" variant="outline" icon="print" onClick={() => printNursing(all[0])}>طباعة آخر متابعة</Button>
+                            {perm.add && <Button size="sm" icon="clipboard" onClick={() => openSheet(x.id)}>متابعة جديدة</Button>}
+                            <Button size="sm" variant="outline" onClick={() => pick(x.id)}>الملف</Button>
                           </div>
                         </div>
                       );
                     })}
-                    {!fterm && diagnosed.length > followFound.length && <p className="muted" style={{ margin: 0 }}>ظاهر آخر {followFound.length} مريض اتشخّص — اكتب في البحث عشان توصل لأي مريض تاني.</p>}
+                    {!fterm && followed.length > LIMIT && <p className="muted" style={{ margin: 0 }}>ظاهر آخر {LIMIT} — اكتب في البحث فوق عشان توصل لأي مريض تاني.</p>}
                   </div>
                 )}
             </LoadState>

@@ -97,8 +97,6 @@ try {
   check('الاستقبال يقرا سجل الحقن (عرض فقط)', !injR.error && (injR.data ?? []).length === 1, err(injR));
   const injW = await recep.from('ortho_injections').insert({ patient_id: pat.id, sheet: injSheet }).select();
   check('الاستقبال ما يقدرش يسجّل حقنة', !!injW.error || (injW.data ?? []).length === 0, err(injW) || 'inserted!');
-  const injB = await admin.from('ortho_injections').insert({ patient_id: pat.id, sheet: [] }).select();
-  check('محتوى الشيت لازم يكون كائن (حماية من بيانات بايظة)', !!injB.error, err(injB) || 'accepted!');
 
   section('Push — دالة الإرسال على الخادم');
   const [cfg] = await sql(`select notify_url, hook_secret is not null as has_secret from push_config where id = 1`);

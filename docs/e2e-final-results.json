@@ -1,17 +1,17 @@
 {
-  "at": "2026-10-28T20:11:27.253Z",
-  "passed": 25,
-  "failed": 0,
+  "at": "2026-10-28T20:25:16.185Z",
+  "passed": 28,
+  "failed": 1,
   "results": [
     {
       "name": "حساب محاسب نهائي اختبار",
       "ok": true,
-      "detail": "{\"id\":\"6eca55c0-b3fb-472e-856c-aa3f649ca7e9\",\"name\":\"محاسب نهائي اختبار\",\"username\":\"201200000971\",\"role\":\"accountant\",\""
+      "detail": "{\"id\":\"49d08e52-702f-4bb9-b16c-ea5fb4126dba\",\"name\":\"محاسب نهائي اختبار\",\"username\":\"201200000971\",\"role\":\"accountant\",\""
     },
     {
       "name": "حساب استقبال نهائي اختبار",
       "ok": true,
-      "detail": "{\"id\":\"5677d10e-6e69-4dcb-ac41-f7d9650515c6\",\"name\":\"استقبال نهائي اختبار\",\"username\":\"201200000972\",\"role\":\"reception\","
+      "detail": "{\"id\":\"0ab24521-9cad-4732-96d1-2cc043dab9f2\",\"name\":\"استقبال نهائي اختبار\",\"username\":\"201200000972\",\"role\":\"reception\","
     },
     {
       "name": "المدير يحدد راتب ثابت ويوم صرف للموظف",
@@ -91,7 +91,7 @@
     {
       "name": "خدمة جديدة من غير اختيار الظهور ← «إدارة فقط»",
       "ok": true,
-      "detail": "{\"id\":\"sv_b30c23a5\",\"show_on_site\":false}"
+      "detail": "{\"id\":\"sv_f9e8633f\",\"show_on_site\":false}"
     },
     {
       "name": "الخدمة الجديدة مش ظاهرة في قايمة الحجز الإلكتروني",
@@ -112,6 +112,26 @@
       "name": "إلغاء الموعد بيلغي تذكيراته",
       "ok": true,
       "detail": "[{\"status\":\"cancelled\"},{\"status\":\"cancelled\"},{\"status\":\"cancelled\"}]"
+    },
+    {
+      "name": "حفظ سجل حقن للمريض الصحيح",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال يقرا سجل الحقن (عرض فقط)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال ما يقدرش يسجّل حقنة",
+      "ok": true,
+      "detail": "new row violates row-level security policy for table \"ortho_injections\""
+    },
+    {
+      "name": "محتوى الشيت لازم يكون كائن (حماية من بيانات بايظة)",
+      "ok": false,
+      "detail": "accepted!"
     },
     {
       "name": "قاعدة البيانات متوصّلة بدالة push (push_config)",

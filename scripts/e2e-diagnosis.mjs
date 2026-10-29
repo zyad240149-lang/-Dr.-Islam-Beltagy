@@ -274,17 +274,8 @@ try {
   await fSearch.fill('مريض مش موجود خالص 123');
   await A.page.waitForTimeout(400);
   check('بحث المتابعة من غير نتايج بيعرض رسالة واضحة', await A.page.locator('text=مفيش مريض محتاج متابعة بالاسم أو الرقم ده').count() === 1 && await A.page.locator('text=مفيش مريض متابعة بالاسم أو الرقم ده').count() === 1);
-  // تبويب «سجل الحقن» جنب «متابعة المرضى»
-  for (const [tab, title, btn] of [['inj', 'سجل الحقن', 'سجل حقن جديد']]) {
-    await goto(A.page, `/diagnosis?tab=${tab}`);
-    const head = A.page.locator('section.card .card__head', { hasText: title });
-    check(`تبويب «${title}» ظاهر بزرار «${btn}» وبحث`, await head.count() >= 1 && await head.locator('button', { hasText: btn }).count() === 1 && await A.page.locator('.filter-bar input').count() === 1);
-  }
-  await A.page.locator('.dx-views button', { hasText: 'سجل الحقن' }).click();
-  await A.page.locator('button', { hasText: 'سجل حقن جديد' }).click();
-  await A.page.waitForSelector('.modal');
-  check('«سجل حقن جديد» بيطلب اختيار المريض الأول', await A.page.locator('.modal').locator('text=المريض').count() >= 1);
-  await A.page.locator('.modal__foot button', { hasText: 'إلغاء' }).click();
+  // الحقن بقت جوّه التشخيص بس — مفيش تبويب «سجل الحقن» في صفحة التشخيص
+  check('مفيش تبويب «سجل الحقن» برّه التشخيص', await A.page.locator('.dx-views button', { hasText: 'سجل الحقن' }).count() === 0);
   check('صفحة التشخيص بدون أخطاء JavaScript (الكمبيوتر)', A.errors.length === 0, A.errors.join(' | ').slice(0, 300));
   await A.ctx.close();
 

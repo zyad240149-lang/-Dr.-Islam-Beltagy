@@ -35,7 +35,9 @@ export interface NursingSheet {
   newSymptoms: string; symptomsDetails: string; treatment: string; treatmentNotes: string; notes: string;
   cast: { on: boolean; type: string; typeOther: string; limb: string; applied: string; followUp: string; condition: string; conditionOther: string; notes: string };
   surgery: { on: boolean; procedure: string; date: string; followUp: string; wound: string; woundOther: string; dressing: string; bandage: string; notes: string };
+  rx?: RxData; // الروشتة والأشعة والتحاليل (اتنقلت من الكشف لشيت المتابعة)
 }
+export type RxData = Pick<Consultation, 'medications' | 'labs' | 'imagingRequests' | 'attachments' | 'plan'>;
 export interface Nursing { id: string; patientId: string; appointmentId?: string | null; date: string; sheet: NursingSheet; createdBy?: string | null }
 // سجل الحقن (هجرة 923) — نفس الشيت الورقي INJECTION RECORD؛ الاختيارات المتعددة قوايم والفردية نص ('' = متعلّمش)
 export interface InjectionSheet {

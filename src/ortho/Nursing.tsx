@@ -1,4 +1,4 @@
-// شيت متابعة التمريض (نفس الشيت الورقي «يُملأ في كل زيارة متابعة»): الألم والالتزام والحركة والأعراض والعلاج الحالي،
+// شيت متابعة التمريض + الروشتة والأشعة والتحاليل (نفس الشيت الورقي «يُملأ في كل زيارة متابعة»): الألم والالتزام والحركة والأعراض والعلاج الحالي،
 // وقسم الجبس وقسم العمليات بيتفتحوا بس لو المريض عنده جبس/عملية. بيتحفظ في ortho_nursing ويتطبع A4 بنفس ترتيب الورقة.
 import { useState, type ReactNode } from 'react';
 import { Button, EmptyState, Modal } from '../components/ui';
@@ -7,7 +7,9 @@ import { DOCTOR } from '../landing/content';
 import { fmtDate, todayYmd } from '../utils/format';
 import { fileNoText } from '../utils/phoneUtils';
 import { openPrintWindow, printHtml } from '../utils/printDoc';
-import { ortho, type Nursing, type NursingSheet } from './data';
+import { ortho, type Nursing, type NursingSheet, type RxData } from './data';
+import { RxEditor, cleanRx, hasRx, normRx, registerRxRequests } from './Rx';
+import { printRx } from './printRx';
 import { Field, IconBtn, confirmDelete, useClinicalCan, useRun } from './kit';
 
 const OPT = {
@@ -56,16 +58,35 @@ export function NursingModal({ patientId, appointmentId = null, initial, onClose
   const set = <K extends keyof NursingSheet>(k: K, v: NursingSheet[K]) => setS((x) => ({ ...x, [k]: v }));
   const setCast = (k: keyof NursingSheet['cast'], v: string | boolean) => setS((x) => ({ ...x, cast: { ...x.cast, [k]: v } }));
   const setSurg = (k: keyof NursingSheet['surgery'], v: string | boolean) => setS((x) => ({ ...x, surgery: { ...x.surgery, [k]: v } }));
-  const item = { id: initial?.id, patientId, appointmentId: initial ? initial.appointmentId ?? null : appointmentId, date, sheet: s };
-  const save = (print: boolean) => {
+  const [rx, setRx] = useState<RxData>(() => normRx(initial?.sheet.rx));
+  const [uploading, setUploading] = useState(false);
+  const item = { id: initial?.id, patientId, appointmentId: initial ? initial.appointmentId ?? null : appointmentId, date, sheet: { ...s, rx: cleanRx(rx) } };
+  const save = (print: 'sheet' | 'rx' | null) => {
     const win = print ? openPrintWindow() : undefined;
-    run(() => ortho.save('nursing', item), 'تم حفظ شيت المتابعة', () => { if (print) printNursing(item, win); onClose(); });
+    run(async () => {
+      await ortho.save('nursing', item);
+      await registerRxRequests(patientId, date, item.sheet.rx, initial ? normRx(initial.sheet.rx) : undefined);
+      if (initial) { // صور اتشالت من الشيت ← بتتمسح من التخزين
+        const now = new Set(rx.attachments.map((a) => a.path));
+        normRx(initial.sheet.rx).attachments.filter((a) => !now.has(a.path)).forEach((a) => void ortho.removeAttachment(a.path));
+      }
+    }, 'تم حفظ شيت المتابعة', () => {
+      if (print === 'sheet') printNursing(item, win); else if (print === 'rx') printNursingRx(item, win);
+      onClose();
+    });
+  };
+  // إلغاء: الصور اللي اترفعت في الجلسة دي ومش هتتحفظ بتتمسح
+  const cancel = () => {
+    const keep = new Set(normRx(initial?.sheet.rx).attachments.map((a) => a.path));
+    rx.attachments.filter((a) => !keep.has(a.path)).forEach((a) => void ortho.removeAttachment(a.path));
+    onClose();
   };
   return (
-    <Modal wide title={initial ? 'تعديل شيت متابعة التمريض' : 'شيت متابعة التمريض'} onClose={onClose} footer={<>
-      <Button variant="outline" onClick={onClose}>إلغاء</Button>
-      <Button variant="outline" icon="print" loading={busy} onClick={() => save(true)}>حفظ وطباعة</Button>
-      <Button icon="check" loading={busy} onClick={() => save(false)}>حفظ</Button>
+    <Modal wide title={initial ? 'تعديل شيت متابعة التمريض' : 'شيت متابعة التمريض'} onClose={cancel} footer={<>
+      <Button variant="outline" onClick={cancel}>إلغاء</Button>
+      <Button variant="outline" icon="print" loading={busy} disabled={uploading} onClick={() => save('sheet')}>حفظ وطباعة الشيت</Button>
+      <Button variant="outline" icon="print" loading={busy} disabled={uploading || !hasRx(cleanRx(rx))} onClick={() => save('rx')}>حفظ وطباعة الروشتة</Button>
+      <Button icon="check" loading={busy} disabled={uploading} onClick={() => save(null)}>حفظ</Button>
     </>}>
       <div className="grid-form grid-form--3" style={{ marginBottom: 12 }}>
         <Field label="المريض"><input className="input" value={db.patient(patientId)?.fullName ?? ''} disabled /></Field>
@@ -117,13 +138,25 @@ export function NursingModal({ patientId, appointmentId = null, initial, onClose
           <Field label="ملاحظات" className="span-2"><input className="input" value={s.surgery.notes} onChange={(e) => setSurg('notes', e.target.value)} /></Field>
         </div>
       </Box>
+
+      <Box title="الروشتة والأشعة والتحاليل">
+        <RxEditor value={rx} onChange={setRx} patientId={patientId} region={ortho.list('consultations', patientId).sort((a, b) => b.date.localeCompare(a.date))[0]?.region} onUploading={setUploading} />
+      </Box>
     </Modal>
   );
 }
 
+// الروشتة بتاخد التشخيص من آخر كشف للمريض
+export function printNursingRx(n: Omit<Nursing, 'id'>, win?: Window | null) {
+  const last = ortho.list('consultations', n.patientId).sort((a, b) => b.date.localeCompare(a.date))[0];
+  const rx = normRx(n.sheet.rx);
+  printRx({ diagnosis: last?.diagnosis ?? '', icd10: last?.icd10 ?? '', region: last?.region ?? '', side: last?.side ?? 'na',
+    complaint: '', history: '', examination: '', painScore: '', followUp: '', ...rx, date: n.date } as Parameters<typeof printRx>[0], db.patient(n.patientId), win);
+}
+
 const summary = (s: NursingSheet) => [
   s.pain !== '' && `الألم ${s.pain}/10`, s.vsLast && `مقارنة بآخر زيارة: ${s.vsLast}`, s.mobility && `الحركة: ${s.mobility}`, s.adherence && `الالتزام: ${s.adherence}`,
-  s.newSymptoms === 'نعم' && 'أعراض جديدة', s.cast.on && 'جبس', s.surgery.on && 'عملية',
+  s.newSymptoms === 'نعم' && 'أعراض جديدة', s.cast.on && 'جبس', s.surgery.on && 'عملية', hasRx(normRx(s.rx)) && 'روشتة',
 ].filter(Boolean).join(' · ');
 
 export function NursingList({ items, onEdit }: { items: Nursing[]; onEdit: (n: Nursing) => void }) {
@@ -143,6 +176,7 @@ export function NursingList({ items, onEdit }: { items: Nursing[]; onEdit: (n: N
           <span />
           <span className="dx-queue__act">
             <IconBtn icon="print" label="طباعة" onClick={() => printNursing(n)} />
+            {hasRx(normRx(s.rx)) && <IconBtn icon="receipt" label="طباعة الروشتة" onClick={() => printNursingRx(n)} />}
             {perm.edit && <IconBtn icon="edit" label="تعديل" onClick={() => onEdit(n)} />}
             {perm.del && <IconBtn icon="trash" label="حذف" danger onClick={() => confirmDelete('شيت المتابعة ده') && run(() => ortho.remove('nursing', n.id), 'تم الحذف')} />}
           </span>

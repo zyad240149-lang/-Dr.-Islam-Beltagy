@@ -35,7 +35,6 @@ function withSheet(c: Draft): Draft {
   const txt: Record<string, string> = { 'x.cc.other': c.complaint, 'n.onset': c.history, 'x.notes': c.examination, 'x.dx.other': c.diagnosis };
   return { ...c, sheet: { ...sheet, txt } };
 }
-const emptyMed = (): Medication => ({ name: '', dose: '', frequency: '', duration: '', notes: '' });
 
 // مسودة كشف لم يُحفظ بعد (استكمال التشخيص لو المستخدم خرج قبل ما يحفظ) — مخزنة محليًا لكل مريض
 const DRAFT_PREFIX = 'dx_draft_';
@@ -83,9 +82,9 @@ function Section({ icon, title, children, aside }: { icon: string; title: string
   );
 }
 
-// الكشف = الشيتين بالترتيب (التمريض قبل دخول المريض ← كشف الطبيب) وبعدهم الروشتة والأشعة والتحاليل
+// الكشف = الشيتين بالترتيب (التمريض قبل دخول المريض ← كشف الطبيب) وبعدهم الحقن — الروشتة والأشعة والتحاليل اتنقلت لشيت المتابعة
 // «كشف الطبيب» بيتسمى بالمنطقة: شيت الطبيب بيتحدد من مكان الألم في الشيت العام (regionSheets)
-const TABS = [['nurse', 'الشيت العام'], ['doctor', 'كشف الطبيب'], ['rx', 'الروشتة والأشعة والتحاليل'], ['inj', 'الحقن']] as const;
+const TABS = [['nurse', 'الشيت العام'], ['doctor', 'كشف الطبيب'], ['inj', 'الحقن']] as const;
 type Tab = typeof TABS[number][0];
 
 // appointmentId = الزيارة اللي التشخيص الجديد بيتربط بيها (من «بانتظار التشخيص»)؛ من غيرها بيتربط بزيارة النهارده المفتوحة للمريض لو فيه
@@ -111,12 +110,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
   const [opened] = useState(() => ({ patientId: c.patientId, sheet: normSheet(c.sheet) }));
   const [mapOpen, setMapOpen] = useState(false);
   const [out, setOut] = useState<DxPart[] | null>(null); // نافذة «طباعة وإرسال» بالأجزاء المختارة مبدئيًا
-  const [uploading, setUploading] = useState(false);
-  const [labQ, setLabQ] = useState('');
-  const fileRef = useRef<HTMLInputElement>(null);
-  const labFileRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
-  const outstandingLabs = c.patientId ? ortho.list('imaging', c.patientId).filter((m) => m.kind === 'lab' && m.status !== 'reviewed') : [];
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setC((x) => ({ ...x, [k]: v }));
   const sheet = normSheet(c.sheet);
   const changeSheet = (f: (s: typeof sheet) => typeof sheet) => setC((x) => ({ ...x, sheet: f(normSheet(x.sheet)) }));
@@ -152,28 +146,6 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
     if (initial || !c.patientId) return;
     if (draftHasContent(c)) saveConsultDraft(c.patientId, c); else clearConsultDraft(c.patientId);
   }, [initial, c]);
-
-  const setMed = (i: number, patch: Partial<Medication>) => set('medications', c.medications.map((m, j) => (j === i ? { ...m, ...patch } : m)));
-  const pickMedName = (i: number, name: string) => {
-    const p = MED_PRESETS.find((x) => x.name === name);
-    const cur = c.medications[i];
-    setMed(i, p ? { name, dose: cur.dose || p.dose, frequency: cur.frequency || p.frequency, duration: cur.duration || p.duration } : { name });
-  };
-  const toggleLab = (name: string) => set('labs', c.labs.includes(name) ? c.labs.filter((l) => l !== name) : [...c.labs, name]);
-  const addCustomLab = () => { const v = labQ.trim(); if (v && !c.labs.includes(v)) set('labs', [...c.labs, v]); setLabQ(''); };
-  const setReq = (i: number, patch: Partial<ImagingRequest>) => set('imagingRequests', c.imagingRequests.map((r, j) => (j === i ? { ...r, ...patch } : r)));
-
-  async function upload(files: FileList | null) {
-    if (!files?.length || !c.patientId) return;
-    setUploading(true);
-    try {
-      const added: Attachment[] = [];
-      for (const f of Array.from(files)) added.push(await ortho.uploadAttachment(c.patientId, f));
-      setC((x) => ({ ...x, attachments: [...x.attachments, ...added] }));
-      toast.success(added.length > 1 ? `تم رفع ${added.length} ملفات` : 'تم رفع الأشعة');
-    } catch (e) { toast.error((e as Error).message); }
-    finally { setUploading(false); if (fileRef.current) fileRef.current.value = ''; }
-  }
 
   // إلغاء تعديل كشف محفوظ: الملفات اللي اترفعت في الجلسة دي ومش هتتحفظ بتتمسح (الكشف الجديد بيفضل محتفظ بيها في المسودة)
   function cancel() {
@@ -232,9 +204,8 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
     <Modal xl title={initial ? 'تعديل الكشف' : 'كشف جديد'} onClose={cancel} footer={<>
       {c.patientId && missing.length > 0 && <span className="sh-need">لسه ناقص: {missing.join('، ')}</span>}
       <Button variant="outline" onClick={cancel}>إلغاء</Button>
-      <Button variant="outline" icon="print" disabled={!c.patientId} onClick={() => setOut(['nurse', 'doctor', 'rx'])}>طباعة وإرسال</Button>
-      <Button variant="outline" icon="print" loading={busy} disabled={!ok || uploading} onClick={() => save(true)}>حفظ وطباعة الروشتة</Button>
-      <Button icon="check" loading={busy} disabled={!ok || uploading} onClick={() => save(false)}>حفظ الكشف</Button>
+      <Button variant="outline" icon="print" disabled={!c.patientId} onClick={() => setOut(['nurse', 'doctor'])}>طباعة وإرسال</Button>
+      <Button icon="check" loading={busy} disabled={!ok} onClick={() => save(false)}>حفظ الكشف</Button>
     </>}>
       <div className="cx" ref={bodyRef}>
         <div className="grid-form grid-form--4">
@@ -256,7 +227,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
             {db.therapist(visitAppt.therapistId)?.name ? <> — {db.therapist(visitAppt.therapistId)?.name}</> : null}
           </div>
         )}
-        <div className="seg seg--4 sh-tabs" role="tablist" aria-label="أجزاء الكشف">
+        <div className="seg seg--3 sh-tabs" role="tablist" aria-label="أجزاء الكشف">
           {TABS.map(([k, l], i) => (
             <button key={k} type="button" role="tab" aria-selected={tab === k} className={`seg__btn ${tab === k ? 'active' : ''}`} onClick={() => goTab(k)}>
               <span className="sh-tabs__n num">{i + 1}</span>{k === 'doctor' && active.length ? `${l} — ${active.map((id) => SHEET_TAB[id]).join(' + ')}` : l}
@@ -287,88 +258,8 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('nurse')}>رجوع: الشيت العام</Button>
             <Button variant="outline" icon="print" disabled={!c.patientId} onClick={() => setOut(['doctor'])}>طباعة / إرسال كشف الطبيب</Button>
-            <Button icon="chevronLeft" onClick={() => goTab('rx')}>التالي: الروشتة والأشعة والتحاليل</Button>
+            <Button icon="chevronLeft" onClick={() => goTab('inj')}>التالي: الحقن</Button>
           </div>
-        </>}
-
-        {tab === 'rx' && <>
-        <Section icon="scan" title="الأشعة" aside={<>
-          <Button size="sm" variant="outline" icon="plus" onClick={() => set('imagingRequests', [...c.imagingRequests, { kind: 'xray', region: c.region, view: 'AP & Lateral' }])}>طلب أشعة</Button>
-          <Button size="sm" variant="outline" icon="camera" loading={uploading} disabled={!c.patientId} onClick={() => fileRef.current?.click()}>رفع صورة أشعة</Button>
-          <input ref={fileRef} type="file" hidden multiple accept="image/png,image/jpeg,image/webp,application/pdf" onChange={(e) => void upload(e.target.files)} />
-        </>}>
-          {c.imagingRequests.length > 0 && (
-            <div className="cx-rows">
-              {c.imagingRequests.map((r, i) => (
-                <div className="cx-row cx-row--img" key={i}>
-                  <select className="input" aria-label="نوع الأشعة" value={r.kind} onChange={(e) => setReq(i, { kind: e.target.value as ImagingKind })}>{Object.entries(IMAGING_KIND).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
-                  <input className="input" aria-label="المنطقة" placeholder="المنطقة" value={r.region} onChange={(e) => setReq(i, { region: e.target.value })} />
-                  <input className="input" aria-label="الوضع" placeholder="الوضع (View)" dir="ltr" list="cx-views" value={r.view} onChange={(e) => setReq(i, { view: e.target.value })} />
-                  <IconBtn icon="trash" label="حذف الطلب" danger onClick={() => set('imagingRequests', c.imagingRequests.filter((_, j) => j !== i))} />
-                </div>
-              ))}
-              <datalist id="cx-views">{XRAY_VIEWS.map((v) => <option key={v} value={v} />)}</datalist>
-            </div>
-          )}
-          {c.attachments.length > 0
-            ? <AttachmentThumbs items={c.attachments} onRemove={(path) => set('attachments', c.attachments.filter((a) => a.path !== path))} />
-            : c.imagingRequests.length === 0 && <p className="cx-empty">اطلب أشعة للمريض أو ارفع صورة الأشعة اللي معاه (صورة أو PDF، لحد 10 ميجا).</p>}
-        </Section>
-
-        <Section icon="receipt" title="العلاج — الروشتة" aside={<Button size="sm" variant="outline" icon="plus" onClick={() => set('medications', [...c.medications, emptyMed()])}>إضافة دواء</Button>}>
-          {c.medications.length === 0
-            ? <p className="cx-empty">مفيش أدوية لسه — اضغط «إضافة دواء» واكتب اسم الدواء (فيه اقتراحات بالجرعات المعتادة).</p>
-            : (
-              <div className="cx-rows">
-                {c.medications.map((m, i) => (
-                  <div className="cx-row cx-row--med" key={i}>
-                    <span className="cx-row__n">{i + 1}</span>
-                    <input className="input" dir="ltr" aria-label="اسم الدواء" placeholder="اسم الدواء" list="cx-meds" value={m.name} onChange={(e) => pickMedName(i, e.target.value)} />
-                    <input className="input" aria-label="الجرعة" placeholder="الجرعة" value={m.dose} onChange={(e) => setMed(i, { dose: e.target.value })} />
-                    <input className="input" aria-label="عدد المرات" placeholder="عدد المرات" value={m.frequency} onChange={(e) => setMed(i, { frequency: e.target.value })} />
-                    <input className="input" aria-label="المدة" placeholder="المدة" value={m.duration} onChange={(e) => setMed(i, { duration: e.target.value })} />
-                    <input className="input" aria-label="ملاحظة" placeholder="ملاحظة" value={m.notes} onChange={(e) => setMed(i, { notes: e.target.value })} />
-                    <IconBtn icon="trash" label="حذف الدواء" danger onClick={() => set('medications', c.medications.filter((_, j) => j !== i))} />
-                  </div>
-                ))}
-              </div>
-            )}
-          <datalist id="cx-meds">{MED_PRESETS.map((p) => <option key={p.name} value={p.name}>{p.group}</option>)}</datalist>
-        </Section>
-
-        <Section icon="list" title={`التحاليل${c.labs.length ? ` (${c.labs.length})` : ''}`} aside={<>
-          <Button size="sm" variant="outline" icon="upload" loading={uploading} disabled={!c.patientId} onClick={() => labFileRef.current?.click()}>رفع تحاليل</Button>
-          <input ref={labFileRef} type="file" hidden multiple accept="image/png,image/jpeg,image/webp,application/pdf" onChange={(e) => void upload(e.target.files)} />
-        </>}>
-          {outstandingLabs.length > 0 && (
-            <div className="cx-labgrp">
-              <span className="cx-labgrp__t">تحاليل مطلوبة سابقًا لسه مستنية نتيجة</span>
-              <div className="cx-chips">{outstandingLabs.map((m) => <span key={m.id} className="cx-chip" dir="ltr">{m.region} <Tone s={IMAGING_STATUS[m.status]} /></span>)}</div>
-            </div>
-          )}
-          {LAB_GROUPS.map((g) => (
-            <div className="cx-labgrp" key={g.group}>
-              <span className="cx-labgrp__t">{g.group}</span>
-              <div className="cx-chips">{g.items.map((l) => <button key={l} type="button" dir="ltr" aria-pressed={c.labs.includes(l)} className={`cx-chip ${c.labs.includes(l) ? 'is-on' : ''}`} onClick={() => toggleLab(l)}>{l}</button>)}</div>
-            </div>
-          ))}
-          <div className="cx-labadd">
-            <input className="input" dir="auto" placeholder="تحليل تاني…" value={labQ} onChange={(e) => setLabQ(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustomLab(); } }} />
-            <Button size="sm" variant="outline" icon="plus" disabled={!labQ.trim()} onClick={addCustomLab}>إضافة</Button>
-          </div>
-          {c.labs.filter((l) => !LAB_GROUPS.some((g) => g.items.includes(l))).length > 0 && (
-            <div className="cx-chips">{c.labs.filter((l) => !LAB_GROUPS.some((g) => g.items.includes(l))).map((l) => <button key={l} type="button" className="cx-chip is-on" onClick={() => toggleLab(l)}>{l} ✕</button>)}</div>
-          )}
-        </Section>
-
-        <Section icon="doc" title="التعليمات وملاحظات الطبيب">
-          <textarea className="input" rows={3} placeholder="مثال: راحة وتجنب طلوع السلم، كمادات تلج 15 دقيقة 3 مرات يوميًا، جلسات علاج طبيعي، رباط ضاغط…" value={c.plan} onChange={(e) => set('plan', e.target.value)} />
-        </Section>
-        <div className="sh-next">
-          <Button variant="outline" icon="chevron" onClick={() => goTab('doctor')}>رجوع: كشف الطبيب</Button>
-          <Button variant="outline" icon="print" disabled={!c.patientId} onClick={() => setOut(['rx'])}>طباعة / إرسال الروشتة</Button>
-          <Button icon="chevronLeft" onClick={() => goTab('inj')}>التالي: الحقن</Button>
-        </div>
         </>}
 
         {/* الحقن جوّه التشخيص: سجلات الحقن بتاعة المريض + سجل جديد (شيت INJECTION RECORD) */}
@@ -380,7 +271,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
             </> : <p className="muted">اختار المريض الأول.</p>}
           </Section>
           <div className="sh-next">
-            <Button variant="outline" icon="chevron" onClick={() => goTab('rx')}>رجوع: الروشتة والأشعة والتحاليل</Button>
+            <Button variant="outline" icon="chevron" onClick={() => goTab('doctor')}>رجوع: كشف الطبيب</Button>
           </div>
         </>}
         {inj && <InjectionModal patientId={c.patientId} appointmentId={c.appointmentId ?? null} initial={inj === 'new' ? undefined : inj} onClose={() => setInj(null)} />}

@@ -10,3 +10,6 @@ OneDrive
 docs/ui-failures
 docs/ui-shots
 docs/offline-error.png
+
+patients-old-system.xlsx
+~$*.xlsx

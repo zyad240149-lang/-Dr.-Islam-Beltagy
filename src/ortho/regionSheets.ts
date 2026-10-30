@@ -191,7 +191,6 @@ export const REGION_SHEETS: RegionSheetDef[] = [
         { t: 'checks', g: 'img', items: ['X-ray (Lumbosacral spine AP/Lateral)', 'MRI (Lumbosacral spine)', 'CT (if needed)', 'Bone scan (if indicated)', 'DEXA (if indicated)', 'Ultrasound (guided injection)', 'Not available'] },
         { t: 'text', k: 'img.other', label: 'Others:' }, { t: 'text', k: 'img.findings', label: 'Findings:', stack: true },
       ] },
-      { title: 'Dermatome Map (Lower Limb)', role: 'exam', f: [{ t: 'key', title: 'Dermatome', note: 'Sensation is recorded in box 8.', rows: [['L2', 'Anterior thigh', '#e57373'], ['L3', 'Medial knee', '#f6d55c'], ['L4', 'Medial leg / ankle', '#66bb6a'], ['L5', 'Dorsum of foot', '#4fc3f7'], ['S1', 'Lateral foot', '#9575cd']] }] },
       { title: 'Provisional Diagnosis / Assessment', role: 'dx', f: [
         { t: 'text', k: 'dx.1', label: '1.' }, { t: 'text', k: 'dx.2', label: '2.' }, { t: 'text', k: 'dx.3', label: '3.' }, { t: 'text', k: 'dx.4', label: '4.' }, { t: 'dxmap' },
       ] },

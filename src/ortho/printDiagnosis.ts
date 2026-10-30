@@ -99,7 +99,7 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
       box(7, 'Neurological Examination', table('<th>Motor Power (MRC)</th><th>Rt.</th><th>Lt.</th>', L.X_MRC.filter(([r]) => filled(`x.mrc.${r}`)).map(([r, m]) => `<tr><td>${r} (${m})</td>${rtLt(`x.mrc.${r}`, '/5')}</tr>`))
         + table('<th>Reflexes</th><th>Rt.</th><th>Lt.</th>', L.X_REFLEX.filter(([n]) => filled(`x.refl.${n}`)).map(([n, root]) => `<tr><td>${n} (${root})</td>${rtLt(`x.refl.${n}`)}</tr>`))),
       box(8, 'Special Tests (+ve)', two(lbl('Hip', cks('x.st.hip', L.X_ST_HIP)) + line('Other:', v('x.st.hip.other')), lbl('Knee', cks('x.st.knee', L.X_ST_KNEE)) + line('Other:', v('x.st.knee.other')))),
-      box(9, 'Imaging / Investigations', imgs.map((m) => `<div class="row">${ck(has('x.img', m), m + ':')}<span class="fill">${v(`x.img.${m}`)}</span><span>Date: ${v(`x.img.${m}.date`) ? dmy(v(`x.img.${m}.date`)) : '__ / __ / __'}</span></div>`).join('')
+      box(9, 'Imaging / Investigations', imgs.map((m) => `<div class="row">${ck(has('x.img', m), m + ':')}<span class="fill">${v(`x.img.${m}`)}</span></div>`).join('')
         + line('Previous imaging:', v('x.img.prev')) + line('Others:', v('x.img.other'))),
       box(10, 'Diagnosis (Likely / Working)', two(lbl('Hip', cks('x.dx.hip', L.X_DX_HIP)), lbl('Knee', cks('x.dx.knee', L.X_DX_KNEE))) + line('Others:', v('x.dx.other')) + (c.icd10 ? line('ICD-10:', esc(c.icd10)) : '')),
       box(11, 'Plan', cks('x.plan', L.X_PLAN) + line('Follow up after:', v('x.plan.fu')) + line('Others:', v('x.plan.other')) + (c.followUp ? line('Next visit:', dmy(c.followUp)) : '')),
@@ -127,7 +127,7 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
             + (f.note && (!compact || rows.length) ? `<div class="note">${esc(f.note)}</div>` : '');
         }
         case 'key': return compact ? '' : table(`<th>${f.title}</th><th>Area</th>`, f.rows.map(([r, area, color]) => `<tr><td><i class="sw" style="background:${color}"></i>${r}</td><td>${esc(area)}</td></tr>`));
-        case 'imaging': return f.mods.filter((m) => !compact || has(K(f.k), m) || v(K(`${f.k}.${m}`)) || v(K(`${f.k}.${m}.date`))).map((m) => `<div class="row">${ck(has(K(f.k), m), m + ':')}<span class="fill">${v(K(`${f.k}.${m}`))}</span><span>Date: ${v(K(`${f.k}.${m}.date`)) ? dmy(v(K(`${f.k}.${m}.date`))) : '__ / __ / __'}</span></div>`).join('')
+        case 'imaging': return f.mods.filter((m) => !compact || has(K(f.k), m) || v(K(`${f.k}.${m}`))).map((m) => `<div class="row">${ck(has(K(f.k), m), m + ':')}<span class="fill">${v(K(`${f.k}.${m}`))}</span></div>`).join('')
           + line('Previous imaging:', v(K(`${f.k}.prev`))) + line('Others:', v(K(`${f.k}.other`)));
         case 'dxmap': return c.icd10 ? line('ICD-10:', esc(c.icd10)) : '';
         case 'notes': return compact && !v(K(f.k)) ? '' : `<div class="notes">${v(K(f.k)).replace(/\n/g, '<br>') || '&nbsp;'}</div>`;

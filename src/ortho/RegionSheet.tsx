@@ -84,7 +84,6 @@ export function RegionSheetForm({ def, sheet, onChange, side, onSide, icd10, onI
             <div className="sh-img" key={m}>
               <div className="sh-img__top">
                 <Ck on={a.has(k(f.k), m)} onToggle={() => a.toggle(k(f.k), m)}>{m}:</Ck>
-                <label className="sh-img__date">Date: <input className="sh-in sh-in--date" dir="ltr" placeholder="dd/mm/yyyy" aria-label={`${m} date`} value={a.txt(k(`${f.k}.${m}.date`))} onChange={(e) => a.set(k(`${f.k}.${m}.date`), e.target.value)} /></label>
               </div>
               <Txt a={a} k={k(`${f.k}.${m}`)} placeholder="Finding — اكتب النتيجة" />
             </div>

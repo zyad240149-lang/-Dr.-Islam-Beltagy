@@ -103,9 +103,15 @@ export const isIncomplete = (c: { complete?: boolean }) => c.complete === false;
 export function useOrthoVersion() {
   return useSyncExternalStore((cb) => { subs.add(cb); return () => { subs.delete(cb); }; }, () => version);
 }
-// تغيير المستخدم ← الكاش بيتمسح (الصلاحيات بتختلف من مستخدم للتاني)
-supabase.auth.onAuthStateChange((event) => {
-  if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') { for (const k of Object.keys(cache) as Kind[]) delete cache[k]; bump(); }
+// تغيير المستخدم ← الكاش بيتمسح (الصلاحيات بتختلف من مستخدم للتاني).
+// مهم: Supabase بيطلّق SIGNED_IN كمان عند تجديد التوكن وكل ما ترجع للتاب — فمسح الكاش على مجرد SIGNED_IN
+// كان بيخلّي الشاشة ترجع لوضع التحميل وتعيد التنزيل كل شوية. فبنمسح بس لما معرّف المستخدم يتغيّر فعلًا.
+let cachedAuthUid: string | undefined;
+supabase.auth.onAuthStateChange((event, session) => {
+  const uid = session?.user.id;
+  const userChanged = event === 'SIGNED_OUT' || (uid !== undefined && cachedAuthUid !== undefined && uid !== cachedAuthUid);
+  cachedAuthUid = event === 'SIGNED_OUT' ? undefined : (uid ?? cachedAuthUid);
+  if (userChanged) { for (const k of Object.keys(cache) as Kind[]) delete cache[k]; bump(); }
 });
 
 // تعديلات اتعملت بدون إنترنت ولسه ما اتبعتتش: بتتعرض فوق نسخة الخادم (زي applyOverlay في db.ts)

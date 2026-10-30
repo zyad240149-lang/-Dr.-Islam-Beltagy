@@ -192,6 +192,10 @@ export const REGION_SHEETS: RegionSheetDef[] = [
         { t: 'text', k: 'img.other', label: 'Others:' }, { t: 'text', k: 'img.findings', label: 'Findings:', stack: true },
       ] },
       { title: 'Provisional Diagnosis / Assessment', role: 'dx', f: [
+        { t: 'cols', cols: [
+          col('Infection / Tumor / Inflammatory', 'dx.inf', ['Discitis', 'Vertebral Osteomyelitis', 'Spinal Tumors / Metastasis', 'Multiple Myeloma', 'Inflammatory Spondyloarthritis', 'Ankylosing Spondylitis']),
+          col('Referred pain / Extra-spinal causes', 'dx.ref', ['Hip Osteoarthritis', 'Hip Pathology', 'Piriformis Syndrome', 'Renal Pain', 'Abdominal Aortic Aneurysm', 'Pelvic / Visceral Referred Pain']),
+        ] },
         { t: 'text', k: 'dx.1', label: '1.' }, { t: 'text', k: 'dx.2', label: '2.' }, { t: 'text', k: 'dx.3', label: '3.' }, { t: 'text', k: 'dx.4', label: '4.' }, { t: 'dxmap' },
       ] },
       { title: 'Plan / Management', role: 'plan', f: [{ t: 'checks', g: 'plan', items: ['Medication', 'Physiotherapy (McKenzie / Core)', 'Activity modification', 'Epidural / Nerve root injection', 'Facet / SI joint injection', 'Surgery (if indicated)', 'Follow-up', 'Lifestyle advice (posture / weight)'] }, { t: 'text', k: 'plan.other', label: 'Other:' }] },

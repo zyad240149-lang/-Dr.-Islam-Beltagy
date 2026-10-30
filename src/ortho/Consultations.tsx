@@ -8,7 +8,7 @@ import { findCondition } from '../data/bodyRegions';
 import type { DiagnosisRef } from '../types';
 import { fmtDate, fmtDateTime, fmtTime, todayYmd } from '../utils/format';
 import { openVisitFor } from './visits';
-import { SHEET_TAB, activeSheets, regionSheet, removeSheet, sheetFilled, type SheetId } from './regionSheets';
+import { SHEET_TAB, TREATMENT, activeSheets, regionSheet, removeSheet, sheetFilled, type SheetId } from './regionSheets';
 import { DoctorPainMap, RegionChooser, RegionSheetForm, SheetSwitch } from './RegionSheet';
 import { useToast } from '../hooks/useToast';
 import { IMAGING_KIND, IMAGING_STATUS, REGIONS, SIDE, isIncomplete, ortho, useOrthoVersion, type Attachment, type Consultation, type Injection, type ImagingKind, type ImagingRequest, type Medication, type Side } from './data';
@@ -254,6 +254,8 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
                 icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap('x.dx.other')} />
               : <RegionSheetForm key={curSheet} def={regionSheet(curSheet)!} sheet={sheet} onChange={changeSheet} side={c.side} onSide={(v) => set('side', v)}
                 icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap(`${regionSheet(curSheet)!.prefix}.dx.other`)} />}
+            <div dir="rtl" className="sh-treat"><RegionSheetForm def={TREATMENT} sheet={sheet} onChange={changeSheet} side={c.side} onSide={(v) => set('side', v)}
+              icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap('tp.tx.other')} /></div>
           </>}
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('nurse')}>رجوع: الشيت العام</Button>

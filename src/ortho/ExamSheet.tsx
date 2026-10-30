@@ -11,7 +11,7 @@ import { fmtDate } from '../utils/format';
 import { Icon } from '../utils/icons';
 import type { Patient } from '../types';
 import type { CurrentMed, ExamSheet, Side } from './data';
-import { DOCTOR_PREFIXES, REGION_SHEETS, regionSummary, sheetFilled } from './regionSheets';
+import { DOCTOR_PREFIXES, REGION_SHEETS, TREATMENT, regionSummary, sheetFilled, type SheetId } from './regionSheets';
 
 // ---------- بنود الورقتين ----------
 const N_VISIT = ['زيارة جديدة', 'متابعة'];
@@ -177,7 +177,7 @@ export function sheetSummary(s: ExamSheet, side: Side = 'na') {
   const ncc = join([...picked(s, 'n.cc', N_CC), tx(s, 'n.cc.other')], '، ');
   const pain = s.pain.map(painLabel).join('، ');
   const since = picked(s, 'n.since', N_SINCE)[0];
-  const regions = REGION_SHEETS.filter((d) => sheetFilled(s, d.id)).map((d) => ({ d, r: regionSummary(d, s, side) }));
+  const regions = REGION_SHEETS.filter((d) => sheetFilled(s, d.id as SheetId)).map((d) => ({ d, r: regionSummary(d, s, side) }));
   const multi = regions.length + (sheetFilled(s, 'hipknee') ? 1 : 0) > 1;
   const tag = (label: string, t: string) => (t && multi ? `[${label}] ${t}` : t);
   const doctorCc = join([xcc && join([xcc, dur], ' — '), ...regions.map(({ d, r }) => r.complaint && tag(d.tab, r.complaint))], ' · ');
@@ -234,7 +234,7 @@ export function sheetSummary(s: ExamSheet, side: Side = 'na') {
   const examination = join([...lines.map(([l, v]) => v && `${l} — ${v}`), tx(s, 'x.notes'), ...regions.flatMap(({ d, r }) => r.examination.map((t) => tag(d.tab, t)))], '\n');
 
   const diagnosis = join([sec('Hip', picked(s, 'x.dx.hip', X_DX_HIP)), sec('Knee', picked(s, 'x.dx.knee', X_DX_KNEE)), tx(s, 'x.dx.other'), ...regions.map(({ d, r }) => r.diagnosis && tag(d.tab, r.diagnosis))], ' · ');
-  const plan = join([...picked(s, 'x.plan', X_PLAN), tx(s, 'x.plan.fu') && `Follow up after ${tx(s, 'x.plan.fu')}`, tx(s, 'x.plan.other'), ...regions.map(({ d, r }) => r.plan && tag(d.tab, r.plan))]);
+  const plan = join([...picked(s, 'x.plan', X_PLAN), tx(s, 'x.plan.fu') && `Follow up after ${tx(s, 'x.plan.fu')}`, tx(s, 'x.plan.other'), ...regions.map(({ d, r }) => r.plan && tag(d.tab, r.plan)), regionSummary(TREATMENT, s, side).plan]);
   return { complaint, history: join([history, ...regions.flatMap(({ d, r }) => r.history.map((t) => tag(d.tab, t)))], '\n'), examination, diagnosis, plan };
 }
 

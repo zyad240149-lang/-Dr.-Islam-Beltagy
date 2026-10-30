@@ -5,7 +5,7 @@
 // كل شيت ليه بادئة مفاتيح خاصة بيه (af./cs./eh./ls.) عشان أكتر من منطقة في نفس الكشف ما يتلخبطوش.
 import type { ExamSheet, Side } from './data';
 
-export type SheetId = 'hipknee' | 'ankle' | 'neckshoulder' | 'hand' | 'lumbar';
+export type SheetId = 'hipknee' | 'ankle' | 'neckshoulder' | 'hand' | 'lumbar' | 'cast' | 'postop';
 type Row3 = [label: string, sub: string, color?: string];
 export type Field =
   | { t: 'checks'; g: string; items: string[]; label?: string; none?: string; cols?: boolean }
@@ -22,7 +22,7 @@ export type Field =
   | { t: 'notes'; k: string };
 export type BoxRole = 'cc' | 'hx' | 'rf' | 'exam' | 'dx' | 'plan' | 'notes';
 export interface BoxDef { title: string; role: BoxRole; tone?: 'red'; wide?: boolean; f: Field[] }
-export interface RegionSheetDef { id: Exclude<SheetId, 'hipknee'>; prefix: string; tab: string; title: string; boxes: BoxDef[] }
+export interface RegionSheetDef { id: Exclude<SheetId, 'hipknee'> | 'treatment'; prefix: string; tab: string; title: string; boxes: BoxDef[] }
 
 // ---------- بنود مشتركة (نفس شيت الورك والركبة) ----------
 const DUR = ['Acute (< 6 weeks)', 'Subacute (6-12 weeks)', 'Chronic (> 12 weeks)'];
@@ -202,11 +202,82 @@ export const REGION_SHEETS: RegionSheetDef[] = [
       notes('Notes / Diagrams'),
     ],
   },
+  // متابعة الجبس وما بعد العمليات — مش مناطق جسم: بتتضاف من «+ منطقة تانية…»
+  {
+    id: 'cast', prefix: 'cf', tab: 'متابعة الجبس', title: 'CAST FOLLOW-UP',
+    boxes: [
+      { title: '1. بيانات الإصابة والجبس', role: 'hx', f: [
+        { t: 'text', k: 'inj.type', label: 'نوع الإصابة:' }, { t: 'text', k: 'inj.site', label: 'مكان الإصابة:' },
+        { t: 'checks', g: 'type', items: ['Above Knee', 'Below Knee', 'Long Arm', 'Short Arm'], label: 'نوع الجبس:' }, { t: 'text', k: 'type.other', label: 'Other:' },
+        { t: 'text', k: 'applied', label: 'تاريخ تركيب الجبس:' }, { t: 'text', k: 'duration', label: 'مدة التثبيت المتوقعة:' },
+      ] },
+      { title: '2. تقييم الجبس والطرف', role: 'exam', f: [
+        ...['Cast integrity', 'Cast tightness', 'Skin condition', 'Swelling', 'Distal circulation', 'Sensation', 'Finger / Toe movement', 'Pain assessment']
+          .map((r): Field => ({ t: 'pick', g: `ev.${r}`, items: ['Normal', 'Abnormal'], label: `${r}:` })),
+        { t: 'text', k: 'vas', label: 'Pain VAS (/10):' }, { t: 'text', k: 'cap', label: 'Capillary refill:' }, { t: 'text', k: 'ev.notes', label: 'ملاحظات:', stack: true },
+      ] },
+      { title: '3. الأشعة والالتئام', role: 'exam', f: [
+        { t: 'pick', g: 'xray', items: ['Not done', 'Done'], label: 'X-ray:' },
+        { t: 'pick', g: 'align', items: ['Acceptable', 'Unacceptable'], label: 'Alignment:' },
+        { t: 'pick', g: 'callus', items: ['Present', 'Absent'], label: 'Callus formation:' },
+        { t: 'pick', g: 'heal', items: ['Early healing', 'Progressive healing', 'Union', 'Delayed union', 'Non-union'], label: 'Healing status:' },
+      ] },
+      { title: '4. القرار والخطة', role: 'plan', f: [
+        { t: 'checks', g: 'plan', items: ['Continue cast', 'Cast modification', 'Change cast', 'Remove cast', 'Start physiotherapy', 'Start progressive weight bearing', 'Request X-ray'] },
+        { t: 'text', k: 'plan.other', label: 'Other:' }, { t: 'text', k: 'next', label: 'Next follow-up:' },
+      ] },
+      { title: 'VISIT RECORD — Clinical progress', role: 'notes', f: [{ t: 'notes', k: 'notes' }] },
+    ],
+  },
+  {
+    id: 'postop', prefix: 'po', tab: 'متابعة ما بعد العمليات', title: 'POST-OPERATIVE FOLLOW-UP',
+    boxes: [
+      { title: '1. بيانات العملية', role: 'hx', f: [
+        { t: 'text', k: 'op.name', label: 'اسم العملية:' }, { t: 'text', k: 'op.kind', label: 'نوع العملية:' },
+        { t: 'text', k: 'op.date', label: 'تاريخ العملية:' }, { t: 'text', k: 'op.surgeon', label: 'Surgeon:' },
+        { t: 'checks', g: 'implant', items: ['Plate & Screws', 'Intramedullary Nail', 'K-wire', 'External Fixator', 'Arthroscopy', 'Soft tissue repair'], label: 'Implant / Fixation:' },
+        { t: 'text', k: 'implant.other', label: 'Other:' },
+      ] },
+      { title: '2. تقييم الجرح', role: 'exam', f: [
+        ...['Wound clean', 'Wound dry', 'Redness', 'Discharge', 'Wound dehiscence', 'Signs of infection']
+          .map((r): Field => ({ t: 'pick', g: `wd.${r}`, items: ['Yes', 'No'], label: `${r}:` })),
+        { t: 'pick', g: 'wstatus', items: ['Healed', 'Healing', 'Needs dressing', 'Needs further intervention'], label: 'Wound status:' },
+        { t: 'pick', g: 'suture', items: ['Not indicated', 'Done', 'Planned'], label: 'Suture removal:' }, { t: 'text', k: 'suture.on', label: 'Planned on:' },
+      ] },
+      { title: '3. تقييم الطرف والوظيفة', role: 'exam', f: [
+        { t: 'text', k: 'vas', label: 'Pain VAS (/10):' },
+        { t: 'pick', g: 'swell', items: ['None', 'Mild', 'Moderate', 'Severe'], label: 'Swelling:' },
+        { t: 'text', k: 'rom', label: 'ROM:' }, { t: 'text', k: 'nv', label: 'Neurovascular status:' }, { t: 'text', k: 'power', label: 'Muscle power:' },
+        { t: 'pick', g: 'wb', items: ['NWB', 'TTWB', 'PWB', 'WBAT', 'FWB'], label: 'Weight bearing:' },
+      ] },
+      { title: '4. الأشعة والتثبيت', role: 'exam', f: [
+        { t: 'pick', g: 'xray', items: ['Done', 'Not done'], label: 'X-ray:' },
+        { t: 'pick', g: 'align', items: ['Satisfactory', 'Unsatisfactory'], label: 'Alignment:' },
+        { t: 'pick', g: 'fix', items: ['Stable', 'Concern'], label: 'Fixation:' },
+        { t: 'pick', g: 'heal', items: ['Progressive', 'Union', 'Delayed union', 'Non-union'], label: 'Healing:' },
+      ] },
+      { title: '5. خطة العلاج والتأهيل', role: 'plan', f: [
+        { t: 'checks', g: 'plan', items: ['Continue current protocol', 'Wound dressing', 'Remove sutures', 'Start / Continue physiotherapy', 'ROM exercises', 'Muscle strengthening', 'Progressive weight bearing', 'Continue immobilization', 'Modify medications', 'Request further imaging'] },
+        { t: 'text', k: 'instr', label: 'Instructions / Restrictions:', stack: true }, { t: 'text', k: 'next', label: 'Next follow-up:' },
+      ] },
+      { title: 'VISIT RECORD — Clinical progress', role: 'notes', f: [{ t: 'notes', k: 'notes' }] },
+    ],
+  },
 ];
+// الخطة العلاجية والتعليمات وموعد المتابعة — خانة واحدة للكشف كله، بتظهر تحت أي شيت مفتوح (مفاتيح tp.*)
+export const TREATMENT: RegionSheetDef = {
+  id: 'treatment', prefix: 'tp', tab: 'الخطة العلاجية', title: 'الخطة العلاجية',
+  boxes: [{ title: 'الخطة العلاجية والتعليمات', role: 'plan', wide: true, f: [{ t: 'cols', cols: [
+    { title: 'الخطة العلاجية', f: [{ t: 'checks', g: 'tx', items: ['علاج تحفظي', 'أشعة', 'حقن'] }, { t: 'text', k: 'tx.other', label: 'تفاصيل:' }] },
+    { title: 'التعليمات', f: [{ t: 'checks', g: 'instr', items: ['راحة نسبية', 'تمارين منزلية', 'علاج طبيعي', 'تجنب مجهود معين'] }, { t: 'text', k: 'instr.other', label: 'تعليمات أخرى:' }] },
+    { title: 'موعد المتابعة', f: [{ t: 'pick', g: 'fu', items: ['أسبوع', 'أسبوعين', 'شهر'], label: 'بعد:' }] },
+  ] }] }],
+};
+export const treatmentFilled = (s: ExamSheet) => s.on.some((o) => o.startsWith('tp.')) || Object.entries(s.txt).some(([k, v]) => k.startsWith('tp.') && v.trim());
 export const regionSheet = (id: SheetId) => REGION_SHEETS.find((d) => d.id === id);
 
 // كل شيت بالترتيب اللي بيظهر بيه + اسمه في تبويب الطبيب
-export const SHEET_ORDER: SheetId[] = ['hipknee', 'ankle', 'neckshoulder', 'hand', 'lumbar'];
+export const SHEET_ORDER: SheetId[] = ['hipknee', 'ankle', 'neckshoulder', 'hand', 'lumbar', 'cast', 'postop'];
 // اسم الشيت قدام الطبيب: «كشف …»
 export const SHEET_TAB: Record<SheetId, string> = { hipknee: 'كشف الورك والركبة', ...Object.fromEntries(REGION_SHEETS.map((d) => [d.id, `كشف ${d.tab}`])) } as Record<SheetId, string>;
 const PREFIX: Record<SheetId, string> = { hipknee: 'x', ...Object.fromEntries(REGION_SHEETS.map((d) => [d.id, d.prefix])) } as Record<SheetId, string>;

@@ -7,7 +7,7 @@ import { fmtDate } from '../utils/format';
 import { SIDE, type Consultation, type ExamSheet } from './data';
 import { SHEET_LISTS as L, bmiOf, normSheet, painLabel, sheetHasContent } from './ExamSheet';
 import { RX_CSS, rxPageHtml } from './printRx';
-import { activeSheets, regionSheet, type Field, type RegionSheetDef } from './regionSheets';
+import { TREATMENT, activeSheets, regionSheet, treatmentFilled, type Field, type RegionSheetDef } from './regionSheets';
 import { openPrintWindow, printHtml } from '../utils/printDoc';
 
 type DxConsult = Omit<Consultation, 'id'> & { id?: string };
@@ -137,7 +137,7 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
   };
   // شيت الطبيب = الشيتات النشطة (من مكان الألم + اللي اتكتب فيه)؛ كشف قديم من غير أي منطقة ← الورك والركبة زي الأول
   const ids = activeSheets(s);
-  const doctor = (ids.length ? ids : ['hipknee' as const]).map((id) => (id === 'hipknee' ? dr : regionPage(regionSheet(id)!))).join('');
+  const doctor = (ids.length ? ids : ['hipknee' as const]).map((id) => (id === 'hipknee' ? dr : regionPage(regionSheet(id)!))).join('') + (!compact || treatmentFilled(s) ? regionPage(TREATMENT) : '');
   return { nurse, doctor };
 }
 

@@ -145,12 +145,8 @@ export default function Layout({ children }: { children: ReactNode }) {
   const bottomItems = BOTTOM_PRIORITY.map((p) => items.find((n) => n.to === p)).filter((n): n is NavItem => !!n).slice(0, 4);
 
   const doLogout = async () => {
-    // تغييرات سُجّلت بدون إنترنت ولسه ما وصلتش الخادم: نحاول نزامنها الأول، وإلا نحذّر قبل ما نمسحها مع الخروج
-    if (offline.queue.pendingCount()) {
-      await offline.syncNow(true);
-      const left = offline.queue.pendingCount();
-      if (left && !window.confirm(`فيه ${left} تغيير محفوظ على هذا الجهاز ولم يُرسل للخادم بعد. إذا سجّلت الخروج الآن سيُحذف نهائيًا. هل تريد الخروج؟`)) return;
-    }
+    // تغييرات سُجّلت بدون إنترنت: نحاول نزامنها الأول. اللي ما اتبعتش بيفضل محفوظ وبيتبعت أول ما نفس الموظف يدخل تاني
+    if (offline.queue.pendingCount()) await offline.syncNow(true).catch(() => {});
     logout(); toast.info('تم تسجيل الخروج'); navigate('/login');
   };
   const goHit = (h: SearchHit) => { setSearchOpen(false); setQ(''); setHits(null); navigate(h.link); };

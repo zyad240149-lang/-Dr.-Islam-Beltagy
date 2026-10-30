@@ -1,7 +1,7 @@
 {
-  "at": "2026-10-29T00:03:16.162Z",
+  "at": "2026-10-29T10:23:09.232Z",
   "passed": 12,
-  "failed": 2,
+  "failed": 3,
   "results": [
     {
       "name": "طبيب (معالج) للمواعيد",
@@ -16,12 +16,12 @@
     {
       "name": "حساب طبيب تشخيص اختبار",
       "ok": true,
-      "detail": "{\"id\":\"b7b9671b-7fec-428f-98ec-7245bdf1c5e9\",\"name\":\"طبيب تشخيص اختبار\",\"username\":\"201200000982\",\"role\":\"therapist\",\"ph"
+      "detail": "{\"id\":\"dc5fda7f-4be4-461b-ba59-63ffe8b18ecb\",\"name\":\"طبيب تشخيص اختبار\",\"username\":\"201200000982\",\"role\":\"therapist\",\"ph"
     },
     {
       "name": "حساب استقبال تشخيص اختبار",
       "ok": true,
-      "detail": "{\"id\":\"f9841649-75ff-47bb-a67a-fafa675b83b0\",\"name\":\"استقبال تشخيص اختبار\",\"username\":\"201200000983\",\"role\":\"reception\","
+      "detail": "{\"id\":\"1caff43d-b353-4cee-a511-f3a40101925b\",\"name\":\"استقبال تشخيص اختبار\",\"username\":\"201200000983\",\"role\":\"reception\","
     },
     {
       "name": "مريضين للاختبار",
@@ -69,9 +69,14 @@
       "detail": ""
     },
     {
+      "name": "مدير تشخيص اختبار: الدخول",
+      "ok": false,
+      "detail": "http://127.0.0.1:4691/login"
+    },
+    {
       "name": "تنفيذ الاختبارات بدون أخطاء غير متوقعة",
       "ok": false,
-      "detail": "The service was stopped: write EPIPE"
+      "detail": "page.waitForSelector: Timeout 20000ms exceeded.\nCall log:\n  \u001b[2m- waiting for locator('.page h1') to be visible\u001b[22m\n"
     }
   ]
 }

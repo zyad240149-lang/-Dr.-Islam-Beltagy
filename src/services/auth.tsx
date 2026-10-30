@@ -29,7 +29,7 @@ interface AuthState {
   patient: PatientSession | null; // مريض (بوابة المريض)
   loading: boolean;
   login: (identifier: string, password: string) => Promise<{ ok: boolean; kind?: 'staff' | 'patient'; error?: string }>;
-  /** keepOffline: خروج قسري (انتهاء جلسة) — بنسيب العمليات المعلّقة محفوظة لنفس المستخدم؛ تسجيل الخروج العادي بيمسح كل حاجة محلية */
+  /** البيانات المحلية بتفضل لنفس المستخدم في كل الحالات (keepOffline اتساب للتوافق) */
   logout: (opts?: { keepOffline?: boolean }) => void;
   /** التطبيق شغّال من لقطة محفوظة بدون اتصال (الدخول الأصلي اتحقق منه قبل كده) */
   offlineSession: boolean;
@@ -188,8 +188,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setMyPermOverride(null);
     db.setActor(null);
     db.clear();
-    // خروج عادي = مسح كل بيانات المرضى والعمليات المحلية من الجهاز. خروج قسري (انتهت الجلسة) = بنسيب العمليات المعلّقة لنفس المستخدم
-    if (opts?.keepOffline) offline.stop(); else void offline.wipeAll();
+    // النسخة المتشفّرة والعمليات المعلّقة بتفضل على الجهاز لنفس الموظف ← الدخول الجاي بيفتح فورًا ويجيب «اللي اتغيّر بس»
+    // (من غيرها كل دخول كان تحميل كامل لكل البيانات). موظف تاني يدخل على نفس الجهاز ← bindUser بيمسح كل حاجة الأول.
+    // الدخول بدون إنترنت بعد الخروج مش ممكن: signOut بيمسح جلسة Supabase المحفوظة.
+    void opts;
+    offline.stop();
     setUser(null); setPatient(null); setOfflineSession(false);
   };
 

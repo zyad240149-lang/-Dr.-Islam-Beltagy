@@ -274,13 +274,14 @@ try {
   await ctx2.browser().close();
 
   // ============ 8) تسجيل الخروج ============
-  section('8) تسجيل الخروج بيمسح كل بيانات المرضى ومفتاح التشفير من الجهاز');
+  section('8) تسجيل الخروج بيسيب النسخة المتشفّرة لنفس الموظف (الدخول الجاي سريع)');
   page = await openApp(false);
   await page.goto(BASE + '/');
   await page.locator('.logout-btn').first().click();
   await page.getByRole('button', { name: /تسجيل الخروج|تأكيد/ }).last().click({ timeout: 3000 }).catch(() => {});
-  const wiped = await until(async () => { const x = await idb(page); return x && !x.meta && !x.key && x.ops.length === 0 ? x : null; }, 20000);
-  check('النسخة المحلية والطابور ومفتاح التشفير اتمسحوا', !!wiped, JSON.stringify(await idb(page)));
+  await page.waitForURL(/login/, { timeout: 20000 }).catch(() => {});
+  const kept = await idb(page);
+  check('النسخة المحلية ومفتاح التشفير لسه موجودين بعد الخروج', !!(kept && kept.meta && kept.key), JSON.stringify(kept));
   await closeApp(); await stopServer();
   page = await openApp(true);
   await page.goto(BASE + '/patients').catch(() => {});

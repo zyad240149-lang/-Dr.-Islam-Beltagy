@@ -123,18 +123,14 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
   const sum = sheetSummary(sheet, c.side);
   // شيتات الطبيب: من مكان الألم في الشيت العام + اللي اتكتب فيه + اللي الطبيب ضافه
   const active = activeSheets(sheet);
-  const [docSheet, setDocSheet] = useState<SheetId | null>(null);
-  // كل الشيتات ظاهرة دايمًا كتابات؛ المفتوح أول مرة = أول شيت من مكان الألم (أو الورك والركبة)
-  const curSheet: SheetId = docSheet ?? active[0] ?? 'hipknee';
   const dropSheet = (id: SheetId) => {
     if (sheetFilled(sheet, id) && !window.confirm(`إلغاء منطقة «${SHEET_TAB[id]}»؟ اللي اتكتب في شيتها هيتمسح، ومكان الألم ده هيتشال من جسم الإنسان.`)) return;
     changeSheet((x) => removeSheet(x, id));
-    setDocSheet(null);
   };
-  // الضغط على منطقة = اختيارها (تتعلّم وتفضل مختارة حتى لو لسه ما اتكتبش فيها) + فتح شيتها؛ ممكن أكتر من منطقة
+  // اختيار منطقة = شيتها يتفتح؛ منطقتين أو أكتر ← الشيتات تتفتح مع بعض تحت بعض. الضغط على منطقة مفتوحة بينزل لشيتها
   const pickSheet = (id: SheetId) => {
-    if (!active.includes(id)) changeSheet((x) => ({ ...x, on: [...x.on, `sheets|${id}`] }));
-    setDocSheet(id);
+    if (active.includes(id)) { bodyRef.current?.querySelector(`[data-sheet="${id}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+    changeSheet((x) => ({ ...x, on: [...x.on, `sheets|${id}`] }));
   };
   const [mapKey, setMapKey] = useState('x.dx.other'); // خريطة الجسم بتكتب في «Others» بتاع الشيت اللي اتفتحت منه
   const openMap = (key: string) => { setMapKey(key); setMapOpen(true); };
@@ -278,12 +274,18 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
         {tab === 'doctor' && <>
           <DoctorPainMap sheet={sheet} onChange={changeSheet} />
           <>
-            <SheetSwitch active={active} current={curSheet} onPick={pickSheet} onRemove={dropSheet} />
-            {curSheet === 'hipknee'
-              ? <DoctorSheet sheet={sheet} onChange={changeSheet} side={c.side} onSide={(v) => set('side', v)}
-                icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap('x.dx.other')} />
-              : <RegionSheetForm key={curSheet} def={regionSheet(curSheet)!} sheet={sheet} onChange={changeSheet} side={c.side} onSide={(v) => set('side', v)}
-                icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap(`${regionSheet(curSheet)!.prefix}.dx.other`)} />}
+            <SheetSwitch active={active} onPick={pickSheet} onRemove={dropSheet} />
+            {!active.length && <p className="sh-pickfirst">اختار المنطقة اللي هتكشف عليها من فوق (أو علّم مكان الألم على جسم الإنسان) — شيتها هيتفتح هنا. لو اخترت منطقتين، الشيتين بيتفتحوا مع بعض.</p>}
+            {active.map((id) => (
+              <section key={id} className="sh-stack" data-sheet={id}>
+                {active.length > 1 && <h3 className="sh-stack__h">{SHEET_TAB[id]}<button type="button" className="sh-stack__x" onClick={() => dropSheet(id)}>إلغاء المنطقة</button></h3>}
+                {id === 'hipknee'
+                  ? <DoctorSheet sheet={sheet} onChange={changeSheet} side={c.side} onSide={(v) => set('side', v)}
+                    icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap('x.dx.other')} />
+                  : <RegionSheetForm def={regionSheet(id)!} sheet={sheet} onChange={changeSheet} side={c.side} onSide={(v) => set('side', v)}
+                    icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap(`${regionSheet(id)!.prefix}.dx.other`)} />}
+              </section>
+            ))}
           </>
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('nurse')}>رجوع: الشيت العام</Button>

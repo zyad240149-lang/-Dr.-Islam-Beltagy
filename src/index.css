@@ -1646,9 +1646,18 @@ img, video, canvas, svg { max-width: 100%; }
 .dx-hits__row small { color: var(--muted-tone); }
 .dx-unlinked { align-items: flex-start; }
 .dx-unlinked__who { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-/* المناطق المختارة في كشف الطبيب: ✓ مختارة، + لسه */
-.sh-region__mark { display: inline-block; min-width: 1em; margin-inline-end: 5px; font-weight: 800; color: var(--muted); }
-.sh-region.is-used:not(.is-on) { background: var(--brand-50, #eaf1fb); border-color: var(--brand-700); }
-.sh-region.is-used .sh-region__mark { color: var(--brand-700); }
-.sh-region.is-on .sh-region__mark { color: #fff; }
-.sh-regions__hint { flex-basis: 100%; color: var(--muted); font-size: 12.5px; }
+/* كشف الطبيب: الشيتات المختارة مفتوحة مع بعض تحت بعض */
+.sh-pickfirst { margin: 14px 0; padding: 18px; border: 1px dashed var(--line); border-radius: 12px; text-align: center; color: var(--muted); }
+.sh-stack { margin-top: 14px; scroll-margin-top: 12px; }
+.sh-stack + .sh-stack { margin-top: 26px; padding-top: 18px; border-top: 3px solid var(--brand-700); }
+.sh-stack__h { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 10px; font-size: 17px; color: var(--brand-700); }
+.sh-stack__x { border: 1px solid var(--line); background: var(--surface); color: var(--muted); border-radius: var(--r-pill); padding: 4px 12px; font: inherit; font-size: 12.5px; cursor: pointer; }
+.sh-stack__x:hover { color: var(--danger); border-color: var(--danger); background: var(--danger-bg); }
+
+/* صور الورقة جوّه أقسام شيت التشخيص (مصغّرة على جنب القسم) */
+.dxg__b.has-pic { display: block; }
+.dxg__b.has-pic > .sh-ck, .dxg__b.has-pic > .dxg__sub, .dxg__b.has-pic > .sh-line { margin-bottom: 2px; }
+.dxg__pic { float: right; width: 92px; max-height: 150px; object-fit: contain; margin: 0 0 6px 8px; border-radius: 8px; background: #fff; }
+.dxs__part { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.dxs__hero { height: 34px; width: auto; border-radius: 6px; }
+@media (max-width: 560px) { .dxg__pic { width: 70px; } }

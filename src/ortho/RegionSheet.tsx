@@ -115,19 +115,16 @@ export function RegionSheetForm({ def, sheet, onChange, side, onSide, icd10, onI
 }
 
 /** كل شيتات كشف الطبيب ظاهرة دايمًا كتابات — اللي من مكان الألم أو اتكتب فيه عليه علامة ●، و✕ جنبه بيمسح اللي اتكتب فيه */
-export function SheetSwitch({ active, current, onPick, onRemove }: { active: SheetId[]; current: SheetId; onPick: (id: SheetId) => void; onRemove: (id: SheetId) => void }) {
+export function SheetSwitch({ active, onPick, onRemove }: { active: SheetId[]; onPick: (id: SheetId) => void; onRemove: (id: SheetId) => void }) {
   return (
-    <div className="sh-regions" role="tablist" aria-label="شيت الكشف">
+    <div className="sh-regions" role="group" aria-label="شيت الكشف">
       <span className="sh-regions__l">شيت الكشف:</span>
-      {SHEET_ORDER.map((id) => { const used = active.includes(id); return (
-        <span key={id} className={`sh-region${current === id ? ' is-on' : ''}${used ? ' is-used' : ''}`}>
-          <button type="button" role="tab" aria-selected={current === id} aria-pressed={used} className="sh-region__pick" title={used ? 'مختارة — اضغط لفتح شيتها' : 'اضغط لاختيار المنطقة دي'} onClick={() => onPick(id)}>
-            <span className="sh-region__mark" aria-hidden>{used ? '✓' : '+'}</span>{SHEET_TAB[id]}
-          </button>
-          {used && <button type="button" className="sh-region__x" aria-label={`إلغاء ${SHEET_TAB[id]}`} title="إلغاء ومسح اللي اتكتب فيه" onClick={() => onRemove(id)}><Icon name="close" size={14} /></button>}
+      {SHEET_ORDER.map((id) => { const on = active.includes(id); return (
+        <span key={id} className={`sh-region${on ? ' is-on' : ''}`}>
+          <button type="button" aria-pressed={on} className="sh-region__pick" onClick={() => onPick(id)}>{SHEET_TAB[id]}</button>
+          {on && <button type="button" className="sh-region__x" aria-label={`إلغاء ${SHEET_TAB[id]}`} title="إلغاء ومسح اللي اتكتب فيه" onClick={() => onRemove(id)}><Icon name="close" size={14} /></button>}
         </span>
       ); })}
-      <small className="sh-regions__hint">اضغط على المنطقة لاختيارها (تقدر تختار منطقة أو أكتر) — ✕ لإلغائها</small>
     </div>
   );
 }

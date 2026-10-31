@@ -10,14 +10,15 @@ export function DxSheet({ a, prefix, id }: { a: Api; prefix: string; id: DxSheet
     <div className="dxs">
       {parts.map((part) => (
         <Fragment key={part.key}>
-          {parts.length > 1 && <div className="dxs__part">{part.title}</div>}
+          {(parts.length > 1 || part.hero) && <div className="dxs__part">{part.hero && <img className="dxs__hero" src={part.hero} alt="" loading="lazy" />}{part.title}</div>}
           <div className="dxs__grid">
             {part.groups.map((gr, n) => {
               const g = dxGroupKey(prefix, part, n);
               return (
                 <section key={gr.title} className={`dxg dxg--${(n % 7) + 1}`}>
                   <h4 className="dxg__h"><span className="dxg__n">{n + 1}</span>{gr.title}</h4>
-                  <div className="dxg__b">
+                  <div className={`dxg__b${n < (part.pics ?? 0) ? ' has-pic' : ''}`}>
+                    {n < (part.pics ?? 0) && <img className="dxg__pic" src={`/dx/${part.key}-${n + 1}.webp`} alt="" loading="lazy" />}
                     {gr.items.map((it) => typeof it === 'string'
                       ? <Ck key={it} on={a.has(g, it)} onToggle={() => a.toggle(g, it)}>{it}</Ck>
                       : (

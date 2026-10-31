@@ -6,10 +6,11 @@ import type { SheetId } from './regionSheets';
 
 export type DxItem = string | [string, string[]];
 export interface DxGroup { title: string; items: DxItem[] }
-export interface DxPart { key: string; title: string; groups: DxGroup[] }
+// pics = عدد الأقسام (من الأول) اللي ليها صورة من الورقة (public/dx/<key>-<n>.webp)؛ hero = صورة واحدة للورقة كلها
+export interface DxPart { key: string; title: string; groups: DxGroup[]; pics?: number; hero?: string }
 export type DxSheetId = Exclude<SheetId, 'cast' | 'postop'>;
 
-const HIP: DxPart = { key: 'hip', title: 'HIP & THIGH — DIAGNOSIS SHEET', groups: [
+const HIP: DxPart = { key: 'hip', title: 'HIP & THIGH — DIAGNOSIS SHEET', pics: 6, groups: [
   { title: 'Degenerative & Osteoarthritis', items: ['Primary hip osteoarthritis', 'Secondary osteoarthritis (post-traumatic / DDH / AVN / others)', 'Hip dysplasia (acetabular)',
     ['Femoroacetabular impingement (FAI)', ['Cam type', 'Pincer type', 'Mixed type']], 'Acetabular labral degeneration', 'Chondral lesion'] },
   { title: 'Traumatic Conditions', items: ['Femoral neck fracture', 'Intertrochanteric fracture', 'Subtrochanteric fracture', 'Femoral shaft fracture', 'Acetabular fracture', 'Hip dislocation',
@@ -45,7 +46,7 @@ const KNEE: DxPart = { key: 'knee', title: 'KNEE — DIAGNOSIS SHEET', groups: [
   { title: 'Other', items: ['Referred pain', 'Neuropathic pain', 'Tumor / tumor-like lesion', 'Other / undiagnosed'] },
 ] };
 
-const ANKLE: DxPart = { key: 'ankle', title: 'LEG — ANKLE & FOOT — DIAGNOSIS SHEET', groups: [
+const ANKLE: DxPart = { key: 'ankle', title: 'LEG — ANKLE & FOOT — DIAGNOSIS SHEET', pics: 7, groups: [
   { title: 'Fractures & Traumatic Conditions', items: ['Tibia fracture (shaft / proximal / distal)', 'Fibula fracture (shaft / proximal / distal)', 'Bimalleolar fracture', 'Trimalleolar fracture',
     'Pilon fracture', 'Talus fracture', 'Calcaneus fracture', 'Navicular fracture', 'Cuboid fracture', 'Metatarsal fracture (1st – 5th)', 'Phalangeal fracture (toe)', 'Lisfranc injury (tarsometatarsal)',
     'Syndesmotic injury (high ankle sprain)', 'Achilles tendon rupture (acute / chronic)', 'Tendon / ligament injury'] },
@@ -67,7 +68,7 @@ const ANKLE: DxPart = { key: 'ankle', title: 'LEG — ANKLE & FOOT — DIAGNOSIS
     'Navicular accessory bone (os tibiale externum)', 'Hallux valgus (bunion)', 'Hallux rigidus', 'Hammer toe / claw toe', 'Pes planus (flat foot)', 'Pes cavus (high arch)', 'Metatarsalgia', "Morton's neuroma"] },
 ] };
 
-const CERVICAL: DxPart = { key: 'cervical', title: 'CERVICAL SPINE — DIAGNOSIS SHEET', groups: [
+const CERVICAL: DxPart = { key: 'cervical', title: 'CERVICAL SPINE — DIAGNOSIS SHEET', hero: '/dx/cervical-1.webp', groups: [
   { title: 'Degenerative Disorders', items: ['Cervical spondylosis', 'Cervical disc degeneration', 'Cervical disc prolapse / herniation', 'Cervical spinal canal stenosis', 'Cervical foraminal stenosis',
     'Cervical osteophytes', 'Cervical kyphosis', 'Cervical disc space narrowing', 'Mixed degenerative changes'] },
   { title: 'Pain Disorders', items: ['Mechanical neck pain', 'Cervical muscle spasm', 'Myofascial pain syndrome', 'Cervical facet joint syndrome', 'Cervicogenic headache', 'Upper trapezius myalgia',
@@ -96,7 +97,7 @@ const SHOULDER: DxPart = { key: 'shoulder', title: 'SHOULDER — DIAGNOSIS SHEET
   { title: 'Other', items: ['Scapular dyskinesis', 'Thoracic outlet syndrome', 'Tumor / tumor-like lesion', 'Other / undiagnosed'] },
 ] };
 
-const ELBOW: DxPart = { key: 'elbow', title: 'ELBOW — DIAGNOSIS SHEET', groups: [
+const ELBOW: DxPart = { key: 'elbow', title: 'ELBOW — DIAGNOSIS SHEET', pics: 6, groups: [
   { title: 'Traumatic Conditions', items: ['Supracondylar fracture (humerus)', 'Lateral condyle fracture', 'Medial epicondyle fracture', 'Radial head fracture', 'Coronoid process fracture', 'Olecranon fracture',
     'Elbow dislocation', 'Terrible triad injury', 'Monteggia fracture dislocation', 'Essex-Lopresti injury', 'Ligament injury (MCL / LCL)'] },
   { title: 'Tendinopathies & Overuse Injuries', items: ['Lateral epicondylitis (Tennis elbow)', "Medial epicondylitis (Golfer's elbow)", 'Triceps tendinopathy', 'Biceps tendinopathy (distal)',
@@ -110,7 +111,7 @@ const ELBOW: DxPart = { key: 'elbow', title: 'ELBOW — DIAGNOSIS SHEET', groups
     'Neuropathic elbow pain', 'Referred pain (cervical / shoulder)'] },
 ] };
 
-const WRIST: DxPart = { key: 'wrist', title: 'WRIST & HAND — DIAGNOSIS SHEET', groups: [
+const WRIST: DxPart = { key: 'wrist', title: 'WRIST & HAND — DIAGNOSIS SHEET', pics: 6, groups: [
   { title: 'Traumatic Conditions', items: ['Distal radius fracture', 'Distal ulna fracture', 'Scaphoid fracture', 'Other carpal bone fracture (specify)', 'Metacarpal fracture (specify)', 'Phalangeal fracture (specify)',
     'Dislocation (wrist / CMC / MCP / IP)', 'Ligament injury (e.g. scapholunate)', 'Triangular fibrocartilage complex (TFCC) injury', 'Mallet finger', 'Jersey finger (FDP avulsion)', "Boxer's fracture"] },
   { title: 'Degenerative & Overuse Conditions', items: ['Wrist osteoarthritis (radiocarpal)', 'Scaphotrapeziotrapezoid (STT) arthritis', 'First carpometacarpal (CMC) osteoarthritis (thumb base OA)',
@@ -126,7 +127,7 @@ const WRIST: DxPart = { key: 'wrist', title: 'WRIST & HAND — DIAGNOSIS SHEET',
     'Infection (cellulitis / abscess / osteomyelitis)', 'Tumor / mass (benign / malignant)', "Vascular disorders (e.g. Raynaud's)", 'Post-operative complications', 'Scar adhesion / stiffness'] },
 ] };
 
-const LUMBAR: DxPart = { key: 'lumbar', title: 'LUMBAR & SACRAL SPINE — DIAGNOSIS SHEET', groups: [
+const LUMBAR: DxPart = { key: 'lumbar', title: 'LUMBAR & SACRAL SPINE — DIAGNOSIS SHEET', pics: 6, groups: [
   { title: 'Disc and Degenerative Disorders', items: ['Lumbar disc degeneration', ['Lumbar disc prolapse / herniation', ['L1–2', 'L2–3', 'L3–4', 'L4–5', 'L5–S1']], 'Annular tear', 'High intensity zone (HIZ)',
     'Disc desiccation', 'Disc space narrowing', 'Modic changes (Type 1 / 2 / 3)', 'Lumbar spondylosis', 'Osteophytes', 'Degenerative scoliosis', 'Vacuum disc phenomenon'] },
   { title: 'Neurological Disorders', items: [['Lumbar radiculopathy', ['L1', 'L2', 'L3', 'L4', 'L5', 'S1']], 'Sciatica', 'Neurogenic claudication', 'Cauda equina syndrome', 'Conus medullaris syndrome',

@@ -23,7 +23,15 @@ export interface Consultation {
   complete?: boolean; // false = اتحفظ ناقص «يحتاج استكمال» (هجرة 917)؛ مش موجود = كشف قديم مكتمل
   appointmentId?: string | null; // الزيارة (الموعد اللي اتعمله حضور) — زيارة واحدة = تشخيص واحد (هجرة 918)
   createdBy?: string | null; // الطبيب اللي سجّل التشخيص (بيتحدد على الخادم)
+  // «فتح ملف تشخيص جديد» بالاسم الثلاثي (هجرة 924): patientId = '' لحد ما الخادم يربطه بملف الاستقبال
+  pendingPatient?: PendingPatient | null;
+  linkStatus?: 'waiting' | 'review' | ''; // waiting = مفيش ملف بالاسم لسه · review = محتاج حد يختار الملف
+  linkNote?: string;
+  linkMethod?: 'auto' | 'manual' | '';
 }
+export interface PendingPatient { name: string; phone?: string; age?: string; gender?: 'male' | 'female' | '' }
+/** التشخيص لسه مش مربوط بملف مريض */
+export const isUnlinked = (c: { patientId?: string | null }) => !c.patientId;
 // اختيارات الشيت: on = خانات متعلّمة («المجموعة|البند»)، txt = خانات كتابة، meds = الأدوية الحالية، pain = أماكن الألم على خريطة الجسم («knee:right»)
 export interface CurrentMed { name: string; dose: string; freq: string }
 export interface ExamSheet { on: string[]; txt: Record<string, string>; meds: CurrentMed[]; pain: string[] }
@@ -72,7 +80,7 @@ const todayYmd = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cair
 
 // الأعمدة المسموح إرسالها لكل جدول (أي حاجة غيرها بتتجاهل — created_by والتواريخ بيحددها الخادم)
 const COLUMNS: Record<Kind, string[]> = {
-  consultations: ['patient_id', 'date', 'complaint', 'region', 'side', 'examination', 'diagnosis', 'plan', 'history', 'pain_score', 'icd10', 'medications', 'labs', 'imaging_requests', 'attachments', 'follow_up', 'sheet', 'complete', 'appointment_id'],
+  consultations: ['patient_id', 'date', 'complaint', 'region', 'side', 'examination', 'diagnosis', 'plan', 'history', 'pain_score', 'icd10', 'medications', 'labs', 'imaging_requests', 'attachments', 'follow_up', 'sheet', 'complete', 'appointment_id', 'pending_patient'],
   imaging: ['patient_id', 'kind', 'region', 'requested_at', 'status', 'finding', 'attachments'],
   surgeries: ['patient_id', 'procedure', 'region', 'side', 'hospital', 'date', 'implant', 'status', 'notes'],
   fractures: ['patient_id', 'bone', 'side', 'kind', 'injury_date', 'cast_date', 'removal_due', 'status'],
@@ -197,10 +205,20 @@ export const ortho = {
     return cache[kind]!.filter((r) => !patientId || r.patient_id === patientId).map((r) => fromRow<Of<K>>(r));
   },
   isLoading: (kind: Kind) => !cache[kind] && !errors[kind],
+  /** ربط تشخيص غير مربوط بملف مريض (اختيار المستخدم) — محتاج اتصال؛ الخادم بيسجل طلبات الأشعة/التحاليل في ملفه */
+  async link(consultId: string, patientId: string) {
+    if (!net.isOnline()) throw new Error('الربط بملف المريض محتاج اتصال بالإنترنت.');
+    if (offline.queue.hasPendingFor(consultId)) throw new Error('التشخيص ده لسه ما اترفعش للخادم — استنى المزامنة الأول.');
+    const { error } = await supabase.rpc('link_consultation', { p_id: consultId, p_patient: patientId });
+    if (error) throw new Error(clean(error.message));
+    await Promise.all([load('consultations'), load('imaging')]);
+  },
   error: (kind: Kind) => errors[kind] ?? null,
   reload: (kind: Kind) => load(kind),
   async save<K extends Kind>(kind: K, item: Omit<Of<K>, 'id'> & { id?: string }): Promise<string> {
     const row: Record<string, unknown> = toRow(kind, item);
+    // تشخيص من غير ملف مريض: يتبعت null وقت الإنشاء بس — التعديل مايبعتش patient_id عشان مايفكّش ربط عمله الخادم
+    if (kind === 'consultations' && !row.patient_id) { if (item.id) delete row.patient_id; else row.patient_id = null; }
     // بدون إنترنت (أو السجل نفسه لسه مستني مزامنة): بيتحفظ على الجهاز ويتبعت لوحده لما الاتصال يرجع
     if (!net.isOnline() || (item.id && offline.queue.hasPendingFor(item.id))) return saveOffline(kind, item.id, row);
     const table = supabase.from('ortho_' + kind);

@@ -3,9 +3,9 @@
 // و«متابعة المرضى» (حضور النهارده لمرضى اتشخصوا قبل كده + بحث في كل المرضى اللي اتشخصوا ← شيت متابعة التمريض) و«المرضى اللي اتشخصوا» (بحث بالاسم أو جزء منه أو الموبايل أو رقم الملف). مريض مختار ← ملف تشخيصاته كله + تشخيص جديد.
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { isIncomplete, ortho, useOrthoVersion, type Consultation, type Nursing } from './data';
-import { LoadState, PageHead, PatientSelect, SearchBox, patientFile, patientName, useClinicalCan } from './kit';
-import { ConsultModal, DraftCard, clearConsultDraft, listConsultDrafts } from './Consultations';
+import { isIncomplete, isUnlinked, ortho, useOrthoVersion, type Consultation, type Nursing } from './data';
+import { LoadState, PageHead, PatientSelect, SearchBox, patientFile, patientName, useClinicalCan, useRun } from './kit';
+import { ConsultModal, DraftCard, LinkBadge, clearConsultDraft, listConsultDrafts } from './Consultations';
 import { DiagnosisTab } from './DiagnosisTab';
 import { todaysFollowUps, todaysVisits } from './visits';
 import { NursingModal, printNursing } from './Nursing';
@@ -13,7 +13,9 @@ import { Button, EmptyState, Modal } from '../components/ui';
 import { db } from '../data/db';
 import { useDbVersion } from '../hooks/useDb';
 import { APPT_STATUS, fmtDate, fmtTime, todayYmd } from '../utils/format';
-import { patientMatches } from '../utils/phoneUtils';
+import { normalizeSearch, patientMatches } from '../utils/phoneUtils';
+import { isTripleName } from './ExamSheet';
+import { useOfflineState } from '../offline';
 
 export default function Diagnosis() {
   useOrthoVersion();
@@ -32,6 +34,13 @@ export default function Diagnosis() {
   const [q, setQ] = useState('');
   const [picker, setPicker] = useState<string | null>(null); // نافذة «تشخيص مريض» (مريض مش في قايمة الانتظار) — القيمة = المريض المختار
   const [, setDraftsVersion] = useState(0);
+  // «فتح ملف تشخيص جديد» بالاسم الثلاثي (المريض مش ظاهر في القايمة — غالبًا النت فاصل والاستقبال لسه ما رفعش ملفه)
+  const [newFile, setNewFile] = useState<{ name: string; phone: string } | null>(null);
+  const [pendingOpen, setPendingOpen] = useState<{ name: string; phone: string } | null>(null);
+  const [unlinkedEdit, setUnlinkedEdit] = useState<Consultation | null>(null);
+  const [linking, setLinking] = useState<{ c: Consultation; patientId: string } | null>(null);
+  const { run, busy } = useRun();
+  const { online } = useOfflineState();
   const pick = (id: string) => setParams(id ? { patient: id } : view !== 'waiting' ? { tab: view } : {}, { replace: true });
   const setView = (v: View) => setParams(v !== 'waiting' ? { tab: v } : {}, { replace: true });
   // تشخيصات بدأت ولسه ما اتحفظتش (على الجهاز ده) — بنعيد قرايتها كل ما النافذة تتقفل عشان القايمة تفضل مظبوطة
@@ -39,7 +48,7 @@ export default function Diagnosis() {
   const draft = patientId ? drafts.find((d) => d.patientId === patientId) ?? null : null;
   const consults = ortho.list('consultations');
   // تشخيصات اتحفظت ناقصة («يحتاج استكمال») — من أي جهاز، الأحدث أولًا
-  const incomplete = consults.filter(isIncomplete).sort((a, b) => b.date.localeCompare(a.date));
+  const incomplete = consults.filter((c) => isIncomplete(c) && !isUnlinked(c)).sort((a, b) => b.date.localeCompare(a.date));
   const openSaved = (c: Consultation, queue = false) => { setParams({ patient: c.patientId }, { replace: true }); setResume(false); setNewVisit(null); setFromQueue(queue); setEdit(c); };
   const resumeDraft = (id: string, queue = false) => { setParams({ patient: id }, { replace: true }); setResume(true); setNewVisit(null); setFromQueue(queue); setEdit('new'); };
   const startNew = (id: string, appointmentId: string | null) => { setParams({ patient: id }, { replace: true }); setResume(false); setNewVisit(appointmentId); setFromQueue(true); setEdit('new'); };
@@ -73,6 +82,7 @@ export default function Diagnosis() {
   const diagnosed = (() => {
     const by = new Map<string, { last: Consultation; count: number; incomplete: number }>();
     for (const c of consults) {
+      if (isUnlinked(c)) continue;
       const cur = by.get(c.patientId);
       if (!cur) by.set(c.patientId, { last: c, count: 1, incomplete: isIncomplete(c) ? 1 : 0 });
       else { cur.count++; if (isIncomplete(c)) cur.incomplete++; if (c.date > cur.last.date) cur.last = c; }
@@ -96,10 +106,15 @@ export default function Diagnosis() {
   const openSheet = (id: string) => setSheet({ patientId: id, appointmentId: followUps.find((a) => a.patientId === id)?.id ?? null });
 
   const selected = patientId ? db.patient(patientId) : undefined;
+  // تشخيصات من غير ملف مريض: بانتظار ملف الاستقبال أو محتاجة مراجعة وربط (الأحدث أولًا)
+  const unlinked = consults.filter(isUnlinked).sort((a, b) => b.date.localeCompare(a.date));
+  const sameName = (name: string) => { const n = normalizeSearch(name); return n ? db.patients().filter((p) => normalizeSearch(p.fullName) === n) : []; };
+  const nameHits = newFile && newFile.name.trim().length >= 2 ? db.patients().filter((p) => patientMatches(p, newFile.name)).slice(0, 6) : [];
 
   return (
     <div className="page">
       <PageHead title="تشخيص المريض" sub="المرضى اللي حضروا ومستنيين التشخيص — والبحث في كل المرضى اللي اتشخصوا.">
+        {perm.add && !patientId && <Button variant="outline" icon="plus" onClick={() => setNewFile({ name: '', phone: '' })}>فتح ملف تشخيص جديد</Button>}
         {perm.add && !patientId && <Button icon="stethoscope" onClick={() => setPicker('')}>تشخيص مريض</Button>}
       </PageHead>
 
@@ -133,6 +148,36 @@ export default function Diagnosis() {
             المرضى اللي اتشخصوا {diagnosed.length > 0 && <span className="badge badge--brand num">{diagnosed.length}</span>}
           </button>
         </div>
+      )}
+
+      {!patientId && unlinked.length > 0 && (
+        <section className="card dx-unlinked-list" style={{ marginBottom: 16 }}>
+          <div className="card__head"><h2>تشخيصات محتاجة ربط بملف مريض <span className="badge badge--warn num">{unlinked.length}</span></h2></div>
+          <div className="card__body">
+            <p className="muted" style={{ marginTop: 0 }}>اتفتحت بالاسم الثلاثي من غير ملف مريض. بتتربط تلقائي بملف الاستقبال بعد المزامنة لما الاسم وباقي البيانات يتطابقوا؛ اللي فيه شك بيستنى حد يختار الملف الصح.</p>
+            <div className="dx-queue">
+              {unlinked.map((c) => {
+                const pp = c.pendingPatient;
+                const local = (c as Consultation & { pendingSync?: boolean }).pendingSync;
+                return (
+                  <div className="dx-queue__row" key={c.id} data-unlinked={c.id}>
+                    <span className="dx-queue__time num">{fmtDate(c.date)}</span>
+                    <div className="dx-queue__who">
+                      <b>{pp?.name || '—'}</b>
+                      <small>{pp?.phone && <><bdi dir="ltr" className="num">{pp.phone}</bdi> · </>}{pp?.age && <>السن <span className="num">{pp.age}</span> · </>}{c.diagnosis || 'التشخيص لسه ما اتحددش'}{c.linkNote && !local ? ` — ${c.linkNote}` : ''}</small>
+                    </div>
+                    <LinkBadge c={c} />
+                    <div className="dx-queue__act">
+                      {perm.edit && <Button size="sm" variant="outline" icon="edit" onClick={() => setUnlinkedEdit(c)}>فتح</Button>}
+                      {perm.edit && !local && <Button size="sm" icon="user" disabled={!online} title={online ? '' : 'محتاج اتصال بالإنترنت'}
+                        onClick={() => { const s1 = sameName(pp?.name ?? ''); setLinking({ c, patientId: s1.length === 1 ? s1[0].id : '' }); }}>ربط بملف مريض</Button>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
       )}
 
       {!patientId && view === 'waiting' && (
@@ -346,6 +391,63 @@ export default function Diagnosis() {
           <p className="muted" style={{ marginBottom: 0 }}>للمريض اللي مش في قايمة الانتظار (ما اتعملوش حضور). لو اتعمله حضور النهارده، التشخيص بيتربط بزيارته لوحده.</p>
         </Modal>
       )}
+      {newFile && (
+        <Modal title="فتح ملف تشخيص جديد" onClose={() => setNewFile(null)} footer={<>
+          <Button variant="outline" onClick={() => setNewFile(null)}>إلغاء</Button>
+          <Button icon="stethoscope" disabled={!isTripleName(newFile.name)} onClick={() => { setPendingOpen({ name: newFile.name.trim(), phone: newFile.phone.trim() }); setNewFile(null); }}>ابدأ التشخيص بالاسم ده</Button>
+        </>}>
+          <div className="field">
+            <label>اسم المريض الثلاثي</label>
+            <input className="input" autoFocus value={newFile.name} placeholder="مثال: محمد أحمد علي" onChange={(e) => setNewFile({ ...newFile, name: e.target.value })} />
+            {newFile.name.trim() && !isTripleName(newFile.name) && <small className="muted">اكتب الاسم ثلاثي على الأقل — بيه بيتربط التشخيص بملف الاستقبال.</small>}
+          </div>
+          <div className="field">
+            <label>الموبايل (اختياري — بيأكد المطابقة)</label>
+            <input className="input" dir="ltr" inputMode="tel" value={newFile.phone} onChange={(e) => setNewFile({ ...newFile, phone: e.target.value })} />
+          </div>
+          {nameHits.length > 0 && (
+            <div className="dx-hits">
+              <p className="muted" style={{ margin: '0 0 6px' }}>المريض ده موجود؟ اختاره بدل ما تفتح ملف جديد:</p>
+              {nameHits.map((p) => (
+                <button type="button" key={p.id} className="dx-hits__row" onClick={() => { setNewFile(null); startPicked(p.id); }}>
+                  <b>{p.fullName}</b> <small>ملف <span className="num">{patientFile(p.id)}</span>{p.phone && <> · <bdi dir="ltr" className="num">{p.phone}</bdi></>}</small>
+                </button>
+              ))}
+            </div>
+          )}
+          <p className="muted" style={{ marginBottom: 0 }}>
+            {online ? 'لو المريض لسه ما اتسجلش في الاستقبال، التشخيص هيتحفظ ويتربط بملفه أول ما يتسجل.' : 'مفيش إنترنت دلوقتي — التشخيص هيتحفظ على الجهاز، ولما النت يرجع بيترفع ويتربط تلقائي بملف المريض اللي الاستقبال فتحه.'}
+          </p>
+        </Modal>
+      )}
+      {linking && (() => {
+        const pp = linking.c.pendingPatient;
+        const cands = sameName(pp?.name ?? '');
+        return (
+          <Modal title="ربط التشخيص بملف المريض" onClose={() => setLinking(null)} footer={<>
+            <Button variant="outline" onClick={() => setLinking(null)}>إلغاء</Button>
+            <Button icon="check" loading={busy} disabled={!linking.patientId} onClick={() => run(() => ortho.link(linking.c.id, linking.patientId), 'اتربط التشخيص بملف المريض', () => setLinking(null))}>ربط</Button>
+          </>}>
+            <p style={{ marginTop: 0 }}>التشخيص باسم <b>{pp?.name}</b>{pp?.phone && <> · <bdi dir="ltr" className="num">{pp.phone}</bdi></>}{pp?.age && <> · السن <span className="num">{pp.age}</span></>} — {fmtDate(linking.c.date)}</p>
+            {cands.length > 0 && (
+              <div className="dx-hits">
+                <p className="muted" style={{ margin: '0 0 6px' }}>ملفات بنفس الاسم:</p>
+                {cands.map((p) => (
+                  <button type="button" key={p.id} className={`dx-hits__row ${linking.patientId === p.id ? 'is-on' : ''}`} onClick={() => setLinking({ ...linking, patientId: p.id })}>
+                    <b>{p.fullName}</b> <small>ملف <span className="num">{patientFile(p.id)}</span>{p.phone && <> · <bdi dir="ltr" className="num">{p.phone}</bdi></>}</small>
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label>أو ابحث عن ملف المريض</label>
+              <PatientSelect value={linking.patientId} onChange={(v) => setLinking({ ...linking, patientId: v })} />
+            </div>
+          </Modal>
+        );
+      })()}
+      {pendingOpen && <ConsultModal pending={pendingOpen} onClose={() => setPendingOpen(null)} />}
+      {unlinkedEdit && <ConsultModal initial={unlinkedEdit} onClose={() => setUnlinkedEdit(null)} />}
       {sheet && <NursingModal patientId={sheet.patientId} appointmentId={sheet.appointmentId} initial={sheet.initial} onClose={() => setSheet(null)} />}
       {/* «تشخيص» بيفتح الشيت على طول: الشيت العام (وفيه خريطة الجسم لمكان الألم) ← كشف الطبيب ← الروشتة */}
       {edit && patientId && <ConsultModal patientId={patientId} appointmentId={edit === 'new' ? newVisit : undefined} initial={edit === 'new' ? undefined : edit} resume={edit === 'new' && resume} onClose={closeModal} />}

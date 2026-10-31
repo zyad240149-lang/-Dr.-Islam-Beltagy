@@ -11,7 +11,7 @@ import { openVisitFor } from './visits';
 import { SHEET_TAB, TREATMENT, activeSheets, regionSheet, removeSheet, sheetFilled, type SheetId } from './regionSheets';
 import { DoctorPainMap, RegionSheetForm, SheetSwitch } from './RegionSheet';
 import { useToast } from '../hooks/useToast';
-import { IMAGING_KIND, IMAGING_STATUS, REGIONS, SIDE, isIncomplete, ortho, useOrthoVersion, type Attachment, type Consultation, type Injection, type ImagingKind, type ImagingRequest, type Medication, type Side } from './data';
+import { IMAGING_KIND, IMAGING_STATUS, REGIONS, SIDE, isIncomplete, isUnlinked, ortho, useOrthoVersion, type Attachment, type Consultation, type Injection, type ImagingKind, type ImagingRequest, type Medication, type Side } from './data';
 import { LAB_GROUPS, MED_PRESETS, XRAY_VIEWS } from './clinicalLists';
 import { printRx } from './printRx';
 import { openPrintWindow } from '../utils/printDoc';
@@ -20,7 +20,7 @@ import { InjectionList, InjectionModal } from './Injections';
 import type { DxPart } from './printDiagnosis';
 import { db } from '../data/db';
 import { Field, IconBtn, LoadState, PageHead, PatientSelect, SearchBox, Tone, confirmDelete, patientFile, patientName, useClinicalCan, useRun } from './kit';
-import { DoctorSheet, NursingSheet, doctorStarted, emptySheet, nurseStarted, normSheet, resetPatientBasics, sheetHasContent, sheetPatientPatch, sheetSummary, withPatientBasics } from './ExamSheet';
+import { DoctorSheet, NursingSheet, doctorStarted, emptySheet, nurseStarted, normSheet, isTripleName, pendingFromSheet, resetPatientBasics, sheetHasContent, sheetPatientPatch, sheetSummary, withPatientBasics } from './ExamSheet';
 
 type Draft = Omit<Consultation, 'id'> & { id?: string };
 
@@ -88,7 +88,9 @@ const TABS = [['nurse', 'الشيت العام'], ['doctor', 'كشف الطبي�
 type Tab = typeof TABS[number][0];
 
 // appointmentId = الزيارة اللي التشخيص الجديد بيتربط بيها (من «بانتظار التشخيص»)؛ من غيرها بيتربط بزيارة النهارده المفتوحة للمريض لو فيه
-export function ConsultModal({ initial, resume, patientId = '', appointmentId, onClose }: { initial?: Consultation; resume?: boolean; patientId?: string; appointmentId?: string | null; onClose: () => void }) {
+// pending = «فتح ملف تشخيص جديد» بالاسم الثلاثي (المريض مش ظاهر في القايمة — غالبًا من غير إنترنت): التشخيص بيتحفظ من غير ملف،
+// والخادم بيربطه بملف الاستقبال بعد المزامنة (هجرة 924)
+export function ConsultModal({ initial, resume, patientId = '', appointmentId, pending, onClose }: { initial?: Consultation; resume?: boolean; patientId?: string; appointmentId?: string | null; pending?: { name: string; phone?: string }; onClose: () => void }) {
   const { run, busy } = useRun();
   const toast = useToast();
   const [c, setC] = useState<Draft>(() => {
@@ -96,6 +98,10 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
     // الزيارة: تاريخ الكشف = تاريخ الزيارة
     const withVisit = (d: Draft, id?: string | null) => { const a = id ? db.appointment(id) : openVisitFor(d.patientId); return a ? { ...d, appointmentId: a.id, date: a.date } : { ...d, appointmentId: d.appointmentId ?? null }; };
     if (initial) return basics(withSheet({ ...emptyConsult(initial.patientId), ...initial }));
+    if (pending && !patientId) {
+      const txt: Record<string, string> = { 'n.name': pending.name.trim().replace(/\s+/g, ' '), ...(pending.phone?.trim() ? { 'n.phone': pending.phone.trim() } : {}) };
+      return { ...emptyConsult(''), sheet: { ...emptySheet(), txt, on: ['n.visit|زيارة جديدة'] } };
+    }
     const draft = resume && loadConsultDraft(patientId);
     if (draft) return basics(withSheet(withVisit(draft, draft.appointmentId ?? appointmentId)));
     // زيارة جديدة ولا متابعة: من الكشوفات السابقة للمريض
@@ -128,7 +134,12 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
   const [mapKey, setMapKey] = useState('x.dx.other'); // خريطة الجسم بتكتب في «Others» بتاع الشيت اللي اتفتحت منه
   const openMap = (key: string) => { setMapKey(key); setMapOpen(true); };
   // كل حاجة اختيارية: الحفظ محتاج المريض بس. لو فيه حاجة ناقصة بنسأل: «استكمال بعدين» (يتحفظ «يحتاج استكمال») ولا «التشخيص اكتمل»
-  const ok = !!c.patientId;
+  // من غير ملف: الاسم الثلاثي في خانة 1 هو اللي بيتطابق بيه — لازم يكون مكتوب
+  const unlinked = !c.patientId && (!!pending || !!initial);
+  const pendingInfo = pendingFromSheet(sheet);
+  const ok = !!c.patientId || (unlinked && isTripleName(pendingInfo.name));
+  const pseudo = unlinked ? ({ fullName: pendingInfo.name, phone: pendingInfo.phone ?? '', fileNo: '' } as unknown as NonNullable<ReturnType<typeof db.patient>>) : null;
+  const patientOf = () => (c.patientId ? db.patient(c.patientId) : pseudo);
   const missing = [
     !nurseStarted(sheet) && c.painScore === '' && 'الشيت العام',
     !doctorStarted(sheet) && 'كشف الطبيب',
@@ -165,13 +176,16 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
     // الملخص النصي من الشيت ← حقول الكشف (القوايم والروشتة وسجل المريض)
     const text = { complaint: sum.complaint, history: sum.history, examination: sum.examination, diagnosis: sum.diagnosis };
     const sheetOut = { ...sheet, meds: sheet.meds.filter((m) => m.name.trim()) };
-    const payload = { ...c, ...text, sheet: sheetOut, complete: done, medications: meds, imagingRequests: reqs, painScore: c.painScore === '' ? null : c.painScore, followUp: c.followUp || null } as unknown as Draft;
+    const payload = { ...c, ...text, sheet: sheetOut, complete: done, medications: meds, imagingRequests: reqs, painScore: c.painScore === '' ? null : c.painScore, followUp: c.followUp || null,
+      ...(c.patientId ? {} : { pendingPatient: pendingFromSheet(sheetOut) }) } as unknown as Draft;
     // تابة الطباعة بتتفتح دلوقتي (وقت الضغطة) وإلا المتصفح يحجبها بعد انتظار الحفظ — ولو الحفظ فشل بتتقفل
     const printWin = thenPrint ? openPrintWindow() : null;
     let printed = false;
     savingRef.current = true;
     void run(async () => {
       await ortho.save('consultations', payload);
+      // من غير ملف مريض: طلبات الأشعة والتحاليل بيسجلها الخادم في ملف المريض لما التشخيص يتربط
+      if (!c.patientId) return;
       // طلبات الأشعة الجديدة بتتسجل في «الأشعة والتحاليل» كـ «مطلوبة» عشان تتابع وصولها وقراءتها
       const before = new Set((initial?.imagingRequests ?? []).map(reqKey));
       for (const r of reqs.filter((x) => !before.has(reqKey(x)))) {
@@ -186,7 +200,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
         const now = new Set(c.attachments.map((a) => a.path));
         initial.attachments.filter((a) => !now.has(a.path)).forEach((a) => void ortho.removeAttachment(a.path));
       }
-    }, done ? 'تم حفظ الكشف — التشخيص اكتمل' : 'اتحفظ — التشخيص محتاج استكمال', () => {
+    }, !c.patientId ? 'اتحفظ التشخيص — هيتربط بملف المريض تلقائي بعد المزامنة' : done ? 'تم حفظ الكشف — التشخيص اكتمل' : 'اتحفظ — التشخيص محتاج استكمال', () => {
       if (!initial) clearConsultDraft(c.patientId);
       // تعديلات خانة 1 (الاسم/السن/النوع/الهاتف/العنوان) ← ملف المريض — بعد ما الكشف اتحفظ، عشان فشلها مايكرّرش الكشف
       const p = db.patient(c.patientId);
@@ -195,24 +209,29 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
         if (badPhone) toast.error('رقم الهاتف في الشيت مش صحيح — ما اتحفظش في ملف المريض.');
         if (Object.keys(patch).length) void db.updatePatient(p.id, patch).catch((e) => toast.error(`الكشف اتحفظ، بس بيانات المريض ما اتحدّثتش: ${(e as Error).message}`));
       }
-      if (thenPrint) { printed = true; printRx({ ...c, ...text, medications: meds, imagingRequests: reqs }, db.patient(c.patientId), printWin); }
+      if (thenPrint) { printed = true; printRx({ ...c, ...text, medications: meds, imagingRequests: reqs }, patientOf(), printWin); }
       onClose();
     }).then(() => { savingRef.current = false; if (!printed) printWin?.close(); });
   }
 
   return (
     <Modal xl title={initial ? 'تعديل الكشف' : 'كشف جديد'} onClose={cancel} footer={<>
-      {c.patientId && missing.length > 0 && <span className="sh-need">لسه ناقص: {missing.join('، ')}</span>}
+      {(c.patientId || unlinked) && missing.length > 0 && <span className="sh-need">لسه ناقص: {missing.join('، ')}</span>}
+      {unlinked && !ok && <span className="sh-need">اكتب اسم المريض الثلاثي في خانة 1</span>}
       <Button variant="outline" onClick={cancel}>إلغاء</Button>
-      <Button variant="outline" icon="print" disabled={!c.patientId} onClick={() => setOut(['nurse', 'doctor'])}>طباعة وإرسال</Button>
+      <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => setOut(['nurse', 'doctor'])}>طباعة وإرسال</Button>
       <Button icon="check" loading={busy} disabled={!ok} onClick={() => save(false)}>حفظ الكشف</Button>
     </>}>
       <div className="cx" ref={bodyRef}>
         <div className="grid-form grid-form--4">
-          <Field label="المريض"><PatientSelect value={c.patientId} onChange={(v) => setC((x) => {
-            const a = initial ? undefined : openVisitFor(v); // مريض تاني ← زيارته هو
-            return { ...x, patientId: v, appointmentId: initial ? x.appointmentId : a?.id ?? null, ...(a ? { date: a.date } : {}), sheet: resetPatientBasics(normSheet(x.sheet), v ? db.patient(v) : null) };
-          })} /></Field>
+          {unlinked && initial ? (
+            <Field label="المريض"><div className="input dx-unlinked__who" title={initial.linkNote || ''}><b>{pendingInfo.name || '—'}</b> <span className="badge badge--warn">غير مربوط بملف</span></div></Field>
+          ) : (
+            <Field label={unlinked ? 'المريض (لو ظهر في القايمة اختاره)' : 'المريض'}><PatientSelect value={c.patientId} onChange={(v) => setC((x) => {
+              const a = initial ? undefined : openVisitFor(v); // مريض تاني ← زيارته هو
+              return { ...x, patientId: v, appointmentId: initial ? x.appointmentId : a?.id ?? null, ...(a ? { date: a.date } : {}), sheet: v || !pending ? resetPatientBasics(normSheet(x.sheet), v ? db.patient(v) : null) : x.sheet };
+            })} /></Field>
+          )}
           <Field label="تاريخ الكشف"><input type="date" className="input" value={c.date} onChange={(e) => set('date', e.target.value)} /></Field>
           <Field label="المنطقة المصابة">
             <select className="input" value={c.region} onChange={(e) => set('region', e.target.value)}>{(REGIONS.includes(c.region) ? REGIONS : [c.region, ...REGIONS]).map((r) => <option key={r}>{r}</option>)}</select>
@@ -220,6 +239,12 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
           <Field label="ميعاد المتابعة"><input type="date" className="input" value={c.followUp} min={c.date} onChange={(e) => set('followUp', e.target.value)} /></Field>
         </div>
 
+        {unlinked && (
+          <div className="sh-visitlink dx-unlinked">
+            <Icon name="user" size={15} />
+            <span>ملف تشخيص جديد باسم <b>{pendingInfo.name || '—'}</b> — من غير ملف مريض. بعد المزامنة بيتربط تلقائي بملف الاستقبال لو الاسم الثلاثي وباقي البيانات (الموبايل/السن/النوع في خانة 1) مطابقين؛ لو فيه شك بيظهر «يحتاج مراجعة وربط».</span>
+          </div>
+        )}
         {visitAppt && (
           <div className="sh-visitlink">
             <Icon name="calendar" size={15} />
@@ -240,7 +265,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
             painScore={c.painScore} onPainScore={(v) => set('painScore', v)}
             onFirstPain={(id, side) => setC((x) => ({ ...x, region: regionById(id)?.name ?? x.region, ...(side ? { side } : {}) }))} />
           <div className="sh-next">
-            <Button variant="outline" icon="print" disabled={!c.patientId} onClick={() => setOut(['nurse'])}>طباعة / إرسال الشيت العام</Button>
+            <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => setOut(['nurse'])}>طباعة / إرسال الشيت العام</Button>
             <Button icon="chevronLeft" onClick={() => goTab('doctor')}>التالي: كشف الطبيب</Button>
           </div>
         </>}
@@ -257,7 +282,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
           </>
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('nurse')}>رجوع: الشيت العام</Button>
-            <Button variant="outline" icon="print" disabled={!c.patientId} onClick={() => setOut(['doctor'])}>طباعة / إرسال كشف الطبيب</Button>
+            <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => setOut(['doctor'])}>طباعة / إرسال كشف الطبيب</Button>
             <Button icon="chevronLeft" onClick={() => goTab('plan')}>التالي: الخطة العلاجية</Button>
           </div>
         </>}
@@ -278,7 +303,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
             {c.patientId ? <>
               <InjectionList items={ortho.list('injections', c.patientId).sort((a, b) => b.date.localeCompare(a.date))} onEdit={(n) => setInj(n)} />
               <Button icon="plus" onClick={() => setInj('new')} style={{ marginTop: 10 }}>سجل حقن جديد</Button>
-            </> : <p className="muted">اختار المريض الأول.</p>}
+            </> : <p className="muted">{unlinked ? 'سجل الحقن بيتفتح بعد ما التشخيص يتربط بملف المريض.' : 'اختار المريض الأول.'}</p>}
           </Section>
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('plan')}>رجوع: الخطة العلاجية</Button>
@@ -286,7 +311,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
         </>}
         {inj && <InjectionModal patientId={c.patientId} appointmentId={c.appointmentId ?? null} initial={inj === 'new' ? undefined : inj} onClose={() => setInj(null)} />}
       </div>
-      {out && <DiagnosisOutput initial={out} patient={db.patient(c.patientId)} visitNo={visitNo} onClose={() => setOut(null)}
+      {out && <DiagnosisOutput initial={out} patient={patientOf()} visitNo={visitNo} onClose={() => setOut(null)}
         c={{ ...c, ...sum, plan: c.plan, sheet, medications: c.medications.filter((m) => m.name.trim()), imagingRequests: c.imagingRequests.filter((r) => r.region.trim()) }} />}
       {ask && (
         <Modal title="فيه حاجات لسه ناقصة" onClose={() => setAsk(null)} footer={<>
@@ -385,6 +410,14 @@ export function pickedToConsult(text: string, ref: DiagnosisRef): Partial<Consul
   return { diagnosis: `${text}${ar}`, icd10: ref.icd10 ?? '', ...(f ? { region: f.region.name } : {}), side: (ref.side ?? 'na') as Side };
 }
 
+/** حالة تشخيص من غير ملف مريض (هجرة 924) */
+export function LinkBadge({ c }: { c: Consultation & { pendingSync?: boolean } }) {
+  if (!isUnlinked(c)) return null;
+  const [label, tone] = c.pendingSync ? ['محفوظ على الجهاز — هيترفع لما النت يرجع', 'muted']
+    : c.linkStatus === 'review' ? ['يحتاج مراجعة وربط بملف المريض', 'danger'] : ['بانتظار ملف المريض من الاستقبال', 'warn'];
+  return <span className={`badge badge--${tone}`} title={c.linkNote || ''}>{label}</span>;
+}
+
 export function ConsultList({ items, onEdit, hidePatient }: { items: Consultation[]; onEdit: (c: Consultation) => void; hidePatient?: boolean }) {
   const { run } = useRun();
   const perm = useClinicalCan();
@@ -399,7 +432,9 @@ export function ConsultList({ items, onEdit, hidePatient }: { items: Consultatio
           <div className="item-card cx-card" key={c.id}>
             <div className="ortho-row">
               <div>
-                {!hidePatient && <Link to={`/patients/${c.patientId}`} className="ortho-cell-strong">{patientName(c.patientId)}</Link>}
+                {!hidePatient && (isUnlinked(c)
+                  ? <><span className="ortho-cell-strong">{c.pendingPatient?.name || '—'}</span> <LinkBadge c={c} /></>
+                  : <Link to={`/patients/${c.patientId}`} className="ortho-cell-strong">{patientName(c.patientId)}</Link>)}
                 <div className="ortho-sub">{isIncomplete(c) && <span className="badge badge--warn" style={{ marginInlineEnd: 6 }}>يحتاج استكمال</span>}{fmtDate(c.date)} · {c.region} — {SIDE[c.side]}{c.painScore !== '' && c.painScore != null ? ` · الألم ${c.painScore}/10` : ''}</div>
               </div>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -443,7 +478,7 @@ export default function Consultations() {
   const [edit, setEdit] = useState<Consultation | 'new' | null>(null);
   const term = q.trim();
   const list = ortho.list('consultations').sort((a, b) => b.date.localeCompare(a.date))
-    .filter((c) => !term || c.diagnosis.includes(term) || c.region.includes(term) || c.icd10?.toUpperCase().includes(term.toUpperCase()) || patientName(c.patientId).includes(term));
+    .filter((c) => !term || c.diagnosis.includes(term) || c.region.includes(term) || c.icd10?.toUpperCase().includes(term.toUpperCase()) || (isUnlinked(c) ? c.pendingPatient?.name ?? '' : patientName(c.patientId)).includes(term));
   return (
     <div className="page">
       <PageHead title="الكشوفات والتشخيص" sub="سجل الكشوفات الإكلينيكية والتشخيصات">

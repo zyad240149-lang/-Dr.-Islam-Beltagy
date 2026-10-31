@@ -10,7 +10,7 @@ import { splitName } from '../utils/patientImport';
 import { fmtDate } from '../utils/format';
 import { Icon } from '../utils/icons';
 import type { Patient } from '../types';
-import type { CurrentMed, ExamSheet, Side } from './data';
+import type { CurrentMed, ExamSheet, PendingPatient, Side } from './data';
 import { DOCTOR_PREFIXES, REGION_SHEETS, TREATMENT, regionSummary, sheetFilled, type SheetId } from './regionSheets';
 import { DxSheet } from './DxSheet';
 import { dxSummary } from './dxCatalog';
@@ -161,6 +161,14 @@ export function sheetPatientPatch(s: ExamSheet, p: Patient, since?: ExamSheet): 
   }
   return { patch, badPhone };
 }
+
+/** بيانات خانة 1 لتشخيص من غير ملف مريض (هجرة 924) — الخادم بيطابق بيها ملف الاستقبال */
+export function pendingFromSheet(s: ExamSheet): PendingPatient {
+  const g = genderOf(s);
+  return { name: tx(s, 'n.name').replace(/\s+/g, ' '), phone: toLatinDigits(tx(s, 'n.phone')), age: toLatinDigits(tx(s, 'n.age')), gender: g ?? '' };
+}
+/** الاسم ثلاثي على الأقل */
+export const isTripleName = (n: string) => n.trim().split(/\s+/).filter(Boolean).length >= 3;
 
 // ---------- الملخص النصي (اللي بيتحفظ في حقول الكشف) ----------
 const join = (xs: (string | false | undefined)[], sep = ', ') => xs.filter(Boolean).join(sep);

@@ -352,6 +352,8 @@ export default function Diagnosis() {
                         </div>
                         {x.incomplete > 0 ? <span className="badge badge--warn">فيه تشخيص يحتاج استكمال</span> : <span />}
                         <span className="dx-queue__act" onClick={(e) => e.stopPropagation()}>
+                          {/* إضافة شيت = يفتح آخر تشخيص (حتى لو من البرنامج القديم) على كشف الطبيب ويتكمّل في نفس الكشف */}
+                          {perm.edit && <Button size="sm" variant="outline" icon="plus" onClick={() => openSaved(x.last, true)}>إضافة شيت</Button>}
                           {perm.add && <Button size="sm" icon="stethoscope" onClick={() => startPicked(x.id)}>{drafts.some((d) => d.patientId === x.id) ? 'استكمال التشخيص' : 'تشخيص جديد'}</Button>}
                           {perm.add && <Button size="sm" variant="outline" icon="clipboard" onClick={() => openSheet(x.id)}>متابعة</Button>}
                           <Button size="sm" variant="outline" onClick={() => pick(x.id)}>فتح ملف التشخيص</Button>

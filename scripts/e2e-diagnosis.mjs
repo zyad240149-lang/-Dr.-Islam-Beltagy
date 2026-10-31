@@ -217,6 +217,15 @@ try {
   await search.fill(`${PA.first} ${PA.father}`);
   await A.page.waitForTimeout(400);
   check('بحث بالاسم الكامل/الجزء الأول يلاقي مريض «أ» بس', await results().count() === 1 && ((await results().first().textContent()) ?? '').includes(PA.first));
+  // «إضافة شيت»: بيفتح آخر تشخيص للمريض (مش كشف جديد) على كشف الطبيب
+  await results().first().getByRole('button', { name: 'إضافة شيت' }).click();
+  await A.page.waitForSelector('.modal', { timeout: 10000 });
+  check('«إضافة شيت» بيفتح آخر تشخيص للمريض على كشف الطبيب', await A.page.locator('.modal__head, .modal', { hasText: 'تعديل الكشف' }).count() > 0
+    && await A.page.locator('.sh-tabs button[aria-selected="true"]', { hasText: 'كشف الطبيب' }).count() === 1);
+  await A.page.locator('.modal__foot button', { hasText: 'إلغاء' }).click();
+  await A.page.waitForFunction(() => !document.querySelector('.modal'), null, { timeout: 10000 });
+  await A.page.locator('.dx-views button', { hasText: 'المرضى اللي اتشخصوا' }).click().catch(() => {});
+  await A.page.waitForTimeout(500);
   await search.fill(PA.family.slice(0, 6));
   await A.page.waitForTimeout(400);
   const both = await results().count();

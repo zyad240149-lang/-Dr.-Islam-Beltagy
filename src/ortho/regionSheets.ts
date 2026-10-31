@@ -4,6 +4,7 @@
 // الشيت اللي بيتفتح للطبيب بيتحدد من مكان الألم في الشيت العام (خانة 5 — جسم الإنسان).
 // كل شيت ليه بادئة مفاتيح خاصة بيه (af./cs./eh./ls.) عشان أكتر من منطقة في نفس الكشف ما يتلخبطوش.
 import type { ExamSheet, Side } from './data';
+import { dxSummary, type DxSheetId } from './dxCatalog';
 
 export type SheetId = 'hipknee' | 'ankle' | 'neckshoulder' | 'hand' | 'lumbar' | 'cast' | 'postop';
 type Row3 = [label: string, sub: string, color?: string];
@@ -19,6 +20,7 @@ export type Field =
   | { t: 'key'; title: string; rows: Row3[]; note?: string }
   | { t: 'imaging'; k: string; mods: string[] }
   | { t: 'dxmap' }
+  | { t: 'dxsheet'; id: DxSheetId }
   | { t: 'notes'; k: string };
 export type BoxRole = 'cc' | 'hx' | 'rf' | 'exam' | 'dx' | 'plan' | 'notes';
 export interface BoxDef { title: string; role: BoxRole; tone?: 'red'; wide?: boolean; f: Field[] }
@@ -72,10 +74,7 @@ export const REGION_SHEETS: RegionSheetDef[] = [
         col('Foot Tests', 'st.foot', ["Mulder's click (Morton neuroma)", "Tinel's sign", 'Windlass test (Plantar fasciitis)', 'Midfoot torsion test (Lisfranc)', 'Piano key test (1st ray)', 'Metatarsal squeeze test', 'Forefoot alignment', 'Hindfoot alignment']),
       ] }] },
       imaging(['X-ray', 'MRI', 'CT', 'Ultrasound', 'Bone scan']),
-      { title: 'Diagnosis (Likely / Working)', role: 'dx', f: [{ t: 'cols', cols: [
-        col('Ankle', 'dx.ankle', ['Ankle sprain (ATFL / CFL)', 'Chronic ankle instability', 'Osteoarthritis', 'Osteochondral lesion (OCD)', 'Impingement syndrome', 'Achilles tendinopathy / rupture', 'Peroneal tendinopathy', 'Deltoid ligament injury', 'High ankle sprain (syndesmosis)']),
-        col('Foot', 'dx.foot', ['Plantar fasciitis', 'Metatarsalgia', 'Morton neuroma', 'Hallux valgus', 'Hallux rigidus', 'Lisfranc injury', 'Stress fracture', 'Diabetic foot / ulcer', 'Claw / hammer toes']),
-      ] }, { t: 'dxmap' }] },
+      { title: 'Diagnosis Sheet', role: 'dx', wide: true, f: [{ t: 'dxsheet', id: 'ankle' }, { t: 'dxmap' }] },
       plan(['Medication', 'Physiotherapy', 'Orthotics / Insole', 'Activity modification', 'Injection / Intervention', 'Brace / Support', 'Surgery (if indicated)']),
       notes(),
     ],
@@ -110,10 +109,7 @@ export const REGION_SHEETS: RegionSheetDef[] = [
         col('Shoulder', 'st.sh', ['Neer test', 'Hawkins-Kennedy test', 'Empty can test', 'Drop arm test', "Speed's test", "Yergason's test", 'Cross body adduction test', 'Apprehension / Relocation', "O'Brien test"]),
       ] }] },
       imaging(['X-ray', 'MRI', 'CT', 'Ultrasound']),
-      { title: 'Diagnosis (Likely / Working)', role: 'dx', f: [{ t: 'cols', cols: [
-        col('Cervical Spine', 'dx.cx', ['Cervical spondylosis', 'Disc prolapse', 'Cervical radiculopathy', 'Cervical myelopathy', 'Facet joint syndrome', 'Whiplash injury', 'Cervicogenic headache', 'Muscle spasm']),
-        col('Shoulder', 'dx.sh', ['Rotator cuff tendinopathy / tear', 'Subacromial impingement', 'Frozen shoulder (adhesive capsulitis)', 'AC joint arthritis', 'Bicipital tendinopathy', 'Shoulder instability', 'Labral tear', 'Calcific tendinopathy', 'Proximal humerus fracture']),
-      ] }, { t: 'dxmap' }] },
+      { title: 'Diagnosis Sheet', role: 'dx', wide: true, f: [{ t: 'dxsheet', id: 'neckshoulder' }, { t: 'dxmap' }] },
       plan(STD_PLAN),
       notes(),
     ],
@@ -152,10 +148,7 @@ export const REGION_SHEETS: RegionSheetDef[] = [
         col('Hand Tests', 'st.hd', ['Tendon glide', 'Trigger finger test', 'CMC grind test (thumb)', "Elson's test (central slip)", 'Bouvier test (mallet finger)', "Froment's sign", "Wartenberg's sign", "Allen's test (vascular)"]),
       ] }] },
       imaging(['X-ray', 'US (MSK)', 'MRI', 'CT', 'Nerve conduction (NCV)']),
-      { title: 'Diagnosis (Likely / Working)', role: 'dx', f: [{ t: 'checks', g: 'dx', cols: true, items: [
-        'Lateral epicondylitis (tennis elbow)', "Medial epicondylitis (golfer's elbow)", 'Olecranon bursitis', 'Ulnar nerve entrapment', 'Radial head pathology', 'Carpal tunnel syndrome',
-        'De Quervain tenosynovitis', 'TFCC injury', 'Scaphoid fracture', 'Trigger finger', 'CMC osteoarthritis (thumb)', 'Tendon injury / rupture', 'Ligament injury', 'Fracture / dislocation', 'Nerve injury',
-      ] }, { t: 'text', k: 'dx.other', label: 'Others:' }, { t: 'dxmap' }] },
+      { title: 'Diagnosis Sheet', role: 'dx', wide: true, f: [{ t: 'dxsheet', id: 'hand' }, { t: 'dxmap' }] },
       plan(['Medication', 'Physiotherapy', 'Activity modification', 'Splint / Brace', 'Injection / Intervention', 'Surgery (if indicated)']),
       notes(),
     ],
@@ -191,13 +184,7 @@ export const REGION_SHEETS: RegionSheetDef[] = [
         { t: 'checks', g: 'img', items: ['X-ray (Lumbosacral spine AP/Lateral)', 'MRI (Lumbosacral spine)', 'CT (if needed)', 'Bone scan (if indicated)', 'DEXA (if indicated)', 'Ultrasound (guided injection)', 'Not available'] },
         { t: 'text', k: 'img.other', label: 'Others:' }, { t: 'text', k: 'img.findings', label: 'Findings:', stack: true },
       ] },
-      { title: 'Provisional Diagnosis / Assessment', role: 'dx', f: [
-        { t: 'cols', cols: [
-          col('Infection / Tumor / Inflammatory', 'dx.inf', ['Discitis', 'Vertebral Osteomyelitis', 'Spinal Tumors / Metastasis', 'Multiple Myeloma', 'Inflammatory Spondyloarthritis', 'Ankylosing Spondylitis']),
-          col('Referred pain / Extra-spinal causes', 'dx.ref', ['Hip Osteoarthritis', 'Hip Pathology', 'Piriformis Syndrome', 'Renal Pain', 'Abdominal Aortic Aneurysm', 'Pelvic / Visceral Referred Pain']),
-        ] },
-        { t: 'text', k: 'dx.1', label: '1.' }, { t: 'text', k: 'dx.2', label: '2.' }, { t: 'text', k: 'dx.3', label: '3.' }, { t: 'text', k: 'dx.4', label: '4.' }, { t: 'dxmap' },
-      ] },
+      { title: 'Diagnosis Sheet', role: 'dx', wide: true, f: [{ t: 'dxsheet', id: 'lumbar' }, { t: 'dxmap' }] },
       { title: 'Plan / Management', role: 'plan', f: [{ t: 'checks', g: 'plan', items: ['Medication', 'Physiotherapy (McKenzie / Core)', 'Activity modification', 'Epidural / Nerve root injection', 'Facet / SI joint injection', 'Surgery (if indicated)', 'Follow-up', 'Lifestyle advice (posture / weight)'] }, { t: 'text', k: 'plan.other', label: 'Other:' }] },
       notes('Notes / Diagrams'),
     ],
@@ -341,6 +328,7 @@ export function regionSummary(def: RegionSheetDef, s: ExamSheet, side: Side) {
       case 'ticks': { const v = join(f.rows.flatMap(([r]) => ['Rt', 'Lt'].filter((sd) => has(f.g, `${r} ${sd}`)).map((sd) => `${r} ${sd}`))); return v && `${f.title}: ${v}`; }
       case 'imaging': return join([...f.mods.filter((m) => has(f.k, m) || tx(`${f.k}.${m}`)).map((m) => join([`${m}:`, tx(`${f.k}.${m}`), tx(`${f.k}.${m}.date`) && `(${tx(`${f.k}.${m}.date`)})`], ' ')), tx(`${f.k}.prev`) && `Previous: ${tx(`${f.k}.prev`)}`, tx(`${f.k}.other`)], '; ');
       case 'notes': return tx(f.k);
+      case 'dxsheet': return dxSummary(def.prefix, f.id, (g, i) => s.on.includes(`${g}|${i}`), (k) => (s.txt[k] ?? '').trim());
       default: return '';
     }
   };

@@ -5,6 +5,7 @@ import { BodyFigure, regionById, type BodyView, type PinSide } from '../componen
 import { Icon } from '../utils/icons';
 import { Box, Checks, Ck, MRC_OPTS, Pick, REFLEX_OPTS, Row, SelCell, Txt, painLabel, sheetApi } from './ExamSheet';
 import type { ExamSheet, Side } from './data';
+import { DxSheet } from './DxSheet';
 import { SHEET_ORDER, SHEET_TAB, type Field, type RegionSheetDef, type SheetId } from './regionSheets';
 
 const SIDES: [Side, string][] = [['right', 'Right'], ['left', 'Left'], ['both', 'Bilateral']];
@@ -98,6 +99,7 @@ export function RegionSheetForm({ def, sheet, onChange, side, onSide, icd10, onI
           <label className="sh-line"><span className="sh-line__l">ICD-10</span><input className="sh-in sh-in--num" dir="ltr" placeholder="M25.5" value={icd10} onChange={(e) => onIcd10(e.target.value.toUpperCase())} /></label>
         </div>
       );
+      case 'dxsheet': return <DxSheet key={i} a={a} prefix={def.prefix} id={f.id} />;
       case 'notes': return <textarea key={i} className="sh-in sh-notes" dir="auto" aria-label="Notes" value={a.txt(k(f.k))} onChange={(e) => a.set(k(f.k), e.target.value)} />;
     }
   };

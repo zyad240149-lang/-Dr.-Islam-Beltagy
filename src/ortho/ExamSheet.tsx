@@ -12,6 +12,8 @@ import { Icon } from '../utils/icons';
 import type { Patient } from '../types';
 import type { CurrentMed, ExamSheet, Side } from './data';
 import { DOCTOR_PREFIXES, REGION_SHEETS, TREATMENT, regionSummary, sheetFilled, type SheetId } from './regionSheets';
+import { DxSheet } from './DxSheet';
+import { dxSummary } from './dxCatalog';
 
 // ---------- بنود الورقتين ----------
 const N_VISIT = ['زيارة جديدة', 'متابعة'];
@@ -48,14 +50,12 @@ const X_REFLEX_V = ['Normal', 'Diminished', 'Absent'];
 const X_ST_HIP = ['FABER test', 'FADIR test', 'Trendelenburg test', "Ober's test", 'Thomas test', 'Log roll test', 'Stinchfield test'];
 const X_ST_KNEE = ['McMurray test', 'Thessaly test', 'Lachman test', 'Anterior drawer', 'Posterior drawer', 'Varus stress test', 'Valgus stress test', 'Patellar apprehension', 'Patellar grind test', 'Noble compression'];
 const X_IMG = ['X-ray', 'MRI', 'CT', 'Ultrasound'];
-const X_DX_HIP = ['Osteoarthritis', 'Avascular necrosis', 'Femoroacetabular impingement', 'Labral tear', 'Trochanteric bursitis', 'Gluteal tendinopathy', 'Hip fracture', 'Septic arthritis'];
-const X_DX_KNEE = ['Osteoarthritis', 'Meniscal tear', 'Ligament injury (ACL / PCL / MCL / LCL)', 'Patellofemoral pain syndrome', 'Chondral lesion', 'Osgood-Schlatter disease', 'Patellar tendinopathy', 'Bursitis'];
 const X_PLAN = ['Medication', 'Physiotherapy', 'Activity modification', 'Injection / Intervention', 'Brace / Support', 'Surgery (if indicated)'];
 // نفس البنود لطباعة التشخيص (printDiagnosis) عشان الورقة المطبوعة تفضل مطابقة للشاشة
 export const SHEET_LISTS = {
   N_VISIT, N_GENDER, N_MARITAL, N_HX, YES_NO, N_ALLERGY, N_CC, N_SINCE,
   X_CC, X_DUR, X_SIDE, X_ONSET, X_COURSE, X_PREV, X_RF, X_DERM, X_PALP_HIP, X_PALP_KNEE, X_ROM_HIP, X_ROM_KNEE,
-  X_PATMOB, X_SPROM, X_MRC, X_REFLEX, X_ST_HIP, X_ST_KNEE, X_IMG, X_DX_HIP, X_DX_KNEE, X_PLAN,
+  X_PATMOB, X_SPROM, X_MRC, X_REFLEX, X_ST_HIP, X_ST_KNEE, X_IMG, X_PLAN,
 };
 
 // ---------- البيانات ----------
@@ -233,7 +233,7 @@ export function sheetSummary(s: ExamSheet, side: Side = 'na') {
   ];
   const examination = join([...lines.map(([l, v]) => v && `${l} — ${v}`), tx(s, 'x.notes'), ...regions.flatMap(({ d, r }) => r.examination.map((t) => tag(d.tab, t)))], '\n');
 
-  const diagnosis = join([sec('Hip', picked(s, 'x.dx.hip', X_DX_HIP)), sec('Knee', picked(s, 'x.dx.knee', X_DX_KNEE)), tx(s, 'x.dx.other'), ...regions.map(({ d, r }) => r.diagnosis && tag(d.tab, r.diagnosis))], ' · ');
+  const diagnosis = join([dxSummary('x', 'hipknee', (g, i) => has(s, g, i), (k) => tx(s, k)), ...regions.map(({ d, r }) => r.diagnosis && tag(d.tab, r.diagnosis))], ' · ');
   const plan = join([...picked(s, 'x.plan', X_PLAN), tx(s, 'x.plan.fu') && `Follow up after ${tx(s, 'x.plan.fu')}`, tx(s, 'x.plan.other'), ...regions.map(({ d, r }) => r.plan && tag(d.tab, r.plan)), regionSummary(TREATMENT, s, side).plan]);
   return { complaint, history: join([history, ...regions.flatMap(({ d, r }) => r.history.map((t) => tag(d.tab, t)))], '\n'), examination, diagnosis, plan };
 }
@@ -551,12 +551,8 @@ export function DoctorSheet({ sheet, onChange, side, onSide, icd10, onIcd10, onO
           <Txt a={a} k="x.img.other" label="Others:" />
         </Box>
 
-        <Box n={10} title="Diagnosis (Likely / Working)">
-          <div className="sh-split">
-            <div><div className="sh-lbl">Hip</div><Checks a={a} g="x.dx.hip" items={X_DX_HIP} /></div>
-            <div><div className="sh-lbl">Knee</div><Checks a={a} g="x.dx.knee" items={X_DX_KNEE} /></div>
-          </div>
-          <Txt a={a} k="x.dx.other" label="Others:" />
+        <Box n={10} title="Diagnosis Sheet" wide>
+          <DxSheet a={a} prefix="x" id="hipknee" />
           <div className="sh-dxmap">
             <button type="button" className="sh-add" dir="rtl" onClick={onOpenMap}><Icon name="body" size={15} /> اختيار من خريطة الجسم</button>
             <label className="sh-line"><span className="sh-line__l">ICD-10</span><input className="sh-in sh-in--num" dir="ltr" placeholder="M17.1" value={icd10} onChange={(e) => onIcd10(e.target.value.toUpperCase())} /></label>

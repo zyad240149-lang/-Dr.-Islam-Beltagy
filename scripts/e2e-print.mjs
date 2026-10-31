@@ -26,7 +26,7 @@ try {
   const [p] = await sql(`insert into patients (full_name, first_name, father_name, family_name, phone, gender, nationality, referral_source, file_no)
     values ('حسام طارق طباعةاختبار', 'حسام', 'طارق', 'طباعةاختبار', '+201200000992', 'male', 'saudi', 'friend', '') returning id`);
   made.patient = p.id;
-  const sheet = { on: ['n.visit|متابعة', 'n.cc|ألم', 'x.cc|Knee pain', 'x.dx.knee|Osteoarthritis', 'af.cc|Ankle pain', 'af.dx.ankle|Ankle sprain (ATFL / CFL)'], txt: { 'n.name': 'حسام طارق طباعةاختبار', 'x.notes': 'Rest.' }, meds: [], pain: ['knee:right', 'ankle_foot:right'] };
+  const sheet = { on: ['n.visit|متابعة', 'n.cc|ألم', 'x.cc|Knee pain', 'x.dxs.knee.1|Medial compartment OA', 'af.cc|Ankle pain', 'af.dxs.ankle.4|Lateral ankle ligaments (lateral ankle sprain)'], txt: { 'n.name': 'حسام طارق طباعةاختبار', 'x.notes': 'Rest.' }, meds: [], pain: ['knee:right', 'ankle_foot:right'] };
   await sql(`insert into ortho_consultations (patient_id, complaint, region, side, diagnosis, plan, medications, sheet, complete, created_by)
     values ('${p.id}', 'Knee pain', 'الركبة', 'right', 'Knee: Osteoarthritis', 'راحة', '[{"name":"Panadol 500mg","dose":"قرص","frequency":"3 مرات","duration":"5 أيام","notes":""}]', '${JSON.stringify(sheet).replace(/'/g, "''")}'::jsonb, true, '${made.employees[0]}')`);
   check('مريض وتشخيص للاختبار', !!made.patient);
@@ -119,6 +119,8 @@ try {
   section('تنظيف');
   try {
     if (made.patient) await sql(`delete from ortho_consultations where patient_id = '${made.patient}'; delete from patients where id = '${made.patient}';`);
+    // مريض الاختبار سحب رقم ملف ← العداد يرجع لآخر رقم حقيقي
+    await sql(`update counters set value = coalesce((select max(replace(file_no, 'TM-', '')::int) from patients where file_no ~ '^TM-[0-9]+$'), 0) where name = 'patient';`);
     for (const id of made.employees) { await sql(`delete from attendance where employee_id = '${id}';`); await deleteEmployee(id); }
   } catch (e) { console.log('  تنظيف ناقص:', e.message); }
   save('e2e-print-results.json');

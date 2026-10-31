@@ -7,6 +7,7 @@ import { fmtDate } from '../utils/format';
 import { SIDE, type Consultation, type ExamSheet } from './data';
 import { SHEET_LISTS as L, bmiOf, normSheet, painLabel, sheetHasContent } from './ExamSheet';
 import { RX_CSS, rxPageHtml } from './printRx';
+import { DX_SHEETS, FDX, dxGroupKey, dxSub, type DxSheetId } from './dxCatalog';
 import { TREATMENT, activeSheets, regionSheet, treatmentFilled, type Field, type RegionSheetDef } from './regionSheets';
 import { openPrintWindow, printHtml } from '../utils/printDoc';
 
@@ -38,6 +39,25 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
   const wrap = (cls: string, inner: string) => (compact && !inner ? '' : `<div class="${cls}">${inner}</div>`);
   const two = (a: string, b: string) => (compact && (!a || !b) ? a + b : `<div class="two"><div>${a}</div><div>${b}</div></div>`);
   const table = (headCells: string, rows: string[]) => (compact && !rows.length ? '' : `<table><thead><tr>${headCells}</tr></thead><tbody>${rows.join('')}</tbody></table>`);
+  // شيت التشخيص بأقسامه الملوّنة + التشخيص النهائي (compact = المتعلّم بس)
+  const dxPrint = (prefix: string, id: DxSheetId) => {
+    const parts = DX_SHEETS[id].map((part) => {
+      const groups = part.groups.map((gr, n) => {
+        const g = dxGroupKey(prefix, part, n);
+        const items = gr.items.map((it) => {
+          if (typeof it === 'string') return compact && !has(g, it) ? '' : ck(has(g, it), it);
+          const subs = it[1].filter((x) => !compact || has(g, dxSub(it[0], x)));
+          const any = has(g, it[0]) || subs.some((x) => has(g, dxSub(it[0], x)));
+          if (compact && !any) return '';
+          return ck(has(g, it[0]), it[0]) + (subs.length ? `<div class="dxsub">${subs.map((x) => ck(has(g, dxSub(it[0], x)), x)).join('')}</div>` : '');
+        }).join('') + line('Others:', v(`${g}.other`));
+        return compact && !items ? '' : `<div class="dxg dxg${(n % 7) + 1}"><h4><span>${n + 1}</span>${esc(gr.title)}</h4>${items}</div>`;
+      }).join('');
+      return compact && !groups ? '' : (DX_SHEETS[id].length > 1 ? `<div class="dxpart">${esc(part.title)}</div>` : '') + `<div class="dxgrid">${groups}</div>`;
+    }).join('');
+    const fin = line('Primary Diagnosis:', v(`${prefix}.fdx.primary`)) + FDX.slice(1).map((n) => line(`Additional ${n}:`, v(`${prefix}.fdx.${n}`))).join('') + line('Notes:', v(`${prefix}.fdx.notes`));
+    return parts + (compact && !fin ? '' : `<div class="dxg dxfinal"><h4>Final Diagnosis</h4>${fin}</div>`);
+  };
   const box = (n: number, title: string, body: string, cls = '') => (compact && !body.trim() ? '' : `<section class="box ${cls}"><h3><span>${n}</span>${title}</h3><div class="bd">${body}</div></section>`);
   const bdi = (x: string) => (x ? `<bdi>${x}</bdi>` : '');
   const name = v('n.name') || esc(p?.fullName ?? '');
@@ -101,7 +121,7 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
       box(8, 'Special Tests (+ve)', two(lbl('Hip', cks('x.st.hip', L.X_ST_HIP)) + line('Other:', v('x.st.hip.other')), lbl('Knee', cks('x.st.knee', L.X_ST_KNEE)) + line('Other:', v('x.st.knee.other')))),
       box(9, 'Imaging / Investigations', imgs.map((m) => `<div class="row">${ck(has('x.img', m), m + ':')}<span class="fill">${v(`x.img.${m}`)}</span></div>`).join('')
         + line('Previous imaging:', v('x.img.prev')) + line('Others:', v('x.img.other'))),
-      box(10, 'Diagnosis (Likely / Working)', two(lbl('Hip', cks('x.dx.hip', L.X_DX_HIP)), lbl('Knee', cks('x.dx.knee', L.X_DX_KNEE))) + line('Others:', v('x.dx.other')) + (c.icd10 ? line('ICD-10:', esc(c.icd10)) : '')),
+      box(10, 'Diagnosis Sheet', dxPrint('x', 'hipknee') + (c.icd10 ? line('ICD-10:', esc(c.icd10)) : ''), 'span2'),
       box(11, 'Plan', cks('x.plan', L.X_PLAN) + line('Follow up after:', v('x.plan.fu')) + line('Others:', v('x.plan.other')) + (c.followUp ? line('Next visit:', dmy(c.followUp)) : '')),
       box(12, 'Notes', compact && !v('x.notes') ? '' : `<div class="notes">${v('x.notes').replace(/\n/g, '<br>') || '&nbsp;'}</div>`),
     ]);
@@ -130,6 +150,7 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
         case 'imaging': return f.mods.filter((m) => !compact || has(K(f.k), m) || v(K(`${f.k}.${m}`))).map((m) => `<div class="row">${ck(has(K(f.k), m), m + ':')}<span class="fill">${v(K(`${f.k}.${m}`))}</span></div>`).join('')
           + line('Previous imaging:', v(K(`${f.k}.prev`))) + line('Others:', v(K(`${f.k}.other`)));
         case 'dxmap': return c.icd10 ? line('ICD-10:', esc(c.icd10)) : '';
+        case 'dxsheet': return dxPrint(def.prefix, f.id);
         case 'notes': return compact && !v(K(f.k)) ? '' : `<div class="notes">${v(K(f.k)).replace(/\n/g, '<br>') || '&nbsp;'}</div>`;
       }
     };
@@ -204,6 +225,16 @@ export function diagnosisHtml(c: DxConsult, p?: DxPatient | null, visitNo?: numb
   .box { border: 1.3px solid #1b4f8f; border-radius: 7px; overflow: hidden; break-inside: avoid; }
   .box.wide { grid-column: 1 / -1; }
   .box.span2 { grid-column: span 2; }
+  .box:has(.dxgrid), .box:has(.dxfinal) { grid-column: 1 / -1; break-inside: auto; }
+  .dxpart { margin: 3px 0; padding: 2px 8px; border-radius: 5px; background: #1b4f8f; color: #fff; font-weight: 700; text-align: center; font-size: 10px; }
+  .dxgrid { display: grid; gap: 4px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 4px; }
+  .dxg { --dx: #1e6fb8; border: 1px solid var(--dx); border-radius: 6px; padding: 0 5px 3px; break-inside: avoid; }
+  /* ألوان صريحة (html2canvas بتاع الـ PDF مابيفهمش color-mix) */
+  .dxg1 { --dx: #1e6fb8; --dxbg: #e3eef8; } .dxg2 { --dx: #2e9e5b; --dxbg: #e3f3e9; } .dxg3 { --dx: #e07b24; --dxbg: #fbeee2; } .dxg4 { --dx: #c8343f; --dxbg: #f8e4e5; }
+  .dxg5 { --dx: #5b4aa8; --dxbg: #ebe8f5; } .dxg6 { --dx: #1f8fa6; --dxbg: #e2f2f5; } .dxg7 { --dx: #c7921b; --dxbg: #f8f0de; } .dxfinal { --dx: #1b4f8f; --dxbg: #e4ebf3; }
+  .dxg h4 { display: flex; align-items: center; gap: 4px; margin: 0 -5px 3px; padding: 2px 5px; background: var(--dxbg); color: #10182f; font-size: 9.5px; }
+  .dxg h4 span { display: inline-grid; place-items: center; width: 13px; height: 13px; border-radius: 50%; background: var(--dx); color: #fff; font-size: 8px; }
+  .dxsub { padding-inline-start: 10px; }
   .compact .grid { align-items: start; }
   .box.red { border-color: #c4372d; }
   .box h3 { display: flex; align-items: center; gap: 6px; margin: 0; background: #1b4f8f; color: #fff; font-size: 10px; padding: 2px 7px; }

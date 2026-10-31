@@ -149,11 +149,11 @@ try {
   check('نافذة التشخيص مربوطة بزيارة «أ»', ((await A.page.locator('.sh-visitlink').textContent()) ?? '').includes(apA.no));
   await openDoctor(A.page, 'الورك والركبة');
   await tick(A.page, 'Knee pain');
-  await tick(A.page, 'Meniscal tear');
+  await tick(A.page, 'Medial meniscus injury');
   await saveAnswer(A.page, 'التشخيص اكتمل');
   const ca = await dbConsults(PA);
   const newA = ca.find((c) => c.appointment_id === PA.appt);
-  check('التشخيص الجديد اتحفظ مربوط بزيارة «أ» ومكتمل', newA && newA.complete === true && /Meniscal tear/.test(newA.diagnosis), JSON.stringify(newA));
+  check('التشخيص الجديد اتحفظ مربوط بزيارة «أ» ومكتمل', newA && newA.complete === true && /Medial meniscus injury/.test(newA.diagnosis), JSON.stringify(newA));
   check('التشخيصات القديمة لمريض «أ» لسه موجودة (3 تشخيصات)', ca.length === 3 && ca.filter((c) => /قديم/.test(c.diagnosis)).length === 2, ca.length);
   check('الطبيب اللي سجّل التشخيص اتسجّل (created_by)', newA?.created_by === adminEmp, newA?.created_by);
   await A.page.waitForSelector('.dx-views', { timeout: 10000 });
@@ -182,7 +182,10 @@ try {
   await A.page.locator('.sh-region__pick', { hasText: 'الكاحل والقدم' }).click();
   check('زرار «رجوع: الشيت العام» موجود في كشف الطبيب', await A.page.locator('.modal button', { hasText: 'رجوع: الشيت العام' }).count() === 1);
   await tick(A.page, 'Ankle pain');
-  await tick(A.page, 'Ankle sprain (ATFL / CFL)');
+  await tick(A.page, 'Anterior talofibular ligament (ATFL)');
+  check('شيت تشخيص الكاحل: 7 أقسام ملوّنة + التشخيص النهائي', await A.page.locator('.modal .dxg:not(.dxg--final)').count() === 7 && await A.page.locator('.modal .dxg--final', { hasText: 'Final Diagnosis' }).count() === 1);
+  await A.page.locator('.modal .sh-line', { hasText: 'Primary Diagnosis' }).locator('input').fill('Lateral ankle sprain grade II');
+  if (process.env.DX_SHOT) await A.page.locator('.modal .dxs').screenshot({ path: process.env.DX_SHOT }).catch(() => {});
   await A.page.locator('.sh-tabs button', { hasText: 'الخطة العلاجية' }).click();
   check('تبويب «الخطة العلاجية» فيه الخطة والتعليمات وموعد المتابعة', await A.page.locator('.modal .sh-ck', { hasText: 'علاج تحفظي' }).count() === 1 && await A.page.locator('.modal .sh-ck', { hasText: 'تمارين منزلية' }).count() === 1 && await A.page.locator('.modal', { hasText: 'موعد المتابعة' }).count() === 1);
   await tick(A.page, 'تمارين منزلية');
@@ -190,7 +193,7 @@ try {
   check('تبويب «الحقن» جوّه التشخيص فيه «سجل حقن جديد»', await A.page.locator('.modal button', { hasText: 'سجل حقن جديد' }).count() === 1);
   await saveAnswer(A.page, 'التشخيص اكتمل');
   cb = await dbConsults(PB);
-  check('الاستكمال عدّل نفس السجل (مفيش تشخيص مكرر) وبقى مكتمل بتشخيص الكاحل', cb.length === 1 && cb[0].complete === true && /Ankle sprain \(ATFL \/ CFL\)/.test(cb[0].diagnosis), JSON.stringify(cb));
+  check('الاستكمال عدّل نفس السجل (مفيش تشخيص مكرر) وبقى مكتمل بتشخيص الكاحل', cb.length === 1 && cb[0].complete === true && /Primary: Lateral ankle sprain grade II/.test(cb[0].diagnosis) && /Anterior talofibular ligament \(ATFL\)/.test(cb[0].diagnosis), JSON.stringify(cb));
   const planOn = (await sql(`select sheet->'on' as on from ortho_consultations where id = '${cb[0]?.id}'`))[0]?.on ?? [];
   check('الخطة العلاجية اتحفظت في الشيت (tp.instr)', planOn.includes('tp.instr|تمارين منزلية'), JSON.stringify(planOn));
   await A.page.waitForSelector('.dx-views', { timeout: 10000 });

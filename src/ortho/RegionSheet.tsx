@@ -112,39 +112,17 @@ export function RegionSheetForm({ def, sheet, onChange, side, onSide, icd10, onI
   );
 }
 
-/** شيتات المناطق اللي ظاهرة (من مكان الألم) + إضافة منطقة تانية */
-// ✕ جنب كل منطقة = إلغاءها (ولو هي الوحيدة بيظهر اختيار منطقة تانية)، و«+ منطقة تانية» = إضافة/تغيير
-export function SheetSwitch({ active, current, onPick, onAdd, onRemove }: { active: SheetId[]; current: SheetId; onPick: (id: SheetId) => void; onAdd: (id: SheetId) => void; onRemove: (id: SheetId) => void }) {
-  const rest = SHEET_ORDER.filter((id) => !active.includes(id));
+/** كل شيتات كشف الطبيب ظاهرة دايمًا كتابات — اللي من مكان الألم أو اتكتب فيه عليه علامة ●، و✕ جنبه بيمسح اللي اتكتب فيه */
+export function SheetSwitch({ active, current, onPick, onRemove }: { active: SheetId[]; current: SheetId; onPick: (id: SheetId) => void; onRemove: (id: SheetId) => void }) {
   return (
-    <div className="sh-regions" role="tablist" aria-label="شيت المنطقة">
-      <span className="sh-regions__l">شيت المنطقة:</span>
-      {active.map((id) => (
-        <span key={id} className={`sh-region${current === id ? ' is-on' : ''}`}>
-          <button type="button" role="tab" aria-selected={current === id} className="sh-region__pick" onClick={() => onPick(id)}>{SHEET_TAB[id]}</button>
-          <button type="button" className="sh-region__x" aria-label={`إلغاء منطقة ${SHEET_TAB[id]}`} title="إلغاء المنطقة" onClick={() => onRemove(id)}><Icon name="close" size={14} /></button>
+    <div className="sh-regions" role="tablist" aria-label="شيت الكشف">
+      <span className="sh-regions__l">شيت الكشف:</span>
+      {SHEET_ORDER.map((id) => { const used = active.includes(id); return (
+        <span key={id} className={`sh-region${current === id ? ' is-on' : ''}${used ? ' is-used' : ''}`}>
+          <button type="button" role="tab" aria-selected={current === id} className="sh-region__pick" onClick={() => onPick(id)}>{used && '● '}{SHEET_TAB[id]}</button>
+          {used && <button type="button" className="sh-region__x" aria-label={`إلغاء ${SHEET_TAB[id]}`} title="إلغاء ومسح اللي اتكتب فيه" onClick={() => onRemove(id)}><Icon name="close" size={14} /></button>}
         </span>
-      ))}
-      {rest.length > 0 && (
-        <select className="input sh-regions__add" aria-label="إضافة أو تغيير منطقة" value="" onChange={(e) => { if (e.target.value) onAdd(e.target.value as SheetId); }}>
-          <option value="">+ منطقة تانية…</option>
-          {rest.map((id) => <option key={id} value={id}>{SHEET_TAB[id]}</option>)}
-        </select>
-      )}
-    </div>
-  );
-}
-
-/** مفيش مكان ألم متحدد: الطبيب يختار المنطقة */
-export function RegionChooser({ onPick }: { onPick: (id: SheetId) => void }) {
-  return (
-    <div className="sh-choose">
-      <Icon name="body" size={28} />
-      <b>حدد مكان الألم في الشيت العام (خانة 5) — والشيت المناسب هيفتح لوحده</b>
-      <span className="muted">أو اختار المنطقة من هنا:</span>
-      <div className="cx-chips">
-        {SHEET_ORDER.map((id) => <button key={id} type="button" className="cx-chip" onClick={() => onPick(id)}>{SHEET_TAB[id]}</button>)}
-      </div>
+      ); })}
     </div>
   );
 }

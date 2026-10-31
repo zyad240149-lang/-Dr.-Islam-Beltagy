@@ -24,7 +24,12 @@ const OPT = {
   wound: ['جيد', 'يلتئم', 'إفرازات', 'احمرار', 'أخرى'],
   dressing: ['تم اليوم', 'غير مطلوب', 'تم توجيه المريض'],
   bandage: ['جافة', 'مبللة', 'تم تغييرها', 'لم يتم تغييرها'],
+  // الخطة العلاجية (نفس خانة كشف الطبيب)
+  tx: ['علاج تحفظي', 'أشعة', 'حقن'],
+  instr: ['راحة نسبية', 'تمارين منزلية', 'علاج طبيعي', 'تجنب مجهود معين'],
+  fu: ['أسبوع', 'أسبوعين', 'شهر'],
 };
+const emptyPlan = (): NonNullable<NursingSheet['plan']> => ({ tx: [], txOther: '', instr: [], instrOther: '', fu: '' });
 
 export const emptyNursing = (): NursingSheet => ({
   visitNo: '', pain: '', adherence: '', mobility: '', vsLast: '', newSymptoms: '', symptomsDetails: '', treatment: '', treatmentNotes: '', notes: '',
@@ -32,12 +37,19 @@ export const emptyNursing = (): NursingSheet => ({
   surgery: { on: false, procedure: '', date: '', followUp: '', wound: '', woundOther: '', dressing: '', bandage: '', notes: '' },
 });
 // سجلات قديمة/ناقصة: أي بند مش موجود بياخد القيمة الفاضية
-const norm = (s?: Partial<NursingSheet>): NursingSheet => { const e = emptyNursing(); return { ...e, ...s, cast: { ...e.cast, ...s?.cast }, surgery: { ...e.surgery, ...s?.surgery } }; };
+const norm = (s?: Partial<NursingSheet>): NursingSheet => { const e = emptyNursing(); return { ...e, ...s, cast: { ...e.cast, ...s?.cast }, surgery: { ...e.surgery, ...s?.surgery }, plan: { ...emptyPlan(), ...s?.plan } }; };
 
 function Pick({ options, value, onChange }: { options: string[]; value: string; onChange: (v: string) => void }) {
   return (
     <div className="cx-chips" role="radiogroup">
       {options.map((o) => <button key={o} type="button" role="radio" aria-checked={value === o} className={`cx-chip ${value === o ? 'is-on' : ''}`} onClick={() => onChange(value === o ? '' : o)}>{o}</button>)}
+    </div>
+  );
+}
+function Multi({ options, value, onChange }: { options: string[]; value: string[]; onChange: (v: string[]) => void }) {
+  return (
+    <div className="cx-chips" role="group">
+      {options.map((o) => { const on = value.includes(o); return <button key={o} type="button" aria-pressed={on} className={`cx-chip ${on ? 'is-on' : ''}`} onClick={() => onChange(on ? value.filter((x) => x !== o) : [...value, o])}>{on ? '✓ ' : ''}{o}</button>; })}
     </div>
   );
 }
@@ -58,6 +70,8 @@ export function NursingModal({ patientId, appointmentId = null, initial, onClose
   const set = <K extends keyof NursingSheet>(k: K, v: NursingSheet[K]) => setS((x) => ({ ...x, [k]: v }));
   const setCast = (k: keyof NursingSheet['cast'], v: string | boolean) => setS((x) => ({ ...x, cast: { ...x.cast, [k]: v } }));
   const setSurg = (k: keyof NursingSheet['surgery'], v: string | boolean) => setS((x) => ({ ...x, surgery: { ...x.surgery, [k]: v } }));
+  const pl = s.plan ?? emptyPlan();
+  const setPlan = <K extends keyof typeof pl>(k: K, v: (typeof pl)[K]) => setS((x) => ({ ...x, plan: { ...(x.plan ?? emptyPlan()), [k]: v } }));
   const [rx, setRx] = useState<RxData>(() => normRx(initial?.sheet.rx));
   const [uploading, setUploading] = useState(false);
   const item = { id: initial?.id, patientId, appointmentId: initial ? initial.appointmentId ?? null : appointmentId, date, sheet: { ...s, rx: cleanRx(rx) } };
@@ -139,6 +153,16 @@ export function NursingModal({ patientId, appointmentId = null, initial, onClose
         </div>
       </Box>
 
+      <Box title="الخطة العلاجية">
+        <div className="grid-form grid-form--3">
+          <Field label="الخطة العلاجية"><Multi options={OPT.tx} value={pl.tx} onChange={(v) => setPlan('tx', v)} />
+            <input className="input" style={{ marginTop: 6 }} placeholder="تفاصيل" value={pl.txOther} onChange={(e) => setPlan('txOther', e.target.value)} /></Field>
+          <Field label="التعليمات"><Multi options={OPT.instr} value={pl.instr} onChange={(v) => setPlan('instr', v)} />
+            <input className="input" style={{ marginTop: 6 }} placeholder="تعليمات أخرى" value={pl.instrOther} onChange={(e) => setPlan('instrOther', e.target.value)} /></Field>
+          <Field label="موعد المتابعة — بعد"><Pick options={OPT.fu} value={pl.fu} onChange={(v) => setPlan('fu', v)} /></Field>
+        </div>
+      </Box>
+
       <Box title="الروشتة والأشعة والتحاليل">
         <RxEditor value={rx} onChange={setRx} patientId={patientId} region={ortho.list('consultations', patientId).sort((a, b) => b.date.localeCompare(a.date))[0]?.region} onUploading={setUploading} />
       </Box>
@@ -156,7 +180,7 @@ export function printNursingRx(n: Omit<Nursing, 'id'>, win?: Window | null) {
 
 const summary = (s: NursingSheet) => [
   s.pain !== '' && `الألم ${s.pain}/10`, s.vsLast && `مقارنة بآخر زيارة: ${s.vsLast}`, s.mobility && `الحركة: ${s.mobility}`, s.adherence && `الالتزام: ${s.adherence}`,
-  s.newSymptoms === 'نعم' && 'أعراض جديدة', s.cast.on && 'جبس', s.surgery.on && 'عملية', hasRx(normRx(s.rx)) && 'روشتة',
+  s.newSymptoms === 'نعم' && 'أعراض جديدة', s.cast.on && 'جبس', s.surgery.on && 'عملية', s.plan?.fu && `متابعة بعد ${s.plan.fu}`, hasRx(normRx(s.rx)) && 'روشتة',
 ].filter(Boolean).join(' · ');
 
 export function NursingList({ items, onEdit }: { items: Nursing[]; onEdit: (n: Nursing) => void }) {
@@ -191,6 +215,7 @@ const esc = (v: unknown) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '
 const box = (opts: string[], v: string, other = '') => opts.map((o) => `<span class="ck ${v === o ? 'on' : ''}">${v === o ? '☑' : '☐'} ${esc(o)}${o === 'أخرى' && v === o && other ? `: ${esc(other)}` : ''}</span>`).join('');
 const d = (s: string) => (s ? esc(fmtDate(s)) : '<span class="ln"></span>');
 const val = (s: string) => (s ? esc(s) : '<span class="ln"></span>');
+const many = (opts: string[], v: string[]) => opts.map((o) => `<span class="ck ${v.includes(o) ? 'on' : ''}">${v.includes(o) ? '☑' : '☐'} ${esc(o)}</span>`).join('');
 
 export function nursingHtml(n: Omit<Nursing, 'id'>): string {
   const s = norm(n.sheet);
@@ -232,6 +257,11 @@ export function nursingHtml(n: Omit<Nursing, 'id'>): string {
 <div class="row c2">
   <div class="sec"><b class="h">العلاج الحالي</b>${box(OPT.treatment, s.treatment)}<div class="txt">${esc(s.treatmentNotes)}</div></div>
   <div class="sec"><b class="h">ملاحظات التمريض</b><div class="txt">${esc(s.notes)}</div></div>
+</div>
+<div class="sec row c3">
+  <div><b class="h">الخطة العلاجية</b>${many(OPT.tx, s.plan!.tx)}<div>${val(s.plan!.txOther)}</div></div>
+  <div><b class="h">التعليمات</b>${many(OPT.instr, s.plan!.instr)}<div>تعليمات أخرى: ${val(s.plan!.instrOther)}</div></div>
+  <div><b class="h">موعد المتابعة</b>بعد: ${box(OPT.fu, s.plan!.fu)}</div>
 </div>
 <div class="bar">شيت حالات الجبس <small>تمريض فقط</small></div>
 <div class="sec">

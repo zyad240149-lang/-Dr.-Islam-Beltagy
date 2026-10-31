@@ -120,11 +120,10 @@ try {
   const queueRow = (page, P) => page.locator('.dx-queue__row', { hasText: `${P.first} ${P.father}` });
   const dbConsults = (P) => sql(`select id, appointment_id, complete, diagnosis, complaint, created_by from ortho_consultations where patient_id = '${P.id}' order by date, created_at`);
   // تحديد خانة في الشيت (نفس اللي الطبيب بيعمله) + حفظ
-  // تبويب الطبيب: لو مفيش مكان ألم متحدد بيطلب اختيار المنطقة (شيت المنطقة بيتحدد من مكان الألم)
+  // تبويب الطبيب: كل الشيتات ظاهرة دايمًا كتابات ← نضغط على شيت المنطقة
   const openDoctor = async (page, region) => {
     await page.locator('.sh-tabs button', { hasText: 'كشف الطبيب' }).click();
-    if (await page.locator('.sh-choose').count()) await page.locator('.sh-choose button', { hasText: region }).click();
-    else if (!(await page.locator('.sh-regions button[aria-selected=true]', { hasText: region }).count())) await page.locator('.sh-regions select').selectOption({ label: region });
+    await page.locator('.sh-region__pick', { hasText: region }).click();
   };
   const tick = (page, text) => page.locator('.sh-ck', { hasText: text }).first().locator('input').check();
   const saveAnswer = async (page, answer) => {
@@ -175,17 +174,25 @@ try {
   await openDoctor(A.page, 'الكاحل والقدم');
   check('شيت الكاحل والقدم بيفتح لما المنطقة كاحل', await A.page.locator('.modal .sh-box__h', { hasText: 'Special Tests' }).count() === 1 && await A.page.locator('.modal .sh-ck', { hasText: 'Thompson test' }).count() === 1);
   // إلغاء المنطقة (✕) ← اختيار منطقة من الأول ← تاني الكاحل
-  await A.page.locator('.sh-region__x[aria-label="إلغاء منطقة كشف الكاحل والقدم"]').click();
-  check('إلغاء المنطقة (✕) بيرجّع لاختيار منطقة تانية', await A.page.locator('.sh-choose').count() === 1);
-  await A.page.locator('.sh-choose button', { hasText: 'الكاحل والقدم' }).click();
+  check('كل شيتات الكشف ظاهرة دايمًا (ومنها متابعة الجبس وما بعد العمليات)', await A.page.locator('.sh-region__pick').count() === 7
+    && await A.page.locator('.sh-region__pick', { hasText: 'متابعة الجبس' }).count() === 1 && await A.page.locator('.sh-region__pick', { hasText: 'متابعة ما بعد العمليات' }).count() === 1);
+  await tick(A.page, 'Ankle pain'); // شيت اتكتب فيه ← عليه علامة ● و✕
+  await A.page.locator('.sh-region__x[aria-label="إلغاء كشف الكاحل والقدم"]').click();
+  check('إلغاء المنطقة (✕) بيشيل العلامة والشيت لسه ظاهر', await A.page.locator('.sh-region.is-used', { hasText: 'الكاحل والقدم' }).count() === 0 && await A.page.locator('.sh-region__pick', { hasText: 'الكاحل والقدم' }).count() === 1);
+  await A.page.locator('.sh-region__pick', { hasText: 'الكاحل والقدم' }).click();
   check('زرار «رجوع: الشيت العام» موجود في كشف الطبيب', await A.page.locator('.modal button', { hasText: 'رجوع: الشيت العام' }).count() === 1);
   await tick(A.page, 'Ankle pain');
   await tick(A.page, 'Ankle sprain (ATFL / CFL)');
+  await A.page.locator('.sh-tabs button', { hasText: 'الخطة العلاجية' }).click();
+  check('تبويب «الخطة العلاجية» فيه الخطة والتعليمات وموعد المتابعة', await A.page.locator('.modal .sh-ck', { hasText: 'علاج تحفظي' }).count() === 1 && await A.page.locator('.modal .sh-ck', { hasText: 'تمارين منزلية' }).count() === 1 && await A.page.locator('.modal', { hasText: 'موعد المتابعة' }).count() === 1);
+  await tick(A.page, 'تمارين منزلية');
   await A.page.locator('.sh-tabs button', { hasText: 'الحقن' }).click();
   check('تبويب «الحقن» جوّه التشخيص فيه «سجل حقن جديد»', await A.page.locator('.modal button', { hasText: 'سجل حقن جديد' }).count() === 1);
   await saveAnswer(A.page, 'التشخيص اكتمل');
   cb = await dbConsults(PB);
   check('الاستكمال عدّل نفس السجل (مفيش تشخيص مكرر) وبقى مكتمل بتشخيص الكاحل', cb.length === 1 && cb[0].complete === true && /Ankle sprain \(ATFL \/ CFL\)/.test(cb[0].diagnosis), JSON.stringify(cb));
+  const planOn = (await sql(`select sheet->'on' as on from ortho_consultations where id = '${cb[0]?.id}'`))[0]?.on ?? [];
+  check('الخطة العلاجية اتحفظت في الشيت (tp.instr)', planOn.includes('tp.instr|تمارين منزلية'), JSON.stringify(planOn));
   await A.page.waitForSelector('.dx-views', { timeout: 10000 });
   check('مريض «ب» اختفى من الانتظار بعد الاستكمال', await queueRow(A.page, PB).count() === 0);
   check('«اتشخص النهارده» بيعد المريضين', /اتشخص النهارده\s*[2-9]/.test((await A.page.locator('.card__head', { hasText: 'حضور النهارده' }).textContent()) ?? ''));
@@ -325,6 +332,8 @@ try {
     for (const id of made.employees) { await sql(`delete from attendance where employee_id = '${id}';`); await deleteEmployee(id); }
     if (made.therapist) await sql(`delete from therapist_services where therapist_id = '${made.therapist}'; delete from therapists where id = '${made.therapist}';`);
     await sql(`delete from notifications where body like '%تشخيصاختبار%' or title like '%تشخيصاختبار%';`);
+    // مرضى الاختبار سحبوا أرقام ملف ← العداد يرجع لآخر رقم حقيقي عشان المريض الجاي ياخد الرقم اللي بعده على طول
+    await sql(`update counters set value = coalesce((select max(replace(file_no, 'TM-', '')::int) from patients where file_no ~ '^TM-[0-9]+$'), 0) where name = 'patient';`);
     const left = await q1(`select (select count(*) from patients where family_name = 'تشخيصاختبار')::int p, (select count(*) from employees where name like '%تشخيص اختبار%')::int e`);
     console.log('  متبقي من بيانات الاختبار:', JSON.stringify(left));
   } catch (e) { console.log('  تنظيف ناقص:', e.message); }

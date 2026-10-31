@@ -279,7 +279,7 @@ export const regionSheet = (id: SheetId) => REGION_SHEETS.find((d) => d.id === i
 // كل شيت بالترتيب اللي بيظهر بيه + اسمه في تبويب الطبيب
 export const SHEET_ORDER: SheetId[] = ['hipknee', 'ankle', 'neckshoulder', 'hand', 'lumbar', 'cast', 'postop'];
 // اسم الشيت قدام الطبيب: «كشف …»
-export const SHEET_TAB: Record<SheetId, string> = { hipknee: 'كشف الورك والركبة', ...Object.fromEntries(REGION_SHEETS.map((d) => [d.id, `كشف ${d.tab}`])) } as Record<SheetId, string>;
+export const SHEET_TAB: Record<SheetId, string> = { hipknee: 'كشف الورك والركبة', ...Object.fromEntries(REGION_SHEETS.map((d) => [d.id, d.id === 'cast' || d.id === 'postop' ? d.tab : `كشف ${d.tab}`])) } as Record<SheetId, string>;
 const PREFIX: Record<SheetId, string> = { hipknee: 'x', ...Object.fromEntries(REGION_SHEETS.map((d) => [d.id, d.prefix])) } as Record<SheetId, string>;
 export const DOCTOR_PREFIXES = Object.values(PREFIX);
 

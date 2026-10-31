@@ -35,6 +35,7 @@ export interface NursingSheet {
   newSymptoms: string; symptomsDetails: string; treatment: string; treatmentNotes: string; notes: string;
   cast: { on: boolean; type: string; typeOther: string; limb: string; applied: string; followUp: string; condition: string; conditionOther: string; notes: string };
   surgery: { on: boolean; procedure: string; date: string; followUp: string; wound: string; woundOther: string; dressing: string; bandage: string; notes: string };
+  plan?: { tx: string[]; txOther: string; instr: string[]; instrOther: string; fu: string }; // الخطة العلاجية والتعليمات وموعد المتابعة
   rx?: RxData; // الروشتة والأشعة والتحاليل (اتنقلت من الكشف لشيت المتابعة)
 }
 export type RxData = Pick<Consultation, 'medications' | 'labs' | 'imagingRequests' | 'attachments' | 'plan'>;

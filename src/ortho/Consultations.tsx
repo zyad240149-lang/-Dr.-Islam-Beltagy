@@ -9,7 +9,7 @@ import type { DiagnosisRef } from '../types';
 import { fmtDate, fmtDateTime, fmtTime, todayYmd } from '../utils/format';
 import { openVisitFor } from './visits';
 import { SHEET_TAB, TREATMENT, activeSheets, regionSheet, removeSheet, sheetFilled, type SheetId } from './regionSheets';
-import { DoctorPainMap, RegionChooser, RegionSheetForm, SheetSwitch } from './RegionSheet';
+import { DoctorPainMap, RegionSheetForm, SheetSwitch } from './RegionSheet';
 import { useToast } from '../hooks/useToast';
 import { IMAGING_KIND, IMAGING_STATUS, REGIONS, SIDE, isIncomplete, ortho, useOrthoVersion, type Attachment, type Consultation, type Injection, type ImagingKind, type ImagingRequest, type Medication, type Side } from './data';
 import { LAB_GROUPS, MED_PRESETS, XRAY_VIEWS } from './clinicalLists';
@@ -84,7 +84,7 @@ function Section({ icon, title, children, aside }: { icon: string; title: string
 
 // الكشف = الشيتين بالترتيب (التمريض قبل دخول المريض ← كشف الطبيب) وبعدهم الحقن — الروشتة والأشعة والتحاليل اتنقلت لشيت المتابعة
 // «كشف الطبيب» بيتسمى بالمنطقة: شيت الطبيب بيتحدد من مكان الألم في الشيت العام (regionSheets)
-const TABS = [['nurse', 'الشيت العام'], ['doctor', 'كشف الطبيب'], ['inj', 'الحقن']] as const;
+const TABS = [['nurse', 'الشيت العام'], ['doctor', 'كشف الطبيب'], ['plan', 'الخطة العلاجية'], ['inj', 'الحقن']] as const;
 type Tab = typeof TABS[number][0];
 
 // appointmentId = الزيارة اللي التشخيص الجديد بيتربط بيها (من «بانتظار التشخيص»)؛ من غيرها بيتربط بزيارة النهارده المفتوحة للمريض لو فيه
@@ -118,13 +118,13 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
   // شيتات الطبيب: من مكان الألم في الشيت العام + اللي اتكتب فيه + اللي الطبيب ضافه
   const active = activeSheets(sheet);
   const [docSheet, setDocSheet] = useState<SheetId | null>(null);
-  const curSheet = docSheet && active.includes(docSheet) ? docSheet : active[0];
+  // كل الشيتات ظاهرة دايمًا كتابات؛ المفتوح أول مرة = أول شيت من مكان الألم (أو الورك والركبة)
+  const curSheet: SheetId = docSheet ?? active[0] ?? 'hipknee';
   const dropSheet = (id: SheetId) => {
     if (sheetFilled(sheet, id) && !window.confirm(`إلغاء منطقة «${SHEET_TAB[id]}»؟ اللي اتكتب في شيتها هيتمسح، ومكان الألم ده هيتشال من جسم الإنسان.`)) return;
     changeSheet((x) => removeSheet(x, id));
     setDocSheet(null);
   };
-  const addSheet = (id: SheetId) => { changeSheet((x) => (x.on.includes(`sheets|${id}`) ? x : { ...x, on: [...x.on, `sheets|${id}`] })); setDocSheet(id); };
   const [mapKey, setMapKey] = useState('x.dx.other'); // خريطة الجسم بتكتب في «Others» بتاع الشيت اللي اتفتحت منه
   const openMap = (key: string) => { setMapKey(key); setMapOpen(true); };
   // كل حاجة اختيارية: الحفظ محتاج المريض بس. لو فيه حاجة ناقصة بنسأل: «استكمال بعدين» (يتحفظ «يحتاج استكمال») ولا «التشخيص اكتمل»
@@ -227,7 +227,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
             {db.therapist(visitAppt.therapistId)?.name ? <> — {db.therapist(visitAppt.therapistId)?.name}</> : null}
           </div>
         )}
-        <div className="seg seg--3 sh-tabs" role="tablist" aria-label="أجزاء الكشف">
+        <div className="seg seg--4 sh-tabs" role="tablist" aria-label="أجزاء الكشف">
           {TABS.map(([k, l], i) => (
             <button key={k} type="button" role="tab" aria-selected={tab === k} className={`seg__btn ${tab === k ? 'active' : ''}`} onClick={() => goTab(k)}>
               <span className="sh-tabs__n num">{i + 1}</span>{k === 'doctor' && active.length ? `${l} — ${active.map((id) => SHEET_TAB[id]).join(' + ')}` : l}
@@ -247,19 +247,27 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
 
         {tab === 'doctor' && <>
           <DoctorPainMap sheet={sheet} onChange={changeSheet} />
-          {!curSheet ? <RegionChooser onPick={addSheet} /> : <>
-            <SheetSwitch active={active} current={curSheet} onPick={setDocSheet} onAdd={addSheet} onRemove={dropSheet} />
+          <>
+            <SheetSwitch active={active} current={curSheet} onPick={setDocSheet} onRemove={dropSheet} />
             {curSheet === 'hipknee'
               ? <DoctorSheet sheet={sheet} onChange={changeSheet} side={c.side} onSide={(v) => set('side', v)}
                 icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap('x.dx.other')} />
               : <RegionSheetForm key={curSheet} def={regionSheet(curSheet)!} sheet={sheet} onChange={changeSheet} side={c.side} onSide={(v) => set('side', v)}
                 icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap(`${regionSheet(curSheet)!.prefix}.dx.other`)} />}
-            <div dir="rtl" className="sh-treat"><RegionSheetForm def={TREATMENT} sheet={sheet} onChange={changeSheet} side={c.side} onSide={(v) => set('side', v)}
-              icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap('tp.tx.other')} /></div>
-          </>}
+          </>
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('nurse')}>رجوع: الشيت العام</Button>
             <Button variant="outline" icon="print" disabled={!c.patientId} onClick={() => setOut(['doctor'])}>طباعة / إرسال كشف الطبيب</Button>
+            <Button icon="chevronLeft" onClick={() => goTab('plan')}>التالي: الخطة العلاجية</Button>
+          </div>
+        </>}
+
+        {/* الخطة العلاجية والتعليمات وموعد المتابعة — خانة واحدة للكشف كله (مفاتيح tp.*) */}
+        {tab === 'plan' && <>
+          <div dir="rtl" className="sh-treat"><RegionSheetForm def={TREATMENT} sheet={sheet} onChange={changeSheet} side={c.side} onSide={(v) => set('side', v)}
+            icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap('tp.tx.other')} /></div>
+          <div className="sh-next">
+            <Button variant="outline" icon="chevron" onClick={() => goTab('doctor')}>رجوع: كشف الطبيب</Button>
             <Button icon="chevronLeft" onClick={() => goTab('inj')}>التالي: الحقن</Button>
           </div>
         </>}
@@ -273,7 +281,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, o
             </> : <p className="muted">اختار المريض الأول.</p>}
           </Section>
           <div className="sh-next">
-            <Button variant="outline" icon="chevron" onClick={() => goTab('doctor')}>رجوع: كشف الطبيب</Button>
+            <Button variant="outline" icon="chevron" onClick={() => goTab('plan')}>رجوع: الخطة العلاجية</Button>
           </div>
         </>}
         {inj && <InjectionModal patientId={c.patientId} appointmentId={c.appointmentId ?? null} initial={inj === 'new' ? undefined : inj} onClose={() => setInj(null)} />}

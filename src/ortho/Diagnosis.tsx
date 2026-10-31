@@ -32,7 +32,6 @@ export default function Diagnosis() {
   const [newVisit, setNewVisit] = useState<string | null>(null); // الزيارة اللي التشخيص الجديد بيتربط بيها (من قايمة الانتظار)
   const [fromQueue, setFromQueue] = useState(false); // اتفتح من «بانتظار التشخيص» ← بعد القفل يرجع للقايمة على المريض اللي بعده
   const [q, setQ] = useState('');
-  const [picker, setPicker] = useState<string | null>(null); // نافذة «تشخيص مريض» (مريض مش في قايمة الانتظار) — القيمة = المريض المختار
   const [, setDraftsVersion] = useState(0);
   // «فتح ملف تشخيص جديد» بالاسم الثلاثي (المريض مش ظاهر في القايمة — غالبًا النت فاصل والاستقبال لسه ما رفعش ملفه)
   const [newFile, setNewFile] = useState<{ name: string; phone: string } | null>(null);
@@ -52,9 +51,8 @@ export default function Diagnosis() {
   const openSaved = (c: Consultation, queue = false) => { setParams({ patient: c.patientId }, { replace: true }); setResume(false); setNewVisit(null); setFromQueue(queue); setEdit(c); };
   const resumeDraft = (id: string, queue = false) => { setParams({ patient: id }, { replace: true }); setResume(true); setNewVisit(null); setFromQueue(queue); setEdit('new'); };
   const startNew = (id: string, appointmentId: string | null) => { setParams({ patient: id }, { replace: true }); setResume(false); setNewVisit(appointmentId); setFromQueue(true); setEdit('new'); };
-  // من «تشخيص مريض»: لو ليه تشخيص لم يكتمل بيتكمّل (مفيش حاجة تضيع)، وإلا تشخيص جديد — وبعد القفل يفضل على ملفه
+  // تشخيص مريض من القايمة/البحث: لو ليه تشخيص لم يكتمل بيتكمّل (مفيش حاجة تضيع)، وإلا تشخيص جديد — وبعد القفل يفضل على ملفه
   const startPicked = (id: string) => {
-    setPicker(null);
     setParams({ patient: id }, { replace: true }); setNewVisit(null); setFromQueue(false);
     setResume(drafts.some((d) => d.patientId === id)); setEdit('new');
   };
@@ -114,8 +112,7 @@ export default function Diagnosis() {
   return (
     <div className="page">
       <PageHead title="تشخيص المريض" sub="المرضى اللي حضروا ومستنيين التشخيص — والبحث في كل المرضى اللي اتشخصوا.">
-        {perm.add && !patientId && <Button variant="outline" icon="plus" onClick={() => setNewFile({ name: '', phone: '' })}>فتح ملف تشخيص جديد</Button>}
-        {perm.add && !patientId && <Button icon="stethoscope" onClick={() => setPicker('')}>تشخيص مريض</Button>}
+        {perm.add && !patientId && <Button icon="plus" onClick={() => setNewFile({ name: '', phone: '' })}>فتح ملف تشخيص جديد</Button>}
       </PageHead>
 
       {patientId && (
@@ -378,18 +375,6 @@ export default function Diagnosis() {
             <DiagnosisTab patientId={patientId} embedded />
           </div>
         </section>
-      )}
-      {picker !== null && (
-        <Modal title="تشخيص مريض" onClose={() => setPicker(null)} footer={<>
-          <Button variant="outline" onClick={() => setPicker(null)}>إلغاء</Button>
-          <Button icon="stethoscope" disabled={!picker} onClick={() => picker && startPicked(picker)}>ابدأ التشخيص</Button>
-        </>}>
-          <div className="field" style={{ marginBottom: 0 }}>
-            <label>المريض</label>
-            <PatientSelect value={picker} onChange={setPicker} />
-          </div>
-          <p className="muted" style={{ marginBottom: 0 }}>للمريض اللي مش في قايمة الانتظار (ما اتعملوش حضور). لو اتعمله حضور النهارده، التشخيص بيتربط بزيارته لوحده.</p>
-        </Modal>
       )}
       {newFile && (
         <Modal title="فتح ملف تشخيص جديد" onClose={() => setNewFile(null)} footer={<>

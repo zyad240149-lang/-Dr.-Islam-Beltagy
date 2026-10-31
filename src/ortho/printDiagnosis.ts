@@ -163,7 +163,7 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
 
 // كشف قديم (قبل الشيت): ملخصه النصي في صفحة واحدة
 function legacyHtml(c: DxConsult, p: DxPatient | null | undefined) {
-  const row = (l: string, t: string) => (t.trim() ? `<div class="ln stack"><b>${l}</b><span>${esc(t).replace(/\n/g, '<br>')}</span></div>` : '');
+  const row = (l: string, t: string) => (t.trim() ? `<div class="ln stack"><b>${l}</b><span dir="auto">${esc(t).replace(/\n/g, '<br>')}</span></div>` : '');
   return `<div class="page shp" dir="rtl"><header><div class="brand"><b>${esc(DOCTOR.name)}</b><span>${esc(DOCTOR.title)}</span></div><div class="title">التشخيص</div></header>
   <div class="bar"><span>اسم المريض: <b>${esc(p?.fullName ?? '—')}</b></span><span>رقم الملف: <b>${esc(fileNoText(p?.fileNo) || '—')}</b></span><span>التاريخ: <b>${esc(fmtDate(c.date))}</b></span><span>المنطقة: <b>${esc(c.region)}${c.side !== 'na' ? ' ' + esc(SIDE[c.side]) : ''}</b></span></div>
   <div class="legacy">${row('الشكوى', c.complaint)}${row('التاريخ المرضي', c.history)}${row('الفحص', c.examination)}${row('التشخيص', c.diagnosis + (c.icd10 ? ` (${c.icd10})` : ''))}${row('التعليمات', c.plan)}</div></div>`;
@@ -175,7 +175,7 @@ export function diagnosisHtml(c: DxConsult, p?: DxPatient | null, visitNo?: numb
   const sheetParts = parts.filter((x) => x !== 'rx');
   if (sheetParts.length) {
     // جزء فاضي في «اللي اتحدد بس» ← الشيت الفاضي نفسه (زي الورقة المطبوعة) بدل صفحة بيضا؛ كشف جديد لسه مفيهوش حاجة ← الشيتات فاضية
-    const blank = !sheetHasContent(normSheet(c.sheet)) && !c.complaint.trim() && !c.diagnosis.trim();
+    const blank = !sheetHasContent(normSheet(c.sheet)) && ![c.complaint, c.diagnosis, c.examination, c.history].some((x) => (x ?? '').trim());
     if (sheetHasContent(normSheet(c.sheet)) || blank) {
       const sp = sheetPages(c, p, visitNo, compact && !blank);
       const full = compact && !blank ? sheetPages(c, p, visitNo, false) : sp;

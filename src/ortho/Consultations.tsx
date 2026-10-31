@@ -175,7 +175,8 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
     const meds = c.medications.filter((m) => m.name.trim());
     const reqs = c.imagingRequests.filter((r) => r.region.trim());
     // الملخص النصي من الشيت ← حقول الكشف (القوايم والروشتة وسجل المريض)
-    const text = { complaint: sum.complaint, history: sum.history, examination: sum.examination, diagnosis: sum.diagnosis };
+    // كشف قديم اتفتح للتعديل: اللي الشيت مابيطلعوش يفضل زي ما هو (مايتمسحش النص القديم)
+    const text = { complaint: sum.complaint || (initial?.complaint ?? ''), history: sum.history || (initial?.history ?? ''), examination: sum.examination || (initial?.examination ?? ''), diagnosis: sum.diagnosis || (initial?.diagnosis ?? '') };
     const sheetOut = { ...sheet, meds: sheet.meds.filter((m) => m.name.trim()) };
     const payload = { ...c, ...text, sheet: sheetOut, complete: done, medications: meds, imagingRequests: reqs, painScore: c.painScore === '' ? null : c.painScore, followUp: c.followUp || null,
       ...(c.patientId ? {} : { pendingPatient: pendingFromSheet(sheetOut) }) } as unknown as Draft;
@@ -252,6 +253,12 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
             التشخيص مربوط بزيارة <b className="num">{visitAppt.no}</b> — {fmtDate(visitAppt.date)} <span className="num">{fmtTime(visitAppt.time)}</span>
             {db.therapist(visitAppt.therapistId)?.name ? <> — {db.therapist(visitAppt.therapistId)?.name}</> : null}
           </div>
+        )}
+        {initial && isLegacy(initial) && (initial.diagnosis || initial.examination || initial.complaint || initial.history) && (
+          <details className="cx-legacy-box" open>
+            <summary>بيانات الكشف القديم (مكتوبة قبل الشيت الرقمي)</summary>
+            <LegacyText c={initial} />
+          </details>
         )}
         <div className="seg seg--4 sh-tabs" role="tablist" aria-label="أجزاء الكشف">
           {TABS.map(([k, l], i) => (
@@ -415,6 +422,19 @@ export function pickedToConsult(text: string, ref: DiagnosisRef): Partial<Consul
   const f = findCondition(ref.conditionId);
   const ar = f ? ' — ' + f.condition.name.replace(/\s*\(تأهيل\)/, '') : '';
   return { diagnosis: `${text}${ar}`, icd10: ref.icd10 ?? '', ...(f ? { region: f.region.name } : {}), side: (ref.side ?? 'na') as Side };
+}
+
+/** كشف قديم من غير شيت رقمي (كشوفات قبل الشيت + المستورد من البرنامج القديم): النص المكتوب نفسه */
+export const isLegacy = (c: { sheet?: unknown }) => !sheetHasContent(normSheet(c.sheet));
+export function LegacyText({ c }: { c: Pick<Consultation, 'complaint' | 'history' | 'examination' | 'diagnosis' | 'plan' | 'medications'> }) {
+  const meds = (c.medications ?? []).filter((m) => m.name);
+  const rows: [string, string][] = [['الشكوى', c.complaint], ['التاريخ المرضي', c.history], ['الفحص', c.examination], ['التشخيص', c.diagnosis], ['التعليمات', c.plan]];
+  return (
+    <dl className="dl cx-legacy">
+      {rows.filter(([, v]) => v?.trim()).map(([k, v]) => <div key={k}><dt>{k}</dt><dd dir="auto" style={{ whiteSpace: 'pre-line' }}>{v}</dd></div>)}
+      {meds.length > 0 && <div><dt>الأدوية</dt><dd><ol className="cx-medlist">{meds.map((m, i) => <li key={i}><b dir="ltr">{m.name}</b> <span className="muted">{[m.dose, m.frequency, m.duration].filter(Boolean).join(' — ')}</span></li>)}</ol></dd></div>}
+    </dl>
+  );
 }
 
 /** حالة تشخيص من غير ملف مريض (هجرة 924) */

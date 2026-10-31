@@ -88,7 +88,7 @@ export default function Diagnosis() {
     return [...by.entries()].map(([id, x]) => ({ id, ...x, p: db.patient(id) })).sort((a, b) => b.last.date.localeCompare(a.last.date));
   })();
   const term = q.trim();
-  const found = term ? diagnosed.filter((x) => patientMatches(x.p ?? { fullName: patientName(x.id) }, term)) : diagnosed.slice(0, 50);
+  const found = term ? diagnosed.filter((x) => patientMatches(x.p ?? { fullName: patientName(x.id) }, term)) : diagnosed; // كلهم ظاهرين (البحث بيفلتر)
   // «متابعة المرضى»: كل المرضى اللي اتشخصوا متاحين لشيت المتابعة (مش بس اللي اتعملهم حضور النهارده) — بحث مستقل عن تبويب «اتشخصوا»
   const [fq, setFq] = useState('');
   const fterm = fq.trim();
@@ -99,7 +99,6 @@ export default function Diagnosis() {
   const needFollow = followFound.filter((x) => !lastSheet(x.id));
   const followed = followFound.filter((x) => lastSheet(x.id)).sort((a, b) => lastSheet(b.id)!.date.localeCompare(lastSheet(a.id)!.date));
   const followTodayShown = fterm ? followUps.filter((a) => patientMatches(db.patient(a.patientId) ?? { fullName: patientName(a.patientId) }, fterm)) : followUps;
-  const LIMIT = 50;
   // لو المريض اتعمله حضور النهارده الشيت بيتربط بزيارته، وإلا شيت متابعة من غير زيارة (رقم الزيارة يتكتب يدوي)
   const openSheet = (id: string) => setSheet({ patientId: id, appointmentId: followUps.find((a) => a.patientId === id)?.id ?? null });
 
@@ -107,6 +106,8 @@ export default function Diagnosis() {
   // تشخيصات من غير ملف مريض: بانتظار ملف الاستقبال أو محتاجة مراجعة وربط (الأحدث أولًا)
   const unlinked = consults.filter(isUnlinked).sort((a, b) => b.date.localeCompare(a.date));
   const sameName = (name: string) => { const n = normalizeSearch(name); return n ? db.patients().filter((p) => normalizeSearch(p.fullName) === n) : []; };
+  const [regQ, setRegQ] = useState(''); // بحث عن مريض متسجل بالفعل (اسم/موبايل/رقم ملف) — محتاج نت
+  const regHits = newFile && online && regQ.trim().length >= 2 ? db.patients().filter((p) => patientMatches(p, regQ)).slice(0, 8) : [];
   const nameHits = newFile && newFile.name.trim().length >= 2 ? db.patients().filter((p) => patientMatches(p, newFile.name)).slice(0, 6) : [];
 
   return (
@@ -277,7 +278,7 @@ export default function Diagnosis() {
                 ? <EmptyState icon="checkCircle" title={fterm ? 'مفيش مريض محتاج متابعة بالاسم أو الرقم ده' : 'كل المرضى اللي اتشخصوا اتعملهم متابعة ✓'} />
                 : (
                   <div className="dx-queue">
-                    {needFollow.slice(0, fterm ? undefined : LIMIT).map((x) => (
+                    {needFollow.map((x) => (
                       <div className="dx-queue__row" key={x.id}>
                         <span className="dx-queue__time num">{fmtDate(x.last.date)}</span>
                         <div className="dx-queue__who">
@@ -291,7 +292,6 @@ export default function Diagnosis() {
                         </div>
                       </div>
                     ))}
-                    {!fterm && needFollow.length > LIMIT && <p className="muted" style={{ margin: 0 }}>ظاهر أحدث {LIMIT} — اكتب في البحث فوق عشان توصل لأي مريض تاني.</p>}
                   </div>
                 )}
             </LoadState>
@@ -306,7 +306,7 @@ export default function Diagnosis() {
                 ? <EmptyState icon="clipboard" title={fterm ? 'مفيش مريض متابعة بالاسم أو الرقم ده' : 'لسه مفيش مرضى اتعملهم متابعة'} text={fterm ? undefined : 'أول ما تعمل متابعة لمريض هيظهر هنا، وتقدر تعمله متابعة تانية وتالتة.'} />
                 : (
                   <div className="dx-queue">
-                    {followed.slice(0, fterm ? undefined : LIMIT).map((x) => {
+                    {followed.map((x) => {
                       const all = sheetsOf(x.id);
                       return (
                         <div className="dx-queue__row" key={x.id}>
@@ -324,7 +324,6 @@ export default function Diagnosis() {
                         </div>
                       );
                     })}
-                    {!fterm && followed.length > LIMIT && <p className="muted" style={{ margin: 0 }}>ظاهر آخر {LIMIT} — اكتب في البحث فوق عشان توصل لأي مريض تاني.</p>}
                   </div>
                 )}
             </LoadState>
@@ -359,7 +358,6 @@ export default function Diagnosis() {
                         </span>
                       </div>
                     ))}
-                    {!term && diagnosed.length > found.length && <p className="muted" style={{ margin: 0 }}>ظاهر آخر {found.length} مريض — اكتب في البحث عشان توصل لأي مريض تاني.</p>}
                   </div>
                 )}
             </LoadState>
@@ -377,13 +375,28 @@ export default function Diagnosis() {
         </section>
       )}
       {newFile && (
-        <Modal title="فتح ملف تشخيص جديد" onClose={() => setNewFile(null)} footer={<>
-          <Button variant="outline" onClick={() => setNewFile(null)}>إلغاء</Button>
+        <Modal title="فتح ملف تشخيص جديد" onClose={() => { setNewFile(null); setRegQ(''); }} footer={<>
+          <Button variant="outline" onClick={() => { setNewFile(null); setRegQ(''); }}>إلغاء</Button>
           <Button icon="stethoscope" disabled={!isTripleName(newFile.name)} onClick={() => { setPendingOpen({ name: newFile.name.trim(), phone: newFile.phone.trim() }); setNewFile(null); }}>ابدأ التشخيص بالاسم ده</Button>
         </>}>
+          {online && (
+            <div className="field">
+              <label>المريض متسجل؟ ابحث عنه</label>
+              <input className="input" autoFocus value={regQ} placeholder="الاسم أو الموبايل أو رقم الملف" onChange={(e) => setRegQ(e.target.value)} />
+              {regQ.trim().length >= 2 && (regHits.length > 0 ? (
+                <div className="dx-hits" style={{ marginTop: 6 }}>
+                  {regHits.map((p) => (
+                    <button type="button" key={p.id} className="dx-hits__row" onClick={() => { setNewFile(null); setRegQ(''); startPicked(p.id); }}>
+                      <b>{p.fullName}</b> <small>ملف <span className="num">{patientFile(p.id)}</span>{p.phone && <> · <bdi dir="ltr" className="num">{p.phone}</bdi></>}</small>
+                    </button>
+                  ))}
+                </div>
+              ) : <small className="muted">مفيش مريض متسجل بالبحث ده — اكتب اسمه تحت وافتح ملف جديد.</small>)}
+            </div>
+          )}
           <div className="field">
-            <label>اسم المريض الثلاثي</label>
-            <input className="input" autoFocus value={newFile.name} placeholder="مثال: محمد أحمد علي" onChange={(e) => setNewFile({ ...newFile, name: e.target.value })} />
+            <label>{online ? 'أو افتح ملف جديد — اسم المريض الثلاثي' : 'اسم المريض الثلاثي'}</label>
+            <input className="input" autoFocus={!online} value={newFile.name} placeholder="مثال: محمد أحمد علي" onChange={(e) => setNewFile({ ...newFile, name: e.target.value })} />
             {newFile.name.trim() && !isTripleName(newFile.name) && <small className="muted">اكتب الاسم ثلاثي على الأقل — بيه بيتربط التشخيص بملف الاستقبال.</small>}
           </div>
           <div className="field">

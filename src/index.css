@@ -1661,3 +1661,8 @@ img, video, canvas, svg { max-width: 100%; }
 .dxs__part { display: flex; align-items: center; justify-content: center; gap: 10px; }
 .dxs__hero { height: 34px; width: auto; border-radius: 6px; }
 @media (max-width: 560px) { .dxg__pic { width: 70px; } }
+
+/* كشف قديم (من غير شيت رقمي): النص المكتوب نفسه */
+.cx-legacy { margin-top: 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.cx-legacy-box { margin-bottom: 12px; border: 1px solid var(--brand-700); border-radius: 12px; padding: 8px 12px; background: var(--brand-50); }
+.cx-legacy-box > summary { cursor: pointer; font-weight: 700; color: var(--brand-700); }

@@ -121,10 +121,13 @@ export function SheetSwitch({ active, current, onPick, onRemove }: { active: She
       <span className="sh-regions__l">شيت الكشف:</span>
       {SHEET_ORDER.map((id) => { const used = active.includes(id); return (
         <span key={id} className={`sh-region${current === id ? ' is-on' : ''}${used ? ' is-used' : ''}`}>
-          <button type="button" role="tab" aria-selected={current === id} className="sh-region__pick" onClick={() => onPick(id)}>{used && '● '}{SHEET_TAB[id]}</button>
+          <button type="button" role="tab" aria-selected={current === id} aria-pressed={used} className="sh-region__pick" title={used ? 'مختارة — اضغط لفتح شيتها' : 'اضغط لاختيار المنطقة دي'} onClick={() => onPick(id)}>
+            <span className="sh-region__mark" aria-hidden>{used ? '✓' : '+'}</span>{SHEET_TAB[id]}
+          </button>
           {used && <button type="button" className="sh-region__x" aria-label={`إلغاء ${SHEET_TAB[id]}`} title="إلغاء ومسح اللي اتكتب فيه" onClick={() => onRemove(id)}><Icon name="close" size={14} /></button>}
         </span>
       ); })}
+      <small className="sh-regions__hint">اضغط على المنطقة لاختيارها (تقدر تختار منطقة أو أكتر) — ✕ لإلغائها</small>
     </div>
   );
 }

@@ -20,7 +20,7 @@ const HIP: DxPart = { key: 'hip', title: 'HIP & THIGH — DIAGNOSIS SHEET', grou
     'Crystal arthropathy (gout / CPPD)', 'Inflammatory myositis'] },
   { title: 'Soft Tissue & Tendon Disorders', items: [['Greater trochanteric pain syndrome', ['Gluteus medius tendinopathy', 'Gluteus minimus tendinopathy', 'Trochanteric bursitis', 'External snapping hip (ITB)']],
     ['Iliopsoas tendinopathy / bursitis', ['Internal snapping hip', 'Iliopsoas impingement']], 'Proximal hamstring tendinopathy', 'Adductor tendinopathy', 'Rectus femoris injury (AIIS)', 'Piriformis syndrome'] },
-  { title: 'Thigh Muscle Disorders', items: [['Muscle strain', ['Quadriceps', 'Hamstring', 'Adductor', 'Sartorius']], 'Myositis / inflammatory myopathy', 'Chronic exertional compartment syndrome',
+  { title: 'Thigh Muscle Disorders', items: [['Muscle strain', ['Quadriceps', 'Hamstring', 'Adductor', 'Sartorius', 'Others']], 'Myositis / inflammatory myopathy', 'Chronic exertional compartment syndrome',
     'Heterotopic ossification', 'Myositis ossificans', 'Deep muscle hematoma', 'Femoral nerve palsy (quadriceps weakness)'] },
   { title: 'Other Conditions', items: ['Developmental dysplasia of the hip (DDH)', 'Slipped capital femoral epiphysis (SCFE)', 'Legg-Calvé-Perthes disease', 'Femoral torsional deformity (ante/retroversion)',
     'Hip instability', 'Pigmented villonodular synovitis (PVNS)', 'Synovial chondromatosis', 'Tumor (benign / malignant)', 'Referred pain (lumbar spine / SI joint)', 'Vascular conditions (e.g. DVT, AVM)',
@@ -135,7 +135,7 @@ const LUMBAR: DxPart = { key: 'lumbar', title: 'LUMBAR & SACRAL SPINE — DIAGNO
     'Multifidus dysfunction', 'Postural / muscular imbalance', 'Chronic low back pain syndrome', 'Coccydynia', 'Referred hip pain', 'Referred sacroiliac pain'] },
   { title: 'Traumatic Conditions', items: [['Vertebral compression fracture', ['L1', 'L2', 'L3', 'L4', 'L5', 'S1']], 'Burst fracture', 'Chance fracture', 'Transverse process fracture', 'Spinous process fracture',
     'Facet fracture / dislocation', 'Spondylolisthesis (traumatic)', ['Sacral fracture', ['Zone 1', 'Zone 2', 'Zone 3']], 'Coccyx fracture', 'Ligament injury'] },
-  { title: 'Spinal Deformity & Stability Disorders', items: [['Spondylolisthesis', ['Degenerative', 'Isthmic', 'Traumatic']], 'Retrolisthesis', 'Scoliosis (degenerative)', 'Segmental instability',
+  { title: 'Spinal Deformity & Stability Disorders', items: [['Spondylolisthesis', ['Degenerative', 'Isthmic', 'Traumatic', 'Other']], 'Retrolisthesis', 'Scoliosis (degenerative)', 'Segmental instability',
     'Adjacent segment disease', 'Sagittal imbalance', 'Sacral dysplasia / transitional vertebra (e.g. LSTV)'] },
   // + بنود طلبها د. اسلام قبل كده (Discitis / Osteomyelitis / Myeloma)
   { title: 'Inflammatory, Infective & Other Conditions', items: ['Ankylosing spondylitis (axial SpA)', 'Axial spondyloarthritis', 'Rheumatoid arthritis', 'Psoriatic arthritis',

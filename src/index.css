@@ -1646,3 +1646,9 @@ img, video, canvas, svg { max-width: 100%; }
 .dx-hits__row small { color: var(--muted-tone); }
 .dx-unlinked { align-items: flex-start; }
 .dx-unlinked__who { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+/* المناطق المختارة في كشف الطبيب: ✓ مختارة، + لسه */
+.sh-region__mark { display: inline-block; min-width: 1em; margin-inline-end: 5px; font-weight: 800; color: var(--muted); }
+.sh-region.is-used:not(.is-on) { background: var(--brand-50, #eaf1fb); border-color: var(--brand-700); }
+.sh-region.is-used .sh-region__mark { color: var(--brand-700); }
+.sh-region.is-on .sh-region__mark { color: #fff; }
+.sh-regions__hint { flex-basis: 100%; color: var(--muted); font-size: 12.5px; }

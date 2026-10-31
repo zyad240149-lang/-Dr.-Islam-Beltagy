@@ -180,6 +180,13 @@ try {
   await A.page.locator('.sh-region__x[aria-label="إلغاء كشف الكاحل والقدم"]').click();
   check('إلغاء المنطقة (✕) بيشيل العلامة والشيت لسه ظاهر', await A.page.locator('.sh-region.is-used', { hasText: 'الكاحل والقدم' }).count() === 0 && await A.page.locator('.sh-region__pick', { hasText: 'الكاحل والقدم' }).count() === 1);
   await A.page.locator('.sh-region__pick', { hasText: 'الكاحل والقدم' }).click();
+  // اختيار منطقتين (الضغط = اختيار حتى من غير ما يتكتب فيها) ← إلغاء واحدة بـ ✕
+  await A.page.locator('.sh-region__pick', { hasText: 'الرقبة والكتف' }).click();
+  check('اختيار منطقتين مع بعض (الكاحل + الرقبة والكتف)', await A.page.locator('.sh-region.is-used').count() === 2
+    && await A.page.locator('.sh-tabs button', { hasText: 'الكاحل والقدم + كشف الرقبة والكتف' }).count() === 1, await A.page.locator('.sh-tabs button', { hasText: 'كشف الطبيب' }).innerText());
+  await A.page.locator('.sh-region__x[aria-label="إلغاء كشف الرقبة والكتف"]').click();
+  check('إلغاء منطقة من الاتنين بـ ✕ (التانية فاضلة مختارة)', await A.page.locator('.sh-region.is-used').count() === 1 && await A.page.locator('.sh-region.is-used', { hasText: 'الكاحل والقدم' }).count() === 1);
+  await A.page.locator('.sh-region__pick', { hasText: 'الكاحل والقدم' }).click();
   check('زرار «رجوع: الشيت العام» موجود في كشف الطبيب', await A.page.locator('.modal button', { hasText: 'رجوع: الشيت العام' }).count() === 1);
   await tick(A.page, 'Ankle pain');
   await tick(A.page, 'Anterior talofibular ligament (ATFL)');

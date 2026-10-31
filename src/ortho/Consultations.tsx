@@ -131,6 +131,11 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
     changeSheet((x) => removeSheet(x, id));
     setDocSheet(null);
   };
+  // الضغط على منطقة = اختيارها (تتعلّم وتفضل مختارة حتى لو لسه ما اتكتبش فيها) + فتح شيتها؛ ممكن أكتر من منطقة
+  const pickSheet = (id: SheetId) => {
+    if (!active.includes(id)) changeSheet((x) => ({ ...x, on: [...x.on, `sheets|${id}`] }));
+    setDocSheet(id);
+  };
   const [mapKey, setMapKey] = useState('x.dx.other'); // خريطة الجسم بتكتب في «Others» بتاع الشيت اللي اتفتحت منه
   const openMap = (key: string) => { setMapKey(key); setMapOpen(true); };
   // كل حاجة اختيارية: الحفظ محتاج المريض بس. لو فيه حاجة ناقصة بنسأل: «استكمال بعدين» (يتحفظ «يحتاج استكمال») ولا «التشخيص اكتمل»
@@ -273,7 +278,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
         {tab === 'doctor' && <>
           <DoctorPainMap sheet={sheet} onChange={changeSheet} />
           <>
-            <SheetSwitch active={active} current={curSheet} onPick={setDocSheet} onRemove={dropSheet} />
+            <SheetSwitch active={active} current={curSheet} onPick={pickSheet} onRemove={dropSheet} />
             {curSheet === 'hipknee'
               ? <DoctorSheet sheet={sheet} onChange={changeSheet} side={c.side} onSide={(v) => set('side', v)}
                 icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap('x.dx.other')} />

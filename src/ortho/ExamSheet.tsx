@@ -320,13 +320,6 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
           <Txt a={a} k="n.name" label="الاسم" />
           <Txt a={a} k="n.age" label="السن" unit="سنة" num />
           <Row label="النوع"><Pick a={a} g="n.gender" items={N_GENDER} /></Row>
-          <Txt a={a} k="n.phone" label="رقم الهاتف" dir="ltr" inputMode="tel" />
-          <Txt a={a} k="n.address" label="العنوان" />
-          <p className="sh-note">بتتملى من ملف المريض، وأي تعديل فيها بيتحفظ في ملفه لما تحفظ الكشف.</p>
-          <Txt a={a} k="n.job" label="المهنة" />
-          <Row label="الحالة الاجتماعية"><Pick a={a} g="n.marital" items={N_MARITAL} /></Row>
-          <Txt a={a} k="n.compName" label="اسم المرافق" />
-          <Txt a={a} k="n.compPhone" label="رقم المرافق" dir="ltr" inputMode="tel" />
         </Box>
 
         <Box n={2} title="العلامات الحيوية والقياسات">

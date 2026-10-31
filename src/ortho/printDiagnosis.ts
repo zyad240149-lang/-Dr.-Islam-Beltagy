@@ -86,8 +86,7 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
   ].filter((x) => !compact || x);
   const nurse = page('rtl', head('الشيت العام', 'يملأ بواسطة التمريض قبل دخول المريض'),
     `${cks('n.visit', L.N_VISIT)}<span>اسم المريض: <b>${name || '—'}</b></span><span>رقم الملف: <b>${fileNo || '—'}</b></span><span>رقم الزيارة: <b>${visitNo ?? '—'}</b></span><span>التاريخ: <b>${date}</b></span>`, [
-      box(1, 'البيانات الأساسية', line('الاسم', name) + line('السن', v('n.age')) + row('النوع', cks('n.gender', L.N_GENDER)) + line('رقم الهاتف', bdi(v('n.phone')))
-        + line('العنوان', v('n.address')) + line('المهنة', v('n.job')) + row('الحالة الاجتماعية', cks('n.marital', L.N_MARITAL)) + line('اسم المرافق', v('n.compName')) + line('رقم المرافق', bdi(v('n.compPhone')))),
+      box(1, 'البيانات الأساسية', line('الاسم', name) + line('السن', v('n.age')) + row('النوع', cks('n.gender', L.N_GENDER))),
       box(2, 'العلامات الحيوية والقياسات', line('ضغط الدم', v('n.bp.sys') || v('n.bp.dia') ? `<bdi>${v('n.bp.sys')} / ${v('n.bp.dia')} mmHg</bdi>` : '') + line('النبض', v('n.pulse') && `${v('n.pulse')} / دقيقة`)
         + line('درجة الحرارة', v('n.temp') && `${v('n.temp')} °C`) + line('معدل التنفس', v('n.rr') && `${v('n.rr')} / دقيقة`) + line('الوزن', v('n.wt') && `${v('n.wt')} كجم`)
         + line('الطول', v('n.ht') && `${v('n.ht')} سم`) + line('مؤشر كتلة الجسم (BMI)', bmiOf(s))),

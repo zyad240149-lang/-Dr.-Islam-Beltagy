@@ -15,7 +15,8 @@ export type FractureStatus = 'casted' | 'healing' | 'healed' | 'surgical';
 
 export interface Medication { name: string; dose: string; frequency: string; duration: string; notes: string }
 export interface ImagingRequest { kind: ImagingKind; region: string; view: string }
-export interface Attachment { path: string; name: string; type: string; size: number }
+// tag 'us' = صورة سونار (تبويب «السونار» في الكشف)
+export interface Attachment { path: string; name: string; type: string; size: number; tag?: 'us' }
 export interface Consultation {
   id: string; patientId: string; date: string; complaint: string; region: string; side: Side; examination: string; diagnosis: string; plan: string;
   history: string; painScore: number | ''; icd10: string; medications: Medication[]; labs: string[]; imagingRequests: ImagingRequest[]; attachments: Attachment[]; followUp: string;

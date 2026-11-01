@@ -9,6 +9,7 @@ import type { DiagnosisRef } from '../types';
 import { fmtDate, fmtDateTime, fmtTime, todayYmd } from '../utils/format';
 import { openVisitFor } from './visits';
 import { SHEET_TAB, TREATMENT, activeSheets, regionSheet, removeSheet, sheetFilled, type SheetId } from './regionSheets';
+import { US_SHEETS, usFilled } from './ultrasoundSheets';
 import { DoctorPainMap, RegionSheetForm, SheetSwitch } from './RegionSheet';
 import { useToast } from '../hooks/useToast';
 import { IMAGING_KIND, IMAGING_STATUS, REGIONS, SIDE, isIncomplete, isUnlinked, ortho, useOrthoVersion, type Attachment, type Consultation, type Injection, type ImagingKind, type ImagingRequest, type Medication, type Side } from './data';
@@ -84,7 +85,7 @@ function Section({ icon, title, children, aside }: { icon: string; title: string
 
 // الكشف = الشيتين بالترتيب (التمريض قبل دخول المريض ← كشف الطبيب) وبعدهم الحقن — الروشتة والأشعة والتحاليل اتنقلت لشيت المتابعة
 // «كشف الطبيب» بيتسمى بالمنطقة: شيت الطبيب بيتحدد من مكان الألم في الشيت العام (regionSheets)
-const TABS = [['nurse', 'الشيت العام'], ['doctor', 'كشف الطبيب'], ['plan', 'الخطة العلاجية'], ['inj', 'الحقن']] as const;
+const TABS = [['nurse', 'الشيت العام'], ['doctor', 'كشف الطبيب'], ['plan', 'الخطة العلاجية'], ['us', 'السونار'], ['inj', 'الحقن']] as const;
 type Tab = typeof TABS[number][0];
 
 // appointmentId = الزيارة اللي التشخيص الجديد بيتربط بيها (من «بانتظار التشخيص»)؛ من غيرها بيتربط بزيارة النهارده المفتوحة للمريض لو فيه
@@ -123,6 +124,22 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
   const sum = sheetSummary(sheet, c.side);
   // شيتات الطبيب: من مكان الألم في الشيت العام + اللي اتكتب فيه + اللي الطبيب ضافه
   const active = activeSheets(sheet);
+  const usActive = US_SHEETS.filter((d) => sheet.on.includes(`us|${d.prefix}`) || usFilled(sheet, d));
+  // صور السونار: بتترفع مع مرفقات الكشف بعلامة 'us'
+  const usImgs = c.attachments.filter((a) => a.tag === 'us');
+  const usFileRef = useRef<HTMLInputElement>(null);
+  const [usUploading, setUsUploading] = useState(false);
+  async function uploadUs(files: FileList | null) {
+    if (!files?.length || !c.patientId) return;
+    setUsUploading(true);
+    try {
+      const added: Attachment[] = [];
+      for (const f of Array.from(files)) added.push({ ...(await ortho.uploadAttachment(c.patientId, f)), tag: 'us' });
+      setC((x) => ({ ...x, attachments: [...x.attachments, ...added] }));
+      toast.success(added.length > 1 ? `تم رفع ${added.length} صور` : 'تم رفع صورة السونار');
+    } catch (e) { toast.error((e as Error).message); }
+    finally { setUsUploading(false); if (usFileRef.current) usFileRef.current.value = ''; }
+  }
   const dropSheet = (id: SheetId) => {
     if (sheetFilled(sheet, id) && !window.confirm(`إلغاء منطقة «${SHEET_TAB[id]}»؟ اللي اتكتب في شيتها هيتمسح، ومكان الألم ده هيتشال من جسم الإنسان.`)) return;
     changeSheet((x) => removeSheet(x, id));
@@ -260,7 +277,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
             <LegacyText c={initial} />
           </details>
         )}
-        <div className="seg seg--4 sh-tabs" role="tablist" aria-label="أجزاء الكشف">
+        <div className="seg seg--5 sh-tabs" role="tablist" aria-label="أجزاء الكشف">
           {TABS.map(([k, l], i) => (
             <button key={k} type="button" role="tab" aria-selected={tab === k} className={`seg__btn ${tab === k ? 'active' : ''}`} onClick={() => goTab(k)}>
               <span className="sh-tabs__n num">{i + 1}</span>{k === 'doctor' && active.length ? `${l} — ${active.map((id) => SHEET_TAB[id]).join(' + ')}` : l}
@@ -307,6 +324,41 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
             icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap('tp.tx.other')} /></div>
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('doctor')}>رجوع: كشف الطبيب</Button>
+            <Button icon="chevronLeft" onClick={() => goTab('us')}>التالي: السونار</Button>
+          </div>
+        </>}
+
+        {/* تقارير السونار (MSK Ultrasound Report) — المنطقة اللي اتعلّمت أو اتكتب فيها بتتفتح (مفاتيح usw./usk./usa./ush.) */}
+        {tab === 'us' && <>
+          <div className="us-pick">
+            {US_SHEETS.map((d) => {
+              const on = usActive.includes(d);
+              return <Button key={d.prefix} size="sm" variant={on ? undefined : 'outline'} icon={on ? 'check' : 'plus'} onClick={() => {
+                if (!on) { changeSheet((x) => ({ ...x, on: [...x.on, `us|${d.prefix}`] })); return; }
+                if (usFilled(sheet, d) && !window.confirm(`إلغاء تقرير سونار «${d.tab}»؟ اللي اتكتب فيه هيتمسح.`)) return;
+                const p = d.prefix + '.';
+                changeSheet((x) => ({ ...x, on: x.on.filter((o) => o !== `us|${d.prefix}` && !o.startsWith(p)), txt: Object.fromEntries(Object.entries(x.txt).filter(([k]) => !k.startsWith(p))) }));
+              }}>سونار {d.tab}</Button>;
+            })}
+          </div>
+          <Section icon="camera" title="صور السونار" aside={<>
+            <Button size="sm" variant="outline" icon="camera" loading={usUploading} disabled={!c.patientId} onClick={() => usFileRef.current?.click()}>رفع صور السونار</Button>
+            <input ref={usFileRef} type="file" hidden multiple accept="image/png,image/jpeg,image/webp,application/pdf" onChange={(e) => void uploadUs(e.target.files)} />
+          </>}>
+            {usImgs.length > 0
+              ? <AttachmentThumbs items={usImgs} onRemove={(path) => set('attachments', c.attachments.filter((a) => a.path !== path))} />
+              : <p className="cx-empty">{c.patientId ? 'ارفع صور السونار (صورة أو PDF، لحد 10 ميجا).' : 'رفع الصور بيتفتح بعد ما يتحدد ملف المريض.'}</p>}
+          </Section>
+          {!usActive.length && <p className="sh-pickfirst">اختار المنطقة اللي اتعمل عليها السونار — التقرير بتاعها هيتفتح هنا. ممكن تختار أكتر من منطقة.</p>}
+          {usActive.map((d) => (
+            <section key={d.prefix} className="sh-stack">
+              <h3 className="sh-stack__h" dir="ltr">{d.title.replace('&amp;', '&')}</h3>
+              <RegionSheetForm def={d} sheet={sheet} onChange={changeSheet} side={c.side} onSide={(v) => set('side', v)}
+                icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap(`${d.prefix}.path.other`)} />
+            </section>
+          ))}
+          <div className="sh-next">
+            <Button variant="outline" icon="chevron" onClick={() => goTab('plan')}>رجوع: الخطة العلاجية</Button>
             <Button icon="chevronLeft" onClick={() => goTab('inj')}>التالي: الحقن</Button>
           </div>
         </>}
@@ -320,7 +372,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
             </> : <p className="muted">{unlinked ? 'سجل الحقن بيتفتح بعد ما التشخيص يتربط بملف المريض.' : 'اختار المريض الأول.'}</p>}
           </Section>
           <div className="sh-next">
-            <Button variant="outline" icon="chevron" onClick={() => goTab('plan')}>رجوع: الخطة العلاجية</Button>
+            <Button variant="outline" icon="chevron" onClick={() => goTab('us')}>رجوع: السونار</Button>
           </div>
         </>}
         {inj && <InjectionModal patientId={c.patientId} appointmentId={c.appointmentId ?? null} initial={inj === 'new' ? undefined : inj} onClose={() => setInj(null)} />}

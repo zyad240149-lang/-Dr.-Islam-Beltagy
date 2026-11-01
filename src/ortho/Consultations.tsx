@@ -13,7 +13,6 @@ import { US_SHEETS, usFilled, usImage } from './ultrasoundSheets';
 import { DoctorPainMap, RegionSheetForm, SheetSwitch } from './RegionSheet';
 import { useToast } from '../hooks/useToast';
 import { IMAGING_KIND, IMAGING_STATUS, REGIONS, SIDE, isIncomplete, isUnlinked, ortho, useOrthoVersion, type Attachment, type Consultation, type Injection, type ImagingKind, type ImagingRequest, type Medication, type Side } from './data';
-import { LAB_GROUPS, MED_PRESETS, XRAY_VIEWS } from './clinicalLists';
 import { printRx } from './printRx';
 import { openPrintWindow } from '../utils/printDoc';
 import { DiagnosisOutput } from './DiagnosisOutput';

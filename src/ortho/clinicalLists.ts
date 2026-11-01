@@ -1,5 +1,5 @@
 // قوائم اقتراحات للكشف (الطبيب يقدر يكتب أي حاجة غيرها) — أدوية وتحاليل وأوضاع أشعة شائعة في عيادة العظام
-import type { Medication } from './data';
+import { ortho, type Medication } from './data';
 
 export interface MedPreset extends Omit<Medication, 'notes'> { group: string }
 
@@ -41,3 +41,10 @@ export const LAB_GROUPS: { group: string; items: string[] }[] = [
 ];
 
 export const XRAY_VIEWS = ['AP & Lateral', 'AP', 'Lateral', 'Oblique', 'Standing (weight-bearing)', 'Skyline (patella)', 'Flexion/Extension', 'Comparative (both sides)'];
+
+/** اقتراحات الروشتة = قسم «الأدوية» (اللي الطبيب ضافه أو عدّله) + القايمة الأساسية — نفس الاسم: المحفوظ يكسب */
+export function medCatalog(): MedPreset[] {
+  const saved = ortho.list('medications').map(({ name, group, dose, frequency, duration }) => ({ name, group, dose, frequency, duration }));
+  const names = new Set(saved.map((m) => m.name.trim().toLowerCase()));
+  return [...saved, ...MED_PRESETS.filter((m) => !names.has(m.name.toLowerCase()))];
+}

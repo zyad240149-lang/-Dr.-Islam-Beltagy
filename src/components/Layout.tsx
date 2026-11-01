@@ -34,6 +34,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
   { title: 'العظام والكسور', items: [
     { to: '/diagnosis', label: 'تشخيص المريض', icon: 'stethoscope', area: 'patients' },
     { to: '/surgeries', label: 'العمليات الجراحية', icon: 'scalpel', area: 'patients' },
+    { to: '/medications', label: 'الأدوية', icon: 'pill', area: 'patients' },
   ] },
   { title: 'المالية', items: [
     { to: '/invoices', label: 'الفواتير والمدفوعات', icon: 'receipt', area: 'invoices' },

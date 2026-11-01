@@ -57,6 +57,8 @@ export interface InjectionSheet {
   complications: string; complicationsText: string; instructions: string; plannedFollowUp: string; response: string; furtherPlan: string; signature: string; notes: string;
 }
 export interface Injection { id: string; patientId: string; appointmentId?: string | null; date: string; sheet: InjectionSheet; createdBy?: string | null }
+// قايمة أسامي الأدوية (قسم «الأدوية» — مش مخزون): اقتراحات الروشتة
+export interface MedItem { id: string; name: string; group: string; dose: string; frequency: string; duration: string }
 export interface Fracture { id: string; patientId: string; bone: string; side: Side; kind: string; injuryDate: string; castDate: string; removalDue: string; status: FractureStatus }
 
 export const SIDE: Record<Side, string> = { right: 'يمين', left: 'شمال', both: 'الجانبين', na: '—' };
@@ -87,9 +89,10 @@ const COLUMNS: Record<Kind, string[]> = {
   fractures: ['patient_id', 'bone', 'side', 'kind', 'injury_date', 'cast_date', 'removal_due', 'status'],
   nursing: ['patient_id', 'appointment_id', 'date', 'sheet'],
   injections: ['patient_id', 'appointment_id', 'date', 'sheet'],
+  medications: ['name', 'group', 'dose', 'frequency', 'duration'],
 };
-export type Kind = 'consultations' | 'imaging' | 'surgeries' | 'fractures' | 'nursing' | 'injections';
-type Of<K extends Kind> = K extends 'consultations' ? Consultation : K extends 'imaging' ? Imaging : K extends 'surgeries' ? Surgery : K extends 'nursing' ? Nursing : K extends 'injections' ? Injection : Fracture;
+export type Kind = 'consultations' | 'imaging' | 'surgeries' | 'fractures' | 'nursing' | 'injections' | 'medications';
+type Of<K extends Kind> = K extends 'medications' ? MedItem : K extends 'consultations' ? Consultation : K extends 'imaging' ? Imaging : K extends 'surgeries' ? Surgery : K extends 'nursing' ? Nursing : K extends 'injections' ? Injection : Fracture;
 type Row = Record<string, unknown>;
 
 const camel = (k: string) => k.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
@@ -166,7 +169,7 @@ export function hydrateOrthoCache(x: Partial<Record<Kind, Row[]>> | null) {
   if (x) for (const k of Object.keys(x) as Kind[]) if (Array.isArray(x[k])) { server[k] = x[k]!; cache[k] = overlay(k, x[k]!); }
   bump();
 }
-const KIND_LABEL: Record<Kind, string> = { consultations: 'كشف', imaging: 'أشعة', surgeries: 'عملية', fractures: 'كسر/جبس', nursing: 'متابعة تمريض', injections: 'حقن' };
+const KIND_LABEL: Record<Kind, string> = { consultations: 'كشف', imaging: 'أشعة', surgeries: 'عملية', fractures: 'كسر/جبس', nursing: 'متابعة تمريض', injections: 'حقن', medications: 'دواء' };
 /**
  * حفظ على الجهاز ← طابور المزامنة. إنشاء: بمعرّف ثابت من الجهاز (إعادة الإرسال مابتكررش). تعديل: بنحفظ قيم الخادم وقت التعديل (base)
  * ولو حد غيّر نفس الحقول على الخادم قبل المزامنة ← «تعارض» يتعرض للطبيب يقرر (مفيش كتابة فوق تشخيص بصمت).

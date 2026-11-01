@@ -4,7 +4,7 @@ import { Button } from '../components/ui';
 import { Icon } from '../utils/icons';
 import { useToast } from '../hooks/useToast';
 import { IMAGING_KIND, IMAGING_STATUS, ortho, type Attachment, type ImagingKind, type ImagingRequest, type Medication, type RxData } from './data';
-import { LAB_GROUPS, MED_PRESETS, XRAY_VIEWS } from './clinicalLists';
+import { LAB_GROUPS, XRAY_VIEWS, medCatalog } from './clinicalLists';
 import { AttachmentThumbs } from './Consultations';
 import { IconBtn, Tone } from './kit';
 
@@ -49,7 +49,7 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
   const set = <K extends keyof RxData>(k: K, v: RxData[K]) => onChange((x) => ({ ...x, [k]: v }));
   const setMed = (i: number, patch: Partial<Medication>) => set('medications', c.medications.map((m, j) => (j === i ? { ...m, ...patch } : m)));
   const pickMedName = (i: number, name: string) => {
-    const p = MED_PRESETS.find((x) => x.name === name);
+    const p = medCatalog().find((x) => x.name === name);
     const cur = c.medications[i];
     setMed(i, p ? { name, dose: cur.dose || p.dose, frequency: cur.frequency || p.frequency, duration: cur.duration || p.duration } : { name });
   };
@@ -112,7 +112,7 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
             ))}
           </div>
         )}
-      <datalist id="cx-meds">{MED_PRESETS.map((p) => <option key={p.name} value={p.name}>{p.group}</option>)}</datalist>
+      <datalist id="cx-meds">{medCatalog().map((p) => <option key={p.name} value={p.name}>{p.group}</option>)}</datalist>
     </Section>
 
     <Section icon="list" title={`التحاليل${c.labs.length ? ` (${c.labs.length})` : ''}`} aside={<>

@@ -74,3 +74,4 @@
 .inj-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 @media (max-width: 900px) { .inj-grid--3 { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 640px) { .inj-grid, .inj-grid--3 { grid-template-columns: 1fr; } .inj-letter { grid-template-columns: 1fr; } .inj-letter img { display: none; } .inj-title b { font-size: 19px; } .inj-title small { display: none; } }
+.cx-medq { margin-bottom: 8px; }

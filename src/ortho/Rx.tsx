@@ -4,7 +4,7 @@ import { Button } from '../components/ui';
 import { Icon } from '../utils/icons';
 import { useToast } from '../hooks/useToast';
 import { IMAGING_KIND, IMAGING_STATUS, ortho, type Attachment, type ImagingKind, type ImagingRequest, type Medication, type RxData } from './data';
-import { LAB_GROUPS, XRAY_VIEWS, medCatalog } from './clinicalLists';
+import { LAB_GROUPS, XRAY_VIEWS, medCatalog, type MedPreset } from './clinicalLists';
 import { AttachmentThumbs } from './Consultations';
 import { IconBtn, Tone } from './kit';
 
@@ -53,6 +53,17 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
     const cur = c.medications[i];
     setMed(i, p ? { name, dose: cur.dose || p.dose, frequency: cur.frequency || p.frequency, duration: cur.duration || p.duration } : { name });
   };
+  const [medQ, setMedQ] = useState('');
+  const norm = (s: string) => s.trim().toLowerCase();
+  const hasMed = (name: string) => c.medications.some((m) => norm(m.name) === norm(name));
+  const toggleMed = (p: MedPreset) => set('medications', hasMed(p.name)
+    ? c.medications.filter((m) => norm(m.name) !== norm(p.name))
+    : [...c.medications.filter((m) => m.name.trim()), { ...emptyMed(), name: p.name, dose: p.dose, frequency: p.frequency, duration: p.duration }]);
+  const medGroups = new Map<string, MedPreset[]>();
+  for (const p of medCatalog()) {
+    if (medQ.trim() && !norm(p.name).includes(norm(medQ)) && !p.group.includes(medQ.trim())) continue;
+    const g = p.group || 'أخرى'; medGroups.set(g, [...(medGroups.get(g) ?? []), p]);
+  }
   const toggleLab = (name: string) => set('labs', c.labs.includes(name) ? c.labs.filter((l) => l !== name) : [...c.labs, name]);
   const addCustomLab = () => { const v = labQ.trim(); if (v && !c.labs.includes(v)) set('labs', [...c.labs, v]); setLabQ(''); };
   const setReq = (i: number, patch: Partial<ImagingRequest>) => set('imagingRequests', c.imagingRequests.map((r, j) => (j === i ? { ...r, ...patch } : r)));
@@ -95,8 +106,17 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
     </Section>
 
     <Section icon="receipt" title="العلاج — الروشتة" aside={<Button size="sm" variant="outline" icon="plus" onClick={() => set('medications', [...c.medications, emptyMed()])}>إضافة دواء</Button>}>
+      {/* اختيار من قسم «الأدوية»: ضغطة بتضيف الدواء بجرعته وتكراره ومدته، وضغطة تانية بتشيله */}
+      <input className="input cx-medq" dir="auto" placeholder="ابحث في قايمة الأدوية…" value={medQ} onChange={(e) => setMedQ(e.target.value)} />
+      {[...medGroups].map(([g, meds]) => (
+        <div className="cx-labgrp" key={g}>
+          <span className="cx-labgrp__t">{g}</span>
+          <div className="cx-chips">{meds.map((p) => { const on = hasMed(p.name); return <button key={p.name} type="button" dir="ltr" aria-pressed={on} className={`cx-chip ${on ? 'is-on' : ''}`} onClick={() => toggleMed(p)}>{p.name}</button>; })}</div>
+        </div>
+      ))}
+      {medQ.trim() && !medGroups.size && <p className="cx-empty">مفيش دواء بالاسم ده في القايمة — اضغط «إضافة دواء» واكتبه، أو ضيفه من قسم «الأدوية».</p>}
       {c.medications.length === 0
-        ? <p className="cx-empty">مفيش أدوية لسه — اضغط «إضافة دواء» واكتب اسم الدواء (فيه اقتراحات بالجرعات المعتادة).</p>
+        ? <p className="cx-empty">اختار الأدوية من القايمة فوق، أو اضغط «إضافة دواء» واكتب اسم دواء تاني.</p>
         : (
           <div className="cx-rows">
             {c.medications.map((m, i) => (

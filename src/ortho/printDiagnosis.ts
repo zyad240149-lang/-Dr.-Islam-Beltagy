@@ -10,7 +10,7 @@ import { RX_CSS, rxPageHtml } from './printRx';
 import { DX_SHEETS, FDX, dxGroupKey, dxSub, type DxSheetId } from './dxCatalog';
 import { TREATMENT, activeSheets, regionSheet, treatmentFilled, type Field, type RegionSheetDef } from './regionSheets';
 import { openPrintWindow, printHtml } from '../utils/printDoc';
-import { US_SHEETS, usFilled } from './ultrasoundSheets';
+import { US_SHEETS, usFilled, usImage } from './ultrasoundSheets';
 
 type DxConsult = Omit<Consultation, 'id'> & { id?: string };
 export interface DxPatient { fullName: string; fileNo?: string | null; birthDate?: string | null }
@@ -154,7 +154,8 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
         case 'notes': return compact && !v(K(f.k)) ? '' : `<div class="notes">${v(K(f.k)).replace(/\n/g, '<br>') || '&nbsp;'}</div>`;
       }
     };
-    return page('ltr', head(def.title, ''), drBar, def.boxes.map((b, i) => box(i + 1, b.title, b.f.map(rf).join('') + (b.role === 'plan' && c.followUp ? line('Next visit:', dmy(c.followUp)) : ''), [b.tone, b.wide && 'span2'].filter(Boolean).join(' '))));
+    const img = usImage(def); // تقرير سونار: رسومات التشريح فوق الخانات زي الورقة
+    return page('ltr', head(def.title, ''), drBar, (img ? [`<section class="box span2 usimg"><img src="${location.origin}${img}" alt=""></section>`] : []).concat(def.boxes.map((b, i) => box(i + 1, b.title, b.f.map(rf).join('') + (b.role === 'plan' && c.followUp ? line('Next visit:', dmy(c.followUp)) : ''), [b.tone, b.wide && 'span2'].filter(Boolean).join(' ')))));
   };
   // شيت الطبيب = الشيتات النشطة (من مكان الألم + اللي اتكتب فيه)؛ كشف قديم من غير أي منطقة ← الورك والركبة زي الأول
   const ids = activeSheets(s);
@@ -227,6 +228,7 @@ export function diagnosisHtml(c: DxConsult, p?: DxPatient | null, visitNo?: numb
   .box { border: 1.3px solid #1b4f8f; border-radius: 7px; overflow: hidden; break-inside: avoid; }
   .box.wide { grid-column: 1 / -1; }
   .box.span2 { grid-column: span 2; }
+  .box.usimg { border: 0; text-align: center; } .box.usimg img { max-width: 100%; max-height: 52mm; }
   .box:has(.dxgrid), .box:has(.dxfinal) { grid-column: 1 / -1; break-inside: auto; }
   .dxpart { margin: 3px 0; padding: 2px 8px; border-radius: 5px; background: #1b4f8f; color: #fff; font-weight: 700; text-align: center; font-size: 10px; }
   .dxgrid { display: grid; gap: 4px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 4px; }

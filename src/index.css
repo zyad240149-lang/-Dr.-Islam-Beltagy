@@ -841,6 +841,7 @@ textarea.input { height: auto; padding-block: 10px; resize: vertical; line-heigh
 .seg--5 { grid-template-columns: repeat(5, 1fr); }
 @media (max-width: 640px) { .seg--4, .seg--5 { grid-template-columns: repeat(2, 1fr); } }
 .us-pick { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.us-img { display: block; width: 100%; max-width: 720px; height: auto; margin: 0 auto 12px; border-radius: 10px; background: #fff; }
 .nt-sources__sum { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
 .nt-sources__sum > div { display: flex; flex-direction: column; padding: 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line-2); }
 .nt-sources__sum .num { font-size: 26px; font-weight: 700; color: var(--brand-700); line-height: 1.2; }

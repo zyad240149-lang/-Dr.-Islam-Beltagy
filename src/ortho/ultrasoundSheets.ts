@@ -75,6 +75,10 @@ export const US_SHEETS: RegionSheetDef[] = [
   ]),
 ];
 
+// رسومات التشريح اللي في ورقة كل تقرير (public/us)
+const IMG: Record<string, string> = { usw: 'wrist', usk: 'knee', usa: 'ankle', ush: 'hip' };
+export const usImage = (d: RegionSheetDef) => (IMG[d.prefix] ? `${import.meta.env.BASE_URL}us/${IMG[d.prefix]}.jpg` : '');
+
 /** فيه حاجة متكتبة في تقرير السونار ده */
 export const usFilled = (s: ExamSheet, d: RegionSheetDef) => {
   const p = d.prefix + '.';

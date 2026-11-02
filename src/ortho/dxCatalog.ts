@@ -8,7 +8,7 @@ export type DxItem = string | [string, string[]];
 export interface DxGroup { title: string; items: DxItem[] }
 // pics = عدد الأقسام (من الأول) اللي ليها صورة من الورقة (public/dx/<key>-<n>.webp)؛ hero = صورة واحدة للورقة كلها
 export interface DxPart { key: string; title: string; groups: DxGroup[]; pics?: number; hero?: string }
-export type DxSheetId = Exclude<SheetId, 'cast' | 'postop'>;
+export type DxSheetId = Exclude<SheetId, 'cast' | 'postop' | 'peds'>;
 
 const HIP: DxPart = { key: 'hip', title: 'HIP & THIGH — DIAGNOSIS SHEET', pics: 6, groups: [
   { title: 'Degenerative & Osteoarthritis', items: ['Primary hip osteoarthritis', 'Secondary osteoarthritis (post-traumatic / DDH / AVN / others)', 'Hip dysplasia (acetabular)',

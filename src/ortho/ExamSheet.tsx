@@ -183,7 +183,7 @@ const rtLt = (s: ExamSheet, k: string, unit = '') => {
 export function sheetSummary(s: ExamSheet, side: Side = 'na') {
   const xcc = join([...picked(s, 'x.cc', X_CC), tx(s, 'x.cc.other')]);
   const dur = picked(s, 'x.dur', X_DUR)[0];
-  const ncc = join([...picked(s, 'n.cc', N_CC), tx(s, 'n.cc.other')], '، ');
+  const ncc = join([...picked(s, 'n.cc', N_CC), tx(s, 'n.cc.other'), tx(s, 'n.cc.text')], '، ');
   const pain = s.pain.map(painLabel).join('، ');
   const since = picked(s, 'n.since', N_SINCE)[0];
   const regions = REGION_SHEETS.filter((d) => sheetFilled(s, d.id as SheetId)).map((d) => ({ d, r: regionSummary(d, s, side) }));
@@ -376,6 +376,8 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
               <div className="sh-lbl">الشكوى</div>
               <Checks a={a} g="n.cc" items={N_CC} />
               <Txt a={a} k="n.cc.other" label="أخرى" />
+              <div className="sh-lbl">شكوى المريض (كتابةً)</div>
+              <textarea className="sh-in sh-in--area" dir="auto" rows={3} aria-label="شكوى المريض كتابةً" placeholder="اكتب شكوى المريض بكلامه…" value={a.txt('n.cc.text')} onChange={(e) => a.set('n.cc.text', e.target.value)} />
             </div>
 
             <div className="sh-map">

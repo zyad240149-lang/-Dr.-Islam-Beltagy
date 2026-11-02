@@ -6,7 +6,7 @@
 import type { ExamSheet, Side } from './data';
 import { dxSummary, type DxSheetId } from './dxCatalog';
 
-export type SheetId = 'hipknee' | 'ankle' | 'neckshoulder' | 'hand' | 'lumbar' | 'cast' | 'postop';
+export type SheetId = 'hipknee' | 'ankle' | 'neckshoulder' | 'hand' | 'lumbar' | 'peds' | 'cast' | 'postop';
 type Row3 = [label: string, sub: string, color?: string];
 export type Field =
   | { t: 'checks'; g: string; items: string[]; label?: string; none?: string; cols?: boolean }
@@ -250,6 +250,56 @@ export const REGION_SHEETS: RegionSheetDef[] = [
       { title: 'VISIT RECORD — Clinical progress', role: 'notes', f: [{ t: 'notes', k: 'notes' }] },
     ],
   },
+  {
+    // شيت فحص الأطفال (Pediatric Orthopedic Examination) — نفس الورق: 10 خانات
+    id: 'peds', prefix: 'pd', tab: 'فحص أطفال', title: 'PEDIATRIC ORTHOPEDIC EXAMINATION',
+    boxes: [
+      { title: '1. Growth & Development', role: 'exam', f: [
+        { t: 'text', k: 'wt', label: 'Weight (kg):' }, { t: 'text', k: 'ht', label: 'Height (cm):' },
+        { t: 'pick', g: 'miles', items: ['Normal', 'Delayed'], label: 'Milestones:' }, { t: 'pick', g: 'birth', items: ['Full term', 'Premature'], label: 'Birth:' },
+        { t: 'text', k: 'fam', label: 'Family history:' },
+      ] },
+      { title: '2. Gait & Function', role: 'exam', f: [
+        { t: 'pick', g: 'gait', items: ['Normal', 'Limping', 'Toe walking'], label: 'Gait:' },
+        { t: 'pick', g: 'fprog', items: ['In-toeing', 'Out-toeing'], label: 'Foot progression:' },
+        { t: 'pick', g: 'funclim', items: ['Yes', 'No'], label: 'Functional limitation:' },
+      ] },
+      { title: '3. Spine', role: 'exam', f: [
+        { t: 'pick', g: 'scol', items: ['Yes', 'No'], label: 'Scoliosis:' }, { t: 'pick', g: 'kyph', items: ['Yes', 'No'], label: 'Kyphosis:' },
+        { t: 'pick', g: 'lord', items: ['Normal', 'Increased'], label: 'Lordosis:' }, { t: 'pick', g: 'tend', items: ['Yes', 'No'], label: 'Tenderness:' },
+      ] },
+      { title: '4. Hip', role: 'exam', f: [
+        { t: 'rom', k: 'hip', title: 'Hip ROM', noNormal: true, rows: [['Abduction', ''], ['Internal rotation', ''], ['External rotation', '']] },
+        { t: 'pick', g: 'galeazzi', items: ['Negative', 'Positive'], label: 'Galeazzi:' }, { t: 'pick', g: 'barlow', items: ['Negative', 'Positive'], label: 'Barlow / Ortolani:' },
+      ] },
+      { title: '5. Knee & Lower Limb', role: 'exam', f: [
+        { t: 'pick', g: 'align', items: ['Normal', 'Varus', 'Valgus'], label: 'Alignment:' }, { t: 'pick', g: 'rotprof', items: ['Normal', 'Abnormal'], label: 'Rotational profile:' },
+        { t: 'rom', k: 'knee', title: 'Knee', noNormal: true, rows: [['ROM', '']] },
+        { t: 'pick', g: 'lld', items: ['Yes', 'No'], label: 'Limb length discrepancy:' },
+      ] },
+      { title: '6. Foot & Ankle', role: 'exam', f: [
+        { t: 'checks', g: 'ftype', items: ['Normal', 'Flatfoot', 'Cavus', 'Clubfoot'], label: 'Type:' },
+        { t: 'pick', g: 'heel', items: ['Neutral', 'Valgus', 'Varus'], label: 'Heel:' }, { t: 'pick', g: 'flex', items: ['Flexible', 'Rigid'], label: 'Flexibility:' },
+        { t: 'rom', k: 'ankle', title: 'Ankle', noNormal: true, rows: [['ROM', '']] },
+      ] },
+      { title: '7. Upper Limb', role: 'exam', f: [
+        { t: 'rom', k: 'ul', title: 'Upper limb ROM', noNormal: true, rows: [['Shoulder ROM', ''], ['Elbow ROM', '']] },
+        { t: 'pick', g: 'wrist', items: ['Normal', 'Abnormal'], label: 'Wrist / Hand:' },
+      ] },
+      { title: '8. Neurovascular', role: 'exam', f: [
+        { t: 'text', k: 'power', label: 'Muscle power:' },
+        { t: 'pick', g: 'tone', items: ['Normal', 'Abnormal'], label: 'Tone:' }, { t: 'pick', g: 'refl', items: ['Normal', 'Abnormal'], label: 'Reflexes:' },
+        { t: 'pick', g: 'sens', items: ['Intact', 'Impaired'], label: 'Sensation:' }, { t: 'pick', g: 'pulse', items: ['Normal', 'Abnormal'], label: 'Pulses:' },
+      ] },
+      { title: '9. Investigations', role: 'exam', f: [{ t: 'checks', g: 'inv', items: ['X-ray', 'Ultrasound', 'MRI', 'CT'] }] },
+      { title: '10. Diagnosis', role: 'dx', wide: true, f: [{ t: 'text', k: 'dx', label: 'Diagnosis:' }] },
+      { title: 'Treatment & Follow-up', role: 'plan', wide: true, f: [
+        { t: 'checks', g: 'tx', items: ['Observation', 'Physiotherapy', 'Medication', 'Orthosis', 'Casting', 'Surgery'], label: 'Treatment:' },
+        { t: 'text', k: 'fu', label: 'Follow-up:' },
+      ] },
+      notes(),
+    ],
+  },
 ];
 // الخطة العلاجية والتعليمات وموعد المتابعة — خانة واحدة للكشف كله، بتظهر تحت أي شيت مفتوح (مفاتيح tp.*)
 export const TREATMENT: RegionSheetDef = {
@@ -264,9 +314,9 @@ export const treatmentFilled = (s: ExamSheet) => s.on.some((o) => o.startsWith('
 export const regionSheet = (id: SheetId) => REGION_SHEETS.find((d) => d.id === id);
 
 // كل شيت بالترتيب اللي بيظهر بيه + اسمه في تبويب الطبيب
-export const SHEET_ORDER: SheetId[] = ['hipknee', 'ankle', 'neckshoulder', 'hand', 'lumbar', 'cast', 'postop'];
+export const SHEET_ORDER: SheetId[] = ['hipknee', 'ankle', 'neckshoulder', 'hand', 'lumbar', 'peds', 'cast', 'postop'];
 // اسم الشيت قدام الطبيب: «كشف …»
-export const SHEET_TAB: Record<SheetId, string> = { hipknee: 'كشف الورك والركبة', ...Object.fromEntries(REGION_SHEETS.map((d) => [d.id, d.id === 'cast' || d.id === 'postop' ? d.tab : `كشف ${d.tab}`])) } as Record<SheetId, string>;
+export const SHEET_TAB: Record<SheetId, string> = { hipknee: 'كشف الورك والركبة', ...Object.fromEntries(REGION_SHEETS.map((d) => [d.id, d.id === 'cast' || d.id === 'postop' || d.id === 'peds' ? d.tab : `كشف ${d.tab}`])) } as Record<SheetId, string>;
 const PREFIX: Record<SheetId, string> = { hipknee: 'x', ...Object.fromEntries(REGION_SHEETS.map((d) => [d.id, d.prefix])) } as Record<SheetId, string>;
 export const DOCTOR_PREFIXES = Object.values(PREFIX);
 

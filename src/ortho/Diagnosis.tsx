@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { isIncomplete, isUnlinked, ortho, useOrthoVersion, type Consultation, type Nursing } from './data';
-import { LoadState, PageHead, PatientSelect, SearchBox, patientFile, patientName, useClinicalCan, useRun } from './kit';
+import { LoadState, PageHead, PatientSelect, SearchBox, confirmDelete, patientFile, patientName, useClinicalCan, useRun } from './kit';
 import { ConsultModal, DraftCard, LinkBadge, clearConsultDraft, listConsultDrafts } from './Consultations';
 import { DiagnosisTab } from './DiagnosisTab';
 import { todaysFollowUps, todaysVisits } from './visits';
@@ -229,7 +229,8 @@ export default function Diagnosis() {
               <div className="card__head"><h2>تشخيصات لم تكتمل ({otherDrafts.length + otherIncomplete.length})</h2></div>
               <div className="card__body">
                 {otherDrafts.map((d) => <DraftCard key={d.patientId} d={d} onResume={() => resumeDraft(d.patientId, true)} onDiscard={() => discardDraft(d.patientId)} />)}
-                {otherIncomplete.map((c) => <DraftCard key={c.id} d={c} onResume={() => openSaved(c, true)} />)}
+                {otherIncomplete.map((c) => <DraftCard key={c.id} d={c} onResume={() => openSaved(c, true)}
+                  onDiscard={perm.del ? () => confirmDelete(`تشخيص «${patientName(c.patientId)}» اللي لم يكتمل`) && run(async () => { await ortho.remove('consultations', c.id); (c.attachments ?? []).forEach((a) => void ortho.removeAttachment(a.path)); }, 'تم حذف التشخيص') : undefined} />)}
               </div>
             </section>
           )}

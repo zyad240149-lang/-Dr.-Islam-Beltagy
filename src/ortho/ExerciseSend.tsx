@@ -59,7 +59,7 @@ export function ExerciseSendModal({ patientId, onClose }: { patientId: string; o
     const list = mode === 'images' ? images : mode === 'pdfs' ? pdfs : videos;
     if (mode !== 'link' && !list.length) { toast.error(mode === 'images' ? 'التمرينات المختارة مفيهاش صور.' : mode === 'pdfs' ? 'التمرينات المختارة مفيهاش ملفات PDF.' : 'التمرينات المختارة مفيهاش فيديوهات.'); return; }
     // الكمبيوتر / مفيش مشاركة ملفات: نافذة واتساب بتتفتح وقت الضغطة (عشان المتصفح مايحجبهاش)
-    const canFiles = asFiles && mode !== 'link' && mode !== 'open' && typeof navigator.share === 'function' && typeof navigator.canShare === 'function';
+    const canFiles = asFiles && mode !== 'link' && typeof navigator.share === 'function' && typeof navigator.canShare === 'function';
     const win = canFiles ? null : window.open('about:blank', '_blank');
     await run(async () => {
       try {

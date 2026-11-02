@@ -37,6 +37,7 @@ export function ExerciseSendModal({ patientId, onClose }: { patientId: string; o
   const images = chosen.flatMap((x) => x.media.filter((m) => !m.type.startsWith('video/') && !isPdf(m)));
   const pdfs = chosen.flatMap((x) => x.media.filter(isPdf));
   const videos = chosen.flatMap((x) => x.media.filter((m) => m.type.startsWith('video/')));
+  const canShareSheet = typeof navigator.share === 'function' && typeof navigator.canShare === 'function';
   const wa = (text?: string) => `https://wa.me/${waPhone(phone)}${text ? `?text=${encodeURIComponent(text)}` : ''}`;
   const same = !!last && last.notes === notes && last.exerciseIds.length === sel.length && last.exerciseIds.every((id, i) => id === sel[i]);
 
@@ -51,14 +52,14 @@ export function ExerciseSendModal({ patientId, onClose }: { patientId: string; o
   const linkText = (token: string) => `${GREETING}\n${notes ? notes + '\n' : ''}${location.origin}/ex/${token}`;
   const mediaText = (list: ExerciseMedia[]) => `${GREETING}\n${notes ? notes + '\n' : ''}${chosen.map((x) => `• ${x.name}`).join('\n')}\n\n${list.map((m) => m.url).join('\n')}`;
 
-  async function send(mode: Mode) {
+  async function send(mode: Mode, asFiles = false) {
     if (!phone) { toast.error('المريض ده مالوش رقم جوال مسجّل.'); return; }
     if (mode === 'open') { window.open(wa(), '_blank'); return; }
     if (!chosen.length) { toast.error('اختار تمرين واحد على الأقل.'); return; }
     const list = mode === 'images' ? images : mode === 'pdfs' ? pdfs : videos;
     if (mode !== 'link' && !list.length) { toast.error(mode === 'images' ? 'التمرينات المختارة مفيهاش صور.' : mode === 'pdfs' ? 'التمرينات المختارة مفيهاش ملفات PDF.' : 'التمرينات المختارة مفيهاش فيديوهات.'); return; }
     // الكمبيوتر / مفيش مشاركة ملفات: نافذة واتساب بتتفتح وقت الضغطة (عشان المتصفح مايحجبهاش)
-    const canFiles = mode !== 'link' && typeof navigator.share === 'function' && typeof navigator.canShare === 'function';
+    const canFiles = asFiles && mode !== 'link' && mode !== 'open' && typeof navigator.share === 'function' && typeof navigator.canShare === 'function';
     const win = canFiles ? null : window.open('about:blank', '_blank');
     await run(async () => {
       try {
@@ -99,13 +100,20 @@ export function ExerciseSendModal({ patientId, onClose }: { patientId: string; o
           <div className="ortho-sub" style={{ margin: '8px 0 0' }}>المختار: <span className="num">{chosen.length}</span> تمرين</div>
         </>}
       <div className="ex-send">
-        <Button icon="camera" disabled={busy || !chosen.length} onClick={() => void send('images')}>إرسال صور التمرينات</Button>
-        <Button icon="camera" disabled={busy || !chosen.length} onClick={() => void send('videos')}>إرسال فيديوهات التمرينات</Button>
-        <Button icon="doc" disabled={busy || !chosen.length} onClick={() => void send('pdfs')}>إرسال ملفات PDF</Button>
-        <Button icon="share" disabled={busy || !chosen.length} onClick={() => void send('link')}>إرسال رابط التمرينات</Button>
+        {images.length > 0 && <Button icon="camera" disabled={busy} onClick={() => void send('images')}>إرسال صور التمرينات ({images.length})</Button>}
+        {videos.length > 0 && <Button icon="camera" disabled={busy} onClick={() => void send('videos')}>إرسال فيديوهات التمرينات ({videos.length})</Button>}
+        {pdfs.length > 0 && <Button icon="doc" disabled={busy} onClick={() => void send('pdfs')}>إرسال ملفات PDF ({pdfs.length})</Button>}
+        {chosen.length > 0 && <Button icon="share" disabled={busy} onClick={() => void send('link')}>إرسال رابط التمرينات</Button>}
         <Button variant="outline" icon="phone" disabled={busy} onClick={() => void send('open')}>فتح واتساب فقط</Button>
       </div>
-      <p className="ortho-sub" style={{ marginBottom: 0 }}>مفيش حاجة بتتبعت تلقائيًا — بيتفتح واتساب والرسالة جاهزة وانت اللي تضغط «إرسال».</p>
+      {canShareSheet && (images.length > 0 || videos.length > 0 || pdfs.length > 0) && (
+        <div className="ex-send">
+          {images.length > 0 && <Button variant="outline" disabled={busy} onClick={() => void send('images', true)}>مشاركة الصور كملفات</Button>}
+          {videos.length > 0 && <Button variant="outline" disabled={busy} onClick={() => void send('videos', true)}>مشاركة الفيديوهات كملفات</Button>}
+          {pdfs.length > 0 && <Button variant="outline" disabled={busy} onClick={() => void send('pdfs', true)}>مشاركة PDF كملفات</Button>}
+        </div>
+      )}
+      <p className="ortho-sub" style={{ marginBottom: 0 }}>بيفتح شات المريض على طول والرسالة جاهزة (فيها روابط الصور/الفيديوهات/الملفات) وانت اللي تضغط «إرسال». واتساب مابيسمحش بإرفاق ملفات تلقائيًا من موقع.</p>
     </Modal>
   );
 }

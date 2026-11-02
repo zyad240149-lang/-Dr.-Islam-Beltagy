@@ -14,6 +14,7 @@ import type { CurrentMed, ExamSheet, PendingPatient, Side } from './data';
 import { DOCTOR_PREFIXES, REGION_SHEETS, TREATMENT, regionSummary, sheetFilled, type SheetId } from './regionSheets';
 import { DxSheet } from './DxSheet';
 import { dxSummary } from './dxCatalog';
+import { medCatalog } from './clinicalLists';
 
 // ---------- بنود الورقتين ----------
 const N_VISIT = ['زيارة جديدة', 'متابعة'];
@@ -305,6 +306,11 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
     onChange((x) => ({ ...x, pain: x.pain.includes(k) ? x.pain.filter((p) => p !== k) : [...x.pain, k] }));
   };
   const setMed = (i: number, patch: Partial<CurrentMed>) => onChange((x) => ({ ...x, meds: x.meds.map((m, j) => (j === i ? { ...m, ...patch } : m)) }));
+  const pickMed = (i: number, name: string) => {
+    const p = medCatalog().find((x) => x.name === name);
+    const cur = sheet.meds[i];
+    setMed(i, p ? { name, dose: cur.dose || p.dose, freq: cur.freq || p.frequency } : { name });
+  };
 
   return (
     <div className="sh" dir="rtl">
@@ -348,13 +354,15 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
             <div className="sh-meds">
               <span>اسم الدواء</span><span>الجرعة</span><span>عدد المرات</span><span />
               {sheet.meds.map((m, i) => [
-                <input key={`n${i}`} className="sh-in" dir="auto" aria-label="اسم الدواء" value={m.name} onChange={(e) => setMed(i, { name: e.target.value })} />,
+                <input key={`n${i}`} className="sh-in" dir="auto" aria-label="اسم الدواء" list="sh-meds" value={m.name} onChange={(e) => pickMed(i, e.target.value)} />,
                 <input key={`d${i}`} className="sh-in" dir="auto" aria-label="الجرعة" value={m.dose} onChange={(e) => setMed(i, { dose: e.target.value })} />,
                 <input key={`f${i}`} className="sh-in" dir="auto" aria-label="عدد المرات" value={m.freq} onChange={(e) => setMed(i, { freq: e.target.value })} />,
                 <button key={`x${i}`} type="button" className="sh-x" aria-label="حذف الدواء" onClick={() => onChange((x) => ({ ...x, meds: x.meds.filter((_, j) => j !== i) }))}><Icon name="close" size={14} /></button>,
               ])}
             </div>
           )}
+          {/* اقتراحات من قسم «الأدوية» */}
+          <datalist id="sh-meds">{medCatalog().map((p) => <option key={p.name} value={p.name}>{p.group}</option>)}</datalist>
           <button type="button" className="sh-add" onClick={() => onChange((x) => ({ ...x, meds: [...x.meds, { name: '', dose: '', freq: '' }] }))}><Icon name="plus" size={14} /> إضافة دواء</button>
           <div className="sh-lbl">الحساسية</div>
           <Checks a={a} g="n.allergy" items={N_ALLERGY} none={N_ALLERGY_NONE} />

@@ -10,6 +10,7 @@ import { fmtDate, fmtDateTime, fmtTime, todayYmd } from '../utils/format';
 import { openVisitFor } from './visits';
 import { SHEET_TAB, TREATMENT, activeSheets, regionSheet, removeSheet, sheetFilled, type SheetId } from './regionSheets';
 import { US_SHEETS, usFilled, usImage } from './ultrasoundSheets';
+import { VoiceDictation } from '../components/VoiceDictation';
 import { RaAssessment } from './RaAssessment';
 import { DoctorPainMap, RegionSheetForm, SheetSwitch } from './RegionSheet';
 import { useToast } from '../hooks/useToast';
@@ -235,6 +236,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
 
   return (
     <Modal xl title={initial ? 'تعديل الكشف' : 'كشف جديد'} onClose={cancel} footer={<>
+      <VoiceDictation />
       {(c.patientId || unlinked) && missing.length > 0 && <span className="sh-need">لسه ناقص: {missing.join('، ')}</span>}
       {unlinked && !ok && <span className="sh-need">اكتب اسم المريض الثلاثي في خانة 1</span>}
       <Button variant="outline" onClick={cancel}>إلغاء</Button>

@@ -48,7 +48,7 @@ export function raCalc(s: ExamSheet): RaResult {
   const dur = d === '≥ 6 weeks' ? 1 : 0;
   const total = joints + sero + apr + dur;
   return {
-    enabled: s.on.includes('ra|on'), approved: s.on.includes('ra|approved'), joints, sero, apr, dur, total,
+    enabled: !s.on.includes('ra|closed'), approved: s.on.includes('ra|approved'), joints, sero, apr, dur, total,
     complete: haveJoints && !!(rf || ccp) && !!(esr || crp) && !!d, classified: total >= 6, large: L, small: S,
   };
 }

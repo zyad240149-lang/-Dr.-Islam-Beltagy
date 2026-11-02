@@ -1740,3 +1740,9 @@ button.wa-link { border: 0; cursor: pointer; font-family: inherit; }
 .ra-ok.is-on { background: #d9f0df; border-style: solid; }
 .ra-ok input { margin-top: 4px; width: 18px; height: 18px; flex: none; }
 @media (max-width: 520px) { .ra-opt { flex: 1 1 100%; justify-content: space-between; } }
+
+/* الإملاء الصوتي */
+.vd { display: inline-flex; align-items: center; gap: 6px; margin-inline-end: auto; flex-wrap: wrap; }
+.vd-on { background: #c0392b; color: #fff; border-color: #c0392b; animation: vd-pulse 1.4s infinite; }
+@keyframes vd-pulse { 0% { box-shadow: 0 0 0 0 rgba(192, 57, 43, .5); } 70% { box-shadow: 0 0 0 8px rgba(192, 57, 43, 0); } 100% { box-shadow: 0 0 0 0 rgba(192, 57, 43, 0); } }
+.vd-live { font-size: 13px; color: #55657a; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

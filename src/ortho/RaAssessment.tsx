@@ -35,21 +35,17 @@ export function RaAssessment({ sheet, onChange }: { sheet: ExamSheet; onChange: 
   if (!r.enabled) {
     return (
       <div className="ra-add" dir="rtl">
-        <button type="button" className="btn btn--outline btn--sm" onClick={() => a.toggle('ra', 'on')}><Icon name="plus" size={14} /> إضافة تقييم التهاب المفاصل الروماتويدي (ACR/EULAR 2010)</button>
-        <span className="muted-sm">اختياري — مش بيظهر في كل كشف</span>
+        <button type="button" className="btn btn--outline btn--sm" onClick={() => a.toggle('ra', 'closed')}><Icon name="plus" size={14} /> فتح تقييم التهاب المفاصل الروماتويدي (ACR/EULAR 2010)</button>
+        <span className="muted-sm">مقفول — اللي اتكتب فيه محفوظ</span>
       </div>
     );
   }
-  const remove = () => {
-    if (r.total > 0 || sheet.txt['ra.note'] || sheet.txt['ra.large'] || sheet.txt['ra.small']) { if (!window.confirm('إلغاء التقييم هيمسح اللي اتكتب فيه. تكمل؟')) return; }
-    onChange((x) => ({ ...x, on: x.on.filter((o) => o !== 'ra|on' && o !== 'ra|approved' && !o.startsWith('ra.')), txt: Object.fromEntries(Object.entries(x.txt).filter(([k]) => !k.startsWith('ra.'))) }));
-  };
   const row = jointRow(r.large, r.small);
   return (
     <section className="ra">
       <header className="ra-head" dir="rtl">
         <h3>تقييم التهاب المفاصل الروماتويدي <span dir="ltr">(ACR/EULAR 2010)</span></h3>
-        <button type="button" className="ra-head__x" onClick={remove}>إلغاء التقييم</button>
+        <button type="button" className="ra-head__x" onClick={() => a.toggle('ra', 'closed')}>إغلاق</button>
       </header>
       <div className="ra-body" dir="ltr">
         <p className="ra-purpose"><b>Purpose:</b> classification criteria for RA in patients with confirmed synovitis in ≥ 1 joint and no better alternative diagnosis. Use the highest score in each domain.</p>

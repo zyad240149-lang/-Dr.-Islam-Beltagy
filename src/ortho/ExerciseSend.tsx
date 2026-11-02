@@ -9,7 +9,8 @@ import { ortho, useOrthoVersion, type Exercise, type ExerciseMedia } from './dat
 import { MediaThumb } from './Exercises';
 import { SearchBox, useClinicalCan, useRun } from './kit';
 
-type Mode = 'images' | 'videos' | 'link' | 'open';
+type Mode = 'images' | 'videos' | 'pdfs' | 'link' | 'open';
+const isPdf = (m: ExerciseMedia) => m.type === 'application/pdf';
 const GREETING = 'السلام عليكم، دي التمرينات المطلوبة منك:';
 
 const fileFor = async (m: ExerciseMedia) => {
@@ -33,7 +34,8 @@ export function ExerciseSendModal({ patientId, onClose }: { patientId: string; o
   const term = q.trim().toLowerCase();
   const shown = exercises.filter((x) => !term || x.name.toLowerCase().includes(term) || x.group.includes(q.trim()));
   const chosen = sel.map((id) => exercises.find((x) => x.id === id)).filter((x): x is Exercise => !!x);
-  const images = chosen.flatMap((x) => x.media.filter((m) => !m.type.startsWith('video/')));
+  const images = chosen.flatMap((x) => x.media.filter((m) => !m.type.startsWith('video/') && !isPdf(m)));
+  const pdfs = chosen.flatMap((x) => x.media.filter(isPdf));
   const videos = chosen.flatMap((x) => x.media.filter((m) => m.type.startsWith('video/')));
   const wa = (text?: string) => `https://wa.me/${waPhone(phone)}${text ? `?text=${encodeURIComponent(text)}` : ''}`;
   const same = !!last && last.notes === notes && last.exerciseIds.length === sel.length && last.exerciseIds.every((id, i) => id === sel[i]);
@@ -53,8 +55,8 @@ export function ExerciseSendModal({ patientId, onClose }: { patientId: string; o
     if (!phone) { toast.error('المريض ده مالوش رقم جوال مسجّل.'); return; }
     if (mode === 'open') { window.open(wa(), '_blank'); return; }
     if (!chosen.length) { toast.error('اختار تمرين واحد على الأقل.'); return; }
-    const list = mode === 'images' ? images : videos;
-    if (mode !== 'link' && !list.length) { toast.error(mode === 'images' ? 'التمرينات المختارة مفيهاش صور.' : 'التمرينات المختارة مفيهاش فيديوهات.'); return; }
+    const list = mode === 'images' ? images : mode === 'pdfs' ? pdfs : videos;
+    if (mode !== 'link' && !list.length) { toast.error(mode === 'images' ? 'التمرينات المختارة مفيهاش صور.' : mode === 'pdfs' ? 'التمرينات المختارة مفيهاش ملفات PDF.' : 'التمرينات المختارة مفيهاش فيديوهات.'); return; }
     // الكمبيوتر / مفيش مشاركة ملفات: نافذة واتساب بتتفتح وقت الضغطة (عشان المتصفح مايحجبهاش)
     const canFiles = mode !== 'link' && typeof navigator.share === 'function' && typeof navigator.canShare === 'function';
     const win = canFiles ? null : window.open('about:blank', '_blank');
@@ -89,7 +91,7 @@ export function ExerciseSendModal({ patientId, onClose }: { patientId: string; o
               <label key={x.id} className={`ex-pick__i${sel.includes(x.id) ? ' is-on' : ''}`}>
                 <input type="checkbox" checked={sel.includes(x.id)} onChange={() => toggle(x.id)} />
                 {x.media[0] && <MediaThumb m={x.media[0]} size={44} />}
-                <span style={{ flex: 1, minWidth: 0 }}><b>{x.name}</b><span className="ortho-sub" style={{ display: 'block' }}>{x.group}{x.group && ' · '}{x.media.filter((m) => !m.type.startsWith('video/')).length} صورة · {x.media.filter((m) => m.type.startsWith('video/')).length} فيديو</span></span>
+                <span style={{ flex: 1, minWidth: 0 }}><b>{x.name}</b><span className="ortho-sub" style={{ display: 'block' }}>{x.group}{x.group && ' · '}{x.media.filter((m) => !m.type.startsWith('video/') && !isPdf(m)).length} صورة · {x.media.filter((m) => m.type.startsWith('video/')).length} فيديو · {x.media.filter(isPdf).length} PDF</span></span>
               </label>
             ))}
           </div>
@@ -99,6 +101,7 @@ export function ExerciseSendModal({ patientId, onClose }: { patientId: string; o
       <div className="ex-send">
         <Button icon="camera" disabled={busy || !chosen.length} onClick={() => void send('images')}>إرسال صور التمرينات</Button>
         <Button icon="camera" disabled={busy || !chosen.length} onClick={() => void send('videos')}>إرسال فيديوهات التمرينات</Button>
+        <Button icon="doc" disabled={busy || !chosen.length} onClick={() => void send('pdfs')}>إرسال ملفات PDF</Button>
         <Button icon="share" disabled={busy || !chosen.length} onClick={() => void send('link')}>إرسال رابط التمرينات</Button>
         <Button variant="outline" icon="phone" disabled={busy} onClick={() => void send('open')}>فتح واتساب فقط</Button>
       </div>

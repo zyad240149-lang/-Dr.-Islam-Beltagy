@@ -8,8 +8,10 @@ import { Field, IconBtn, LoadState, PageHead, SearchBox, confirmDelete, useClini
 type Draft = Omit<Exercise, 'id'> & { id?: string };
 const emptyEx = (): Draft => ({ name: '', group: '', description: '', media: [] });
 const isVideo = (m: ExerciseMedia) => m.type.startsWith('video/');
+const isPdf = (m: ExerciseMedia) => m.type === 'application/pdf';
 
 export function MediaThumb({ m, size = 56 }: { m: ExerciseMedia; size?: number }) {
+  if (isPdf(m)) return <a className="ex-thumb ex-thumb--pdf" style={{ width: size, height: size }} href={m.url} target="_blank" rel="noopener noreferrer" title={m.name} onClick={(e) => e.stopPropagation()}>PDF</a>;
   return isVideo(m)
     ? <video className="ex-thumb" style={{ width: size, height: size }} src={m.url + '#t=0.1'} preload="metadata" muted playsInline />
     : <img className="ex-thumb" style={{ width: size, height: size }} src={m.url} alt={m.name} loading="lazy" />;
@@ -51,8 +53,8 @@ function ExerciseModal({ initial, groups, onClose }: { initial: Draft; groups: s
           <datalist id="ex-groups">{groups.map((g) => <option key={g} value={g} />)}</datalist>
         </Field>
         <Field label="وصف مختصر" className="span-2"><textarea className="input" rows={3} value={e.description} onChange={(x) => setE({ ...e, description: x.target.value })} placeholder="طريقة التمرين وعدد التكرارات…" /></Field>
-        <Field label="صور وفيديوهات" className="span-2">
-          <input ref={fileRef} type="file" accept="image/*,video/*" multiple hidden onChange={(x) => void onFiles(x.target.files)} />
+        <Field label="صور وفيديوهات وملفات PDF" className="span-2">
+          <input ref={fileRef} type="file" accept="image/*,video/*,application/pdf" multiple hidden onChange={(x) => void onFiles(x.target.files)} />
           <div className="ex-media">
             {e.media.map((m) => (
               <div className="ex-media__i" key={m.path}>
@@ -60,7 +62,7 @@ function ExerciseModal({ initial, groups, onClose }: { initial: Draft; groups: s
                 <button type="button" className="ex-media__x" aria-label="شيل الملف" onClick={() => removeMedia(m)}>×</button>
               </div>
             ))}
-            <Button variant="outline" size="sm" icon="upload" loading={up} onClick={() => fileRef.current?.click()}>رفع صور / فيديوهات</Button>
+            <Button variant="outline" size="sm" icon="upload" loading={up} onClick={() => fileRef.current?.click()}>رفع صور / فيديوهات / PDF</Button>
           </div>
         </Field>
       </div>
@@ -101,7 +103,7 @@ export default function Exercises() {
                     <div className="ex-row__txt">
                       <b>{x.name}</b>
                       {x.description && <div className="ortho-sub">{x.description}</div>}
-                      <div className="ortho-sub">{x.media.filter((m) => !isVideo(m)).length} صورة · {x.media.filter(isVideo).length} فيديو</div>
+                      <div className="ortho-sub">{x.media.filter((m) => !isVideo(m) && !isPdf(m)).length} صورة · {x.media.filter(isVideo).length} فيديو · {x.media.filter(isPdf).length} PDF</div>
                     </div>
                     <div style={{ display: 'flex', gap: 6 }}>
                       {perm.edit && <IconBtn icon="edit" label="تعديل" onClick={() => setEdit({ ...x })} />}

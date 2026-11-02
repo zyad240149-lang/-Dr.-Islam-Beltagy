@@ -1698,3 +1698,5 @@ img, video, canvas, svg { max-width: 100%; }
 .exs__card h2 { font-size: 17px; margin: 0 0 6px; }
 .exs__card p { margin: 0 0 10px; line-height: 1.7; white-space: pre-wrap; }
 .exs__card img, .exs__card video { display: block; width: 100%; border-radius: 10px; margin-top: 8px; background: #000; }
+.ex-thumb--pdf { display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: #b3261e; background: #fdecea; border-color: #f3b8b3; text-decoration: none; }
+.exs__pdf { display: block; margin-top: 8px; padding: 12px; border-radius: 10px; background: #fdecea; color: #b3261e; font-weight: 700; text-align: center; text-decoration: none; }

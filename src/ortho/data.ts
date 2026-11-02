@@ -276,7 +276,7 @@ export const ortho = {
   async uploadExerciseMedia(file: File): Promise<ExerciseMedia> {
     if (!net.isOnline()) throw new Error('رفع الصور والفيديوهات محتاج اتصال بالإنترنت.');
     if (file.size > 50 * 1024 * 1024) throw new Error('حجم الملف أكبر من 50 ميجابايت.');
-    if (!/^(image\/(png|jpeg|webp|gif)|video\/(mp4|webm|quicktime))$/.test(file.type)) throw new Error('ارفع صورة (JPG/PNG/WEBP/GIF) أو فيديو (MP4/WEBM/MOV).');
+    if (!/^(image\/(png|jpeg|webp|gif)|video\/(mp4|webm|quicktime)|application\/pdf)$/.test(file.type)) throw new Error('ارفع صورة (JPG/PNG/WEBP/GIF) أو فيديو (MP4/WEBM/MOV) أو PDF.');
     const ext = (file.name.split('.').pop() ?? 'bin').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8) || 'bin';
     const path = `${crypto.randomUUID()}.${ext}`;
     const { error } = await supabase.storage.from('exercise-media').upload(path, file, { contentType: file.type, upsert: false });

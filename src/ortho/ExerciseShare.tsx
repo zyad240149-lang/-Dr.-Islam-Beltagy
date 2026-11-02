@@ -23,9 +23,11 @@ export default function ExerciseShare() {
         <section className="exs__card" key={i}>
           <h2><span className="num">{i + 1}</span> {x.name}</h2>
           {x.description && <p>{x.description}</p>}
-          {x.media.map((m) => m.type.startsWith('video/')
-            ? <video key={m.path} src={m.url} controls playsInline preload="metadata" />
-            : <img key={m.path} src={m.url} alt={x.name} loading="lazy" />)}
+          {x.media.map((m) => m.type === 'application/pdf'
+            ? <a key={m.path} className="exs__pdf" href={m.url} target="_blank" rel="noopener noreferrer">فتح ملف PDF — {m.name}</a>
+            : m.type.startsWith('video/')
+              ? <video key={m.path} src={m.url} controls playsInline preload="metadata" />
+              : <img key={m.path} src={m.url} alt={x.name} loading="lazy" />)}
         </section>
       ))}
     </div>

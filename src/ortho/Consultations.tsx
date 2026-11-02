@@ -10,6 +10,7 @@ import { fmtDate, fmtDateTime, fmtTime, todayYmd } from '../utils/format';
 import { openVisitFor } from './visits';
 import { SHEET_TAB, TREATMENT, activeSheets, regionSheet, removeSheet, sheetFilled, type SheetId } from './regionSheets';
 import { US_SHEETS, usFilled, usImage } from './ultrasoundSheets';
+import { RaAssessment } from './RaAssessment';
 import { DoctorPainMap, RegionSheetForm, SheetSwitch } from './RegionSheet';
 import { useToast } from '../hooks/useToast';
 import { IMAGING_KIND, IMAGING_STATUS, REGIONS, SIDE, isIncomplete, isUnlinked, ortho, useOrthoVersion, type Attachment, type Consultation, type Injection, type ImagingKind, type ImagingRequest, type Medication, type Side } from './data';
@@ -309,6 +310,8 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
                     icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap(`${regionSheet(id)!.prefix}.dx.other`)} />}
               </section>
             ))}
+            {/* اختياري: تقييم الروماتويد ACR/EULAR 2010 — مش جزء إجباري من الكشف */}
+            <RaAssessment sheet={sheet} onChange={changeSheet} />
           </>
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('nurse')}>رجوع: الشيت العام</Button>

@@ -1702,3 +1702,41 @@ img, video, canvas, svg { max-width: 100%; }
 .exs__pdf { display: block; margin-top: 8px; padding: 12px; border-radius: 10px; background: #fdecea; color: #b3261e; font-weight: 700; text-align: center; text-decoration: none; }
 button.wa-link { border: 0; cursor: pointer; font-family: inherit; }
 .sh-in--area { width: 100%; min-height: 72px; resize: vertical; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-family: inherit; }
+
+/* تقييم الروماتويد ACR/EULAR 2010 */
+.ra-add { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
+.ra { margin: 16px 0; border: 1px solid #b9cde6; border-radius: 14px; overflow: hidden; background: #f4f8fd; }
+.ra-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; background: linear-gradient(90deg, #0b4a8f, #1b6bb8); color: #fff; border-bottom: 4px solid #3fa34d; }
+.ra-head h3 { margin: 0; font-size: 17px; }
+.ra-head__x { background: rgba(255, 255, 255, .15); color: #fff; border: 1px solid rgba(255, 255, 255, .4); border-radius: 8px; padding: 4px 10px; cursor: pointer; font-family: inherit; }
+.ra-body { padding: 14px; display: grid; gap: 12px; }
+.ra-purpose { margin: 0; padding: 10px 12px; border: 1px solid #9fd0b0; border-radius: 10px; background: #fff; font-size: 14px; }
+.ra-dom { border: 1px solid #b9cde6; border-radius: 12px; overflow: hidden; background: #fff; }
+.ra-dom__h { display: flex; align-items: center; justify-content: space-between; margin: 0; padding: 9px 12px; background: #0b4a8f; color: #fff; font-size: 15px; }
+.ra-dom__h small { opacity: .8; font-weight: 400; }
+.ra-dom__b { padding: 10px 12px; }
+.ra-sc { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; padding: 0 6px; border-radius: 13px; background: #e4eefa; color: #0b4a8f; font-weight: 800; }
+.ra-sc--big { background: #fff; color: #0b4a8f; min-width: 32px; height: 32px; font-size: 16px; }
+.ra-joints { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 8px; }
+.ra-joints label { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.ra-joints input { width: 70px; }
+.ra-rows { list-style: none; margin: 0; padding: 0; }
+.ra-rows li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 10px; border-top: 1px solid #e1e9f4; }
+.ra-rows li:nth-child(odd) { background: #f1f6fc; }
+.ra-rows li.is-on { background: #d9f0df; outline: 2px solid #3fa34d; outline-offset: -2px; font-weight: 700; }
+.ra-opts { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 8px; }
+.ra-opt { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border: 1px solid #b9cde6; border-radius: 10px; background: #f1f6fc; cursor: pointer; font-family: inherit; font-size: 14px; }
+.ra-opt.is-on { background: #d9f0df; border-color: #3fa34d; font-weight: 700; }
+.ra-hint { margin: 2px 0 0; font-size: 13px; color: #55657a; }
+.ra-total { border-radius: 12px; overflow: hidden; border: 1px solid #b9cde6; background: #fff; }
+.ra-total > div { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: linear-gradient(90deg, #0b4a8f, #3fa34d); color: #fff; font-size: 17px; font-weight: 700; }
+.ra-total > div b { background: #fff; color: #0b4a8f; border-radius: 12px; padding: 4px 16px; font-size: 24px; }
+.ra-total > div small { font-size: 16px; }
+.ra-total p { margin: 0; padding: 10px 14px; font-weight: 600; }
+.ra-total.is-yes p { color: #1e7a32; }
+.ra-warn { color: #b3261e; font-weight: 600; }
+.ra-note { display: grid; gap: 4px; font-weight: 600; }
+.ra-ok { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px dashed #3fa34d; border-radius: 10px; background: #fff; cursor: pointer; }
+.ra-ok.is-on { background: #d9f0df; border-style: solid; }
+.ra-ok input { margin-top: 4px; width: 18px; height: 18px; flex: none; }
+@media (max-width: 520px) { .ra-opt { flex: 1 1 100%; justify-content: space-between; } }

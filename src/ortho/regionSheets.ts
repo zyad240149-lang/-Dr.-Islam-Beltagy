@@ -318,7 +318,7 @@ export const SHEET_ORDER: SheetId[] = ['hipknee', 'ankle', 'neckshoulder', 'hand
 // اسم الشيت قدام الطبيب: «كشف …»
 export const SHEET_TAB: Record<SheetId, string> = { hipknee: 'كشف الورك والركبة', ...Object.fromEntries(REGION_SHEETS.map((d) => [d.id, d.id === 'cast' || d.id === 'postop' || d.id === 'peds' ? d.tab : `كشف ${d.tab}`])) } as Record<SheetId, string>;
 const PREFIX: Record<SheetId, string> = { hipknee: 'x', ...Object.fromEntries(REGION_SHEETS.map((d) => [d.id, d.prefix])) } as Record<SheetId, string>;
-export const DOCTOR_PREFIXES = Object.values(PREFIX);
+export const DOCTOR_PREFIXES = [...Object.values(PREFIX), 'ra'];
 
 // منطقة جسم الإنسان (bodyRegions) ← الشيت بتاعها. الظاهر على الجسم: المناطق اللي ليها شيت بس (MAP_REGION_IDS)؛
 // المناطق المخفية متسابة هنا عشان أماكن ألم قديمة لو اتسجلت تفتح الشيت الأقرب

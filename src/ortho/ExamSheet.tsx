@@ -13,6 +13,7 @@ import type { Patient } from '../types';
 import type { CurrentMed, ExamSheet, PendingPatient, Side } from './data';
 import { DOCTOR_PREFIXES, REGION_SHEETS, TREATMENT, regionSummary, sheetFilled, type SheetId } from './regionSheets';
 import { DxSheet } from './DxSheet';
+import { raSummary } from './raScore';
 import { dxSummary } from './dxCatalog';
 import { medCatalog } from './clinicalLists';
 
@@ -240,7 +241,7 @@ export function sheetSummary(s: ExamSheet, side: Side = 'na') {
     ['Special tests +ve', join([sec('Hip', [...picked(s, 'x.st.hip', X_ST_HIP), tx(s, 'x.st.hip.other')]), sec('Knee', [...picked(s, 'x.st.knee', X_ST_KNEE), tx(s, 'x.st.knee.other')])], '; ')],
     ['Imaging', img],
   ];
-  const examination = join([...lines.map(([l, v]) => v && `${l} — ${v}`), tx(s, 'x.notes'), ...regions.flatMap(({ d, r }) => r.examination.map((t) => tag(d.tab, t)))], '\n');
+  const examination = join([...lines.map(([l, v]) => v && `${l} — ${v}`), tx(s, 'x.notes'), ...regions.flatMap(({ d, r }) => r.examination.map((t) => tag(d.tab, t))), raSummary(s)], '\n');
 
   const diagnosis = join([dxSummary('x', 'hipknee', (g, i) => has(s, g, i), (k) => tx(s, k)), ...regions.map(({ d, r }) => r.diagnosis && tag(d.tab, r.diagnosis))], ' · ');
   const plan = join([...picked(s, 'x.plan', X_PLAN), tx(s, 'x.plan.fu') && `Follow up after ${tx(s, 'x.plan.fu')}`, tx(s, 'x.plan.other'), ...regions.map(({ d, r }) => r.plan && tag(d.tab, r.plan)), regionSummary(TREATMENT, s, side).plan]);

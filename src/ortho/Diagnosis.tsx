@@ -14,6 +14,7 @@ import { db } from '../data/db';
 import { useDbVersion } from '../hooks/useDb';
 import { APPT_STATUS, fmtDate, fmtTime, todayYmd } from '../utils/format';
 import { normalizeSearch, patientMatches } from '../utils/phoneUtils';
+import { WhatsappLink } from '../components/WhatsappLink';
 import { isTripleName } from './ExamSheet';
 import { useOfflineState } from '../offline';
 
@@ -121,7 +122,7 @@ export default function Diagnosis() {
           <Button variant="outline" size="sm" icon="chevron" onClick={() => pick('')}>رجوع</Button>
           <div className="dx-patbar__who">
             <b>{selected?.fullName ?? patientName(patientId)}</b>
-            <small>ملف <span className="num">{patientFile(patientId)}</span>{selected?.phone && <> · <bdi dir="ltr" className="num">{selected.phone}</bdi></>}</small>
+            <small>ملف <span className="num">{patientFile(patientId)}</span>{selected?.phone && <> · <bdi dir="ltr" className="num">{selected.phone}</bdi><WhatsappLink phone={selected.phone} /></>}</small>
           </div>
           <div className="dx-patbar__act">
             <Link to={`/patients/${patientId}`} className="btn btn--outline btn--sm">ملف المريض</Link>
@@ -162,7 +163,7 @@ export default function Diagnosis() {
                     <span className="dx-queue__time num">{fmtDate(c.date)}</span>
                     <div className="dx-queue__who">
                       <b>{pp?.name || '—'}</b>
-                      <small>{pp?.phone && <><bdi dir="ltr" className="num">{pp.phone}</bdi> · </>}{pp?.age && <>السن <span className="num">{pp.age}</span> · </>}{c.diagnosis || 'التشخيص لسه ما اتحددش'}{c.linkNote && !local ? ` — ${c.linkNote}` : ''}</small>
+                      <small>{pp?.phone && <><bdi dir="ltr" className="num">{pp.phone}</bdi><WhatsappLink phone={pp.phone} /> · </>}{pp?.age && <>السن <span className="num">{pp.age}</span> · </>}{c.diagnosis || 'التشخيص لسه ما اتحددش'}{c.linkNote && !local ? ` — ${c.linkNote}` : ''}</small>
                     </div>
                     <LinkBadge c={c} />
                     <div className="dx-queue__act">
@@ -203,7 +204,7 @@ export default function Diagnosis() {
                             <div className="dx-queue__who">
                               <b>{patientName(a.patientId)}</b>
                               <small>
-                                {p?.phone && <><bdi dir="ltr" className="num">{p.phone}</bdi> · </>}ملف <span className="num">{patientFile(a.patientId)}</span>
+                                {p?.phone && <><bdi dir="ltr" className="num">{p.phone}</bdi><WhatsappLink phone={p.phone} /> · </>}ملف <span className="num">{patientFile(a.patientId)}</span>
                                 {' '}· زيارة <span className="num">{a.no}</span> · {db.service(a.serviceId)?.name ?? '—'}{doctor ? ` · ${doctor}` : ''}
                               </small>
                             </div>
@@ -255,7 +256,7 @@ export default function Diagnosis() {
                       <span className="dx-queue__time num">{fmtTime(a.time)}</span>
                       <div className="dx-queue__who">
                         <b>{patientName(a.patientId)}</b>
-                        <small>{p?.phone && <><bdi dir="ltr" className="num">{p.phone}</bdi> · </>}ملف <span className="num">{patientFile(a.patientId)}</span> · زيارة <span className="num">{a.no}</span></small>
+                        <small>{p?.phone && <><bdi dir="ltr" className="num">{p.phone}</bdi><WhatsappLink phone={p.phone} /> · </>}ملف <span className="num">{patientFile(a.patientId)}</span> · زيارة <span className="num">{a.no}</span></small>
                       </div>
                       {done ? <span className="badge badge--ok">اتعملت متابعة الزيارة</span> : <span className="badge badge--warn">مستني المتابعة</span>}
                       <div className="dx-queue__act">
@@ -284,7 +285,7 @@ export default function Diagnosis() {
                         <span className="dx-queue__time num">{fmtDate(x.last.date)}</span>
                         <div className="dx-queue__who">
                           <b>{x.p?.fullName ?? patientName(x.id)}</b>
-                          <small>{x.p?.phone && <><bdi dir="ltr" className="num">{x.p.phone}</bdi> · </>}ملف <span className="num">{patientFile(x.id)}</span> · آخر تشخيص: <bdi>{x.last.diagnosis || 'لسه ما اتحددش'}</bdi></small>
+                          <small>{x.p?.phone && <><bdi dir="ltr" className="num">{x.p.phone}</bdi><WhatsappLink phone={x.p.phone} /> · </>}ملف <span className="num">{patientFile(x.id)}</span> · آخر تشخيص: <bdi>{x.last.diagnosis || 'لسه ما اتحددش'}</bdi></small>
                         </div>
                         <span className="badge badge--warn">ما اتعملوش متابعة</span>
                         <div className="dx-queue__act">
@@ -314,7 +315,7 @@ export default function Diagnosis() {
                           <span className="dx-queue__time num">{fmtDate(all[0].date)}</span>
                           <div className="dx-queue__who">
                             <b>{x.p?.fullName ?? patientName(x.id)}</b>
-                            <small>{x.p?.phone && <><bdi dir="ltr" className="num">{x.p.phone}</bdi> · </>}ملف <span className="num">{patientFile(x.id)}</span> · آخر تشخيص: <bdi>{x.last.diagnosis || 'لسه ما اتحددش'}</bdi></small>
+                            <small>{x.p?.phone && <><bdi dir="ltr" className="num">{x.p.phone}</bdi><WhatsappLink phone={x.p.phone} /> · </>}ملف <span className="num">{patientFile(x.id)}</span> · آخر تشخيص: <bdi>{x.last.diagnosis || 'لسه ما اتحددش'}</bdi></small>
                           </div>
                           <span className="badge badge--ok"><span className="num">{all.length}</span> {all.length > 1 ? 'متابعات' : 'متابعة'} — آخرها {fmtDate(all[0].date)}</span>
                           <div className="dx-queue__act">
@@ -347,7 +348,7 @@ export default function Diagnosis() {
                         <div className="dx-queue__who">
                           <b>{x.p?.fullName ?? patientName(x.id)}</b>
                           <small>
-                            {x.p?.phone && <><bdi dir="ltr" className="num">{x.p.phone}</bdi> · </>}ملف <span className="num">{patientFile(x.id)}</span> · <span className="num">{x.count}</span> {x.count > 1 ? 'تشخيصات' : 'تشخيص'}
+                            {x.p?.phone && <><bdi dir="ltr" className="num">{x.p.phone}</bdi><WhatsappLink phone={x.p.phone} /> · </>}ملف <span className="num">{patientFile(x.id)}</span> · <span className="num">{x.count}</span> {x.count > 1 ? 'تشخيصات' : 'تشخيص'}
                             {' '}· آخر تشخيص: <bdi>{x.last.diagnosis || 'لسه ما اتحددش'}</bdi>
                           </small>
                         </div>

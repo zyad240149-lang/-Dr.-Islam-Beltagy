@@ -1669,3 +1669,7 @@ img, video, canvas, svg { max-width: 100%; }
 .cx-legacy { margin-top: 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
 .cx-legacy-box { margin-bottom: 12px; border: 1px solid var(--brand-700); border-radius: 12px; padding: 8px 12px; background: var(--brand-50); }
 .cx-legacy-box > summary { cursor: pointer; font-weight: 700; color: var(--brand-700); }
+
+/* زرار واتساب جنب رقم المريض */
+.wa-link { display: inline-flex; align-items: center; gap: 4px; margin-inline-start: 6px; padding: 3px 6px; border-radius: 6px; color: #1e8d4b; background: rgba(37, 168, 90, .12); font-weight: 600; font-size: 13px; text-decoration: none; vertical-align: middle; }
+.wa-link:hover { background: #25a85a; color: #fff; }

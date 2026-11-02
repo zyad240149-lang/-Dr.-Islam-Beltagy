@@ -1,3 +1,4 @@
+import { WhatsappLink } from '../components/WhatsappLink';
 import { CompletenessBadge } from '../components/PatientCompleteness';
 import { LocalDataNote, PendingSyncTag } from '../components/OfflineStatus';
 import { useEffect, useState, type ReactNode } from 'react';
@@ -133,7 +134,7 @@ function PatientsList({ tabs }: { tabs: ReactNode }) {
                       <tr key={p.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/patients/${p.id}`)}>
                         <td className="num">{p.fileNo}</td>
                         <td style={{ fontWeight: 600 }}>{p.fullName}{p.pendingSync && <PendingSyncTag />}<div><CompletenessBadge patient={p} full /></div>{p.balance > 0 && can('invoices', 'view') && <div className="muted-sm">مستحق: <span className="num">{money(p.balance)}</span></div>}</td>
-                        <td className="num">{p.phone}</td>
+                        <td className="num" style={{ whiteSpace: 'nowrap' }}>{p.phone}<WhatsappLink phone={p.phone} /></td>
                         <td>{p.doctorName || '—'}</td>
                         <td>{p.lastVisit ? fmtDate(p.lastVisit) : '—'}</td>
                         <td><StatusBadge label={p.active ? 'نشط' : 'معطّل'} tone={p.active ? 'ok' : 'muted'} /></td>

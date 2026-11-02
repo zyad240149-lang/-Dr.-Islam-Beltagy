@@ -1,4 +1,5 @@
 import { IncompleteAlert } from '../components/PatientCompleteness';
+import { WhatsappLink } from '../components/WhatsappLink';
 import { PendingSyncTag } from '../components/OfflineStatus';
 import { patientGaps } from '../utils/patientGaps';
 import { sendWhatsApp } from '../data/whatsappSend';
@@ -115,7 +116,7 @@ export default function PatientProfile() {
               <button type="button" className="btn btn--outline btn--sm" title="نسخ رقم الملف" aria-label="نسخ رقم الملف" style={{ marginInline: 8, display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 600 }}
                 onClick={() => { navigator.clipboard.writeText(patient.fileNo).then(() => toast.success('تم نسخ رقم الملف'), () => toast.error('تعذّر النسخ')); }}>
                 <Icon name="copy" size={15} /> نسخ رقم الملف
-              </button> · {patient.genderUnknown ? 'الجنس غير محدد' : patient.gender === 'male' ? 'رجل' : 'امرأة'}{age(patient.birthDate) !== null ? ` · ${age(patient.birthDate)} سنة` : ''} · جوال <span className="num" dir="ltr">{patient.phone}</span>{patient.phone && <button type="button" className="btn btn--outline btn--sm" style={{ marginInline: 8, display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 600 }} onClick={() => navigator.clipboard.writeText(patient.phone).then(() => toast.success('تم نسخ رقم الجوال'), () => toast.error('تعذّر النسخ'))}><Icon name="copy" size={15} /> نسخ الجوال</button>}</p>
+              </button> · {patient.genderUnknown ? 'الجنس غير محدد' : patient.gender === 'male' ? 'رجل' : 'امرأة'}{age(patient.birthDate) !== null ? ` · ${age(patient.birthDate)} سنة` : ''} · جوال <span className="num" dir="ltr">{patient.phone}</span><WhatsappLink phone={patient.phone} label />{patient.phone && <button type="button" className="btn btn--outline btn--sm" style={{ marginInline: 8, display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 600 }} onClick={() => navigator.clipboard.writeText(patient.phone).then(() => toast.success('تم نسخ رقم الجوال'), () => toast.error('تعذّر النسخ'))}><Icon name="copy" size={15} /> نسخ الجوال</button>}</p>
             {activePlan && activeStats && <p className="muted" style={{ fontSize: 13 }}>الخطة الحالية: {activePlan.diagnosis} — مكتملة {activeStats.completed} من {activeStats.total}، متبقية {activeStats.remaining}</p>}
             <div style={{ marginTop: 6 }}>
               {account === 'loading' ? null
@@ -143,7 +144,7 @@ export default function PatientProfile() {
           {tab === 0 && (
             <dl className="dl">
               <div><dt>الاسم الكامل</dt><dd>{patient.fullName}</dd></div>
-              <div><dt>رقم الجوال</dt><dd className="num">{patient.phone}</dd></div>
+              <div><dt>رقم الجوال</dt><dd className="num">{patient.phone}<WhatsappLink phone={patient.phone} /></dd></div>
               <div><dt>الجنسية</dt><dd>{patient.nationality === 'non_saudi' ? 'أجنبي' : 'مصري'}</dd></div>
               {patient.nationalId && <div><dt>{patient.nationality === 'non_saudi' ? 'رقم جواز السفر' : 'الرقم القومي'}</dt><dd className="num">{patient.nationalId}</dd></div>}
               <div><dt>تاريخ الميلاد</dt><dd>{patient.birthDate ? fmtDate(patient.birthDate) : '—'}</dd></div>

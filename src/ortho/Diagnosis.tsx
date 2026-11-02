@@ -124,7 +124,7 @@ export default function Diagnosis() {
           <Button variant="outline" size="sm" icon="chevron" onClick={() => pick('')}>رجوع</Button>
           <div className="dx-patbar__who">
             <b>{selected?.fullName ?? patientName(patientId)}</b>
-            <small>ملف <span className="num">{patientFile(patientId)}</span>{selected?.phone && <> · <bdi dir="ltr" className="num">{selected.phone}</bdi><WhatsappLink phone={selected.phone} /></>}</small>
+            <small>ملف <span className="num">{patientFile(patientId)}</span>{selected?.phone && <> · <bdi dir="ltr" className="num">{selected.phone}</bdi><WhatsappLink phone={selected.phone} patientId={patientId} /></>}</small>
           </div>
           <div className="dx-patbar__act">
             <Link to={`/patients/${patientId}`} className="btn btn--outline btn--sm">ملف المريض</Link>
@@ -216,7 +216,7 @@ export default function Diagnosis() {
                               : local ? <span className="badge badge--warn">لم يكتمل</span>
                               : <span className={`badge badge--${APPT_STATUS[a.status].tone}`}>{APPT_STATUS[a.status].label}</span>}
                             <div className="dx-queue__act">
-                              {p?.phone && <WhatsappLink phone={p.phone} button />}
+                              {p?.phone && <WhatsappLink phone={p.phone} patientId={p.id} button />}
                               {!perm.add ? null
                                 : state === 'incomplete' && consult ? <Button size="sm" icon="refresh" onClick={() => openSaved(consult, true)}>استكمال</Button>
                                 : local ? <Button size="sm" icon="refresh" onClick={() => resumeDraft(a.patientId, true)}>استكمال</Button>
@@ -265,7 +265,7 @@ export default function Diagnosis() {
                       </div>
                       {done ? <span className="badge badge--ok">اتعملت متابعة الزيارة</span> : <span className="badge badge--warn">مستني المتابعة</span>}
                       <div className="dx-queue__act">
-                        {p?.phone && <WhatsappLink phone={p.phone} button />}
+                        {p?.phone && <WhatsappLink phone={p.phone} patientId={p.id} button />}
                         {done && <Button size="sm" variant="outline" icon="print" onClick={() => printNursing(done)}>طباعة</Button>}
                         {done ? perm.edit && <Button size="sm" variant="outline" icon="edit" onClick={() => setSheet({ patientId: a.patientId, appointmentId: a.id, initial: done })}>تعديل</Button>
                           : perm.add && <Button size="sm" icon="clipboard" onClick={() => setSheet({ patientId: a.patientId, appointmentId: a.id })}>متابعة</Button>}
@@ -295,7 +295,7 @@ export default function Diagnosis() {
                         </div>
                         <span className="badge badge--warn">ما اتعملوش متابعة</span>
                         <div className="dx-queue__act">
-                          {x.p?.phone && <WhatsappLink phone={x.p.phone} button />}
+                          {x.p?.phone && <WhatsappLink phone={x.p.phone} patientId={x.id} button />}
                           {perm.add && <Button size="sm" icon="clipboard" onClick={() => openSheet(x.id)}>متابعة</Button>}
                           <Button size="sm" variant="outline" onClick={() => pick(x.id)}>ملف التشخيص</Button>
                         </div>
@@ -326,7 +326,7 @@ export default function Diagnosis() {
                           </div>
                           <span className="badge badge--ok"><span className="num">{all.length}</span> {all.length > 1 ? 'متابعات' : 'متابعة'} — آخرها {fmtDate(all[0].date)}</span>
                           <div className="dx-queue__act">
-                            {x.p?.phone && <WhatsappLink phone={x.p.phone} button />}
+                            {x.p?.phone && <WhatsappLink phone={x.p.phone} patientId={x.id} button />}
                             <Button size="sm" variant="outline" icon="print" onClick={() => printNursing(all[0])}>طباعة آخر متابعة</Button>
                             {perm.add && <Button size="sm" icon="clipboard" onClick={() => openSheet(x.id)}>متابعة جديدة</Button>}
                             <Button size="sm" variant="outline" onClick={() => pick(x.id)}>الملف</Button>
@@ -362,7 +362,7 @@ export default function Diagnosis() {
                         </div>
                         {x.incomplete > 0 ? <span className="badge badge--warn">فيه تشخيص يحتاج استكمال</span> : <span />}
                         <span className="dx-queue__act" onClick={(e) => e.stopPropagation()}>
-                          {x.p?.phone && <WhatsappLink phone={x.p.phone} button />}
+                          {x.p?.phone && <WhatsappLink phone={x.p.phone} patientId={x.id} button />}
                           {/* إضافة شيت = يفتح آخر تشخيص (حتى لو من البرنامج القديم) على كشف الطبيب ويتكمّل في نفس الكشف */}
                           {perm.edit && <Button size="sm" variant="outline" icon="plus" onClick={() => openSaved(x.last, true)}>إضافة شيت</Button>}
                           {perm.add && <Button size="sm" icon="stethoscope" onClick={() => startPicked(x.id)}>{drafts.some((d) => d.patientId === x.id) ? 'استكمال التشخيص' : 'تشخيص جديد'}</Button>}

@@ -1675,3 +1675,26 @@ img, video, canvas, svg { max-width: 100%; }
 .wa-link:hover { background: #25a85a; color: #fff; }
 .wa-btn { color: #1e8d4b; }
 .wa-btn:hover { background: #25a85a; border-color: #25a85a; color: #fff; }
+
+/* التمرينات العلاجية */
+.ex-thumb { object-fit: cover; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); flex: none; }
+.ex-thumb--none { display: inline-block; width: 56px; height: 56px; }
+.ex-row { align-items: center; gap: 12px; }
+.ex-row__media { display: flex; gap: 6px; flex: none; }
+.ex-row__txt { flex: 1; min-width: 0; }
+.ex-media { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.ex-media__i { position: relative; }
+.ex-media__x { position: absolute; top: -6px; inset-inline-start: -6px; width: 20px; height: 20px; border-radius: 50%; border: 0; background: #c0392b; color: #fff; cursor: pointer; line-height: 1; }
+.ex-pick { display: flex; flex-direction: column; gap: 6px; max-height: 40vh; overflow: auto; margin: 8px 0; }
+.ex-pick__i { display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; background: var(--surface); }
+.ex-pick__i.is-on { border-color: #25a85a; background: rgba(37, 168, 90, .08); }
+.ex-pick__i input { width: 18px; height: 18px; flex: none; }
+.ex-send { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+@media (max-width: 520px) { .ex-send { grid-template-columns: 1fr; } .ex-row { flex-wrap: wrap; } }
+.exs { max-width: 640px; margin: 0 auto; padding: 16px; font-family: inherit; color: #1c2333; }
+.exs h1 { font-size: 22px; text-align: center; margin: 8px 0 16px; }
+.exs__msg { text-align: center; color: #667; }
+.exs__card { background: #fff; border: 1px solid #e3e6ee; border-radius: 14px; padding: 14px; margin-bottom: 14px; }
+.exs__card h2 { font-size: 17px; margin: 0 0 6px; }
+.exs__card p { margin: 0 0 10px; line-height: 1.7; white-space: pre-wrap; }
+.exs__card img, .exs__card video { display: block; width: 100%; border-radius: 10px; margin-top: 8px; background: #000; }

@@ -42,6 +42,8 @@ const Imaging = lazy(() => import('./ortho/Imaging'));
 const Fractures = lazy(() => import('./ortho/Fractures'));
 const Surgeries = lazy(() => import('./ortho/Surgeries'));
 const Medications = lazy(() => import('./ortho/Medications'));
+const Exercises = lazy(() => import('./ortho/Exercises'));
+const ExerciseShare = lazy(() => import('./ortho/ExerciseShare'));
 const Diagnosis = lazy(() => import('./ortho/Diagnosis'));
 const Landing = lazy(() => import('./landing/Landing'));
 const SignUp = lazy(() => import('./pwa/SignUp'));
@@ -96,6 +98,7 @@ const ROUTES: { path: string; area: Area; anyOf?: Area[]; el: JSX.Element }[] = 
   { path: '/fractures', area: 'patients', el: <Fractures /> },
   { path: '/surgeries', area: 'patients', el: <Surgeries /> },
   { path: '/medications', area: 'patients', el: <Medications /> },
+  { path: '/exercises', area: 'patients', el: <Exercises /> },
   { path: '/employees', area: 'employees', el: <Staff /> },
   { path: '/work-hours', area: 'workhours', el: <WorkHours /> },
   { path: '/requests', area: 'requests', el: <Requests /> },
@@ -158,6 +161,7 @@ export default function App() {
       <Route path="/account" element={<Protected area="dashboard"><Account /></Protected>} />
       <Route path="/" element={<HomeGate />} />
       <Route path="/signup" element={loading ? <FullLoader /> : user ? <Navigate to="/" replace /> : patient ? <Navigate to="/me" replace /> : <Suspense fallback={<FullLoader />}><SignUp /></Suspense>} />
+      <Route path="/ex/:token" element={<Suspense fallback={<FullLoader />}><ExerciseShare /></Suspense>} />
       <Route path="/site" element={<Suspense fallback={<FullLoader />}><Landing /></Suspense>} />
       {ROUTES.filter((r) => r.path !== '/').map((r) => <Route key={r.path} path={r.path} element={<Protected area={r.area} anyOf={r.anyOf}>{r.el}</Protected>} />)}
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -59,6 +59,10 @@ export interface InjectionSheet {
 export interface Injection { id: string; patientId: string; appointmentId?: string | null; date: string; sheet: InjectionSheet; createdBy?: string | null }
 // قايمة أسامي الأدوية (قسم «الأدوية» — مش مخزون): اقتراحات الروشتة
 export interface MedItem { id: string; name: string; group: string; dose: string; frequency: string; duration: string }
+// التمرينات العلاجية: مكتبة تمرينات (اسم + وصف + صور/فيديوهات) وخطة تمرينات لكل مريض مربوطة بتشخيصه
+export interface ExerciseMedia { path: string; url: string; type: string; name: string }
+export interface Exercise { id: string; name: string; group: string; description: string; media: ExerciseMedia[] }
+export interface ExercisePlan { id: string; patientId: string; consultationId?: string | null; date: string; exerciseIds: string[]; notes: string; shareToken: string }
 export interface Fracture { id: string; patientId: string; bone: string; side: Side; kind: string; injuryDate: string; castDate: string; removalDue: string; status: FractureStatus }
 
 export const SIDE: Record<Side, string> = { right: 'يمين', left: 'شمال', both: 'الجانبين', na: '—' };
@@ -90,9 +94,11 @@ const COLUMNS: Record<Kind, string[]> = {
   nursing: ['patient_id', 'appointment_id', 'date', 'sheet'],
   injections: ['patient_id', 'appointment_id', 'date', 'sheet'],
   medications: ['name', 'group', 'dose', 'frequency', 'duration'],
+  exercises: ['name', 'group', 'description', 'media'],
+  exercise_plans: ['patient_id', 'consultation_id', 'date', 'exercise_ids', 'notes', 'share_token'],
 };
-export type Kind = 'consultations' | 'imaging' | 'surgeries' | 'fractures' | 'nursing' | 'injections' | 'medications';
-type Of<K extends Kind> = K extends 'medications' ? MedItem : K extends 'consultations' ? Consultation : K extends 'imaging' ? Imaging : K extends 'surgeries' ? Surgery : K extends 'nursing' ? Nursing : K extends 'injections' ? Injection : Fracture;
+export type Kind = 'consultations' | 'imaging' | 'surgeries' | 'fractures' | 'nursing' | 'injections' | 'medications' | 'exercises' | 'exercise_plans';
+type Of<K extends Kind> = K extends 'exercises' ? Exercise : K extends 'exercise_plans' ? ExercisePlan : K extends 'medications' ? MedItem : K extends 'consultations' ? Consultation : K extends 'imaging' ? Imaging : K extends 'surgeries' ? Surgery : K extends 'nursing' ? Nursing : K extends 'injections' ? Injection : Fracture;
 type Row = Record<string, unknown>;
 
 const camel = (k: string) => k.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
@@ -169,7 +175,7 @@ export function hydrateOrthoCache(x: Partial<Record<Kind, Row[]>> | null) {
   if (x) for (const k of Object.keys(x) as Kind[]) if (Array.isArray(x[k])) { server[k] = x[k]!; cache[k] = overlay(k, x[k]!); }
   bump();
 }
-const KIND_LABEL: Record<Kind, string> = { consultations: 'كشف', imaging: 'أشعة', surgeries: 'عملية', fractures: 'كسر/جبس', nursing: 'متابعة تمريض', injections: 'حقن', medications: 'دواء' };
+const KIND_LABEL: Record<Kind, string> = { consultations: 'كشف', imaging: 'أشعة', surgeries: 'عملية', fractures: 'كسر/جبس', nursing: 'متابعة تمريض', injections: 'حقن', medications: 'دواء', exercises: 'تمرين', exercise_plans: 'خطة تمرينات' };
 /**
  * حفظ على الجهاز ← طابور المزامنة. إنشاء: بمعرّف ثابت من الجهاز (إعادة الإرسال مابتكررش). تعديل: بنحفظ قيم الخادم وقت التعديل (base)
  * ولو حد غيّر نفس الحقول على الخادم قبل المزامنة ← «تعارض» يتعرض للطبيب يقرر (مفيش كتابة فوق تشخيص بصمت).
@@ -266,6 +272,18 @@ export const ortho = {
     if (error) throw new Error('تعذّر رفع الملف: ' + clean(error.message));
     return { path, name: file.name, type: file.type, size: file.size };
   },
+  // صور/فيديوهات التمرينات: bucket عام (محتوى تعليمي) عشان الروابط تتبعت للمريض
+  async uploadExerciseMedia(file: File): Promise<ExerciseMedia> {
+    if (!net.isOnline()) throw new Error('رفع الصور والفيديوهات محتاج اتصال بالإنترنت.');
+    if (file.size > 50 * 1024 * 1024) throw new Error('حجم الملف أكبر من 50 ميجابايت.');
+    if (!/^(image\/(png|jpeg|webp|gif)|video\/(mp4|webm|quicktime))$/.test(file.type)) throw new Error('ارفع صورة (JPG/PNG/WEBP/GIF) أو فيديو (MP4/WEBM/MOV).');
+    const ext = (file.name.split('.').pop() ?? 'bin').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8) || 'bin';
+    const path = `${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from('exercise-media').upload(path, file, { contentType: file.type, upsert: false });
+    if (error) throw new Error('تعذّر رفع الملف: ' + clean(error.message));
+    return { path, url: supabase.storage.from('exercise-media').getPublicUrl(path).data.publicUrl, type: file.type, name: file.name };
+  },
+  async removeExerciseMedia(path: string) { await supabase.storage.from('exercise-media').remove([path]); },
   async attachmentUrl(path: string): Promise<string | null> {
     const { data } = await supabase.storage.from('patient-files').createSignedUrl(path, 600);
     return data?.signedUrl ?? null;

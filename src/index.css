@@ -1673,3 +1673,5 @@ img, video, canvas, svg { max-width: 100%; }
 /* زرار واتساب جنب رقم المريض */
 .wa-link { display: inline-flex; align-items: center; gap: 4px; margin-inline-start: 6px; padding: 3px 6px; border-radius: 6px; color: #1e8d4b; background: rgba(37, 168, 90, .12); font-weight: 600; font-size: 13px; text-decoration: none; vertical-align: middle; }
 .wa-link:hover { background: #25a85a; color: #fff; }
+.wa-btn { color: #1e8d4b; }
+.wa-btn:hover { background: #25a85a; border-color: #25a85a; color: #fff; }

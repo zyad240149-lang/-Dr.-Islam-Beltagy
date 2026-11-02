@@ -149,7 +149,8 @@ const byCreatedDesc = (a: Row, b: Row) => String(b.created_at ?? '').localeCompa
 async function load(kind: Kind) {
   if (loading.has(kind)) return;
   // بدون إنترنت: النسخة المحفوظة على الجهاز هي المرجع (لو مفيش نسخة بنعرض «محتاج اتصال» بدل قائمة فاضية كأن مفيش بيانات)
-  if (!net.isOnline()) { if (!cache[kind]) errors[kind] = 'البيانات دي لسه ما اتنزّلتش على الجهاز — محتاجة اتصال بالإنترنت مرة.'; bump(); return; }
+  // (bump مؤجّل: load بتتنادى من جوّه list وقت الرسم — إشعار متزامن كان بيعمل رسم تاني ← حلقة لا نهائية وشاشة معلّقة)
+  if (!net.isOnline()) { if (!cache[kind]) errors[kind] = 'البيانات دي لسه ما اتنزّلتش على الجهاز — محتاجة اتصال بالإنترنت مرة.'; queueMicrotask(bump); return; }
   loading.add(kind);
   try {
     // كل الصفوف بالترقيم بالمؤشر (كان فيه حد 5000 صف بيقص الباقي من غير ما يبان)
@@ -211,7 +212,7 @@ export const ortho = {
   list<K extends Kind>(kind: K, patientId?: string): Of<K>[] {
     // ماتحمّلش من الخادم لسه (أو اتعرض من الجهاز بس): أول ما يبقى فيه اتصال بيتحمّل
     if (!server[kind] && !errors[kind] && net.isOnline()) void load(kind);
-    if (!cache[kind]) { if (!net.isOnline()) void load(kind); return []; }
+    if (!cache[kind]) { if (!net.isOnline() && !errors[kind]) void load(kind); return []; }
     return cache[kind]!.filter((r) => !patientId || r.patient_id === patientId).map((r) => fromRow<Of<K>>(r));
   },
   isLoading: (kind: Kind) => !cache[kind] && !errors[kind],

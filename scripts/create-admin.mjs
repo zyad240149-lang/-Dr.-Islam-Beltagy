@@ -4,7 +4,7 @@ import { env, sql } from './_env.mjs';
 
 const [phone, password, name] = process.argv.slice(2);
 if (!/^01[0125]\d{8}$/.test(phone ?? '') || !password || !name) { console.error('الاستخدام: node scripts/create-admin.mjs 01xxxxxxxxx <password> "الاسم"'); process.exit(1); }
-if (password.length < 8) { console.error('كلمة المرور 8 خانات على الأقل'); process.exit(1); }
+if (password.length < 6) { console.error('كلمة المرور 6 خانات على الأقل'); process.exit(1); }
 const e164 = '+2' + phone, username = e164.slice(1);
 const H = { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE_KEY, 'Content-Type': 'application/json' };
 const r = await fetch(env.SUPABASE_URL + '/auth/v1/admin/users', { method: 'POST', headers: H, body: JSON.stringify({ email: username + '@clinic.local', password, email_confirm: true }) });

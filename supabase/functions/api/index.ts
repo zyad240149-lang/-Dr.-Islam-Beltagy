@@ -241,6 +241,8 @@ Deno.serve(async (req) => {
     return json({ error: "عملية غير مدعومة" }, 404);
   }
 
+  // ملف الطبيب مربوط بحساب واحد بس (uq_employee_therapist) — رسالة مفهومة بدل خطأ القاعدة
+  const linkErr = (m: string) => (/uq_employee_therapist/.test(m) ? "ملف الطبيب ده مربوط بحساب مستخدم تاني — افتح الحساب التاني وخلّي «ملف الطبيب» عنده «مش مربوط» الأول" : m);
   // ===== حسابات الموظفين: إنشاء/تعديل/حذف حساب دخول حقيقي (Supabase Auth + جدول employees) =====
   if (table === "staff") {
     const caller = await getCaller(req);
@@ -278,7 +280,7 @@ Deno.serve(async (req) => {
         therapist_id: b.therapistId || null, branch_id: b.branchId || null, job_title: String(b.jobTitle ?? "").trim(),
         work_hours: Array.isArray(b.workHours) ? b.workHours : [],
       }).select("id, name, username, role, phone, active, created_at, last_login, therapist_id, branch_id, job_title, work_hours").single();
-      if (error) { await admin.auth.admin.deleteUser(au.user.id); return json({ error: error.message }, 400); }
+      if (error) { await admin.auth.admin.deleteUser(au.user.id); return json({ error: linkErr(error.message) }, 400); }
       await admin.from("activity_log").insert({ employee_id: caller.employee.id, action: `إضافة حساب موظف: ${name} (${phone})` });
       return json(emp, 201);
     }
@@ -315,7 +317,7 @@ Deno.serve(async (req) => {
         if (error) return json({ error: error.message }, 400);
       }
       const { data, error } = await admin.from("employees").update(patch).eq("id", id).select("id, name, username, role, phone, active, created_at, last_login, therapist_id, branch_id, job_title, work_hours").single();
-      if (error) return json({ error: error.message }, 400);
+      if (error) return json({ error: linkErr(error.message) }, 400);
       await admin.from("activity_log").insert({ employee_id: caller.employee.id, action: `تعديل حساب موظف: ${data.name}` });
       return json(data);
     }

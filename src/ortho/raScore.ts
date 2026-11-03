@@ -1,24 +1,24 @@
-// معايير تصنيف التهاب المفاصل الروماتويدي ACR/EULAR 2010 — حساب الدرجات (0–10). تصنيف مساعد فقط: الطبيب هو اللي يعتمد التقييم والتشخيص النهائي.
-// المفاتيح المخزّنة في sheet: on «ra|on» (القسم مفعّل) و«ra.rf|…» «ra.ccp|…» «ra.esr|…» «ra.crp|…» «ra.dur|…» «ra|approved»؛ txt «ra.large» «ra.small» «ra.note».
+// معايير تصنيف التهاب المفاصل الروماتويدي ACR/EULAR 2010 — نفس جدول المعايير الأصلي (4 مجالات، أعلى درجة في كل مجال، الإجمالي من 10).
+// تصنيف مساعد فقط: الطبيب هو اللي يعتمد التقييم والتشخيص النهائي، ومفيش حاجة بتتغيّر في التشخيص أو الخطة تلقائيًا.
+// المفاتيح في sheet: on «ra.j|…» «ra.s|…» «ra.a|…» «ra.d|…» (الصف المختار في كل مجال) و«ra|approved» و«ra|closed» (القسم مقفول — البيانات بتفضل)؛
+// txt «ra.large» «ra.small» (عدد المفاصل — بيختار الصف تلقائي) و«ra.note».
 import type { ExamSheet } from './data';
 
-export const RA_SERO = ['Negative', 'Low positive', 'High positive'] as const;
-export const RA_APR = ['Normal', 'Abnormal'] as const;
-export const RA_DUR = ['< 6 weeks', '≥ 6 weeks'] as const;
-export const RA_SERO_SCORE: Record<string, number> = { Negative: 0, 'Low positive': 2, 'High positive': 3 };
+export type RaRow = [criteria: string, score: number];
+export interface RaDomain { g: string; title: string; max: number; icon: string; rows: RaRow[] }
 
-/** درجة المفاصل: large = عدد المفاصل الكبيرة، small = الصغيرة (المفصل الكبير: كتف/كوع/ورك/ركبة/كاحل — الصغير: MCP/PIP/MTP/رسغ) */
-export function jointScore(large: number, small: number): number {
-  if (large + small > 10 && small >= 1) return 5;
-  if (small >= 4) return 3;
-  if (small >= 1) return 2;
-  if (large >= 2) return 1;
-  return 0;
-}
-export const JOINT_ROWS: [string, number][] = [
-  ['1 large joint (shoulder, elbow, hip, knee, ankle)', 0], ['2 – 10 large joints', 1], ['1 – 3 small joints (MCP, PIP, MTP, wrist)', 2], ['4 – 10 small joints', 3], ['> 10 joints (with ≥ 1 small joint)', 5],
+export const RA_DOMAINS: RaDomain[] = [
+  { g: 'ra.j', title: 'Joint Involvement', max: 5, icon: 'bone', rows: [
+    ['1 large joint (e.g., shoulder, elbow, hip, knee, ankle)', 0], ['2 – 10 large joints', 1], ['1 – 3 small joints (e.g., MCP, PIP, MTP, wrist)', 2], ['4 – 10 small joints', 3], ['> 10 joints (with ≥ 1 small joint)', 5],
+  ] },
+  { g: 'ra.s', title: 'Serology', max: 3, icon: 'scan', rows: [
+    ['RF negative AND anti-CCP negative', 0], ['Low positive RF OR low positive anti-CCP (> ULN to ≤ 3 × ULN)', 2], ['High positive RF OR high positive anti-CCP (> 3 × ULN)', 3],
+  ] },
+  { g: 'ra.a', title: 'Acute Phase Reactants', max: 1, icon: 'trend', rows: [['Normal ESR AND normal CRP', 0], ['Abnormal ESR OR abnormal CRP', 1]] },
+  { g: 'ra.d', title: 'Symptom Duration', max: 1, icon: 'calendar', rows: [['< 6 weeks', 0], ['≥ 6 weeks', 1]] },
 ];
-/** أي صف من JOINT_ROWS ينطبق على العدد ده (-1 = لسه ما اتدخلش عدد) */
+
+/** صف المفاصل من العدد (large = كتف/كوع/ورك/ركبة/كاحل، small = MCP/PIP/MTP/رسغ…) — -1 = مفيش عدد */
 export function jointRow(large: number, small: number): number {
   if (large + small > 10 && small >= 1) return 4;
   if (small >= 4) return 3;
@@ -26,38 +26,29 @@ export function jointRow(large: number, small: number): number {
   if (large >= 2) return 1;
   return large === 1 ? 0 : -1;
 }
-
-const num = (v: string | undefined) => { const n = parseInt((v ?? '').trim(), 10); return Number.isFinite(n) && n >= 0 ? n : NaN; };
-const one = (s: ExamSheet, g: string, items: readonly string[]) => items.find((i) => s.on.includes(`${g}|${i}`));
+/** صف التحاليل من RF وAnti-CCP (0 سلبي، 1 إيجابي منخفض، 2 إيجابي مرتفع) — الأعلى بيكسب */
+export const seroRow = (rf: number, ccp: number) => Math.max(rf, ccp);
+/** صف مؤشرات الالتهاب: أي واحد غير طبيعي = 1 */
+export const aprRow = (esrAbn: boolean, crpAbn: boolean) => (esrAbn || crpAbn ? 1 : 0);
 
 export interface RaResult {
-  enabled: boolean; approved: boolean;
-  joints: number; sero: number; apr: number; dur: number; total: number;
-  complete: boolean; classified: boolean; large: number; small: number;
+  enabled: boolean; approved: boolean; scores: (number | null)[]; total: number; complete: boolean; classified: boolean;
 }
 export function raCalc(s: ExamSheet): RaResult {
-  const large = num(s.txt['ra.large']), small = num(s.txt['ra.small']);
-  const haveJoints = !Number.isNaN(large) || !Number.isNaN(small);
-  const L = Number.isNaN(large) ? 0 : large, S = Number.isNaN(small) ? 0 : small;
-  const joints = haveJoints ? jointScore(L, S) : 0;
-  const rf = one(s, 'ra.rf', RA_SERO), ccp = one(s, 'ra.ccp', RA_SERO);
-  const sero = Math.max(rf ? RA_SERO_SCORE[rf] : 0, ccp ? RA_SERO_SCORE[ccp] : 0);
-  const esr = one(s, 'ra.esr', RA_APR), crp = one(s, 'ra.crp', RA_APR);
-  const apr = esr === 'Abnormal' || crp === 'Abnormal' ? 1 : 0;
-  const d = one(s, 'ra.dur', RA_DUR);
-  const dur = d === '≥ 6 weeks' ? 1 : 0;
-  const total = joints + sero + apr + dur;
+  const scores = RA_DOMAINS.map((d) => { const r = d.rows.find(([c]) => s.on.includes(`${d.g}|${c}`)); return r ? r[1] : null; });
+  const total = scores.reduce<number>((a, b) => a + (b ?? 0), 0);
   return {
-    enabled: !s.on.includes('ra|closed'), approved: s.on.includes('ra|approved'), joints, sero, apr, dur, total,
-    complete: haveJoints && !!(rf || ccp) && !!(esr || crp) && !!d, classified: total >= 6, large: L, small: S,
+    enabled: !s.on.includes('ra|closed'), approved: s.on.includes('ra|approved'), scores, total,
+    complete: scores.every((x) => x !== null), classified: total >= 6,
   };
 }
 
 /** سطر الملخص النصي (بيطلع في «الفحص» وفي الطباعة) — مش بيغيّر التشخيص أو الخطة */
 export function raSummary(s: ExamSheet): string {
   const r = raCalc(s);
-  if (!r.enabled || (!r.complete && !r.total && !s.txt['ra.note']?.trim())) return '';
   const note = (s.txt['ra.note'] ?? '').trim();
-  const verdict = r.classified ? 'meets the classification criteria for RA (≥ 6/10)' : 'does not meet the criteria yet (< 6/10) — follow-up & reassessment';
-  return `ACR/EULAR 2010 RA criteria: Joints ${r.joints} + Serology ${r.sero} + Acute-phase ${r.apr} + Duration ${r.dur} = ${r.total}/10 — ${verdict}${r.complete ? '' : ' [incomplete]'} · ${r.approved ? 'Approved by the doctor' : 'Pending doctor approval'}${note ? ` · ${note}` : ''}`;
+  if (!r.enabled || (r.scores.every((x) => x === null) && !note)) return '';
+  const parts = RA_DOMAINS.map((d, i) => `${d.title} ${r.scores[i] ?? '—'}`).join(' + ');
+  const verdict = r.classified ? '≥ 6/10: classifies as RA' : '< 6/10: does not meet criteria yet (follow-up & reassessment)';
+  return `ACR/EULAR 2010 RA criteria: ${parts} = ${r.total}/10 — ${verdict}${r.complete ? '' : ' [incomplete]'} · ${r.approved ? 'Approved by the doctor' : 'Pending doctor approval'}${note ? ` · ${note}` : ''}`;
 }

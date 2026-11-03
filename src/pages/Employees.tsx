@@ -107,7 +107,8 @@ export function EmployeeModal({ employee, self, onClose }: { employee?: Employee
   const [phoneErr, setPhoneErr] = useState<PhoneErrorCode | null>(null);
   const [tried, setTried] = useState(false);
   // ساعات الدوام: للمعالج المربوط بالحساب من ملف المعالج (اللي الحجز بيقرا منه)، ولباقي الموظفين من حسابهم
-  const linkedTherapist = employee?.therapistId ? db.therapist(employee.therapistId) : undefined;
+  // الدكتور المربوط (اللي اتختار في «ملف الطبيب») — ساعاته هي اللي الحجز وجدول اليوم بيقروا منها
+  const linkedTherapist = f.therapistId ? db.therapist(f.therapistId) : undefined;
   const [hours, setHours] = useState<WorkHours[]>(() => {
     const src = linkedTherapist?.workHours?.length ? linkedTherapist.workHours : employee?.workHours?.length ? employee.workHours : employee ? [] : defaultHours();
     return [...src].sort(byDayOrder);
@@ -139,7 +140,7 @@ export function EmployeeModal({ employee, self, onClose }: { employee?: Employee
       <PasswordInput id="emm-pass" label={employee ? 'كلمة مرور جديدة (اتركها فارغة للإبقاء)' : 'كلمة المرور *'} value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} />
       <Select id="emm-role" label="الدور" value={f.role} disabled={self} onChange={(e) => setF({ ...f, role: e.target.value as Role })} options={ROLES.map((r) => ({ value: r, label: ROLE_LABEL[r] }))} />
       {self && <p className="muted" style={{ fontSize: 12.5, marginTop: -8 }}>ما تقدر تغيّر دورك بنفسك.</p>}
-      <Select id="emm-doc" label="ملف الطبيب (لو المستخدم ده دكتور بيشخّص ويظهرله حالاته)" value={f.therapistId} onChange={(e) => setF({ ...f, therapistId: e.target.value })}
+      <Select id="emm-doc" label="ملف الطبيب (لو المستخدم ده دكتور بيشخّص ويظهرله حالاته)" value={f.therapistId} onChange={(e) => { const v = e.target.value; setF({ ...f, therapistId: v }); const t = v ? db.therapist(v) : undefined; if (t?.workHours?.length) setHours([...t.workHours].sort(byDayOrder)); }}
         options={[{ value: '', label: 'مش مربوط بملف طبيب' }, ...db.therapists().map((t) => ({ value: t.id, label: t.name }))]} />
       {canHours && <div className="form-section" style={{ marginTop: 12 }}>
         <div className="form-section-title">أيام وساعات العمل</div>

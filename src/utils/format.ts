@@ -183,6 +183,16 @@ export const waPhone = (raw: string) => {
   if (d.startsWith('0')) return `966${d.slice(1)}`;
   return d.length === 9 ? `966${d}` : d;
 };
+/** الرقم اللي بيتبعت عليه واتساب للمريض (هجرة 929) — '' لو المريض مالوش واتساب */
+export function whatsappNumber(p: { phone?: string; phone2?: string; whatsappMode?: string; whatsappPhone?: string } | null | undefined): string {
+  if (!p) return '';
+  switch (p.whatsappMode) {
+    case 'none': return '';
+    case 'phone2': return p.phone2 || '';
+    case 'other': return p.whatsappPhone || '';
+    default: return p.phone || '';
+  }
+}
 export const waLink = (phone: string, text: string) => `https://wa.me/${waPhone(phone)}?text=${encodeURIComponent(text)}`;
 
 export const sessionsLabel = (n: number) => n === 1 ? 'جلسة واحدة' : n === 2 ? 'جلستين' : n <= 10 ? `${n} جلسات` : `${n} جلسة`;

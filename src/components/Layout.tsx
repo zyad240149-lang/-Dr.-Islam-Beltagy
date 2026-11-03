@@ -33,6 +33,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
   ] },
   { title: 'العظام والكسور', items: [
     { to: '/diagnosis', label: 'تشخيص المريض', icon: 'stethoscope', area: 'patients' },
+    { to: '/follow-ups', label: 'متابعات المرضى', icon: 'calendar', area: 'patients' },
     { to: '/surgeries', label: 'العمليات الجراحية', icon: 'scalpel', area: 'patients' },
     { to: '/medications', label: 'الأدوية', icon: 'pill', area: 'patients' },
     { to: '/exercises', label: 'التمرينات العلاجية', icon: 'bone', area: 'patients' },

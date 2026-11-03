@@ -1,5 +1,5 @@
 {
-  "at": "2026-10-28T20:11:43.434Z",
+  "at": "2026-11-03T18:29:00.390Z",
   "passed": 31,
   "failed": 0,
   "results": [
@@ -26,12 +26,12 @@
     {
       "name": "إنشاء حساب استقبال",
       "ok": true,
-      "detail": "{\"id\":\"a45d557c-e69e-4480-958e-d4fb9720b11d\",\"name\":\"استقبال اختبار آلي\",\"username\":\"201200000901\",\"role\":\"reception\",\"phone\":\"+201200000901\",\"active\""
+      "detail": "{\"id\":\"a579aacd-98bb-4648-955e-474b2b11339c\",\"name\":\"استقبال اختبار آلي\",\"username\":\"201200000901\",\"role\":\"reception\",\"phone\":\"+201200000901\",\"active\""
     },
     {
       "name": "إنشاء حساب طبيب مربوط بملفه",
       "ok": true,
-      "detail": "{\"id\":\"58e1b6df-1f97-4607-8b87-217b65ead1d3\",\"name\":\"طبيب اختبار آلي\",\"username\":\"201200000902\",\"role\":\"therapist\",\"phone\":\"+201200000902\",\"active\":tr"
+      "detail": "{\"id\":\"08b79588-f5a8-4a3f-a24d-e1654921146e\",\"name\":\"طبيب اختبار آلي\",\"username\":\"201200000902\",\"role\":\"therapist\",\"phone\":\"+201200000902\",\"active\":tr"
     },
     {
       "name": "رقم موظف مكرر مرفوض",
@@ -51,7 +51,7 @@
     {
       "name": "الاستقبال يضيف مريض ورقم الملف يتولد تلقائي",
       "ok": true,
-      "detail": "TM-3"
+      "detail": "TM-841"
     },
     {
       "name": "المريض محفوظ فعلًا في القاعدة",
@@ -116,7 +116,7 @@
     {
       "name": "لوحة الاستقبال بدون أرقام الإيراد",
       "ok": true,
-      "detail": "{\"openTickets\":0,\"outstanding\":null,\"monthRevenue\":null,\"totalPatients\":3,\"completedToday\":0,\"pendingRequests\":0,\"newPat"
+      "detail": "{\"openTickets\":0,\"outstanding\":null,\"monthRevenue\":null,\"totalPatients\":841,\"completedToday\":0,\"pendingRequests\":0,\"newP"
     },
     {
       "name": "الاستقبال ما يقدرش يكتب تشخيص",
@@ -131,7 +131,7 @@
     {
       "name": "الكشف محفوظ باسم الطبيب",
       "ok": true,
-      "detail": "58e1b6df-1f97-4607-8b87-217b65ead1d3"
+      "detail": "08b79588-f5a8-4a3f-a24d-e1654921146e"
     },
     {
       "name": "الاستقبال يقرا الكشف (عرض فقط)",

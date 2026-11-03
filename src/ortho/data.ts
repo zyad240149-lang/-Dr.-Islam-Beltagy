@@ -24,6 +24,7 @@ export interface Consultation {
   complete?: boolean; // false = اتحفظ ناقص «يحتاج استكمال» (هجرة 917)؛ مش موجود = كشف قديم مكتمل
   appointmentId?: string | null; // الزيارة (الموعد اللي اتعمله حضور) — زيارة واحدة = تشخيص واحد (هجرة 918)
   createdBy?: string | null; // الطبيب اللي سجّل التشخيص (بيتحدد على الخادم)
+  visitReason?: string; // «شكوى المريض / سبب الزيارة» — كتابة حرة، فاضية في كل تشخيص جديد (هجرة 929)
   // «فتح ملف تشخيص جديد» بالاسم الثلاثي (هجرة 924): patientId = '' لحد ما الخادم يربطه بملف الاستقبال
   pendingPatient?: PendingPatient | null;
   linkStatus?: 'waiting' | 'review' | ''; // waiting = مفيش ملف بالاسم لسه · review = محتاج حد يختار الملف
@@ -63,6 +64,9 @@ export interface MedItem { id: string; name: string; group: string; dose: string
 export interface ExerciseMedia { path: string; url: string; type: string; name: string }
 export interface Exercise { id: string; name: string; group: string; description: string; media: ExerciseMedia[] }
 export interface ExercisePlan { id: string; patientId: string; consultationId?: string | null; date: string; exerciseIds: string[]; notes: string; shareToken: string }
+// مواعيد المتابعات (هجرة 929): سجل مستقل مش حجز — بيتربط بالمريض والتشخيص والطبيب، و appointmentId لما يتحوّل لحجز فعلي
+export type FollowUpStatus = 'scheduled' | 'done' | 'cancelled';
+export interface FollowUp { id: string; patientId: string; consultationId: string; doctorId: string; date: string; time: string; reason: string; notes: string; status: FollowUpStatus; appointmentId: string; createdAt?: string; createdBy?: string }
 export interface Fracture { id: string; patientId: string; bone: string; side: Side; kind: string; injuryDate: string; castDate: string; removalDue: string; status: FractureStatus }
 
 export const SIDE: Record<Side, string> = { right: 'يمين', left: 'شمال', both: 'الجانبين', na: '—' };
@@ -87,7 +91,7 @@ const todayYmd = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cair
 
 // الأعمدة المسموح إرسالها لكل جدول (أي حاجة غيرها بتتجاهل — created_by والتواريخ بيحددها الخادم)
 const COLUMNS: Record<Kind, string[]> = {
-  consultations: ['patient_id', 'date', 'complaint', 'region', 'side', 'examination', 'diagnosis', 'plan', 'history', 'pain_score', 'icd10', 'medications', 'labs', 'imaging_requests', 'attachments', 'follow_up', 'sheet', 'complete', 'appointment_id', 'pending_patient'],
+  consultations: ['patient_id', 'date', 'complaint', 'region', 'side', 'examination', 'diagnosis', 'plan', 'history', 'pain_score', 'icd10', 'medications', 'labs', 'imaging_requests', 'attachments', 'follow_up', 'sheet', 'complete', 'appointment_id', 'pending_patient', 'visit_reason'],
   imaging: ['patient_id', 'kind', 'region', 'requested_at', 'status', 'finding', 'attachments'],
   surgeries: ['patient_id', 'procedure', 'region', 'side', 'hospital', 'date', 'implant', 'status', 'notes'],
   fractures: ['patient_id', 'bone', 'side', 'kind', 'injury_date', 'cast_date', 'removal_due', 'status'],
@@ -96,9 +100,10 @@ const COLUMNS: Record<Kind, string[]> = {
   medications: ['name', 'group', 'dose', 'frequency', 'duration'],
   exercises: ['name', 'group', 'description', 'media'],
   exercise_plans: ['patient_id', 'consultation_id', 'date', 'exercise_ids', 'notes', 'share_token'],
+  follow_ups: ['patient_id', 'consultation_id', 'doctor_id', 'date', 'time', 'reason', 'notes', 'status', 'appointment_id'],
 };
-export type Kind = 'consultations' | 'imaging' | 'surgeries' | 'fractures' | 'nursing' | 'injections' | 'medications' | 'exercises' | 'exercise_plans';
-type Of<K extends Kind> = K extends 'exercises' ? Exercise : K extends 'exercise_plans' ? ExercisePlan : K extends 'medications' ? MedItem : K extends 'consultations' ? Consultation : K extends 'imaging' ? Imaging : K extends 'surgeries' ? Surgery : K extends 'nursing' ? Nursing : K extends 'injections' ? Injection : Fracture;
+export type Kind = 'consultations' | 'imaging' | 'surgeries' | 'fractures' | 'nursing' | 'injections' | 'medications' | 'exercises' | 'exercise_plans' | 'follow_ups';
+type Of<K extends Kind> = K extends 'follow_ups' ? FollowUp : K extends 'exercises' ? Exercise : K extends 'exercise_plans' ? ExercisePlan : K extends 'medications' ? MedItem : K extends 'consultations' ? Consultation : K extends 'imaging' ? Imaging : K extends 'surgeries' ? Surgery : K extends 'nursing' ? Nursing : K extends 'injections' ? Injection : Fracture;
 type Row = Record<string, unknown>;
 
 const camel = (k: string) => k.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
@@ -176,7 +181,7 @@ export function hydrateOrthoCache(x: Partial<Record<Kind, Row[]>> | null) {
   if (x) for (const k of Object.keys(x) as Kind[]) if (Array.isArray(x[k])) { server[k] = x[k]!; cache[k] = overlay(k, x[k]!); }
   bump();
 }
-const KIND_LABEL: Record<Kind, string> = { consultations: 'كشف', imaging: 'أشعة', surgeries: 'عملية', fractures: 'كسر/جبس', nursing: 'متابعة تمريض', injections: 'حقن', medications: 'دواء', exercises: 'تمرين', exercise_plans: 'خطة تمرينات' };
+const KIND_LABEL: Record<Kind, string> = { consultations: 'كشف', imaging: 'أشعة', surgeries: 'عملية', fractures: 'كسر/جبس', nursing: 'متابعة تمريض', injections: 'حقن', medications: 'دواء', exercises: 'تمرين', exercise_plans: 'خطة تمرينات', follow_ups: 'موعد متابعة' };
 /**
  * حفظ على الجهاز ← طابور المزامنة. إنشاء: بمعرّف ثابت من الجهاز (إعادة الإرسال مابتكررش). تعديل: بنحفظ قيم الخادم وقت التعديل (base)
  * ولو حد غيّر نفس الحقول على الخادم قبل المزامنة ← «تعارض» يتعرض للطبيب يقرر (مفيش كتابة فوق تشخيص بصمت).
@@ -230,6 +235,7 @@ export const ortho = {
     const row: Record<string, unknown> = toRow(kind, item);
     // تشخيص من غير ملف مريض: يتبعت null وقت الإنشاء بس — التعديل مايبعتش patient_id عشان مايفكّش ربط عمله الخادم
     if (kind === 'consultations' && !row.patient_id) { if (item.id) delete row.patient_id; else row.patient_id = null; }
+    if (kind === 'follow_ups') for (const k of ['consultation_id', 'doctor_id', 'time', 'appointment_id']) if (k in row && !row[k]) row[k] = null;
     // بدون إنترنت (أو السجل نفسه لسه مستني مزامنة): بيتحفظ على الجهاز ويتبعت لوحده لما الاتصال يرجع
     if (!net.isOnline() || (item.id && offline.queue.hasPendingFor(item.id))) return saveOffline(kind, item.id, row);
     const table = supabase.from('ortho_' + kind);

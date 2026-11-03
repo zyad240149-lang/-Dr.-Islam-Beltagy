@@ -1,5 +1,6 @@
 import { IncompleteAlert } from '../components/PatientCompleteness';
 import { WhatsappLink } from '../components/WhatsappLink';
+import { WhatsappModal, whatsappLabel } from '../components/ContactFields';
 import { PendingSyncTag } from '../components/OfflineStatus';
 import { patientGaps } from '../utils/patientGaps';
 import { sendWhatsApp } from '../data/whatsappSend';
@@ -23,21 +24,24 @@ import BookingWizard from '../components/BookingWizard';
 import { ExamsTab } from '../components/ExamsTab';
 import PhysioTab from '../components/PhysioTab';
 import { OrthoPatientTab } from '../ortho/PatientTabs';
+import { PatientFollowUps } from '../ortho/FollowUps';
 import { DiagnosisTab } from '../ortho/DiagnosisTab';
 import { Icon } from '../utils/icons';
 import {
   APPT_STATUS, APPT_TYPE_LABEL, INVOICE_STATUS, PACKAGE_STATUS, PAYMENT_METHOD_LABEL, PLAN_STATUS, REFERRAL_SOURCE_LABEL,
-  age, fmtDate, fmtDateTime, fmtTime, initials, money, tsToYmd, waLink,
+  age, fmtDate, fmtDateTime, fmtTime, initials, money, tsToYmd, waLink, whatsappNumber,
 } from '../utils/format';
 import { useToast } from '../hooks/useToast';
 import type { InitialAssessment, Package, TreatmentPlan, TreatmentSession } from '../types';
 
-const TABS = ['بيانات المريض', 'المواعيد', 'الجلسات', 'التقييم', 'خطة العلاج', 'الباقات', 'الفواتير والمدفوعات', 'سجل المريض', 'الملفات والمرفقات', 'سجل الجسم', 'العلاج الطبيعي (Physiotherapy)', 'سجل الكشوفات', 'التشخيص', 'الأشعة والتحاليل', 'الكسور والجبس', 'العمليات الجراحية', 'متابعة التمريض'];
+const TABS = ['بيانات المريض', 'المواعيد', 'الجلسات', 'التقييم', 'خطة العلاج', 'الباقات', 'الفواتير والمدفوعات', 'سجل المريض', 'الملفات والمرفقات', 'سجل الجسم', 'العلاج الطبيعي (Physiotherapy)', 'سجل الكشوفات', 'التشخيص', 'الأشعة والتحاليل', 'الكسور والجبس', 'العمليات الجراحية', 'متابعة التمريض', 'التحاليل', 'الحقن', 'مواعيد المتابعة'];
 // ترتيب العرض (الأرقام فوق ثابتة عشان tab === n). عيادة عظام: «التشخيص» تبويب واحد بالشيت زي ما اتكتب (بدل «الكشوفات والتشخيص»
 // و«سجل الكشوفات»)، والجلسات/التقييم/خطة العلاج/الباقات/العلاج الطبيعي مش معروضين — الكود موجود لو احتاجوهم تاني
-const TAB_ORDER = [0, 12, 1, 6, 7];
+// 8 = ملفات الأشعة والتحاليل (الاستقبال بيرفع منها) و 19 = مواعيد المتابعة — تبويبات لوحدها عشان الاستقبال يوصلها على طول
+const TAB_ORDER = [0, 12, 8, 19, 1, 6, 7];
+const TAB_LABEL: Record<number, string> = { 8: 'ملفات الأشعة والتحاليل' };
 // كل البيانات الطبية جوّه «التشخيص» (صف تحت التبويب) — التشخيصات أولًا. المواعيد والفواتير وسجل المريض تبويبات لوحدها فوق
-const DX_SUB: [number, string][] = [[12, 'التشخيصات'], [13, 'الأشعة'], [17, 'التحاليل'], [18, 'الحقن'], [14, 'الكسور والجبس'], [15, 'العمليات الجراحية'], [16, 'متابعة التمريض'], [8, 'الملفات والمرفقات'], [9, 'سجل الجسم']];
+const DX_SUB: [number, string][] = [[12, 'التشخيصات'], [13, 'الأشعة'], [17, 'التحاليل'], [18, 'الحقن'], [14, 'الكسور والجبس'], [15, 'العمليات الجراحية'], [16, 'متابعة التمريض'], [9, 'سجل الجسم']];
 const IN_DX = new Set(DX_SUB.map(([i]) => i));
 const PHYSIO_TAB = 10;
 
@@ -52,6 +56,7 @@ export default function PatientProfile() {
   const [tab, setTab] = useState(0);
   const [booking, setBooking] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [waEdit, setWaEdit] = useState(false);
   const [assessment, setAssessment] = useState<InitialAssessment | 'new' | null>(null);
   const [plan, setPlan] = useState<TreatmentPlan | 'new' | null>(null);
   const [selling, setSelling] = useState(false);
@@ -116,7 +121,7 @@ export default function PatientProfile() {
               <button type="button" className="btn btn--outline btn--sm" title="نسخ رقم الملف" aria-label="نسخ رقم الملف" style={{ marginInline: 8, display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 600 }}
                 onClick={() => { navigator.clipboard.writeText(patient.fileNo).then(() => toast.success('تم نسخ رقم الملف'), () => toast.error('تعذّر النسخ')); }}>
                 <Icon name="copy" size={15} /> نسخ رقم الملف
-              </button> · {patient.genderUnknown ? 'الجنس غير محدد' : patient.gender === 'male' ? 'رجل' : 'امرأة'}{age(patient.birthDate) !== null ? ` · ${age(patient.birthDate)} سنة` : ''} · جوال <span className="num" dir="ltr">{patient.phone}</span><WhatsappLink phone={patient.phone} patientId={patient.id} label />{patient.phone && <button type="button" className="btn btn--outline btn--sm" style={{ marginInline: 8, display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 600 }} onClick={() => navigator.clipboard.writeText(patient.phone).then(() => toast.success('تم نسخ رقم الجوال'), () => toast.error('تعذّر النسخ'))}><Icon name="copy" size={15} /> نسخ الجوال</button>}</p>
+              </button> · {patient.genderUnknown ? 'الجنس غير محدد' : patient.gender === 'male' ? 'رجل' : 'امرأة'}{age(patient.birthDate) !== null ? ` · ${age(patient.birthDate)} سنة` : ''} · جوال <span className="num" dir="ltr">{patient.phone}</span><WhatsappLink phone={whatsappNumber(patient)} patientId={patient.id} label />{patient.phone && <button type="button" className="btn btn--outline btn--sm" style={{ marginInline: 8, display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 600 }} onClick={() => navigator.clipboard.writeText(patient.phone).then(() => toast.success('تم نسخ رقم الجوال'), () => toast.error('تعذّر النسخ'))}><Icon name="copy" size={15} /> نسخ الجوال</button>}</p>
             {activePlan && activeStats && <p className="muted" style={{ fontSize: 13 }}>الخطة الحالية: {activePlan.diagnosis} — مكتملة {activeStats.completed} من {activeStats.total}، متبقية {activeStats.remaining}</p>}
             <div style={{ marginTop: 6 }}>
               {account === 'loading' ? null
@@ -134,7 +139,7 @@ export default function PatientProfile() {
       </section>
 
       <div className="card">
-        <div className="tabs" style={{ overflowX: 'auto' }}>{TAB_ORDER.map((i) => <button key={TABS[i]} className={`tab ${(i === 12 ? IN_DX.has(tab) : tab === i) ? 'active' : ''}`} onClick={() => setTab(i)}>{TABS[i]}</button>)}</div>
+        <div className="tabs" style={{ overflowX: 'auto' }}>{TAB_ORDER.map((i) => <button key={TABS[i]} className={`tab ${(i === 12 ? IN_DX.has(tab) : tab === i) ? 'active' : ''}`} onClick={() => setTab(i)}>{TAB_LABEL[i] ?? TABS[i]}</button>)}</div>
         {IN_DX.has(tab) && (
           <div className="cx-chips dx-subnav" role="tablist" aria-label="أقسام التشخيص">
             {DX_SUB.map(([i, label]) => <button key={i} type="button" role="tab" aria-selected={tab === i} className={`cx-chip ${tab === i ? 'is-on' : ''}`} onClick={() => setTab(i)}>{label}</button>)}
@@ -144,7 +149,14 @@ export default function PatientProfile() {
           {tab === 0 && (
             <dl className="dl">
               <div><dt>الاسم الكامل</dt><dd>{patient.fullName}</dd></div>
-              <div><dt>رقم الجوال</dt><dd className="num">{patient.phone}<WhatsappLink phone={patient.phone} patientId={patient.id} /></dd></div>
+              <div><dt>رقم الجوال</dt><dd className="num">{patient.phone}{(patient.whatsappMode ?? 'phone') === 'phone' && <WhatsappLink phone={patient.phone} patientId={patient.id} />}</dd></div>
+              <div><dt>رقم هاتف إضافي</dt><dd className="num">{patient.phone2 || '—'}</dd></div>
+              {(() => { const wa = whatsappLabel(patient); return (
+                <div><dt>رقم الواتساب</dt><dd>
+                  {wa.number ? <><bdi dir="ltr" className="num">{wa.number}</bdi><WhatsappLink phone={wa.number} patientId={patient.id} /> <span className="badge badge--ok">{wa.source}</span></> : <span className="badge badge--muted">{wa.source}</span>}
+                  {canEditPatient && <button type="button" className="btn btn--outline btn--sm" style={{ marginInlineStart: 8 }} onClick={() => setWaEdit(true)}>{wa.number ? 'تعديل الواتساب' : 'إضافة رقم واتساب'}</button>}
+                </dd></div>
+              ); })()}
               <div><dt>الجنسية</dt><dd>{patient.nationality === 'non_saudi' ? 'أجنبي' : 'مصري'}</dd></div>
               {patient.nationalId && <div><dt>{patient.nationality === 'non_saudi' ? 'رقم جواز السفر' : 'الرقم القومي'}</dt><dd className="num">{patient.nationalId}</dd></div>}
               <div><dt>تاريخ الميلاد</dt><dd>{patient.birthDate ? fmtDate(patient.birthDate) : '—'}</dd></div>
@@ -168,6 +180,7 @@ export default function PatientProfile() {
           )}
 
           {tab === 8 && <PatientFilesTab patientId={id} />}
+          {tab === 19 && <PatientFollowUps patientId={id} />}
           {tab === 9 && <BodyRecordsTab patientId={id} />}
           {tab === 11 && <ExamsTab patientId={id} />}
           {tab === 12 && <DiagnosisTab patientId={id} />}
@@ -378,6 +391,7 @@ export default function PatientProfile() {
       </div>
 
       {booking && <BookingWizard presetPatientId={patient.id} onClose={() => setBooking(false)} />}
+      {waEdit && <WhatsappModal patient={patient} onClose={() => setWaEdit(false)} />}
       {editing && <EditPatientModal patient={patient} onClose={() => setEditing(false)} />}
       {assessment && <AssessmentModal patientId={patient.id} assessment={assessment === 'new' ? undefined : assessment} onClose={() => setAssessment(null)} />}
       {plan && <PlanModal patientId={patient.id} plan={plan === 'new' ? undefined : plan} onClose={() => setPlan(null)} />}

@@ -47,8 +47,12 @@ export function FilePreviewModal({ file, onClose }: { file: PatientFile; onClose
   const isImg = file.fileType.startsWith('image/');
   const isPdf = file.fileType === 'application/pdf';
   return (
-    <Modal title={file.fileName} wide onClose={onClose} footer={<>{url && <Button variant="outline" icon="download" onClick={() => window.open(url, '_blank', 'noopener')}>فتح في نافذة جديدة</Button>}<Button onClick={onClose}>إغلاق</Button></>}>
-      <p className="muted-sm" style={{ marginBottom: 10 }}>رفعه: {file.uploadedByName || '—'} — {fmtDateTime(file.createdAt)}{file.note ? ` — ${file.note}` : ''}</p>
+    <Modal title={file.title || file.fileName} wide onClose={onClose} footer={<>
+      {url && <Button variant="outline" icon="eye" onClick={() => window.open(url, '_blank', 'noopener')}>فتح في نافذة جديدة</Button>}
+      {url && <Button variant="outline" icon="download" onClick={() => void db.fileUrl(file.filePath, file.fileName).then((u) => u && window.open(u, '_blank', 'noopener'))}>تنزيل</Button>}
+      <Button onClick={onClose}>إغلاق</Button>
+    </>}>
+      <p className="muted-sm" style={{ marginBottom: 10 }}>{file.fileDate ? `تاريخ الملف: ${fmtDate(file.fileDate)} — ` : ''}رفعه: {file.uploadedByName || '—'} — {fmtDateTime(file.createdAt)}{file.note ? ` — ${file.note}` : ''}</p>
       {url === undefined ? <Skeleton h={300} /> : url === null ? <EmptyState icon="alert" title="تعذّر فتح الملف" /> :
         isImg ? <img src={url} alt={file.fileName} style={{ maxWidth: '100%', maxHeight: '70vh', display: 'block', margin: '0 auto', borderRadius: 8 }} /> :
         isPdf ? <iframe src={url} title={file.fileName} style={{ width: '100%', height: '70vh', border: '1px solid var(--line)', borderRadius: 8 }} /> :

@@ -5,8 +5,8 @@ import { BODY_REGIONS, SIDE_LABEL, findCondition, mapRegions } from '../data/bod
 import { Button, EmptyState, Input, Modal, Select, Skeleton } from './ui';
 import { ConfirmDialog, IconAction, RowActions, useCan } from './common';
 import { useToast } from '../hooks/useToast';
-import { fmtDate, fmtDateTime, tsToYmd } from '../utils/format';
-import type { BodyRecord, PatientFile } from '../types';
+import { fmtDate, fmtDateTime, todayYmd, tsToYmd } from '../utils/format';
+import type { BodyRecord, PatientFile, PatientFileCategory } from '../types';
 
 const SEVERITY = ['1 — خفيفة', '2 — بسيطة', '3 — متوسطة', '4 — شديدة', '5 — شديدة جدًا'];
 const SEV_TONE = ['ok', 'ok', 'warn', 'danger', 'danger'];
@@ -109,57 +109,100 @@ export function BodyRecordsTab({ patientId }: { patientId: string }) {
 // ============ تبويب الملفات والمرفقات ============
 const fmtSize = (n: number) => (n > 1048576 ? (n / 1048576).toFixed(1) + ' م.ب' : Math.max(1, Math.round(n / 1024)) + ' ك.ب');
 
+export const FILE_CATEGORY: Record<PatientFileCategory, string> = { xray: 'أشعة', lab: 'تحاليل', other: 'ملف آخر' };
+const CAT_TONE: Record<PatientFileCategory, string> = { xray: 'brand', lab: 'info', other: 'muted' };
+export const fileTitle = (f: PatientFile) => f.title || f.fileName;
+
+// رفع الأشعة والتحاليل من الاستقبال (أو أي حد عنده صلاحية تعديل المريض): الملف بيتحفظ في Supabase Storage (bucket خاص patient-files)
+// ومربوط بمعرّف المريض — وبيظهر للطبيب في كل تشخيص جديد للمريض ده (PatientMedicalFiles) من غير ما يترفع تاني
 export function PatientFilesTab({ patientId }: { patientId: string }) {
   const can = useCan();
   const toast = useToast();
   const [files, setFiles] = useState<PatientFile[] | null>(null);
   const [err, setErr] = useState('');
   const [uploading, setUploading] = useState(false);
-  const [note, setNote] = useState('');
+  const [meta, setMeta] = useState({ category: 'xray' as PatientFileCategory, title: '', fileDate: todayYmd(), note: '' });
+  const [show, setShow] = useState<PatientFileCategory | ''>('');
   const [del, setDel] = useState<PatientFile | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const camera = useRef<HTMLInputElement>(null);
   const load = () => db.patientFiles(patientId).then((r) => { setFiles(r); setErr(''); }).catch((e) => setErr(e.message));
   useEffect(() => { load(); }, [patientId]);
 
-  const upload = async (file: File | undefined) => {
-    if (!file) return;
+  const upload = async (list: FileList | null) => {
+    const all = Array.from(list ?? []);
+    if (!all.length) return;
+    if (!navigator.onLine) { toast.error('رفع الملفات محتاج اتصال بالإنترنت.'); return; }
     setUploading(true);
-    const r = await db.uploadPatientFile(patientId, file, note);
+    let ok = 0; const failed: string[] = [];
+    for (const [i, file] of all.entries()) {
+      // أكتر من ملف بنفس الاسم: رقم بعد الاسم عشان يتفرقوا
+      const title = meta.title.trim() ? (all.length > 1 ? `${meta.title.trim()} (${i + 1})` : meta.title.trim()) : '';
+      const r = await db.uploadPatientFile(patientId, file, meta.note, {}, { category: meta.category, title, fileDate: meta.fileDate });
+      if (r.ok) ok++; else failed.push(`${file.name}: ${r.error}`);
+    }
     setUploading(false);
     if (input.current) input.current.value = '';
     if (camera.current) camera.current.value = '';
-    if (!r.ok) { toast.error(r.error); return; }
-    toast.success('تم رفع الملف بنجاح.'); setNote(''); load();
+    if (failed.length) toast.error(failed.join(' — '));
+    if (ok) { toast.success(ok > 1 ? `تم رفع ${ok} ملفات.` : 'تم رفع الملف بنجاح.'); setMeta((m) => ({ ...m, title: '', note: '' })); load(); }
   };
   const [preview, setPreview] = useState<PatientFile | null>(null);
-  const { openPlan, openVisit } = useDetails();
-  const open = (f: PatientFile) => setPreview(f);
+  const { openPlan } = useDetails();
+  const shown = (files ?? []).filter((f) => !show || f.category === show);
+  const count = (c: PatientFileCategory) => (files ?? []).filter((f) => f.category === c).length;
 
   return (
     <div>
       {can('patients', 'edit') && (
-        <div className="grid-form" style={{ alignItems: 'end', marginBottom: 14 }}>
-          <Input id="pf-note" label="ملاحظة على الملف (اختياري)" value={note} onChange={(e) => setNote(e.target.value)} />
-          <div className="field" style={{ display: 'flex', flexDirection: 'row', gap: 8 }}>
-            <input ref={input} type="file" hidden accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.txt" onChange={(e) => upload(e.target.files?.[0])} />
-            <input ref={camera} type="file" hidden accept="image/*" capture="environment" onChange={(e) => upload(e.target.files?.[0])} />
-            <Button icon="doc" loading={uploading} onClick={() => input.current?.click()}>رفع ملف محفوظ</Button>
-            <Button variant="outline" icon="camera" loading={uploading} onClick={() => camera.current?.click()}>التقاط صورة الحين</Button>
+        <div className="pf-upload">
+          <div className="pf-upload__title">رفع أشعة أو تحاليل</div>
+          <div className="seg" style={{ maxWidth: 420, marginBottom: 10 }} role="radiogroup" aria-label="نوع الملف">
+            {(Object.keys(FILE_CATEGORY) as PatientFileCategory[]).map((c) => (
+              <button key={c} type="button" role="radio" aria-checked={meta.category === c} className={`seg__btn ${meta.category === c ? 'active' : ''}`} onClick={() => setMeta((m) => ({ ...m, category: c }))}>{FILE_CATEGORY[c]}</button>
+            ))}
+          </div>
+          <div className="grid-form" style={{ alignItems: 'end' }}>
+            <Input id="pf-title" label="اسم / وصف الملف" placeholder={meta.category === 'lab' ? 'مثلاً: صورة دم كاملة' : meta.category === 'xray' ? 'مثلاً: أشعة عادية على الركبة اليمين' : ''} value={meta.title} onChange={(e) => setMeta((m) => ({ ...m, title: e.target.value }))} />
+            <Input id="pf-date" label="تاريخ الأشعة / التحليل" type="date" max={todayYmd()} value={meta.fileDate} onChange={(e) => setMeta((m) => ({ ...m, fileDate: e.target.value }))} />
+            <Input id="pf-note" label="ملاحظات (اختياري)" value={meta.note} onChange={(e) => setMeta((m) => ({ ...m, note: e.target.value }))} />
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+            <input ref={input} type="file" hidden multiple accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.txt" onChange={(e) => void upload(e.target.files)} />
+            <input ref={camera} type="file" hidden accept="image/*" capture="environment" onChange={(e) => void upload(e.target.files)} />
+            <Button icon="upload" loading={uploading} onClick={() => input.current?.click()}>رفع ملفات (صور أو PDF)</Button>
+            <Button variant="outline" icon="camera" loading={uploading} onClick={() => camera.current?.click()}>تصوير بالكاميرا</Button>
+            <span className="muted-sm" style={{ alignSelf: 'center' }}>صور JPG/PNG/WEBP أو PDF — لحد 10 ميجا للملف. محتاج اتصال بالإنترنت.</span>
           </div>
         </div>
       )}
-      {err ? <EmptyState icon="alert" title="حدث خطأ، حاول مرة ثانية" text={err} /> : files === null ? <Skeleton h={90} /> : files.length === 0 ? <EmptyState icon="doc" title="ما فيه ملفات" text="ارفع التقارير والصور والمستندات الخاصة بالمريض." /> : (
+      {files && files.length > 0 && (
+        <div className="cx-chips" style={{ margin: '4px 0 12px' }}>
+          <button type="button" className={`cx-chip ${!show ? 'is-on' : ''}`} onClick={() => setShow('')}>الكل <span className="num">{files.length}</span></button>
+          {(Object.keys(FILE_CATEGORY) as PatientFileCategory[]).map((c) => count(c) > 0 && (
+            <button key={c} type="button" className={`cx-chip ${show === c ? 'is-on' : ''}`} onClick={() => setShow(c)}>{FILE_CATEGORY[c]} <span className="num">{count(c)}</span></button>
+          ))}
+        </div>
+      )}
+      {err ? <EmptyState icon="alert" title="حدث خطأ، حاول مرة ثانية" text={err} /> : files === null ? <Skeleton h={90} /> : files.length === 0 ? <EmptyState icon="doc" title="ما فيه ملفات" text="ارفع صور الأشعة ونتايج التحاليل الخاصة بالمريض — هتظهر للطبيب في التشخيص." /> : (
         <div className="table-wrap"><table className="table">
-          <thead><tr><th>الملف</th><th>الحجم</th><th>رفعه</th><th>التاريخ</th><th className="actions"></th></tr></thead>
-          <tbody>{files.map((f) => (
-            <tr key={f.id}><td style={{ fontWeight: 600 }}>{f.fileName}{f.note && <div className="muted-sm">{f.note}</div>}{f.planId && db.plan(f.planId) && <button type="button" className="muted-sm" style={{ border: 0, background: 'none', color: 'var(--brand-700)', cursor: 'pointer', padding: 0, display: 'block' }} onClick={() => openPlan(f.planId!)}>الخطة: {db.plan(f.planId)?.diagnosis}</button>}</td><td className="num">{fmtSize(f.sizeBytes)}</td><td>{f.uploadedByName || '—'}</td><td className="num date">{fmtDateTime(f.createdAt)}</td>
-              <td className="actions"><RowActions><Button size="sm" variant="outline" onClick={() => open(f)}>عرض</Button>{can('patients', 'edit') && <IconAction icon="trash" label="حذف الملف" danger onClick={() => setDel(f)} />}</RowActions></td></tr>
+          <thead><tr><th>الملف</th><th>النوع</th><th>تاريخ الملف</th><th>رفعه</th><th>تاريخ الرفع</th><th className="actions"></th></tr></thead>
+          <tbody>{shown.map((f) => (
+            <tr key={f.id}><td style={{ fontWeight: 600 }}>{fileTitle(f)}{f.title && <div className="muted-sm">{f.fileName} · {fmtSize(f.sizeBytes)}</div>}{f.note && <div className="muted-sm">{f.note}</div>}{f.planId && db.plan(f.planId) && <button type="button" className="muted-sm" style={{ border: 0, background: 'none', color: 'var(--brand-700)', cursor: 'pointer', padding: 0, display: 'block' }} onClick={() => openPlan(f.planId!)}>الخطة: {db.plan(f.planId)?.diagnosis}</button>}</td>
+              <td><span className={`badge badge--${CAT_TONE[f.category]}`}>{FILE_CATEGORY[f.category]}</span></td>
+              <td className="num date">{f.fileDate ? fmtDate(f.fileDate) : '—'}</td><td>{f.uploadedByName || '—'}</td><td className="num date">{fmtDateTime(f.createdAt)}</td>
+              <td className="actions"><RowActions><Button size="sm" variant="outline" onClick={() => setPreview(f)}>عرض</Button><IconAction icon="download" label="تنزيل الملف" onClick={() => void downloadFile(f)} />{can('patients', 'edit') && <IconAction icon="trash" label="حذف الملف" danger onClick={() => setDel(f)} />}</RowActions></td></tr>
           ))}</tbody>
         </table></div>
       )}
       {preview && <FilePreviewModal file={preview} onClose={() => setPreview(null)} />}
-      {del && <ConfirmDialog title="حذف الملف" message={`سيتم حذف «${del.fileName}» نهائيًا.`} onClose={() => setDel(null)} onConfirm={async () => { const r = await db.deletePatientFile(del); if (r.ok) { toast.success('تم حذف الملف.'); load(); } else toast.error(r.error); }} />}
+      {del && <ConfirmDialog title="حذف الملف" message={`سيتم حذف «${fileTitle(del)}» نهائيًا — وهيختفي من التشخيص كمان.`} onClose={() => setDel(null)} onConfirm={async () => { const r = await db.deletePatientFile(del); if (r.ok) { toast.success('تم حذف الملف.'); load(); } else toast.error(r.error); }} />}
     </div>
   );
+}
+
+/** تنزيل الملف باسمه الأصلي (رابط موقّع مؤقت — الـ bucket خاص) */
+export async function downloadFile(f: PatientFile) {
+  const url = await db.fileUrl(f.filePath, f.fileName);
+  if (url) window.open(url, '_blank', 'noopener');
 }

@@ -5,7 +5,7 @@ import type {
   TreatmentSession, InitialAssessment, TreatmentPlan, Package, PackagePlan, Invoice, Payment,
   PaymentMethod, Employee, CenterInfo, DaySchedule, PermissionMatrix, InventoryItem, StockMovement, StockMovementType,
   AppNotification, NotificationKind, StaffRequest, StaffRequestType, DiscountCode, Campaign, Branch,
-  SupportTicket, SupportReply, TicketPriority, TicketStatus, PatientFile, BodyRecord, AuditLog, AttendanceRow,
+  SupportTicket, SupportReply, TicketPriority, TicketStatus, PatientFile, PatientFileCategory, BodyRecord, AuditLog, AttendanceRow,
   LoyaltyLedgerRow, LoyaltyCodeRow, LoyaltySummary, PlanOffer,
 } from '../types';
 import { defaultPermissions } from '../services/defaultPermissions';
@@ -1278,7 +1278,8 @@ export const db = {
     const { data } = await supabase.storage.from('patient-files').createSignedUrl(path, 60 * 60 * 24 * 30);
     return data?.signedUrl ?? null;
   },
-  async uploadPatientFile(patientId: string, file: File, note = '', link: { planId?: string | null; appointmentId?: string | null } = {}): Promise<Result> {
+  async uploadPatientFile(patientId: string, file: File, note = '', link: { planId?: string | null; appointmentId?: string | null } = {}, meta: { category?: PatientFileCategory; title?: string; fileDate?: string } = {}): Promise<Result> {
+    if (!net.isOnline()) return fail('رفع الملفات محتاج اتصال بالإنترنت.');
     if (file.size > 10 * 1024 * 1024) return fail('حجم الملف أكبر من 10 ميجابايت.');
     if (file.size === 0) return fail('الملف فارغ.');
     const allowed = ['application/pdf', 'image/png', 'image/jpeg', 'image/webp', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
@@ -1290,17 +1291,18 @@ export const db = {
     const up = await supabase.storage.from('patient-files').upload(path, file, { contentType: file.type, upsert: false });
     if (up.error) return fail('تعذّر رفع الملف: ' + up.error.message);
     const emp = load().employees.find((e) => e.id === actorId);
-    const { error } = await supabase.from('patient_files').insert({ patient_id: patientId, uploaded_by: u.user.id, uploaded_by_name: emp?.name ?? load().patients.find((p) => p.id === patientId)?.fullName ?? '', file_path: path, file_name: file.name, file_type: file.type, size_bytes: file.size, note: note.trim(), plan_id: link.planId ?? null, appointment_id: link.appointmentId ?? null });
+    const { error } = await supabase.from('patient_files').insert({ patient_id: patientId, uploaded_by: u.user.id, uploaded_by_name: emp?.name ?? load().patients.find((p) => p.id === patientId)?.fullName ?? '', file_path: path, file_name: file.name, file_type: file.type, size_bytes: file.size, note: note.trim(), plan_id: link.planId ?? null, appointment_id: link.appointmentId ?? null, category: meta.category ?? 'other', title: (meta.title ?? '').trim(), file_date: meta.fileDate || null });
     if (error) { await supabase.storage.from('patient-files').remove([path]); return fail(cleanMsg(error.message)); }
     return { ok: true };
   },
-  async fileUrl(path: string): Promise<string | null> {
-    const { data } = await supabase.storage.from('patient-files').createSignedUrl(path, 300);
+  async fileUrl(path: string, download?: string): Promise<string | null> {
+    const { data } = await supabase.storage.from('patient-files').createSignedUrl(path, 300, download ? { download } : undefined);
     return data?.signedUrl ?? null;
   },
   async deletePatientFile(f: PatientFile): Promise<Result> {
-    const { error } = await supabase.from('patient_files').delete().eq('id', f.id);
+    const { data, error } = await supabase.from('patient_files').delete().eq('id', f.id).select('id');
     if (error) return fail(cleanMsg(error.message));
+    if (!data?.length) return fail('ليس لديك صلاحية حذف هذا الملف.');
     await supabase.storage.from('patient-files').remove([f.filePath]);
     return { ok: true };
   },

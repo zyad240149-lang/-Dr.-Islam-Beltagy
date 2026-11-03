@@ -9,13 +9,15 @@ import { useDbVersion } from '../hooks/useDb';
 import { Icon } from '../utils/icons';
 import { Button, EmptyState, ErrorState, Input, Select, Skeleton, StatusBadge } from '../components/ui';
 import { ConfirmDialog, FilterBar, IconAction, RowActions, useCan } from '../components/common';
-import { fmtDate, REFERRAL_SOURCE_LABEL, exportCsv, money, tsToYmd } from '../utils/format';
+import { fmtDate, REFERRAL_SOURCE_LABEL, exportCsv, money, tsToYmd, whatsappNumber } from '../utils/format';
 import { useToast } from '../hooks/useToast';
 import { useAuth } from '../services/auth';
 import { exportPatientsWorkbook } from '../utils/patientsWorkbook';
 import ImportPatientsModal from '../components/ImportPatientsModal';
 import { EditPatientModal, NewPatientModal, PlanModal } from '../components/PatientForms';
 import BookingWizard from '../components/BookingWizard';
+import { FollowUpsModal } from '../ortho/FollowUps';
+import { ortho, useOrthoVersion } from '../ortho/data';
 import { patientGaps } from '../utils/patientGaps';
 
 const PAGE_SIZE = 15;
@@ -66,6 +68,11 @@ function PatientsList({ tabs }: { tabs: ReactNode }) {
   // ?new=1 (من زرار «إضافة مريض جديد» في الحجز) ← نافذة إضافة المريض بتفتح على طول
   const [adding, setAdding] = useState(params.get('new') === '1');
   const [editing, setEditing] = useState<PatientRow | null>(null);
+  const [fuFor, setFuFor] = useState<string | null>(null);
+  useOrthoVersion();
+  // عدد المتابعات القادمة لكل مريض (للزرار جنب كل مريض)
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' });
+  const nextFu = (pid: string) => ortho.list('follow_ups', pid).filter((f) => f.status === 'scheduled' && f.date >= today).length;
   const [booking, setBooking] = useState<PatientRow | null>(null);
   const [planning, setPlanning] = useState<PatientRow | null>(null);
   const [deleting, setDeleting] = useState<PatientRow | null>(null);
@@ -134,7 +141,7 @@ function PatientsList({ tabs }: { tabs: ReactNode }) {
                       <tr key={p.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/patients/${p.id}`)}>
                         <td className="num">{p.fileNo}</td>
                         <td style={{ fontWeight: 600 }}>{p.fullName}{p.pendingSync && <PendingSyncTag />}<div><CompletenessBadge patient={p} full /></div>{p.balance > 0 && can('invoices', 'view') && <div className="muted-sm">مستحق: <span className="num">{money(p.balance)}</span></div>}</td>
-                        <td className="num" style={{ whiteSpace: 'nowrap' }}>{p.phone}<WhatsappLink phone={p.phone} patientId={p.id} /></td>
+                        <td className="num" style={{ whiteSpace: 'nowrap' }}>{p.phone}<WhatsappLink phone={whatsappNumber(p)} patientId={p.id} /></td>
                         <td>{p.doctorName || '—'}</td>
                         <td>{p.lastVisit ? fmtDate(p.lastVisit) : '—'}</td>
                         <td><StatusBadge label={p.active ? 'نشط' : 'معطّل'} tone={p.active ? 'ok' : 'muted'} /></td>
@@ -142,6 +149,7 @@ function PatientsList({ tabs }: { tabs: ReactNode }) {
                         <td className="actions" onClick={(e) => e.stopPropagation()}>
                           <RowActions>
                             <IconAction icon="eye" label="عرض الملف" onClick={() => navigate(`/patients/${p.id}`)} />
+                            <Button size="sm" variant="outline" icon="calendar" onClick={() => setFuFor(p.id)}>مواعيد المتابعة{nextFu(p.id) > 0 && <span className="badge badge--brand num" style={{ marginInlineStart: 4 }}>{nextFu(p.id)}</span>}</Button>
                             {can('patients', 'edit') && <IconAction icon="edit" label="تعديل" onClick={() => setEditing(p)} />}
                             {(can('booking', 'create') || can('appointments', 'create')) && p.active && <IconAction icon="calendarPlus" label="إضافة موعد" onClick={() => setBooking(p)} />}
                             {can('plans', 'create') && <IconAction icon="target" label="خطة العلاج" onClick={() => setPlanning(p)} />}
@@ -185,6 +193,7 @@ function PatientsList({ tabs }: { tabs: ReactNode }) {
       </div>
 
       {adding && <NewPatientModal onClose={() => setAdding(false)} onCreated={(id) => navigate(`/patients/${id}`)} />}
+      {fuFor && <FollowUpsModal patientId={fuFor} onClose={() => setFuFor(null)} />}
       {editing && <EditPatientModal patient={db.patient(editing.id) ?? editing} onClose={() => { setEditing(null); reload(); }} />}
       {booking && <BookingWizard presetPatientId={booking.id} onClose={() => { setBooking(null); reload(); }} />}
       {planning && <PlanModal patientId={planning.id} onClose={() => { setPlanning(null); reload(); }} />}

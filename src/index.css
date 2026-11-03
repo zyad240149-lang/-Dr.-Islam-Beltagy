@@ -839,7 +839,8 @@ textarea.input { height: auto; padding-block: 10px; resize: vertical; line-heigh
 .seg--3 { grid-template-columns: repeat(3, 1fr); }
 .seg--4 { grid-template-columns: repeat(4, 1fr); }
 .seg--5 { grid-template-columns: repeat(5, 1fr); }
-@media (max-width: 640px) { .seg--4, .seg--5 { grid-template-columns: repeat(2, 1fr); } }
+.seg--6 { grid-template-columns: repeat(6, 1fr); }
+@media (max-width: 640px) { .seg--4, .seg--5, .seg--6 { grid-template-columns: repeat(2, 1fr); } }
 .us-pick { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
 .us-img { display: block; width: 100%; max-width: 720px; height: auto; margin: 0 auto 12px; border-radius: 10px; background: #fff; }
 .nt-sources__sum { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }

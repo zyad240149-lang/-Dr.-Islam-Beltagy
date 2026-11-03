@@ -45,6 +45,7 @@ const Medications = lazy(() => import('./ortho/Medications'));
 const Exercises = lazy(() => import('./ortho/Exercises'));
 const ExerciseShare = lazy(() => import('./ortho/ExerciseShare'));
 const Diagnosis = lazy(() => import('./ortho/Diagnosis'));
+const FollowUps = lazy(() => import('./ortho/FollowUps'));
 const Landing = lazy(() => import('./landing/Landing'));
 const SignUp = lazy(() => import('./pwa/SignUp'));
 
@@ -94,6 +95,7 @@ const ROUTES: { path: string; area: Area; anyOf?: Area[]; el: JSX.Element }[] = 
   { path: '/services', area: 'services', el: <Services /> },
   { path: '/diagnosis', area: 'patients', el: <Diagnosis /> },
   { path: '/consultations', area: 'patients', el: <Consultations /> },
+  { path: '/follow-ups', area: 'patients', el: <FollowUps /> },
   { path: '/imaging', area: 'patients', el: <Imaging /> },
   { path: '/fractures', area: 'patients', el: <Fractures /> },
   { path: '/surgeries', area: 'patients', el: <Surgeries /> },

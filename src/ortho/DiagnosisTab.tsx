@@ -11,6 +11,7 @@ import { AttachmentThumbs, ConsultModal, DraftCard, listConsultDrafts, clearCons
 import { empName } from '../data/installments';
 import { fmtTime } from '../utils/format';
 import { DiagnosisOutput } from './DiagnosisOutput';
+import { FollowUpsOfConsult } from './FollowUps';
 import { diagnosisHtml, hasRx, type DxPart } from './printDiagnosis';
 
 // صفحات الشيت جوّه iframe (ستايلها منفصل عن البرنامج) بتتصغّر على عرض المكان المتاح
@@ -89,6 +90,8 @@ export function DiagnosisTab({ patientId, embedded }: { patientId: string; embed
                     {visit && <> · زيارة <span className="num">{visit.no}</span> (<span className="num">{fmtTime(visit.time)}</span>)</>}
                   </div>
                   <div className="cx-dx"><span className="cx-dx__l">التشخيص</span>{c.diagnosis ? <b dir="auto">{c.diagnosis}</b> : <span className="muted">لسه ما اتحددش</span>}{c.icd10 && <span className="badge badge--brand" dir="ltr">{c.icd10}</span>}</div>
+                  {c.visitReason && <div className="cx-dx"><span className="cx-dx__l">شكوى المريض</span><span dir="auto" style={{ whiteSpace: 'pre-line' }}>{c.visitReason}</span></div>}
+                  {c.patientId && <FollowUpsOfConsult consultationId={c.id} patientId={c.patientId} />}
                 </div>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                   {isIncomplete(c) && perm.edit && <Button size="sm" icon="refresh" onClick={() => setEdit(c)}>استكمال</Button>}

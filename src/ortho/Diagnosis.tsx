@@ -12,7 +12,7 @@ import { NursingModal, printNursing } from './Nursing';
 import { Button, EmptyState, Modal } from '../components/ui';
 import { db } from '../data/db';
 import { useDbVersion } from '../hooks/useDb';
-import { APPT_STATUS, fmtDate, fmtTime, todayYmd } from '../utils/format';
+import { APPT_STATUS, fmtDate, fmtTime, todayYmd, whatsappNumber } from '../utils/format';
 import { normalizeSearch, patientMatches } from '../utils/phoneUtils';
 import { ExerciseSendModal } from './ExerciseSend';
 import { WhatsappLink } from '../components/WhatsappLink';
@@ -170,7 +170,7 @@ export default function Diagnosis() {
                     </div>
                     <LinkBadge c={c} />
                     <div className="dx-queue__act">
-                      {pp?.phone && <WhatsappLink phone={pp.phone} button />}
+                      {whatsappNumber(pp) && <WhatsappLink phone={whatsappNumber(pp)} button />}
                       {perm.edit && <Button size="sm" variant="outline" icon="edit" onClick={() => setUnlinkedEdit(c)}>فتح</Button>}
                       {perm.edit && !local && <Button size="sm" icon="user" disabled={!online} title={online ? '' : 'محتاج اتصال بالإنترنت'}
                         onClick={() => { const s1 = sameName(pp?.name ?? ''); setLinking({ c, patientId: s1.length === 1 ? s1[0].id : '' }); }}>ربط بملف مريض</Button>}
@@ -216,7 +216,7 @@ export default function Diagnosis() {
                               : local ? <span className="badge badge--warn">لم يكتمل</span>
                               : <span className={`badge badge--${APPT_STATUS[a.status].tone}`}>{APPT_STATUS[a.status].label}</span>}
                             <div className="dx-queue__act">
-                              {p?.phone && <WhatsappLink phone={p.phone} patientId={p.id} button />}
+                              {p && whatsappNumber(p) && <WhatsappLink phone={whatsappNumber(p)} patientId={p.id} button />}
                               {!perm.add ? null
                                 : state === 'incomplete' && consult ? <Button size="sm" icon="refresh" onClick={() => openSaved(consult, true)}>استكمال</Button>
                                 : local ? <Button size="sm" icon="refresh" onClick={() => resumeDraft(a.patientId, true)}>استكمال</Button>
@@ -265,7 +265,7 @@ export default function Diagnosis() {
                       </div>
                       {done ? <span className="badge badge--ok">اتعملت متابعة الزيارة</span> : <span className="badge badge--warn">مستني المتابعة</span>}
                       <div className="dx-queue__act">
-                        {p?.phone && <WhatsappLink phone={p.phone} patientId={p.id} button />}
+                        {p && whatsappNumber(p) && <WhatsappLink phone={whatsappNumber(p)} patientId={p.id} button />}
                         {done && <Button size="sm" variant="outline" icon="print" onClick={() => printNursing(done)}>طباعة</Button>}
                         {done ? perm.edit && <Button size="sm" variant="outline" icon="edit" onClick={() => setSheet({ patientId: a.patientId, appointmentId: a.id, initial: done })}>تعديل</Button>
                           : perm.add && <Button size="sm" icon="clipboard" onClick={() => setSheet({ patientId: a.patientId, appointmentId: a.id })}>متابعة</Button>}
@@ -295,7 +295,7 @@ export default function Diagnosis() {
                         </div>
                         <span className="badge badge--warn">ما اتعملوش متابعة</span>
                         <div className="dx-queue__act">
-                          {x.p?.phone && <WhatsappLink phone={x.p.phone} patientId={x.id} button />}
+                          {whatsappNumber(x.p) && <WhatsappLink phone={whatsappNumber(x.p)} patientId={x.id} button />}
                           {perm.add && <Button size="sm" icon="clipboard" onClick={() => openSheet(x.id)}>متابعة</Button>}
                           <Button size="sm" variant="outline" onClick={() => pick(x.id)}>ملف التشخيص</Button>
                         </div>
@@ -326,7 +326,7 @@ export default function Diagnosis() {
                           </div>
                           <span className="badge badge--ok"><span className="num">{all.length}</span> {all.length > 1 ? 'متابعات' : 'متابعة'} — آخرها {fmtDate(all[0].date)}</span>
                           <div className="dx-queue__act">
-                            {x.p?.phone && <WhatsappLink phone={x.p.phone} patientId={x.id} button />}
+                            {whatsappNumber(x.p) && <WhatsappLink phone={whatsappNumber(x.p)} patientId={x.id} button />}
                             <Button size="sm" variant="outline" icon="print" onClick={() => printNursing(all[0])}>طباعة آخر متابعة</Button>
                             {perm.add && <Button size="sm" icon="clipboard" onClick={() => openSheet(x.id)}>متابعة جديدة</Button>}
                             <Button size="sm" variant="outline" onClick={() => pick(x.id)}>الملف</Button>
@@ -362,7 +362,7 @@ export default function Diagnosis() {
                         </div>
                         {x.incomplete > 0 ? <span className="badge badge--warn">فيه تشخيص يحتاج استكمال</span> : <span />}
                         <span className="dx-queue__act" onClick={(e) => e.stopPropagation()}>
-                          {x.p?.phone && <WhatsappLink phone={x.p.phone} patientId={x.id} button />}
+                          {whatsappNumber(x.p) && <WhatsappLink phone={whatsappNumber(x.p)} patientId={x.id} button />}
                           {/* إضافة شيت = يفتح آخر تشخيص (حتى لو من البرنامج القديم) على كشف الطبيب ويتكمّل في نفس الكشف */}
                           {perm.edit && <Button size="sm" variant="outline" icon="plus" onClick={() => openSaved(x.last, true)}>إضافة شيت</Button>}
                           {perm.add && <Button size="sm" icon="stethoscope" onClick={() => startPicked(x.id)}>{drafts.some((d) => d.patientId === x.id) ? 'استكمال التشخيص' : 'تشخيص جديد'}</Button>}

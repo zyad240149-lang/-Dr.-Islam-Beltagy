@@ -1,32 +1,32 @@
 {
-  "at": "2026-10-28T23:24:59.293Z",
-  "passed": 207,
+  "at": "2026-11-03T18:08:57.300Z",
+  "passed": 215,
   "failed": 0,
   "results": [
     {
       "name": "حساب مدير واجهة اختبار",
       "ok": true,
-      "detail": "{\"id\":\"57d568c0-9def-4144-82b5-6e18a8eb713d\",\"name\":\"مدير واجهة اختبار\",\"username\":\"201200000961\",\"role\":\"system_admin\","
+      "detail": "{\"id\":\"d6345ac3-6d45-4ca7-a962-a11ff83ed04d\",\"name\":\"مدير واجهة اختبار\",\"username\":\"201200000961\",\"role\":\"system_admin\","
     },
     {
       "name": "حساب استقبال واجهة اختبار",
       "ok": true,
-      "detail": "{\"id\":\"73e162cb-52a2-456c-843e-5ffe29de656f\",\"name\":\"استقبال واجهة اختبار\",\"username\":\"201200000962\",\"role\":\"reception\","
+      "detail": "{\"id\":\"128710f8-2bfc-4462-a63b-abab4d0f1a13\",\"name\":\"استقبال واجهة اختبار\",\"username\":\"201200000962\",\"role\":\"reception\","
     },
     {
       "name": "حساب محاسب واجهة اختبار",
       "ok": true,
-      "detail": "{\"id\":\"e6ec96c4-2049-45b0-b4aa-a9403ade40a2\",\"name\":\"محاسب واجهة اختبار\",\"username\":\"201200000963\",\"role\":\"accountant\",\""
+      "detail": "{\"id\":\"a8968f90-cb87-4933-9003-2c1740093639\",\"name\":\"محاسب واجهة اختبار\",\"username\":\"201200000963\",\"role\":\"accountant\",\""
     },
     {
       "name": "حساب طبيب واجهة اختبار",
       "ok": true,
-      "detail": "{\"id\":\"db90359e-fe38-4aff-9e96-37d62978012e\",\"name\":\"طبيب واجهة اختبار\",\"username\":\"201200000964\",\"role\":\"therapist\",\"ph"
+      "detail": "{\"id\":\"a4a8c717-0bfa-4d70-89f5-03f842b98047\",\"name\":\"طبيب واجهة اختبار\",\"username\":\"201200000964\",\"role\":\"therapist\",\"ph"
     },
     {
       "name": "حساب مريض الاختبار",
       "ok": true,
-      "detail": "{\"ok\":true,\"patientId\":\"f024d532-3afe-4643-a289-3e262cf0ef59\",\"customerId\":\"ff279fb9-6192-4747-94fd-50f512ac6428\"}"
+      "detail": "{\"ok\":true,\"patientId\":\"3a9af255-cc3a-4bce-a10c-5b01e50cd84f\",\"customerId\":\"d7e64cd2-37bc-470d-99c8-66295a6ff118\"}"
     },
     {
       "name": "موعد للمريض",
@@ -101,7 +101,17 @@
     {
       "name": "المدير: /diagnosis على الموبايل بدون سكرول عرضي",
       "ok": true,
-      "detail": "أعرض من الشاشة بـ 0px — "
+      "detail": "أعرض من الشاشة بـ -15px — "
+    },
+    {
+      "name": "المدير: /follow-ups «متابعات المرضى»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المدير: /follow-ups على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ -15px — "
     },
     {
       "name": "المدير: /consultations «الكشوفات والتشخيص»",
@@ -259,7 +269,7 @@
       "detail": ""
     },
     {
-      "name": "المدير: /patients/f024d532-3afe-4643-a289-3e262cf0ef59 «مريض واجهة اختبار»",
+      "name": "المدير: /patients/3a9af255-cc3a-4bce-a10c-5b01e50cd84f «مريض واجهة اختبار»",
       "ok": true,
       "detail": ""
     },
@@ -337,6 +347,16 @@
       "name": "الاستقبال: /diagnosis على الموبايل بدون سكرول عرضي",
       "ok": true,
       "detail": "أعرض من الشاشة بـ 0px — "
+    },
+    {
+      "name": "الاستقبال: /follow-ups «متابعات المرضى»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال: /follow-ups على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ -15px — "
     },
     {
       "name": "الاستقبال: /consultations «الكشوفات والتشخيص»",
@@ -489,7 +509,7 @@
       "detail": ""
     },
     {
-      "name": "الاستقبال: /patients/f024d532-3afe-4643-a289-3e262cf0ef59 «مريض واجهة اختبار»",
+      "name": "الاستقبال: /patients/3a9af255-cc3a-4bce-a10c-5b01e50cd84f «مريض واجهة اختبار»",
       "ok": true,
       "detail": ""
     },
@@ -557,6 +577,16 @@
       "name": "المحاسب: /diagnosis على الموبايل بدون سكرول عرضي",
       "ok": true,
       "detail": "أعرض من الشاشة بـ 0px — "
+    },
+    {
+      "name": "المحاسب: /follow-ups «متابعات المرضى»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المحاسب: /follow-ups على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ -15px — "
     },
     {
       "name": "المحاسب: /consultations «الكشوفات والتشخيص»",
@@ -776,7 +806,17 @@
     {
       "name": "الطبيب: /diagnosis على الموبايل بدون سكرول عرضي",
       "ok": true,
-      "detail": "أعرض من الشاشة بـ 0px — "
+      "detail": "أعرض من الشاشة بـ -15px — "
+    },
+    {
+      "name": "الطبيب: /follow-ups «متابعات المرضى»",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الطبيب: /follow-ups على الموبايل بدون سكرول عرضي",
+      "ok": true,
+      "detail": "أعرض من الشاشة بـ -15px — "
     },
     {
       "name": "الطبيب: /consultations «الكشوفات والتشخيص»",
@@ -924,7 +964,7 @@
       "detail": ""
     },
     {
-      "name": "الطبيب: /patients/f024d532-3afe-4643-a289-3e262cf0ef59 «مريض واجهة اختبار»",
+      "name": "الطبيب: /patients/3a9af255-cc3a-4bce-a10c-5b01e50cd84f «مريض واجهة اختبار»",
       "ok": true,
       "detail": ""
     },

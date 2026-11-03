@@ -20,16 +20,19 @@ import { printRx } from './printRx';
 import { openPrintWindow } from '../utils/printDoc';
 import { DiagnosisOutput } from './DiagnosisOutput';
 import { InjectionList, InjectionModal } from './Injections';
+import { PatientMedicalFiles } from './PatientMedicalFiles';
+import { FollowUpStep, FollowUpsOfConsult, savePendingFollowUps, type FuDraft } from './FollowUps';
 import type { DxPart } from './printDiagnosis';
 import { db } from '../data/db';
 import { Field, IconBtn, LoadState, PageHead, PatientSelect, SearchBox, Tone, confirmDelete, patientFile, patientName, useClinicalCan, useRun } from './kit';
 import { DoctorSheet, NursingSheet, doctorStarted, emptySheet, nurseStarted, normSheet, isTripleName, pendingFromSheet, resetPatientBasics, sheetHasContent, sheetPatientPatch, sheetSummary, withPatientBasics } from './ExamSheet';
 
-type Draft = Omit<Consultation, 'id'> & { id?: string };
+// pendingFollowUps: مواعيد متابعة اتحددت في الكشف ولسه ما اتحفظتش (بتتحفظ بعد حفظ التشخيص — مش عمود في الجدول)
+type Draft = Omit<Consultation, 'id'> & { id?: string; pendingFollowUps?: FuDraft[] };
 
 const emptyConsult = (patientId: string): Draft => ({
   patientId, date: todayYmd(), complaint: '', history: '', painScore: '', region: REGIONS[0], side: 'na', examination: '',
-  diagnosis: '', icd10: '', plan: '', medications: [], labs: [], imagingRequests: [], attachments: [], followUp: '', sheet: emptySheet(),
+  diagnosis: '', icd10: '', plan: '', medications: [], labs: [], imagingRequests: [], attachments: [], followUp: '', sheet: emptySheet(), visitReason: '',
 });
 // كشف قديم (قبل الشيت) بيتفتح للتعديل: نصوصه بتتحط في خانات «Other» في الشيت عشان الملخص اللي بيتحفظ يفضل هو هو
 function withSheet(c: Draft): Draft {
@@ -70,8 +73,8 @@ export function clearConsultDraft(patientId: string) {
   try { localStorage.removeItem(draftKey(patientId)); } catch { /* تخزين محلي غير متاح */ }
 }
 function draftHasContent(c: Draft) {
-  return !!(sheetHasContent(normSheet(c.sheet)) || c.painScore !== '' || c.plan.trim()
-    || c.medications.length || c.labs.length || c.imagingRequests.length || c.attachments.length);
+  return !!(sheetHasContent(normSheet(c.sheet)) || c.painScore !== '' || c.plan.trim() || c.visitReason?.trim()
+    || c.medications.length || c.labs.length || c.imagingRequests.length || c.attachments.length || c.pendingFollowUps?.length);
 }
 
 const reqKey = (r: ImagingRequest) => `${r.kind}|${r.region.trim()}|${r.view.trim()}`;
@@ -87,7 +90,7 @@ function Section({ icon, title, children, aside }: { icon: string; title: string
 
 // الكشف = الشيتين بالترتيب (التمريض قبل دخول المريض ← كشف الطبيب) وبعدهم الحقن — الروشتة والأشعة والتحاليل اتنقلت لشيت المتابعة
 // «كشف الطبيب» بيتسمى بالمنطقة: شيت الطبيب بيتحدد من مكان الألم في الشيت العام (regionSheets)
-const TABS = [['nurse', 'الشيت العام'], ['doctor', 'كشف الطبيب'], ['plan', 'الخطة العلاجية'], ['us', 'السونار'], ['inj', 'الحقن']] as const;
+const TABS = [['nurse', 'الشيت العام'], ['doctor', 'كشف الطبيب'], ['plan', 'الخطة العلاجية'], ['us', 'السونار'], ['inj', 'الحقن'], ['fu', 'تحديد موعد متابعة']] as const;
 type Tab = typeof TABS[number][0];
 
 // appointmentId = الزيارة اللي التشخيص الجديد بيتربط بيها (من «بانتظار التشخيص»)؛ من غيرها بيتربط بزيارة النهارده المفتوحة للمريض لو فيه
@@ -203,8 +206,11 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
     const printWin = thenPrint ? openPrintWindow() : null;
     let printed = false;
     savingRef.current = true;
+    const pendingFus = c.pendingFollowUps ?? [];
     void run(async () => {
-      await ortho.save('consultations', payload);
+      const consultId = await ortho.save('consultations', { ...payload, pendingFollowUps: undefined } as Draft);
+      // مواعيد المتابعة اللي اتحددت في الكشف ← مربوطة بالتشخيص ده
+      if (c.patientId && pendingFus.length) await savePendingFollowUps(c.patientId, consultId, pendingFus);
       // من غير ملف مريض: طلبات الأشعة والتحاليل بيسجلها الخادم في ملف المريض لما التشخيص يتربط
       if (!c.patientId) return;
       // طلبات الأشعة الجديدة بتتسجل في «الأشعة والتحاليل» كـ «مطلوبة» عشان تتابع وصولها وقراءتها
@@ -280,7 +286,14 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
             <LegacyText c={initial} />
           </details>
         )}
-        <div className="seg seg--5 sh-tabs" role="tablist" aria-label="أجزاء الكشف">
+        <div className="field cx-reason">
+          <label htmlFor="cx-visit-reason">شكوى المريض / سبب الزيارة</label>
+          <textarea id="cx-visit-reason" className="input" rows={2} dir="auto" value={c.visitReason ?? ''} onChange={(e) => set('visitReason', e.target.value)}
+            placeholder="اكتب شكوى المريض بكلامه — مثلاً: ألم في الركبة اليمين من أسبوعين، تورم بعد المشي…" />
+        </div>
+        <PatientMedicalFiles patientId={c.patientId} excludeConsultId={initial?.id} />
+
+        <div className="seg seg--6 sh-tabs" role="tablist" aria-label="أجزاء الكشف">
           {TABS.map(([k, l], i) => (
             <button key={k} type="button" role="tab" aria-selected={tab === k} className={`seg__btn ${tab === k ? 'active' : ''}`} onClick={() => goTab(k)}>
               <span className="sh-tabs__n num">{i + 1}</span>{k === 'doctor' && active.length ? `${l} — ${active.map((id) => SHEET_TAB[id]).join(' + ')}` : l}
@@ -380,6 +393,19 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           </Section>
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('us')}>رجوع: السونار</Button>
+            <Button icon="chevronLeft" onClick={() => goTab('fu')}>التالي: تحديد موعد متابعة</Button>
+          </div>
+        </>}
+
+        {/* مواعيد المتابعة: أكتر من موعد للمريض، مربوطة بالتشخيص ده (بتتحفظ مع حفظ الكشف) */}
+        {tab === 'fu' && <>
+          <Section icon="calendar" title="تحديد موعد متابعة">
+            <FollowUpStep patientId={c.patientId} consultationId={initial?.id} pending={c.pendingFollowUps ?? []} onPending={(p) => set('pendingFollowUps', p)}
+              doctorHint={visitAppt?.therapistId} />
+          </Section>
+          <div className="sh-next">
+            <Button variant="outline" icon="chevron" onClick={() => goTab('inj')}>رجوع: الحقن</Button>
+            <Button icon="check" loading={busy} disabled={!ok} onClick={() => save(false)}>حفظ الكشف</Button>
           </div>
         </>}
         {inj && <InjectionModal patientId={c.patientId} appointmentId={c.appointmentId ?? null} initial={inj === 'new' ? undefined : inj} onClose={() => setInj(null)} />}
@@ -466,8 +492,9 @@ export function DraftCard({ d, onResume, onDiscard }: { d: Draft & { savedAt?: n
       <div className="cx-draft__steps">
         {steps.map(([label, done], i) => <span key={label} className={`cx-draft__step ${done ? 'is-done' : ''}`}><b className="num">{i + 1}</b>{label} {done ? '✓' : '— لسه'}</span>)}
       </div>
-      {(sum.complaint || sum.diagnosis) && (
+      {(sum.complaint || sum.diagnosis || d.visitReason) && (
         <dl className="dl" style={{ marginTop: 6 }}>
+          {d.visitReason && <div><dt>سبب الزيارة</dt><dd dir="auto">{d.visitReason}</dd></div>}
           {sum.complaint && <div><dt>الشكوى</dt><dd dir="auto">{sum.complaint}</dd></div>}
           {sum.diagnosis && <div><dt>التشخيص</dt><dd dir="auto">{sum.diagnosis}</dd></div>}
         </dl>
@@ -535,6 +562,7 @@ export function ConsultList({ items, onEdit, hidePatient }: { items: Consultatio
               {c.diagnosis ? <b>{c.diagnosis}</b> : <span className="muted">لسه ما اتحددش</span>}{c.icd10 && <span className="badge badge--brand" dir="ltr">{c.icd10}</span>}
             </div>
             <dl className="dl" style={{ marginTop: 6 }}>
+              {c.visitReason && <div><dt>شكوى المريض / سبب الزيارة</dt><dd dir="auto" style={{ whiteSpace: 'pre-line' }}>{c.visitReason}</dd></div>}
               <div><dt>الشكوى</dt><dd>{c.complaint || '—'}</dd></div>
               {c.history && <div><dt>التاريخ المرضي</dt><dd style={{ whiteSpace: 'pre-line' }}>{c.history}</dd></div>}
               <div><dt>الفحص</dt><dd dir="auto" style={{ whiteSpace: 'pre-line' }}>{c.examination || '—'}</dd></div>
@@ -546,6 +574,7 @@ export function ConsultList({ items, onEdit, hidePatient }: { items: Consultatio
               {c.followUp && <div><dt>المتابعة</dt><dd>{fmtDate(c.followUp)}</dd></div>}
             </dl>
             {atts.length > 0 && <AttachmentThumbs items={atts} />}
+            {c.patientId && <FollowUpsOfConsult consultationId={c.id} patientId={c.patientId} />}
           </div>
         );
       })}

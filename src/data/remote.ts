@@ -31,6 +31,7 @@ export const map = {
     active: r.active, mainComplaint: r.main_complaint ?? '', diagnosis: r.diagnosis ?? '', medicalHistory: r.medical_history ?? '',
     diagnosisRef: ref(r.diagnosis_condition_id, r.diagnosis_side),
     email: r.email ?? '', city: r.city ?? '', district: r.district ?? '', street: r.street ?? '', doctorId: r.doctor_id ?? null, signupMethod: r.signup_method ?? null, nationality: r.nationality ?? 'saudi', nationalityUnconfirmed: !!r.nationality_unconfirmed || !r.nationality, firstName: r.first_name ?? '', fatherName: r.father_name ?? '', familyName: r.family_name ?? '',
+    phone2: r.phone2 ?? '', whatsappMode: r.whatsapp_mode ?? 'phone', whatsappPhone: r.whatsapp_phone ?? '',
   }),
   patientRow: (p: Partial<Patient>) => {
     const o: Record<string, unknown> = {};
@@ -39,6 +40,7 @@ export const map = {
       notes: 'notes', emergencyContactName: 'emergency_contact_name', emergencyContactPhone: 'emergency_contact_phone', active: 'active',
       mainComplaint: 'main_complaint', diagnosis: 'diagnosis', medicalHistory: 'medical_history', email: 'email', city: 'city', district: 'district', street: 'street',
       nationality: 'nationality', firstName: 'first_name', fatherName: 'father_name', familyName: 'family_name', nationalityUnconfirmed: 'nationality_unconfirmed',
+      phone2: 'phone2', whatsappMode: 'whatsapp_mode', whatsappPhone: 'whatsapp_phone',
     };
     for (const [k, col] of Object.entries(m)) if (k in p) o[col] = (p as any)[k];
     if ('birthDate' in p) o.birth_date = p.birthDate || null;
@@ -144,7 +146,7 @@ export const map = {
   }),
   reply: (r: any): SupportReply => ({ id: r.id, ticketId: r.ticket_id, employeeId: r.employee_id ?? null, body: r.body, createdAt: ts(r.created_at) }),
   servicePrice: (r: any): ServicePrice => ({ id: r.id, serviceId: r.service_id, label: r.label, price: num(r.price), therapistId: r.therapist_id ?? null, active: r.active }),
-  file: (r: any): PatientFile => ({ id: r.id, patientId: r.patient_id, planId: r.plan_id ?? null, appointmentId: r.appointment_id ?? null, uploadedBy: r.uploaded_by ?? null, uploadedByName: r.uploaded_by_name ?? '', filePath: r.file_path, fileName: r.file_name, fileType: r.file_type ?? '', sizeBytes: Number(r.size_bytes ?? 0), note: r.note ?? '', createdAt: ts(r.created_at) }),
+  file: (r: any): PatientFile => ({ id: r.id, patientId: r.patient_id, planId: r.plan_id ?? null, appointmentId: r.appointment_id ?? null, uploadedBy: r.uploaded_by ?? null, uploadedByName: r.uploaded_by_name ?? '', filePath: r.file_path, fileName: r.file_name, fileType: r.file_type ?? '', sizeBytes: Number(r.size_bytes ?? 0), note: r.note ?? '', createdAt: ts(r.created_at), category: r.category ?? 'other', title: r.title ?? '', fileDate: r.file_date ?? '' }),
   bodyRecord: (r: any): BodyRecord => ({ id: r.id, patientId: r.patient_id, appointmentId: r.appointment_id ?? null, sessionId: r.session_id ?? null, therapistId: r.therapist_id ?? null, regionId: r.region_id, conditionId: r.condition_id ?? null, side: r.side ?? null, problem: r.problem ?? '', diagnosis: r.diagnosis ?? '', severity: r.severity ?? 1, notes: r.notes ?? '', createdBy: r.created_by ?? null, createdAt: ts(r.created_at) }),
   audit: (r: any): AuditLog => ({ id: r.id, at: ts(r.at), userId: r.user_id ?? null, employeeId: r.employee_id ?? null, action: r.action, tableName: r.table_name, recordId: r.record_id ?? null, oldData: r.old_data ?? null, newData: r.new_data ?? null }),
   branch: (r: any): Branch => ({ id: r.id, name: r.name, city: r.city ?? '', district: r.district ?? '', address: r.address ?? '', phone: r.phone ?? '', active: r.active }),

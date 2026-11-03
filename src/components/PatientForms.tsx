@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import { db } from '../data/db';
 import { Modal, Button, Input, Select } from './ui';
 import { PhoneInput } from './PhoneInput';
+import { ContactFields, contactError, contactOf, normalizeContact, type ContactErrors } from './ContactFields';
 import { phoneErrorMessage, phoneMatches, normalizeSearch, type PhoneErrorCode } from '../utils/phoneUtils';
 import { Icon } from '../utils/icons';
 import { useToast } from '../hooks/useToast';
@@ -44,6 +45,8 @@ export function EditPatientModal({ patient, onClose }: { patient: Patient; onClo
   const [err, setErr] = useState('');
   const [phoneErr, setPhoneErr] = useState<PhoneErrorCode | null>(null);
   const [ecPhoneErr, setEcPhoneErr] = useState<PhoneErrorCode | null>(null);
+  const [contact, setContact] = useState(() => contactOf(patient));
+  const [contactErrs, setContactErrs] = useState<ContactErrors>({ phone2: null, whatsappPhone: null });
   const [tried, setTried] = useState(false);
   const set = <K extends keyof Patient>(k: K, v: Patient[K]) => setF((x) => ({ ...x, [k]: v }));
   const submit = async () => {
@@ -52,6 +55,7 @@ export function EditPatientModal({ patient, onClose }: { patient: Patient; onClo
     if (Object.keys(ie).length) { setErr(Object.values(ie)[0]); return; }
     if (phoneErr) { setErr(phoneErrorMessage(phoneErr)!); return; }
     if (ecPhoneErr) { setErr('جوال الطوارئ: ' + phoneErrorMessage(ecPhoneErr)); return; }
+    const ce = contactError(contactErrs); if (ce) { setErr(ce); return; }
     const phone = f.phone;
     if (f.email && !EMAIL_RE.test(f.email.trim())) { setErr('البريد الإلكتروني غير صحيح.'); return; }
     setBusy(true);
@@ -59,7 +63,7 @@ export function EditPatientModal({ patient, onClose }: { patient: Patient; onClo
     const { gender: g0, genderUnknown: _gu, nationalityUnconfirmed: _nu, ...rest } = f;
     const keep = g0 ? { gender: g0 } : {};
     // الموظف اختار الجنسية بنفسه في النموذج وحفظ = الجنسية بقت مؤكدة (ملفات الاستيراد القديم كانت «غير مؤكدة»)
-    try { await db.updatePatient(patient.id, { ...rest, ...keep, nationalityUnconfirmed: false, firstName: f.firstName?.trim(), fatherName: f.fatherName?.trim(), familyName: f.familyName?.trim(), nationalId: (f.nationalId ?? '').trim(), fullName: joinName(f), phone, email: (f.email ?? '').trim() }); toast.success('تم حفظ البيانات بنجاح.'); onClose(); }
+    try { await db.updatePatient(patient.id, { ...rest, ...keep, nationalityUnconfirmed: false, firstName: f.firstName?.trim(), fatherName: f.fatherName?.trim(), familyName: f.familyName?.trim(), nationalId: (f.nationalId ?? '').trim(), fullName: joinName(f), phone, email: (f.email ?? '').trim(), ...normalizeContact(contact) }); toast.success('تم حفظ البيانات بنجاح.'); onClose(); }
     catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
   };
   return (
@@ -77,6 +81,7 @@ export function EditPatientModal({ patient, onClose }: { patient: Patient; onClo
         <div className="grid-form">
           <IdentityFields idp="ep" f={f} set={(k, v) => setF((x) => ({ ...x, [k]: v }))} errors={idErrs} />
           <PhoneInput id="ep-phone" label="رقم الجوال" value={f.phone} showError={tried} onChange={(v, e) => { set('phone', v); setPhoneErr(e); }} />
+          <ContactFields idp="ep" value={contact} onChange={setContact} onErrors={setContactErrs} showError={tried} />
           <Input id="ep-email" label="البريد الإلكتروني" dir="ltr" value={f.email ?? ''} onChange={(e) => set('email', e.target.value)} />
           <Select id="ep-gender" label="النوع" value={f.gender} onChange={(e) => set('gender', e.target.value as Patient['gender'])} options={[...(!f.gender ? [{ value: '', label: '— غير محدد —' }] : []), { value: 'male', label: 'رجل' }, { value: 'female', label: 'امرأة' }]} />
           <Input id="ep-birth" label="تاريخ الميلاد" type="date" value={f.birthDate} max={todayYmd()} onChange={(e) => set('birthDate', e.target.value)} />
@@ -148,6 +153,8 @@ export function NewPatientModal({ onClose, onCreated }: { onClose: () => void; o
   const [f, setF] = useState({ nationality: 'saudi' as 'saudi' | 'non_saudi', firstName: '', fatherName: '', familyName: '', fullName: '', phone: '', email: '', gender: 'male' as 'male' | 'female', birthDate: '', nationalId: '', city: '', district: '', street: '', address: '', notes: '', doctorId: '', referralSource: 'google' as ReferralSource });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [phoneErr, setPhoneErr] = useState<PhoneErrorCode | null>('required');
+  const [contact, setContact] = useState(() => contactOf(null));
+  const [contactErrs, setContactErrs] = useState<ContactErrors>({ phone2: null, whatsappPhone: null });
   const [tried, setTried] = useState(false);
   const [dup, setDup] = useState<{ id: string; name: string; fileNo: string } | null>(null); // نفس الجوال موجود → تنبيه بدل ملف مكرر
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((x) => ({ ...x, [k]: v }));
@@ -157,6 +164,7 @@ export function NewPatientModal({ onClose, onCreated }: { onClose: () => void; o
     Object.assign(errs, identityErrors(f));
     const phone = f.phone;
     if (phoneErr) errs.phone = phoneErrorMessage(phoneErr)!;
+    const ce = contactError(contactErrs); if (ce) errs.contact = ce;
     if (f.email && !EMAIL_RE.test(f.email.trim())) errs.email = 'البريد الإلكتروني غير صحيح.';
     if (f.birthDate && f.birthDate > todayYmd()) errs.birthDate = 'تاريخ الميلاد غير صحيح.';
     setErrors(errs);
@@ -168,7 +176,7 @@ export function NewPatientModal({ onClose, onCreated }: { onClose: () => void; o
     setDup(null);
     setBusy(true);
     try {
-      const p = await db.createPatient({ ...f, firstName: f.firstName.trim(), fatherName: f.fatherName.trim(), familyName: f.familyName.trim(), nationalId: f.nationalId.trim(), fullName: joinName(f), phone: phone!, email: f.email.trim(), doctorId: f.doctorId || null, emergencyContactName: '', emergencyContactPhone: '', mainComplaint: '', diagnosis: '', medicalHistory: '' });
+      const p = await db.createPatient({ ...f, firstName: f.firstName.trim(), fatherName: f.fatherName.trim(), familyName: f.familyName.trim(), nationalId: f.nationalId.trim(), fullName: joinName(f), phone: phone!, email: f.email.trim(), doctorId: f.doctorId || null, emergencyContactName: '', emergencyContactPhone: '', mainComplaint: '', diagnosis: '', medicalHistory: '', ...normalizeContact(contact) });
       toast.success(`تم تسجيل المريض برقم ملف ${p.fileNo}`);
       onCreated(p.id);
     } catch (e) { toast.error((e as Error).message); } finally { setBusy(false); }
@@ -188,6 +196,8 @@ export function NewPatientModal({ onClose, onCreated }: { onClose: () => void; o
           <IdentityFields idp="np" f={f} set={(k, v) => setF((x) => ({ ...x, [k]: v }))} errors={errors} />
           <PhoneInput id="np-phone" label="رقم الجوال *" value={f.phone} showError={tried} onChange={(v, e) => { set('phone', v); setPhoneErr(e); }} />
           <Select id="np-gender" label="الجنس" value={f.gender} onChange={(e) => set('gender', e.target.value as 'male' | 'female')} options={[{ value: 'male', label: 'رجل' }, { value: 'female', label: 'امرأة' }]} />
+          <ContactFields idp="np" value={contact} onChange={setContact} onErrors={setContactErrs} showError={tried} />
+          {errors.contact && <div className="alert alert-danger" style={{ gridColumn: '1 / -1' }}>{errors.contact}</div>}
         </div>
       </div>
       <div className="form-section">

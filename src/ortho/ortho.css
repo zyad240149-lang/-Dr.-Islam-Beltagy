@@ -75,3 +75,87 @@
 @media (max-width: 900px) { .inj-grid--3 { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 640px) { .inj-grid, .inj-grid--3 { grid-template-columns: 1fr; } .inj-letter { grid-template-columns: 1fr; } .inj-letter img { display: none; } .inj-title b { font-size: 19px; } .inj-title small { display: none; } }
 .cx-medq { margin-bottom: 8px; }
+
+/* ===== 929: الواتساب / شكوى المريض / ملفات الأشعة والتحاليل / مواعيد المتابعة / الإملاء ===== */
+.wa-field { display: flex; flex-direction: column; gap: 8px; }
+.wa-field__check { display: inline-flex; align-items: center; gap: 8px; font-weight: 500; cursor: pointer; }
+.wa-field__alt { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 10px 12px; border: 1px dashed var(--line); border-radius: var(--r-sm); background: var(--bg); }
+.wa-field__other { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; width: 100%; }
+.wa-field__other > .field { flex: 1 1 240px; margin: 0; }
+
+.cx-reason { margin: 12px 0 4px; }
+.cx-reason label { font-weight: 700; color: var(--ink); }
+.cx-reason textarea { min-height: 58px; resize: vertical; }
+
+.pf-upload { border: 1px solid var(--line); border-radius: var(--r); padding: 14px; margin-bottom: 14px; background: var(--bg); }
+.pf-upload__title { font-weight: 700; color: var(--ink); margin-bottom: 10px; }
+
+.pmf { margin-top: 10px; }
+.pmf__head { width: 100%; border: 0; background: none; cursor: pointer; text-align: start; font: inherit; color: inherit; padding: 0; }
+.pmf__head .badge { margin-inline-start: 4px; }
+.pmf__head > svg:last-child { margin-inline-start: auto; }
+.pmf__group { margin-top: 10px; }
+.pmf__gtitle { font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+.pmf__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.pmf__tile { display: flex; gap: 10px; border: 1px solid var(--line); border-radius: var(--r-sm); padding: 8px; background: var(--surface); min-width: 0; }
+.pmf__tile.is-new { border-color: var(--warn); box-shadow: inset 3px 0 0 var(--warn); }
+.pmf__thumb { flex: none; width: 76px; height: 76px; border-radius: 8px; border: 0; padding: 0; overflow: hidden; background: var(--brand-50); color: var(--brand-700); cursor: pointer; display: grid; place-items: center; }
+.pmf__thumb img { width: 100%; height: 100%; object-fit: cover; }
+.pmf__thumb span { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 12px; font-weight: 700; }
+.pmf__meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.pmf__meta b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.pmf__note { white-space: pre-line; }
+.pmf__acts { display: flex; gap: 6px; margin-top: 4px; }
+
+.fu-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.fu-item { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; border: 1px solid var(--line); border-radius: var(--r-sm); padding: 8px 10px; background: var(--surface); box-shadow: inset 3px 0 0 var(--brand); }
+.fu-item--today { box-shadow: inset 3px 0 0 var(--warn); }
+.fu-item--missed { box-shadow: inset 3px 0 0 var(--danger); }
+.fu-item--done { box-shadow: inset 3px 0 0 var(--ok); }
+.fu-item--cancelled { box-shadow: inset 3px 0 0 var(--faint); opacity: .75; }
+.fu-item__main { flex: 1 1 220px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; border: 0; background: none; padding: 0; text-align: start; cursor: pointer; font: inherit; color: inherit; min-width: 0; }
+.fu-item__when { font-weight: 700; color: var(--ink); }
+.fu-item__reason { color: var(--text); }
+.fu-item__patient { font-weight: 600; color: var(--brand-700); }
+.fu-book { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; padding: 10px; border-radius: var(--r-sm); background: var(--bg); }
+
+.fu-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+.fu-chip { display: block; width: 100%; text-align: start; border: 0; border-radius: 6px; padding: 3px 6px; font: inherit; font-size: 12.5px; line-height: 1.35; cursor: pointer; background: var(--brand-50); color: var(--brand-700); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fu-chips .fu-chip { width: auto; }
+.fu-chip--today { background: var(--warn-bg); color: var(--warn); }
+.fu-chip--missed { background: var(--danger-bg); color: var(--danger); }
+.fu-chip--done { background: var(--ok-bg); color: var(--ok); }
+.fu-chip--cancelled { background: var(--muted-bg); color: var(--muted-tone); text-decoration: line-through; }
+.fu-chip__r { opacity: .85; }
+
+.fu-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.fu-bar > .field { flex: 1 1 260px; margin: 0; }
+.fu-cal__nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.fu-cal__nav .seg { min-width: 240px; }
+.fu-cal__move { display: flex; align-items: center; gap: 6px; }
+.fu-cal__title { font-size: 17px; margin: 0 6px; }
+.fu-month { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.fu-month__wd { font-size: 12.5px; font-weight: 700; color: var(--muted); text-align: center; padding: 4px 0; }
+.fu-month__day { min-height: 96px; border: 1px solid var(--line); border-radius: 8px; padding: 4px; display: flex; flex-direction: column; gap: 3px; background: var(--surface); min-width: 0; }
+.fu-month__day.is-out { background: var(--bg); opacity: .6; }
+.fu-month__day.is-today { border-color: var(--brand); box-shadow: 0 0 0 1px var(--brand) inset; }
+.fu-month__n { align-self: flex-start; border: 0; background: none; padding: 0 4px; font: inherit; font-weight: 700; color: var(--ink); cursor: pointer; border-radius: 6px; }
+.fu-month__n:hover { background: var(--brand-50); }
+.fu-more { border: 0; background: none; padding: 0 4px; font: inherit; font-size: 12px; color: var(--brand-700); cursor: pointer; text-align: start; }
+.fu-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.fu-week__day { border: 1px solid var(--line); border-radius: 8px; padding: 6px; display: flex; flex-direction: column; gap: 4px; min-height: 140px; min-width: 0; }
+.fu-week__day.is-today { border-color: var(--brand); }
+.fu-week__h { border: 0; background: none; padding: 0; font: inherit; font-weight: 700; font-size: 13px; text-align: start; cursor: pointer; color: var(--ink); display: flex; flex-direction: column; }
+@media (max-width: 760px) {
+  .fu-week { grid-template-columns: 1fr; }
+  .fu-week__day { min-height: 0; }
+  .fu-month { gap: 2px; }
+  .fu-month__day { min-height: 64px; padding: 2px; }
+  .fu-month__wd { font-size: 10.5px; }
+  .fu-chip { font-size: 10.5px; padding: 2px 3px; }
+  .fu-chip__r { display: none; }
+  .fu-cal__nav .seg { min-width: 0; width: 100%; }
+}
+
+.vd-live { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vd-help ol { padding-inline-start: 20px; line-height: 1.9; }

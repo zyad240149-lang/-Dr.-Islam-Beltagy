@@ -29,6 +29,8 @@ export type Gender = 'male' | 'female';
 
 export type ReferralSource = 'instagram' | 'facebook' | 'twitter' | 'snapchat' | 'tiktok' | 'whatsapp' | 'google' | 'friend' | 'ad' | 'website' | 'other';
 
+/** phone = الأساسي (الافتراضي)، phone2 = الإضافي، other = رقم واتساب مستقل، none = مفيش واتساب */
+export type WhatsappMode = 'phone' | 'phone2' | 'other' | 'none';
 export interface Patient {
   id: string;
   isGuest?: boolean; // متصل حجز بالمكالمة — مخفي من «المرضى» لحد ما يتضاف يدويًا
@@ -36,6 +38,9 @@ export interface Patient {
   fileNo: string;
   fullName: string;
   phone: string;
+  phone2?: string; // رقم إضافي (اختياري — هجرة 929)
+  whatsappMode?: WhatsappMode; // الرقم اللي عليه واتساب
+  whatsappPhone?: string; // رقم واتساب تالت لما whatsappMode = 'other'
   nationalId: string;
   birthDate: string;
   gender: Gender;
@@ -441,7 +446,9 @@ export interface CenterInfo {
 }
 
 export interface ServicePrice { id: string; serviceId: string; label: string; price: number; therapistId: string | null; active: boolean }
-export interface PatientFile { id: string; patientId: string; planId?: string | null; appointmentId?: string | null; uploadedBy: string | null; uploadedByName: string; filePath: string; fileName: string; fileType: string; sizeBytes: number; note: string; createdAt: number }
+export interface PatientFile { id: string; patientId: string; planId?: string | null; appointmentId?: string | null; uploadedBy: string | null; uploadedByName: string; filePath: string; fileName: string; fileType: string; sizeBytes: number; note: string; createdAt: number;
+  category: PatientFileCategory; title: string; fileDate: string } // التصنيف والاسم وتاريخ الملف (هجرة 929)
+export type PatientFileCategory = 'xray' | 'lab' | 'other';
 export interface BodyRecord { id: string; patientId: string; appointmentId: string | null; sessionId: string | null; therapistId: string | null; regionId: string; conditionId: string | null; side: 'right' | 'left' | 'both' | null; problem: string; diagnosis: string; severity: number; notes: string; createdBy: string | null; createdAt: number }
 export interface AuditLog { id: number; at: number; userId: string | null; employeeId: string | null; action: string; tableName: string; recordId: string | null; oldData: any; newData: any }
 

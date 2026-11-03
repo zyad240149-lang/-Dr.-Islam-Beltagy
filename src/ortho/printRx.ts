@@ -1,6 +1,6 @@
 // طباعة روشتة الكشف (أدوية + تحاليل + أشعة مطلوبة + تعليمات) — في تابة لوحدها (utils/printDoc)
 // بيانات المريض بتتبعت من الشاشة (الإدارة من كاش db، وبوابة المريض من سجله) عشان الملف ده مايسحبش كاش الإدارة كله.
-import { DOCTOR } from '../landing/content';
+import { DOCTOR, PLACES } from '../landing/content';
 import { fileNoText } from '../utils/phoneUtils';
 import { fmtDate } from '../utils/format';
 import { IMAGING_KIND, SIDE, type Consultation } from './data';
@@ -49,7 +49,6 @@ export function rxPageHtml(c: Omit<Consultation, 'id' | 'patientId'>, p?: RxPati
   const meds = c.medications.filter((m) => m.name.trim());
   const labs = c.labs.filter(Boolean);
   const imgs = c.imagingRequests.filter((r) => r.region.trim() || r.view.trim());
-  const phones = DOCTOR.phones.map((x) => `${esc(x.label)}: <span dir="ltr">${esc(x.number)}</span>`).join(' &nbsp;•&nbsp; ');
   return `<div class="rxp" dir="rtl">
 <header>
   <div><h1>${esc(DOCTOR.name)}</h1><div class="t">${esc(DOCTOR.title)}</div></div>
@@ -66,7 +65,7 @@ ${labs.length ? `<h3>التحاليل المطلوبة</h3><div class="ltr">${la
 ${imgs.length ? `<h3>الأشعة المطلوبة</h3><ul>${imgs.map((r) => `<li>${esc(IMAGING_KIND[r.kind])} — ${esc(r.region)}${r.view ? ` <span class="ltr">(${esc(r.view)})</span>` : ''}</li>`).join('')}</ul>` : ''}
 ${c.plan.trim() ? `<h3>تعليمات</h3><div>${esc(c.plan).replace(/\n/g, '<br>')}</div>` : ''}
 ${c.followUp ? `<div class="fu">ميعاد المتابعة: ${esc(fmtDate(c.followUp))}</div>` : ''}
-<footer><span>${esc(DOCTOR.address)}</span><span>${phones}</span></footer>
+<footer><span>${PLACES.map((pl) => `${esc(pl.name)} — ${esc(pl.address)} (${esc(pl.days)} ${esc(pl.hours)}) <span dir="ltr">${pl.phones.map(esc).join(' • ')}</span>`).join('<br>')}</span></footer>
 </div>`;
 }
 

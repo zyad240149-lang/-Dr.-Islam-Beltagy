@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import InstallButton from '../pwa/InstallButton';
 import { Icon } from '../utils/icons';
-import { DOCTOR, POSTS, SERVICES, STEPS } from './content';
+import { DOCTOR, PLACES, POSTS, SERVICES, STEPS } from './content';
 import './landing.css';
 
 const img = (f: string) => `${import.meta.env.BASE_URL}landing/${f}`;
@@ -139,7 +139,11 @@ export default function Landing() {
               {DOCTOR.phones.map((p) => (
                 <li key={p.number}><Icon name="phone" size={20} /><span><small>{p.label}</small><a href={tel(p.number)} className="num">{p.number}</a></span></li>
               ))}
-              <li><Icon name="pin" size={20} /><span><small>العنوان</small><a href={DOCTOR.mapsUrl} target="_blank" rel="noopener noreferrer">{DOCTOR.address}</a></span></li>
+              {PLACES.map((pl) => (
+                <li key={pl.name}><Icon name="pin" size={20} /><span><small>{pl.name} — {pl.days} {pl.hours}</small>
+                  <a href={pl.mapsUrl} target="_blank" rel="noopener noreferrer">{pl.address}</a>
+                  <span className="num" dir="ltr" style={{ display: 'block' }}>{pl.phones.map((n, i) => <span key={n}>{i > 0 && ' · '}<a href={tel(n)}>{n}</a></span>)}</span></span></li>
+              ))}
               <li><Icon name="doc" size={20} /><span><small>البريد الإلكتروني</small><a href={`mailto:${DOCTOR.email}`} className="num">{DOCTOR.email}</a></span></li>
             </ul>
           </div>

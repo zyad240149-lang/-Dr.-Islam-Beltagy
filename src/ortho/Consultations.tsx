@@ -12,6 +12,7 @@ import { SHEET_TAB, TREATMENT, activeSheets, regionSheet, removeSheet, sheetFill
 import { US_SHEETS, usFilled, usImage } from './ultrasoundSheets';
 import { VoiceDictation } from '../components/VoiceDictation';
 import { RaAssessment } from './RaAssessment';
+import { NociChecklist } from './NociChecklist';
 import { DoctorPainMap, RegionSheetForm, SheetSwitch } from './RegionSheet';
 import { useToast } from '../hooks/useToast';
 import { IMAGING_KIND, IMAGING_STATUS, REGIONS, SIDE, isIncomplete, isUnlinked, ortho, useOrthoVersion, type Attachment, type Consultation, type Injection, type ImagingKind, type ImagingRequest, type Medication, type Side } from './data';
@@ -314,6 +315,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
             ))}
             {/* اختياري: تقييم الروماتويد ACR/EULAR 2010 — مش جزء إجباري من الكشف */}
             <RaAssessment sheet={sheet} onChange={changeSheet} />
+            <NociChecklist sheet={sheet} onChange={changeSheet} />
           </>
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('nurse')}>رجوع: الشيت العام</Button>

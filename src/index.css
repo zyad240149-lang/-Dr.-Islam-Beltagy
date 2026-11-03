@@ -1783,3 +1783,28 @@ button.wa-link { border: 0; cursor: pointer; font-family: inherit; }
 .ex-step { text-align: center; padding: 10px 0; }
 .ex-step__img { max-width: 100%; max-height: 38vh; border-radius: 10px; border: 1px solid var(--line); }
 .ex-step__t { margin: 10px 0; line-height: 1.7; }
+
+/* Nociplastic Pain Checklist — كحلي غامق + ذهبي زي الشيت */
+.np { margin: 16px 0; border: 1px solid #1d3b7a; border-radius: 16px; overflow: hidden; background: linear-gradient(160deg, #0a1f4d, #13358a 60%, #0a1f4d); }
+.np .ra-head { background: #071737; }
+.np-body { padding: 16px; color: #fff; display: grid; gap: 10px; }
+.np-title { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: .5px; }
+.np-title span { display: block; color: #f5c84b; }
+.np-lead { margin: 0; font-size: 15px; }
+.np-lead b { color: #f5c84b; }
+.np-list { display: grid; background: #fff; border-radius: 12px; overflow: hidden; }
+.np-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-bottom: 1px solid #e3e8f2; color: #1c2b40; cursor: pointer; font-size: 14.5px; }
+.np-item input { position: absolute; opacity: 0; pointer-events: none; }
+.np-box { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; flex: none; border-radius: 5px; border: 2px solid #4caf50; background: #fff; color: #fff; }
+.np-item.is-on { background: #eaf6ec; font-weight: 600; }
+.np-item.is-on .np-box { background: #4caf50; }
+.np-result { display: grid; gap: 6px; }
+.np-result > div { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 9px 12px; border-radius: 10px; background: #0d2a6b; border: 1px solid #2a4c9e; font-size: 14px; }
+.np-result > div span { color: #f5c84b; font-weight: 700; }
+.np-result > div svg { color: #7bd389; }
+.np-result > div.is-on { background: #1e4fbf; outline: 2px solid #f5c84b; }
+.np-total { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 14px; border-radius: 12px; background: #fff; color: #0a1f4d; font-weight: 700; }
+.np-total b { font-size: 26px; }
+.np-total small { font-size: 15px; }
+.np-total em { font-style: normal; color: #b07d00; }
+.np .muted-sm { color: #c9d4ee; margin: 0; }

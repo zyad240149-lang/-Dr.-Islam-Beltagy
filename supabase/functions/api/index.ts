@@ -297,6 +297,7 @@ Deno.serve(async (req) => {
       if (Array.isArray(b.workHours)) patch.work_hours = b.workHours;
       if (typeof b.jobTitle === "string") patch.job_title = b.jobTitle.trim();
       if (b.branchId !== undefined) patch.branch_id = b.branchId || null;
+      if (b.therapistId !== undefined) patch.therapist_id = b.therapistId || null; // ربط/فك الحساب بملف طبيب
       if (b.role !== undefined) {
         if (isSelf && b.role !== target.role) return json({ error: "ما تقدر تغيّر دورك بنفسك" }, 400);
         if (!ROLES.includes(b.role)) return json({ error: "دور غير صالح" }, 400);

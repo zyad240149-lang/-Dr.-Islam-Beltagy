@@ -102,7 +102,7 @@ export default function Employees({ embedded = false }: { embedded?: boolean }) 
 export function EmployeeModal({ employee, self, onClose }: { employee?: Employee; self: boolean; onClose: () => void }) {
   const canHours = useCan()('workhours');
   const toast = useToast();
-  const [f, setF] = useState({ name: employee?.name ?? '', password: '', role: employee?.role ?? ('reception' as Role), phone: employee?.phone ?? '', jobTitle: employee?.jobTitle ?? '' });
+  const [f, setF] = useState({ name: employee?.name ?? '', password: '', role: employee?.role ?? ('reception' as Role), phone: employee?.phone ?? '', jobTitle: employee?.jobTitle ?? '', therapistId: employee?.therapistId ?? '' });
   const [busy, setBusy] = useState(false);
   const [phoneErr, setPhoneErr] = useState<PhoneErrorCode | null>(null);
   const [tried, setTried] = useState(false);
@@ -119,7 +119,7 @@ export function EmployeeModal({ employee, self, onClose }: { employee?: Employee
     if (f.password && f.password.length < 6) { toast.error('كلمة المرور لازم ما تقل عن 6 أحرف.'); return; }
     const hErr = hoursError(hours); if (hErr) { toast.error(hErr); return; }
     setBusy(true);
-    const base = { name: f.name.trim(), role: f.role, phone: employee ? employee.phone : f.phone, jobTitle: f.jobTitle.trim(), workHours: cleanHours(hours) };
+    const base = { name: f.name.trim(), role: f.role, phone: employee ? employee.phone : f.phone, jobTitle: f.jobTitle.trim(), therapistId: f.therapistId || null, workHours: cleanHours(hours) };
     if (linkedTherapist) {
       // نفس الساعات على ملف المعالج — عشان الحجز وجدول اليوم يتغيروا فورًا
       try { await db.updateTherapist(linkedTherapist.id, { workHours: cleanHours(hours) }); } catch (e) { setBusy(false); toast.error((e as Error).message || 'تعذّر حفظ ساعات المعالج.'); return; }
@@ -139,6 +139,8 @@ export function EmployeeModal({ employee, self, onClose }: { employee?: Employee
       <PasswordInput id="emm-pass" label={employee ? 'كلمة مرور جديدة (اتركها فارغة للإبقاء)' : 'كلمة المرور *'} value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} />
       <Select id="emm-role" label="الدور" value={f.role} disabled={self} onChange={(e) => setF({ ...f, role: e.target.value as Role })} options={ROLES.map((r) => ({ value: r, label: ROLE_LABEL[r] }))} />
       {self && <p className="muted" style={{ fontSize: 12.5, marginTop: -8 }}>ما تقدر تغيّر دورك بنفسك.</p>}
+      <Select id="emm-doc" label="ملف الطبيب (لو المستخدم ده دكتور بيشخّص ويظهرله حالاته)" value={f.therapistId} onChange={(e) => setF({ ...f, therapistId: e.target.value })}
+        options={[{ value: '', label: 'مش مربوط بملف طبيب' }, ...db.therapists().map((t) => ({ value: t.id, label: t.name }))]} />
       {canHours && <div className="form-section" style={{ marginTop: 12 }}>
         <div className="form-section-title">أيام وساعات العمل</div>
         <WorkHoursEditor id="emm" hours={hours} onChange={setHours} />

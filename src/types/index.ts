@@ -447,7 +447,8 @@ export interface CenterInfo {
 
 export interface ServicePrice { id: string; serviceId: string; label: string; price: number; therapistId: string | null; active: boolean }
 export interface PatientFile { id: string; patientId: string; planId?: string | null; appointmentId?: string | null; uploadedBy: string | null; uploadedByName: string; filePath: string; fileName: string; fileType: string; sizeBytes: number; note: string; createdAt: number;
-  category: PatientFileCategory; title: string; fileDate: string } // التصنيف والاسم وتاريخ الملف (هجرة 929)
+  category: PatientFileCategory; title: string; fileDate: string; // التصنيف والاسم وتاريخ الملف (هجرة 929)
+  pendingSync?: boolean; localUrl?: string; syncError?: string } // اترفع من غير إنترنت ولسه على الجهاز
 export type PatientFileCategory = 'xray' | 'lab' | 'other';
 export interface BodyRecord { id: string; patientId: string; appointmentId: string | null; sessionId: string | null; therapistId: string | null; regionId: string; conditionId: string | null; side: 'right' | 'left' | 'both' | null; problem: string; diagnosis: string; severity: number; notes: string; createdBy: string | null; createdAt: number }
 export interface AuditLog { id: number; at: number; userId: string | null; employeeId: string | null; action: string; tableName: string; recordId: string | null; oldData: any; newData: any }

@@ -10,6 +10,8 @@ import { createServer } from 'vite';
 import { launchEdge } from './_edge.mjs';
 import { allDayHours, api, cairoDate, deleteEmployee, env, fakeEgyptianId, loginAdmin, randomPassword, sql, suite, URL_ } from './_harness.mjs';
 
+// حسابات المرضى اللي الاختبار ده بيعملها بتتسجّل في حد الإنشاء لكل جهاز (هجرة 931) — بتتمسح في التنظيف عشان الاختبارات ورا بعض ماتتحجبش
+const REG_START = new Date().toISOString();
 const { check, section, save } = suite();
 // UI_BASE=https://beltagy-ortho.pages.dev ← يختبر الموقع المنشور نفسه بدل سيرفر Vite محلي
 const PORT = 4689, BASE = (process.env.UI_BASE || `http://127.0.0.1:${PORT}`).replace(/\/$/, '');
@@ -36,7 +38,7 @@ let server, browser;
 try {
   section('التجهيز');
   const admin = await loginAdmin();
-  const th = await admin.rpc('save_therapist', { p: { name: 'د. اختبار واجهة', title: 'طبيب اختبار', phone: '', serviceIds: ['sv_exam', 'sv_followup', 'sv_physio'], workHours: allDayHours(), onLeave: [], active: true, defaultDurationMin: 30 } });
+  const th = await admin.rpc('save_therapist', { p: { name: 'د. اختبار واجهة', title: 'طبيب اختبار', phone: '', serviceIds: ['old_exam', 'old_consult', 'old_us_follow'], workHours: allDayHours(), onLeave: [], active: true, defaultDurationMin: 30 } });
   made.therapist = th.data?.id ?? th.data;
   for (const [k, s] of Object.entries(STAFF)) {
     const r = await api(admin, 'POST', 'staff', { name: s.name, phone: s.phone, country: 'EG', password: PW, role: s.role, therapistId: k === 'doc' ? made.therapist : undefined, workHours: allDayHours() });
@@ -49,7 +51,7 @@ try {
   check('حساب مريض الاختبار', reg.status === 201, JSON.stringify(regB));
   // بيانات تتعرض في الصفحات: رقم قومي + موعد + كشف وروشتة للمريض
   await admin.from('patients').update({ national_id: fakeEgyptianId(), gender: 'male' }).eq('id', regB?.patientId);
-  const bk = await admin.rpc('book_appointment', { p: { patientId: regB?.patientId, type: 'initial', serviceId: 'sv_exam', therapistId: made.therapist, date: cairoDate(5), time: '18:00', location: 'center' } });
+  const bk = await admin.rpc('book_appointment', { p: { patientId: regB?.patientId, type: 'initial', serviceId: 'old_exam', therapistId: made.therapist, date: cairoDate(5), time: '18:00', location: 'center' } });
   check('موعد للمريض', !bk.error, bk.error?.message);
   const docEmp = made.employees[3];
   await sql(`insert into ortho_consultations (patient_id, complaint, region, side, diagnosis, plan, medications, follow_up, created_by)
@@ -169,7 +171,7 @@ try {
     if (made.patients.length) await sql(`delete from patients where id in (${made.patients.map((x) => `'${x}'`).join(',')});`);
     for (const id of made.employees) { await sql(`delete from attendance where employee_id = '${id}';`); await deleteEmployee(id); }
     if (made.therapist) await sql(`delete from therapist_services where therapist_id = '${made.therapist}'; delete from therapists where id = '${made.therapist}';`);
-    await sql(`delete from register_attempts where phone_last9 = '${PATIENT.digits.slice(-9)}';
+    await sql(`delete from register_ip_log where created_at >= '${REG_START}'; delete from register_attempts where phone_last9 = '${PATIENT.digits.slice(-9)}';
       delete from notifications where body like '%اختبار%' or title like '%اختبار%';`); // سجل التدقيق والنشاط بيفضل زي ما هو
     const [left] = await sql(`select (select count(*) from patients where full_name like '%اختبار%')::int p, (select count(*) from employees where name like '%اختبار%')::int e, (select count(*) from customers where phone = '+${PATIENT.digits}')::int c`);
     console.log('  متبقي من بيانات الاختبار:', JSON.stringify(left));

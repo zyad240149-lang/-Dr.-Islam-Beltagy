@@ -4,6 +4,8 @@
 //   node scripts/e2e-sections.mjs
 import { allDayHours, api, cairoDate, cairoToday, deleteEmployee, env, fakeEgyptianId, login, loginAdmin, randomPassword, sql, suite, URL_ } from './_harness.mjs';
 
+// حسابات المرضى اللي الاختبار ده بيعملها بتتسجّل في حد الإنشاء لكل جهاز (هجرة 931) — بتتمسح في التنظيف عشان الاختبارات ورا بعض ماتتحجبش
+const REG_START = new Date().toISOString();
 const { check, section, save } = suite();
 const PW = randomPassword();
 const STARTED = new Date().toISOString();
@@ -12,7 +14,7 @@ const STAFF = {
   doc: { phone: '01200000952', digits: '201200000952', name: 'طبيب اختبار أقسام', role: 'therapist' },
 };
 const PORTAL = { phone: '01200000953', digits: '201200000953', name: 'مريض سجل اختبار' };
-const ALL_SERVICES = ['sv_exam', 'sv_followup', 'sv_physio', 'sv_cast', 'sv_dressing'];
+const ALL_SERVICES = ['old_exam', 'old_consult', 'old_us_follow', 'old_cast_bk', 'old_dress_l'];
 const made = { employees: [], therapists: [], patients: [], services: [], codes: [], holidays: [], requests: [], tickets: [], campaigns: [] };
 const err = (r) => r.error?.message ?? '';
 const idOf = (r) => r.data?.id ?? r.data;
@@ -43,7 +45,7 @@ try {
     return data;
   };
   const P = await newPatient('مريض تضارب اختبار'), Q = await newPatient('مريض تاني اختبار');
-  const book = (c, p) => c.rpc('book_appointment', { p: { type: 'initial', location: 'center', serviceId: 'sv_exam', ...p } });
+  const book = (c, p) => c.rpc('book_appointment', { p: { type: 'initial', location: 'center', serviceId: 'old_exam', ...p } });
 
   // ============ 1) تضارب المواعيد ============
   section('تضارب المواعيد — الدكتور والمريض');
@@ -65,15 +67,15 @@ try {
   const [c1, c2] = await Promise.all([book(recep, { patientId: P.id, therapistId: D1, date: d, time: '19:00' }), book(admin, { patientId: P.id, therapistId: D2, date: d, time: '19:00' })]);
   check('حجزين متزامنين لنفس المريض مع دكتورين: واحد بس ينجح', [c1, c2].filter((x) => !x.error).length === 1, `${err(c1) || 'ok'} | ${err(c2) || 'ok'}`);
   const cx = await recep.rpc('set_appointment_status', { p_id: idOf(a1), p_status: 'cancelled', p_reason: 'اختبار', p_therapist: null });
-  const a6 = await book(recep, { patientId: P.id, therapistId: D2, date: d, time: '17:00', serviceId: 'sv_followup' });
+  const a6 = await book(recep, { patientId: P.id, therapistId: D2, date: d, time: '17:00', serviceId: 'old_consult' });
   check('بعد إلغاء الموعد وقته بيرجع متاح للمريض', !cx.error && !a6.error, err(cx) || err(a6));
-  const off = await recep.rpc('book_appointment', { p: { patientId: Q.id, type: 'initial', serviceId: 'sv_exam', therapistId: D2, date: d, time: '23:30', location: 'center' } });
+  const off = await recep.rpc('book_appointment', { p: { patientId: Q.id, type: 'initial', serviceId: 'old_exam', therapistId: D2, date: d, time: '23:30', location: 'center' } });
   check('حجز خارج ساعات العمل مرفوض', !!off.error, err(off) || 'accepted!');
   const today = cairoToday();
   if (new Date(today + 'T12:00:00Z').getUTCDay() !== 5) {
-    const n1 = await book(recep, { patientId: Q.id, therapistId: D1, date: today, time: '16:00', serviceId: 'sv_followup' });
+    const n1 = await book(recep, { patientId: Q.id, therapistId: D1, date: today, time: '16:00', serviceId: 'old_consult' });
     const ns = await recep.rpc('set_appointment_status', { p_id: idOf(n1), p_status: 'no_show', p_reason: null, p_therapist: null });
-    const n2 = await book(recep, { patientId: Q.id, therapistId: D2, date: today, time: '16:00', serviceId: 'sv_followup' });
+    const n2 = await book(recep, { patientId: Q.id, therapistId: D2, date: today, time: '16:00', serviceId: 'old_consult' });
     check('موعد «لم يحضر» مابيحجزش وقت المريض', !n1.error && !ns.error && !n2.error, err(n1) || err(ns) || err(n2));
     const back = await recep.rpc('set_appointment_status', { p_id: idOf(n1), p_status: 'confirmed', p_reason: null, p_therapist: null });
     check('رجوع «لم يحضر» لمؤكد والمريض محجوز في نفس الوقت مرفوض', /المريض عنده موعد تاني/.test(err(back)), err(back) || 'accepted!');
@@ -90,7 +92,7 @@ try {
   check('الاستقبال ما يقدرش يقفل أيام', !!holR.error, err(holR) || 'saved!');
   const hb = await book(recep, { patientId: Q.id, therapistId: D1, date: hd, time: '18:00' });
   check('الحجز في يوم الإغلاق مرفوض', /مغلق/.test(err(hb)), err(hb) || 'accepted!');
-  const hs = await recep.rpc('doctor_day_slots', { p_therapist: D1, p_service: 'sv_exam', p_date: hd });
+  const hs = await recep.rpc('doctor_day_slots', { p_therapist: D1, p_service: 'old_exam', p_date: hd });
   check('أوقات يوم الإغلاق: حالة holiday ومفيش أوقات', hs.data?.status === 'holiday' && hs.data.slots.length === 0, JSON.stringify(hs.data ?? err(hs)).slice(0, 100));
   const { data: holList } = await recep.from('holidays').select('date').eq('date', hd);
   check('الاستقبال يشوف أيام الإغلاق (للعرض)', (holList ?? []).length === 1, JSON.stringify(holList));
@@ -145,14 +147,14 @@ try {
   // ============ 5) الخطط العلاجية ============
   section('الخطط العلاجية وجلساتها');
   const pd = cairoDate(12);
-  const pl = await admin.rpc('save_plan', { p: { patientId: P.id, serviceId: 'sv_physio', therapistId: D1, diagnosis: 'خشونة ركبة اختبار', mainGoal: 'تحسين الحركة', durationWeeks: 1, sessionsPerWeek: 2, totalSessions: 2, startDate: pd, price: 0, status: 'active' } });
+  const pl = await admin.rpc('save_plan', { p: { patientId: P.id, serviceId: 'old_us_follow', therapistId: D1, diagnosis: 'خشونة ركبة اختبار', mainGoal: 'تحسين الحركة', durationWeeks: 1, sessionsPerWeek: 2, totalSessions: 2, startDate: pd, price: 0, status: 'active' } });
   check('إنشاء خطة علاج (جلستين)', !pl.error && idOf(pl), err(pl));
   const busyP = await book(recep, { patientId: P.id, therapistId: D2, date: pd, time: '18:00' });
   const ps1 = await recep.rpc('book_plan_session', { p: { planId: idOf(pl), therapistId: D1, date: pd, time: '18:00' } });
   check('جلسة خطة في وقت المريض مشغول فيه مرفوضة', !busyP.error && /موعد تاني/.test(err(ps1)), err(busyP) || err(ps1) || 'accepted!');
   const { data: busyRow } = await recep.from('appointments').select('plan_id').eq('id', idOf(busyP)).single();
   const { data: busyInv } = await recep.from('invoices').select('total').eq('appointment_id', idOf(busyP)).maybeSingle();
-  check('كشف لمريض عنده خطة علاج طبيعي مابيتحسبش جلسة منها وليه فاتورته', busyRow?.plan_id == null && Number(busyInv?.total) === 400, JSON.stringify({ busyRow, busyInv }));
+  check('كشف لمريض عنده خطة علاج طبيعي مابيتحسبش جلسة منها وليه فاتورته', busyRow?.plan_id == null && Number(busyInv?.total) === 200, JSON.stringify({ busyRow, busyInv }));
   const ps2 = await recep.rpc('book_plan_session', { p: { planId: idOf(pl), therapistId: D1, date: pd, time: '19:00' } });
   const ps3 = await recep.rpc('book_plan_session', { p: { planId: idOf(pl), therapistId: D1, date: cairoDate(14), time: '19:00' } });
   check('حجز جلستين الخطة', !ps2.error && !ps3.error, err(ps2) || err(ps3));
@@ -248,12 +250,12 @@ try {
   const { data: pn } = await pat.from('notifications').select('title').eq('audience', 'customer').eq('title', 'عرض اختبار');
   check('المريض شايف الإشعار في بوابته', (pn ?? []).length === 1, JSON.stringify(pn));
 
-  const ob1 = await pat.rpc('patient_book', { p: { therapistId: D1, serviceId: 'sv_exam', date: cairoDate(9), time: '18:30' } });
+  const ob1 = await pat.rpc('patient_book', { p: { therapistId: D1, serviceId: 'old_exam', date: cairoDate(9), time: '18:30' } });
   check('المريض يحجز كشف أونلاين', !ob1.error, err(ob1));
-  const ob1b = await pat.rpc('patient_book', { p: { therapistId: D2, serviceId: 'sv_exam', date: cairoDate(9), time: '20:00' } });
+  const ob1b = await pat.rpc('patient_book', { p: { therapistId: D2, serviceId: 'old_exam', date: cairoDate(9), time: '20:00' } });
   check('موعد أونلاين واحد في اليوم', !!ob1b.error, err(ob1b) || 'accepted!');
   const mv = await recep.rpc('reschedule_appointment', { p_id: idOf(ob1), p_date: cairoDate(10), p_time: '18:30', p_therapist: null, p_address: null });
-  const ob2 = await pat.rpc('patient_book', { p: { therapistId: D2, serviceId: 'sv_exam', date: cairoDate(10), time: '20:00' } });
+  const ob2 = await pat.rpc('patient_book', { p: { therapistId: D2, serviceId: 'old_exam', date: cairoDate(10), time: '20:00' } });
   check('الموعد اللي اتعادت جدولته بيتحسب (مايتحجزش موعد تاني أونلاين في يومه)', !mv.error && !!ob2.error, err(mv) || err(ob2) || 'accepted!');
   const prs = await pat.rpc('patient_reschedule', { p_id: idOf(ob1), p_date: cairoDate(11), p_time: '19:00' });
   const { data: mine } = await pat.rpc('patient_appointments');
@@ -285,7 +287,7 @@ try {
     if (made.employees.length) await sql(`delete from staff_requests where employee_id in (${q(made.employees)});`);
     for (const id of made.employees) await deleteEmployee(id);
     if (made.therapists.length) await sql(`delete from therapist_services where therapist_id in (${q(made.therapists)}); delete from therapists where id in (${q(made.therapists)});`);
-    await sql(`delete from register_attempts where phone_last9 = '${PORTAL.digits.slice(-9)}';
+    await sql(`delete from register_ip_log where created_at >= '${REG_START}'; delete from register_attempts where phone_last9 = '${PORTAL.digits.slice(-9)}';
       delete from notifications where body like '%اختبار%' or title like '%اختبار%';`); // سجل التدقيق والنشاط بيفضل زي ما هو
     const [left] = await sql(`select (select count(*) from patients where full_name like '%اختبار%')::int p, (select count(*) from employees where name like '%اختبار%')::int e,
       (select count(*) from therapists where name like '%اختبار%')::int t, (select count(*) from services where name like '%اختبار%')::int s, (select count(*) from holidays)::int h,

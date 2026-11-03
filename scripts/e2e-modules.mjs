@@ -21,7 +21,7 @@ try {
   // ============ التجهيز ============
   section('التجهيز');
   const admin = await loginAdmin();
-  const th = await admin.rpc('save_therapist', { p: { name: 'د. اختبار وحدات', title: 'طبيب اختبار', phone: '+' + STAFF.doc.digits, serviceIds: ['sv_exam', 'sv_followup', 'sv_physio'], workHours: allDayHours(), onLeave: [], active: true, defaultDurationMin: 30 } });
+  const th = await admin.rpc('save_therapist', { p: { name: 'د. اختبار وحدات', title: 'طبيب اختبار', phone: '+' + STAFF.doc.digits, serviceIds: ['old_exam', 'old_consult', 'old_us_follow'], workHours: allDayHours(), onLeave: [], active: true, defaultDurationMin: 30 } });
   made.therapist = th.data?.id ?? th.data;
   check('ملف طبيب الاختبار', !th.error && made.therapist, err(th));
   for (const [k, s] of Object.entries(STAFF)) {
@@ -43,7 +43,7 @@ try {
   section('اكتمال بيانات المريض (الرقم القومي المصري)');
   const P0 = await newPatient('مريض ناقص اختبار', {});
   const day = cairoDate(7);
-  const b = await recep.rpc('book_appointment', { p: { patientId: P0.id, type: 'initial', serviceId: 'sv_exam', therapistId: made.therapist, date: day, time: '19:00', location: 'center' } });
+  const b = await recep.rpc('book_appointment', { p: { patientId: P0.id, type: 'initial', serviceId: 'old_exam', therapistId: made.therapist, date: day, time: '19:00', location: 'center' } });
   const ap0 = b.data?.id ?? b.data;
   check('حجز موعد (حالة جديد) لمريض بدون رقم قومي مسموح', !b.error && ap0, err(b));
   const c1 = await recep.rpc('set_appointment_status', { p_id: ap0, p_status: 'confirmed', p_reason: null, p_therapist: null });
@@ -61,7 +61,7 @@ try {
 
   // ============ 2) الباقات والحضور ============
   section('الباقات وحضور الجلسات');
-  const pp = await admin.from('package_plans').insert({ name: 'باقة اختبار تأهيل 3 جلسات', service_ids: ['sv_physio'], total_sessions: 3, price: 900, valid_days: 30, active: true }).select().single();
+  const pp = await admin.from('package_plans').insert({ name: 'باقة اختبار تأهيل 3 جلسات', service_ids: ['old_us_follow'], total_sessions: 3, price: 900, valid_days: 30, active: true }).select().single();
   if (pp.data) made.packagePlans.push(pp.data.id);
   check('إضافة باقة للكتالوج (المدير)', !pp.error, err(pp));
   const sR = await recep.rpc('sell_package', { p_patient: P.id, p_package_plan: pp.data?.id });
@@ -96,7 +96,7 @@ try {
   check('حضور على باقة ملغاة مرفوض', !!ci3.error, err(ci3) || 'accepted!');
 
   section('تقسيط الباقات (4 جلسات)');
-  const pp4 = await admin.from('package_plans').insert({ kind: 'pkg4', name: 'باقة اختبار 4 جلسات', service_ids: ['sv_physio'], total_sessions: 4, price: 1200, valid_days: 60, active: true }).select().single();
+  const pp4 = await admin.from('package_plans').insert({ kind: 'pkg4', name: 'باقة اختبار 4 جلسات', service_ids: ['old_us_follow'], total_sessions: 4, price: 1200, valid_days: 60, active: true }).select().single();
   if (pp4.data) made.packagePlans.push(pp4.data.id);
   const s4 = await acc.rpc('sell_package', { p_patient: PF.id, p_package_plan: pp4.data?.id });
   const { data: pk4 } = await admin.from('packages').select('status').eq('id', s4.data?.id).single();
@@ -206,7 +206,7 @@ try {
     const apId = randomUUID(), invId = randomUUID();
     await sql(`set session_replication_role = replica;
       insert into appointments (id, no, patient_id, type, service_id, therapist_id, location, address, date, time, duration_min, status, price, notes, source)
-        values ('${apId}', 'TST-PAY-${apId.slice(0, 6)}', '${P.id}', 'initial', 'sv_exam', '${made.therapist}', 'center', '', '${PAY_PERIOD}-15', '17:00', 30, 'completed', 1200, 'اختبار رواتب', 'staff');
+        values ('${apId}', 'TST-PAY-${apId.slice(0, 6)}', '${P.id}', 'initial', 'old_exam', '${made.therapist}', 'center', '', '${PAY_PERIOD}-15', '17:00', 30, 'completed', 1200, 'اختبار رواتب', 'staff');
       insert into invoices (id, no, patient_id, appointment_id, service_name, price, discount, total, paid, remaining, status, date)
         values ('${invId}', 'TST-INV-${invId.slice(0, 6)}', '${P.id}', '${apId}', 'كشف عظام', 1200, 0, 1200, 1200, 0, 'paid', '${PAY_PERIOD}-15');
       set session_replication_role = origin;`);

@@ -30,7 +30,7 @@ let server, browser, lastPage;
 try {
   section('التجهيز');
   const admin = await loginAdmin();
-  const th = await admin.rpc('save_therapist', { p: { name: 'د. تشخيص اختبار', title: 'طبيب اختبار', phone: '', serviceIds: ['sv_exam', 'sv_followup'], workHours: allDayHours(), onLeave: [], active: true, defaultDurationMin: 30 } });
+  const th = await admin.rpc('save_therapist', { p: { name: 'د. تشخيص اختبار', title: 'طبيب اختبار', phone: '', serviceIds: ['old_exam', 'old_consult'], workHours: allDayHours(), onLeave: [], active: true, defaultDurationMin: 30 } });
   made.therapist = th.data?.id ?? th.data;
   check('طبيب (معالج) للمواعيد', !!made.therapist, th.error?.message);
   for (const [k, s] of Object.entries(STAFF)) {
@@ -62,7 +62,7 @@ try {
   for (const P of [PA, PB]) {
     let id, err;
     for (const time of SLOTS) {
-      const bk = await admin.rpc('book_appointment', { p: { patientId: P.id, type: 'initial', serviceId: 'sv_exam', therapistId: made.therapist, date: today, time, location: 'center' } });
+      const bk = await admin.rpc('book_appointment', { p: { patientId: P.id, type: 'initial', serviceId: 'old_exam', therapistId: made.therapist, date: today, time, location: 'center' } });
       id = bk.data?.id ?? bk.data; err = bk.error?.message;
       if (!bk.error && id) break;
     }
@@ -174,7 +174,7 @@ try {
   await openDoctor(A.page, 'الكاحل والقدم');
   check('شيت الكاحل والقدم بيفتح لما المنطقة كاحل', await A.page.locator('.modal .sh-box__h', { hasText: 'Special Tests' }).count() === 1 && await A.page.locator('.modal .sh-ck', { hasText: 'Thompson test' }).count() === 1);
   // إلغاء المنطقة (✕) ← اختيار منطقة من الأول ← تاني الكاحل
-  check('كل شيتات الكشف ظاهرة دايمًا (ومنها متابعة الجبس وما بعد العمليات)', await A.page.locator('.sh-region__pick').count() === 7
+  check('كل شيتات الكشف ظاهرة دايمًا (ومنها متابعة الجبس وما بعد العمليات)', await A.page.locator('.sh-region__pick').count() === 8
     && await A.page.locator('.sh-region__pick', { hasText: 'متابعة الجبس' }).count() === 1 && await A.page.locator('.sh-region__pick', { hasText: 'متابعة ما بعد العمليات' }).count() === 1);
   await tick(A.page, 'Ankle pain'); // شيت اتكتب فيه ← عليه علامة ● و✕
   await A.page.locator('.sh-region__x[aria-label="إلغاء كشف الكاحل والقدم"]').click();
@@ -238,7 +238,7 @@ try {
   check('بحث من غير نتايج بيعرض رسالة واضحة', await A.page.locator('text=مفيش مريض متشخّص بالاسم أو الرقم ده').count() === 1);
   await search.fill(PA.phone.slice(-9));
   await A.page.waitForTimeout(400);
-  await results().first().click();
+  await results().first().locator('.dx-queue__who').click();
   await A.page.waitForSelector('text=ملف تشخيصات المريض');
   await A.page.waitForTimeout(1500);
   const cards = A.page.locator('.dxh');
@@ -316,7 +316,7 @@ try {
   await M.page.locator('.filter-bar input').fill(PB.local);
   await M.page.waitForTimeout(500);
   check('البحث بالموبايل شغال على الموبايل', await M.page.locator('.dx-pat').count() === 1);
-  await M.page.locator('.dx-pat').first().click();
+  await M.page.locator('.dx-pat').first().locator('.dx-queue__who').click();
   await M.page.waitForSelector('text=ملف تشخيصات المريض');
   await M.page.waitForTimeout(1200);
   const overF = await M.page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);

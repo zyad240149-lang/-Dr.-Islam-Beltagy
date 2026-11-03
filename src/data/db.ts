@@ -20,7 +20,7 @@ import { net, isNetworkError } from '../offline/net';
 import { uuid } from '../offline/queue';
 import type { TableSync } from '../offline/session';
 import { syncTable } from './download';
-import { exportOrthoCache, hydrateOrthoCache, loadAllOrtho, reloadLoadedOrtho } from '../ortho/data';
+import { exportOrthoCache, hydrateOrthoCache, loadAllOrtho, ortho, reloadLoadedOrtho, type Kind as OrthoKind } from '../ortho/data';
 
 // ===============================================================
 // طبقة البيانات — المصدر الوحيد للحقيقة هو قاعدة بيانات Supabase.
@@ -1278,21 +1278,41 @@ export const db = {
     const { data } = await supabase.storage.from('patient-files').createSignedUrl(path, 60 * 60 * 24 * 30);
     return data?.signedUrl ?? null;
   },
-  async uploadPatientFile(patientId: string, file: File, note = '', link: { planId?: string | null; appointmentId?: string | null } = {}, meta: { category?: PatientFileCategory; title?: string; fileDate?: string } = {}): Promise<Result> {
-    if (!net.isOnline()) return fail('رفع الملفات محتاج اتصال بالإنترنت.');
+  // رفع ملف للمريض: المعرّف والمسار بيتحددوا على الجهاز — من غير إنترنت (أو لو الاتصال قطع في النص) الملف نفسه بيتحفظ في الطابور
+  // (متشفر في IndexedDB) ويترفع لوحده لما الاتصال يرجع، بنفس المعرّف، فمفيش تكرار
+  async uploadPatientFile(patientId: string, file: File, note = '', link: { planId?: string | null; appointmentId?: string | null } = {}, meta: { category?: PatientFileCategory; title?: string; fileDate?: string } = {}): Promise<Result<{ queued?: boolean }>> {
     if (file.size > 10 * 1024 * 1024) return fail('حجم الملف أكبر من 10 ميجابايت.');
     if (file.size === 0) return fail('الملف فارغ.');
     const allowed = ['application/pdf', 'image/png', 'image/jpeg', 'image/webp', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
     if (!allowed.includes(file.type)) return fail('نوع الملف غير مدعوم (PDF أو صورة أو مستند Word أو نص).');
-    const { data: u } = await supabase.auth.getUser();
-    if (!u.user) return fail('انتهت الجلسة — سجّل الدخول من جديد.');
     const ext = (file.name.split('.').pop() ?? 'bin').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8) || 'bin';
-    const path = `${patientId}/${crypto.randomUUID()}.${ext}`;
-    const up = await supabase.storage.from('patient-files').upload(path, file, { contentType: file.type, upsert: false });
-    if (up.error) return fail('تعذّر رفع الملف: ' + up.error.message);
+    const id = uuid();
+    const path = `${patientId}/${id}.${ext}`;
     const emp = load().employees.find((e) => e.id === actorId);
-    const { error } = await supabase.from('patient_files').insert({ patient_id: patientId, uploaded_by: u.user.id, uploaded_by_name: emp?.name ?? load().patients.find((p) => p.id === patientId)?.fullName ?? '', file_path: path, file_name: file.name, file_type: file.type, size_bytes: file.size, note: note.trim(), plan_id: link.planId ?? null, appointment_id: link.appointmentId ?? null, category: meta.category ?? 'other', title: (meta.title ?? '').trim(), file_date: meta.fileDate || null });
-    if (error) { await supabase.storage.from('patient-files').remove([path]); return fail(cleanMsg(error.message)); }
+    const byName = emp?.name ?? load().patients.find((p) => p.id === patientId)?.fullName ?? '';
+    const category = meta.category ?? 'other', title = (meta.title ?? '').trim(), fileDate = meta.fileDate || '';
+    const queue = async (): Promise<Result<{ queued?: boolean }>> => {
+      if (!offline.userId) return fail(OFFLINE_MSG);
+      // المريض نفسه لسه متسجّل من غير إنترنت ← الملف يستنى لحد ما ملفه يوصل الخادم
+      const waitFor = offline.queue.list().some((o) => o.kind === 'patient.create' && o.entityId === patientId) ? patientId : undefined;
+      try {
+        await offline.queue.enqueue({ kind: 'file.upload', userId: offline.userId, entityId: id, label: `رفع ملف: ${title || file.name}`, dependsOn: waitFor,
+          payload: { patientId, path, name: file.name, type: file.type, size: file.size, note: note.trim(), category, title, fileDate, uploadedByName: byName, bytes: await file.arrayBuffer() } });
+      } catch (e) { return fail('تعذّر حفظ الملف على الجهاز (التخزين ممتلئ أو ممنوع): ' + (e instanceof Error ? e.message : String(e))); }
+      return { ok: true, queued: true };
+    };
+    if (!net.isOnline() || offline.queue.list().some((o) => o.kind === 'patient.create' && o.entityId === patientId)) return queue();
+    const { data: u, error: ue } = await supabase.auth.getUser();
+    if (ue && isNetworkError(ue)) return queue();
+    if (!u.user) return fail('انتهت الجلسة — سجّل الدخول من جديد.');
+    const up = await supabase.storage.from('patient-files').upload(path, file, { contentType: file.type, upsert: false });
+    if (up.error) return isNetworkError(up.error) ? queue() : fail('تعذّر رفع الملف: ' + up.error.message);
+    const { error } = await supabase.from('patient_files').insert({ id, patient_id: patientId, uploaded_by: u.user.id, uploaded_by_name: byName, file_path: path, file_name: file.name, file_type: file.type, size_bytes: file.size, note: note.trim(), plan_id: link.planId ?? null, appointment_id: link.appointmentId ?? null, category, title, file_date: fileDate || null });
+    if (error) {
+      if (isNetworkError(error)) return queue(); // الملف اترفع والسجل لأ ← الطابور بيكمّل (الرفع التاني بيتعدّى لأن الملف موجود)
+      await supabase.storage.from('patient-files').remove([path]); return fail(cleanMsg(error.message));
+    }
+    void ortho.reload('files');
     return { ok: true };
   },
   async fileUrl(path: string, download?: string): Promise<string | null> {
@@ -1300,10 +1320,15 @@ export const db = {
     return data?.signedUrl ?? null;
   },
   async deletePatientFile(f: PatientFile): Promise<Result> {
+    // ملف لسه ما اترفعش (على الجهاز بس): بيتشال من الطابور
+    const queued = offline.queue.list().find((o) => o.kind === 'file.upload' && o.entityId === f.id);
+    if (queued) { await offline.queue.resolve(queued.id, { type: 'discard' }); return { ok: true }; }
+    if (!net.isOnline()) return fail('حذف الملفات محتاج اتصال بالإنترنت.');
     const { data, error } = await supabase.from('patient_files').delete().eq('id', f.id).select('id');
     if (error) return fail(cleanMsg(error.message));
     if (!data?.length) return fail('ليس لديك صلاحية حذف هذا الملف.');
     await supabase.storage.from('patient-files').remove([f.filePath]);
+    void ortho.reload('files');
     return { ok: true };
   },
 
@@ -1374,6 +1399,16 @@ export const db = {
         keys.forEach((k) => rtPending.add(k));
         if (rtTimer) clearTimeout(rtTimer);
         rtTimer = setTimeout(() => { const ks = [...rtPending]; rtPending.clear(); pull(ks); }, 350);
+      });
+    }
+    // السجلات الطبية (التشخيص/الأشعة/المتابعات/ملفات الأشعة والتحاليل): أي تغيير من جهاز تاني ← الشاشة بتتحدّث من غير إعادة تحميل
+    const orthoLive: Record<string, OrthoKind> = { ortho_consultations: 'consultations', ortho_imaging: 'imaging', ortho_follow_ups: 'follow_ups', patient_files: 'files',
+      ortho_nursing: 'nursing', ortho_injections: 'injections', ortho_fractures: 'fractures', ortho_surgeries: 'surgeries' };
+    const orthoTimers: Record<string, ReturnType<typeof setTimeout>> = {};
+    for (const [table, kind] of Object.entries(orthoLive)) {
+      ch.on('postgres_changes', { event: '*', schema: 'public', table }, () => {
+        clearTimeout(orthoTimers[kind]);
+        orthoTimers[kind] = setTimeout(() => void ortho.reload(kind), 350);
       });
     }
     ch.subscribe();

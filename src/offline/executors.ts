@@ -81,6 +81,20 @@ export async function executeOp(op: OfflineOp): Promise<ExecResult> {
         }
         return guardedUpdate(table, op.entityId, op, row, 'السجل الطبي');
       }
+      case 'file.upload': {
+        // ملف أشعة/تحليل اترفع من غير إنترنت: المسار والمعرّف اتحددوا على الجهاز ← الإعادة مابتكررش الملف ولا السجل
+        const p = op.payload as { patientId: string; path: string; name: string; type: string; size: number; note: string; category: string; title: string; fileDate: string; uploadedByName: string; bytes: ArrayBuffer };
+        const { data: u } = await supabase.auth.getUser();
+        if (!u.user) return { type: 'auth', error: 'انتهت الجلسة' };
+        const up = await supabase.storage.from('patient-files').upload(p.path, new Blob([p.bytes], { type: p.type }), { contentType: p.type, upsert: false });
+        if (up.error && !/exists|duplicate/i.test(up.error.message)) {
+          return isNetworkError(up.error) || /fetch|network|timeout/i.test(up.error.message) ? { type: 'retry', error: up.error.message } : { type: 'failed', error: 'تعذّر رفع الملف: ' + up.error.message };
+        }
+        const { error, status } = await supabase.from('patient_files').insert({ id: op.entityId, patient_id: p.patientId, uploaded_by: u.user.id, uploaded_by_name: p.uploadedByName,
+          file_path: p.path, file_name: p.name, file_type: p.type, size_bytes: p.size, note: p.note, category: p.category, title: p.title, file_date: p.fileDate || null });
+        if (!error || (error.code === '23505' && /pkey|\(id\)|file_path/.test(`${error.message} ${error.details ?? ''}`))) return { type: 'done' };
+        return classify(error, status) ?? { type: 'failed', error: clean(error.message ?? '') };
+      }
       case 'appointment.create': {
         const p = op.payload.p as Record<string, unknown>;
         const params: Record<string, unknown> = { ...p, patientId: op.payload.patientId ?? p.patientId };

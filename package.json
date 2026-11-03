@@ -16,7 +16,7 @@
     "test:all": "npm run test:unit && npm run db:lint && npm run test:e2e && npm run test:ui && npm run test:ui-followups && npm run test:diagnosis && npm run test:offline",
     "deploy": "node scripts/deploy-pages.mjs",
     "test:unit": "node scripts/unit-offline.mjs",
-    "test:offline": "npm run build && node scripts/e2e-offline.mjs",
+    "test:offline": "npm run build && node scripts/e2e-offline.mjs && node scripts/e2e-offline-link.mjs && node scripts/e2e-offline-files.mjs",
     "test:followups": "node scripts/e2e-followups.mjs",
     "test:ui-followups": "node scripts/e2e-ui-followups.mjs"
   },

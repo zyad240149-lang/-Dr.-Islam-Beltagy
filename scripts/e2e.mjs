@@ -48,7 +48,7 @@ try {
 
   console.log('— المواعيد');
   const date = cairoDate(7);
-  const book = (c, time, pid = created.patient) => c.rpc('book_appointment', { p: { patientId: pid, type: 'initial', serviceId: 'sv_exam', therapistId: created.therapist, date, time, location: 'center' } });
+  const book = (c, time, pid = created.patient) => c.rpc('book_appointment', { p: { patientId: pid, type: 'initial', serviceId: 'old_exam', therapistId: created.therapist, date, time, location: 'center' } });
   const b1 = await book(recep, '17:00');
   const apptId = b1.data?.id ?? b1.data;
   check('حجز موعد من الاستقبال', !b1.error && apptId, b1.error?.message);
@@ -61,14 +61,14 @@ try {
 
   console.log('— الفواتير والمدفوعات');
   const { data: inv } = await recep.from('invoices').select('*').eq('appointment_id', apptId).maybeSingle();
-  check('الفاتورة اتعملت تلقائيًا مع الحجز بسعر الخدمة', inv && Number(inv.total) === 400, JSON.stringify(inv && { total: inv.total, status: inv.status }));
+  check('الفاتورة اتعملت تلقائيًا مع الحجز بسعر الخدمة', inv && Number(inv.total) === 200, JSON.stringify(inv && { total: inv.total, status: inv.status }));
   if (inv) {
     const over = await recep.rpc('record_payment', { p_invoice: inv.id, p_amount: 1000, p_method: 'cash', p_note: '' });
     check('دفع أكبر من المتبقي مرفوض', !!over.error, over.error?.message ?? 'accepted!');
     const pay = await recep.rpc('record_payment', { p_invoice: inv.id, p_amount: 150, p_method: 'cash', p_note: 'اختبار' });
     check('تسجيل دفعة جزئية', !pay.error, pay.error?.message);
     const { data: inv2 } = await recep.from('invoices').select('paid, remaining, status').eq('id', inv.id).single();
-    check('الخادم حسب المدفوع والمتبقي والحالة', Number(inv2.paid) === 150 && Number(inv2.remaining) === 250 && inv2.status === 'partial', JSON.stringify(inv2));
+    check('الخادم حسب المدفوع والمتبقي والحالة', Number(inv2.paid) === 150 && Number(inv2.remaining) === 50 && inv2.status === 'partial', JSON.stringify(inv2));
   }
 
   console.log('— الصلاحيات المالية');

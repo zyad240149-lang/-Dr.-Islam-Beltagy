@@ -43,7 +43,7 @@ export function DetailsProvider({ children }: { children: ReactNode }) {
 // ---------- معاينة ملف (صورة/PDF داخل النظام) ----------
 export function FilePreviewModal({ file, onClose }: { file: PatientFile; onClose: () => void }) {
   const [url, setUrl] = useState<string | null | undefined>(undefined);
-  useEffect(() => { db.fileUrl(file.filePath).then(setUrl); }, [file.filePath]);
+  useEffect(() => { if (file.localUrl) setUrl(file.localUrl); else void db.fileUrl(file.filePath).then(setUrl); }, [file.filePath, file.localUrl]);
   const isImg = file.fileType.startsWith('image/');
   const isPdf = file.fileType === 'application/pdf';
   return (

@@ -8,21 +8,16 @@ import { fmtDate, fmtDateTime } from '../utils/format';
 import { FilePreviewModal } from '../components/DetailsHost';
 import { FILE_CATEGORY, downloadFile, fileTitle } from '../components/PatientExtras';
 import { ortho } from './data';
+import { usePatientFiles } from './files';
 import type { PatientFile } from '../types';
 
 export function PatientMedicalFiles({ patientId, excludeConsultId }: { patientId: string; excludeConsultId?: string }) {
-  const [files, setFiles] = useState<PatientFile[] | null>(null);
-  const [err, setErr] = useState(false);
+  const live = usePatientFiles(patientId);
+  // ملفات الفواتير (invoices/) مش ملفات طبية
+  const files: PatientFile[] | null = live.loading ? null : live.files.filter((f) => !f.filePath.includes('/invoices/'));
+  const err = !!live.error && !live.files.length;
   const [preview, setPreview] = useState<PatientFile | null>(null);
   const [open, setOpen] = useState(true);
-  useEffect(() => {
-    if (!patientId) { setFiles(null); return; }
-    let alive = true;
-    setErr(false);
-    // ملفات الفواتير (invoices/) مش ملفات طبية
-    db.patientFiles(patientId).then((r) => { if (alive) setFiles(r.filter((f) => !f.filePath.includes('/invoices/'))); }).catch(() => { if (alive) setErr(true); });
-    return () => { alive = false; };
-  }, [patientId]);
   if (!patientId) return null;
 
   const lastConsult = ortho.list('consultations', patientId)
@@ -67,7 +62,7 @@ function Group({ title, items, onOpen, fresh }: { title: string; items: PatientF
 
 function Tile({ f, onOpen, fresh }: { f: PatientFile; onOpen: () => void; fresh?: boolean }) {
   const [thumb, setThumb] = useState<string | null>(null);
-  useEffect(() => { if (f.fileType.startsWith('image/')) void db.fileUrl(f.filePath).then(setThumb); }, [f.filePath, f.fileType]);
+  useEffect(() => { if (!f.fileType.startsWith('image/')) return; if (f.localUrl) setThumb(f.localUrl); else void db.fileUrl(f.filePath).then(setThumb); }, [f.filePath, f.fileType, f.localUrl]);
   return (
     <div className={`pmf__tile ${fresh ? 'is-new' : ''}`}>
       <button type="button" className="pmf__thumb" onClick={onOpen} title={`معاينة ${fileTitle(f)}`}>
@@ -75,6 +70,7 @@ function Tile({ f, onOpen, fresh }: { f: PatientFile; onOpen: () => void; fresh?
       </button>
       <div className="pmf__meta">
         <b title={fileTitle(f)}>{fileTitle(f)}</b>
+        {f.pendingSync && <span className={`badge badge--${f.syncError ? 'danger' : 'warn'}`}>{f.syncError ? 'فشل الرفع' : 'على الجهاز — بانتظار الرفع'}</span>}
         <span className="muted-sm">{FILE_CATEGORY[f.category]}{f.fileDate ? ` · ${fmtDate(f.fileDate)}` : ''}</span>
         <span className="muted-sm">اترفع {fmtDateTime(f.createdAt)}{f.uploadedByName ? ` — ${f.uploadedByName}` : ''}</span>
         {f.note && <span className="muted-sm pmf__note">{f.note}</span>}

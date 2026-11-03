@@ -286,6 +286,9 @@ try {
   page = await openApp(true);
   await page.goto(BASE + '/patients').catch(() => {});
   await sleep(4000);
+  const afterLogout = { url: page.url(), text: (await page.locator('body').innerText().catch(() => '')).slice(0, 300) };
+  if (afterLogout.url.includes('/patients')) await page.screenshot({ path: fileURLToPath(new URL('../docs/ui-failures/offline-after-logout.png', import.meta.url)) }).catch(() => {});
+  console.log('    [after logout]', JSON.stringify(afterLogout));
   check('بعد الخروج: فتح بدون إنترنت مابيعرضش أي بيانات مرضى', (await page.locator(`text=${seedName(4321)}`).count()) === 0 && !page.url().includes('/patients'), page.url());
   await closeApp();
 } catch (e) {

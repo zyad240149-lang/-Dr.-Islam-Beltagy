@@ -49,7 +49,7 @@ let server, browser;
 try {
   section('التجهيز');
   const admin = await loginAdmin();
-  const th = await admin.rpc('save_therapist', { p: { name: 'د. اختبار المتابعات', title: 'طبيب اختبار', phone: '', serviceIds: ['sv_exam', 'sv_followup'], workHours: allDayHours(), onLeave: [], active: true, defaultDurationMin: 30 } });
+  const th = await admin.rpc('save_therapist', { p: { name: 'د. اختبار المتابعات', title: 'طبيب اختبار', phone: '', serviceIds: ['old_exam', 'old_consult'], workHours: allDayHours(), onLeave: [], active: true, defaultDurationMin: 30 } });
   made.therapist = th.data?.id ?? th.data;
   for (const [k, s] of Object.entries(STAFF)) {
     const r = await api(admin, 'POST', 'staff', { name: s.name, phone: s.phone, country: 'EG', password: PW, role: s.role, therapistId: k === 'doc' ? made.therapist : undefined, workHours: allDayHours() });

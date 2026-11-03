@@ -5,6 +5,7 @@ import { BODY_REGIONS, SIDE_LABEL, findCondition, mapRegions } from '../data/bod
 import { Button, EmptyState, Input, Modal, Select, Skeleton } from './ui';
 import { ConfirmDialog, IconAction, RowActions, useCan } from './common';
 import { useToast } from '../hooks/useToast';
+import { usePatientFiles } from '../ortho/files';
 import { fmtDate, fmtDateTime, todayYmd, tsToYmd } from '../utils/format';
 import type { BodyRecord, PatientFile, PatientFileCategory } from '../types';
 
@@ -118,34 +119,34 @@ export const fileTitle = (f: PatientFile) => f.title || f.fileName;
 export function PatientFilesTab({ patientId }: { patientId: string }) {
   const can = useCan();
   const toast = useToast();
-  const [files, setFiles] = useState<PatientFile[] | null>(null);
-  const [err, setErr] = useState('');
+  // من نسخة الجهاز + الطابور: بتفتح من غير إنترنت، وبتتحدّث لوحدها لما حد تاني يرفع ملف (Realtime)
+  const live = usePatientFiles(patientId);
+  const files: PatientFile[] | null = live.loading ? null : live.files;
+  const err = live.error ?? '';
   const [uploading, setUploading] = useState(false);
   const [meta, setMeta] = useState({ category: 'xray' as PatientFileCategory, title: '', fileDate: todayYmd(), note: '' });
   const [show, setShow] = useState<PatientFileCategory | ''>('');
   const [del, setDel] = useState<PatientFile | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const camera = useRef<HTMLInputElement>(null);
-  const load = () => db.patientFiles(patientId).then((r) => { setFiles(r); setErr(''); }).catch((e) => setErr(e.message));
-  useEffect(() => { load(); }, [patientId]);
-
   const upload = async (list: FileList | null) => {
     const all = Array.from(list ?? []);
     if (!all.length) return;
-    if (!navigator.onLine) { toast.error('رفع الملفات محتاج اتصال بالإنترنت.'); return; }
     setUploading(true);
-    let ok = 0; const failed: string[] = [];
+    let ok = 0, queued = 0; const failed: string[] = [];
     for (const [i, file] of all.entries()) {
       // أكتر من ملف بنفس الاسم: رقم بعد الاسم عشان يتفرقوا
       const title = meta.title.trim() ? (all.length > 1 ? `${meta.title.trim()} (${i + 1})` : meta.title.trim()) : '';
       const r = await db.uploadPatientFile(patientId, file, meta.note, {}, { category: meta.category, title, fileDate: meta.fileDate });
-      if (r.ok) ok++; else failed.push(`${file.name}: ${r.error}`);
+      if (r.ok) { ok++; if (r.queued) queued++; } else failed.push(`${file.name}: ${r.error}`);
     }
     setUploading(false);
     if (input.current) input.current.value = '';
     if (camera.current) camera.current.value = '';
     if (failed.length) toast.error(failed.join(' — '));
-    if (ok) { toast.success(ok > 1 ? `تم رفع ${ok} ملفات.` : 'تم رفع الملف بنجاح.'); setMeta((m) => ({ ...m, title: '', note: '' })); load(); }
+    if (queued) toast.info(`مفيش إنترنت — ${queued > 1 ? `${queued} ملفات اتحفظوا` : 'الملف اتحفظ'} على الجهاز وهيترفع لوحده لما الاتصال يرجع.`);
+    if (ok - queued > 0) toast.success(ok - queued > 1 ? `تم رفع ${ok - queued} ملفات.` : 'تم رفع الملف بنجاح.');
+    if (ok) setMeta((m) => ({ ...m, title: '', note: '' }));
   };
   const [preview, setPreview] = useState<PatientFile | null>(null);
   const { openPlan } = useDetails();
@@ -172,7 +173,7 @@ export function PatientFilesTab({ patientId }: { patientId: string }) {
             <input ref={camera} type="file" hidden accept="image/*" capture="environment" onChange={(e) => void upload(e.target.files)} />
             <Button icon="upload" loading={uploading} onClick={() => input.current?.click()}>رفع ملفات (صور أو PDF)</Button>
             <Button variant="outline" icon="camera" loading={uploading} onClick={() => camera.current?.click()}>تصوير بالكاميرا</Button>
-            <span className="muted-sm" style={{ alignSelf: 'center' }}>صور JPG/PNG/WEBP أو PDF — لحد 10 ميجا للملف. محتاج اتصال بالإنترنت.</span>
+            <span className="muted-sm" style={{ alignSelf: 'center' }}>صور JPG/PNG/WEBP أو PDF — لحد 10 ميجا للملف. من غير إنترنت الملف بيتحفظ على الجهاز ويترفع لوحده بعدين.</span>
           </div>
         </div>
       )}
@@ -188,7 +189,7 @@ export function PatientFilesTab({ patientId }: { patientId: string }) {
         <div className="table-wrap"><table className="table">
           <thead><tr><th>الملف</th><th>النوع</th><th>تاريخ الملف</th><th>رفعه</th><th>تاريخ الرفع</th><th className="actions"></th></tr></thead>
           <tbody>{shown.map((f) => (
-            <tr key={f.id}><td style={{ fontWeight: 600 }}>{fileTitle(f)}{f.title && <div className="muted-sm">{f.fileName} · {fmtSize(f.sizeBytes)}</div>}{f.note && <div className="muted-sm">{f.note}</div>}{f.planId && db.plan(f.planId) && <button type="button" className="muted-sm" style={{ border: 0, background: 'none', color: 'var(--brand-700)', cursor: 'pointer', padding: 0, display: 'block' }} onClick={() => openPlan(f.planId!)}>الخطة: {db.plan(f.planId)?.diagnosis}</button>}</td>
+            <tr key={f.id}><td style={{ fontWeight: 600 }}>{fileTitle(f)}{f.pendingSync && <span className={`badge badge--${f.syncError ? 'danger' : 'warn'}`} style={{ marginInlineStart: 6 }} title={f.syncError || ''}>{f.syncError ? 'فشل الرفع' : 'بانتظار الرفع'}</span>}{f.title && <div className="muted-sm">{f.fileName} · {fmtSize(f.sizeBytes)}</div>}{f.note && <div className="muted-sm">{f.note}</div>}{f.planId && db.plan(f.planId) && <button type="button" className="muted-sm" style={{ border: 0, background: 'none', color: 'var(--brand-700)', cursor: 'pointer', padding: 0, display: 'block' }} onClick={() => openPlan(f.planId!)}>الخطة: {db.plan(f.planId)?.diagnosis}</button>}</td>
               <td><span className={`badge badge--${CAT_TONE[f.category]}`}>{FILE_CATEGORY[f.category]}</span></td>
               <td className="num date">{f.fileDate ? fmtDate(f.fileDate) : '—'}</td><td>{f.uploadedByName || '—'}</td><td className="num date">{fmtDateTime(f.createdAt)}</td>
               <td className="actions"><RowActions><Button size="sm" variant="outline" onClick={() => setPreview(f)}>عرض</Button><IconAction icon="download" label="تنزيل الملف" onClick={() => void downloadFile(f)} />{can('patients', 'edit') && <IconAction icon="trash" label="حذف الملف" danger onClick={() => setDel(f)} />}</RowActions></td></tr>
@@ -196,13 +197,14 @@ export function PatientFilesTab({ patientId }: { patientId: string }) {
         </table></div>
       )}
       {preview && <FilePreviewModal file={preview} onClose={() => setPreview(null)} />}
-      {del && <ConfirmDialog title="حذف الملف" message={`سيتم حذف «${fileTitle(del)}» نهائيًا — وهيختفي من التشخيص كمان.`} onClose={() => setDel(null)} onConfirm={async () => { const r = await db.deletePatientFile(del); if (r.ok) { toast.success('تم حذف الملف.'); load(); } else toast.error(r.error); }} />}
+      {del && <ConfirmDialog title="حذف الملف" message={`سيتم حذف «${fileTitle(del)}» نهائيًا — وهيختفي من التشخيص كمان.`} onClose={() => setDel(null)} onConfirm={async () => { const r = await db.deletePatientFile(del); if (r.ok) toast.success('تم حذف الملف.'); else toast.error(r.error); }} />}
     </div>
   );
 }
 
 /** تنزيل الملف باسمه الأصلي (رابط موقّع مؤقت — الـ bucket خاص) */
 export async function downloadFile(f: PatientFile) {
+  if (f.localUrl) { const a = document.createElement('a'); a.href = f.localUrl; a.download = f.fileName; a.click(); return; }
   const url = await db.fileUrl(f.filePath, f.fileName);
   if (url) window.open(url, '_blank', 'noopener');
 }

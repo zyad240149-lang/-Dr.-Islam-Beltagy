@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-03T18:30:07.209Z",
+  "at": "2026-11-03T23:02:35.013Z",
   "passed": 38,
   "failed": 0,
   "results": [
@@ -36,7 +36,7 @@
     {
       "name": "إنشاء الحساب ينجح ويرجع رقم الملف",
       "ok": true,
-      "detail": "{\"ok\":true,\"patientId\":\"79ec1429-4847-401e-8e12-5ce23143cf73\",\"customerId\":\"7b539761-cd60-40d1-ab7d-701005ab97dc\"}"
+      "detail": "{\"ok\":true,\"patientId\":\"03cf9371-351f-49cc-a0e7-ca0b7d094fe8\",\"customerId\":\"e5d467fa-1e30-4325-8dbd-462a7af2715e\"}"
     },
     {
       "name": "نفس الرقم مرتين مرفوض",
@@ -81,7 +81,7 @@
     {
       "name": "الرقم الصح (حتى بأرقام عربية ومسافة) ← اتربط بنفس الملف",
       "ok": true,
-      "detail": "{\"ok\":true,\"patientId\":\"c33c4b92-ddca-4666-84ff-acc1fdb46cf7\",\"customerId\":\"d94e217d-bbfd-4bb1-a558-b493d01ac053\"}"
+      "detail": "{\"ok\":true,\"patientId\":\"5264c1a1-078a-46dd-834e-1245e4d6b78f\",\"customerId\":\"7d7214db-4fdb-42c2-a404-a1b62f506e8a\"}"
     },
     {
       "name": "مفيش ملف مكرر لنفس الموبايل",
@@ -96,7 +96,7 @@
     {
       "name": "الحساب اتربط بملف صاحب الرقم القومي (الابن) مش أول ملف",
       "ok": true,
-      "detail": "{\"ok\":true,\"patientId\":\"bed5415b-6bca-452a-acb0-24a55b526e30\",\"customerId\":\"29d2094a-d484-491d-895f-34fbfe7de982\"}"
+      "detail": "{\"ok\":true,\"patientId\":\"775c7c75-333d-42be-aa28-7fb29da6faa0\",\"customerId\":\"4a862fbd-a7dc-4b51-a818-9ef13bff95a4\"}"
     },
     {
       "name": "5 محاولات غلط بترجع «غير مطابق»",
@@ -126,7 +126,7 @@
     {
       "name": "الدخول كمريض و /api/me = customer",
       "ok": true,
-      "detail": "{\"kind\":\"customer\",\"customer\":{\"id\":\"7b539761-cd60-40d1-ab7d-701005ab97dc\",\"auth_user_id\":\"43338da1-0ea3-4180-a4ca-6d458e9e055d\",\"patient_id\":\"79ec142"
+      "detail": "{\"kind\":\"customer\",\"customer\":{\"id\":\"e5d467fa-1e30-4325-8dbd-462a7af2715e\",\"auth_user_id\":\"0a9499b2-11e3-473d-b921-395f482d4d06\",\"patient_id\":\"03cf937"
     },
     {
       "name": "ملفي (patient_me)",
@@ -171,7 +171,7 @@
     {
       "name": "المريض بيشوف ملفه هو بس",
       "ok": true,
-      "detail": "[{\"id\":\"79ec1429-4847-401e-8e12-5ce23143cf73\"}]"
+      "detail": "[{\"id\":\"03cf9371-351f-49cc-a0e7-ca0b7d094fe8\"}]"
     },
     {
       "name": "ملف مريض تاني مش ظاهر له",

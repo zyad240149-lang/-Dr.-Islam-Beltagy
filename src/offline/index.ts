@@ -7,6 +7,7 @@ import { openStore, memoryStore, type KV } from './idb';
 import { OfflineQueue, type OfflineOp } from './queue';
 import { OfflineSession, type TableSync } from './session';
 import { executeOp } from './executors';
+import { sealedOps } from './crypto';
 import { net } from './net';
 import { supabase } from '../lib/supabase';
 
@@ -24,6 +25,7 @@ let userId: string | null = null;
 let initP: Promise<void> | null = null;
 let timers: Array<() => void> = [];
 let snapTimer: ReturnType<typeof setTimeout> | null = null;
+let snapDue = 0;
 let lastSnap = 0;
 let syncing = false;
 let inflight: Promise<void> | null = null;
@@ -46,7 +48,8 @@ export const offline = {
   init(): Promise<void> {
     return (initP ??= (async () => {
       store = await openStore();
-      queue = new OfflineQueue(store, { lock: webLock });
+      // العمليات المعلّقة (فيها بيانات المرضى والملفات) بتتخزن متشفرة بمفتاح الجهاز
+      queue = new OfflineQueue({ ...store, ops: sealedOps(store) }, { lock: webLock });
       session = new OfflineSession(store);
       queue.subscribe(bump);
       net.subscribe(bump);
@@ -64,11 +67,14 @@ export const offline = {
     userId = uid;
     await queue.load(uid);
     offline.stopTriggers();
-    const onVis = () => { if (document.visibilityState === 'visible') void offline.syncNow(); };
+    // التطبيق بيتخفى أو بيتقفل ← نحفظ النسخة على الجهاز فورًا (مش بعد 30 ثانية): اللي اتحمّل/اتعدّل آخر لحظة مايضيعش لو الجهاز فصل بعدها
+    const onVis = () => { if (document.visibilityState === 'visible') void offline.syncNow(); else void offline.saveSnapshotNow(); };
+    const onHide = () => { void offline.saveSnapshotNow(); };
     document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('pagehide', onHide);
     const unsub = net.subscribe(() => { if (net.isOnline()) void offline.syncNow(); });
     const iv = setInterval(() => { if (net.isOnline() && queue.pendingCount()) void offline.syncNow(); }, 30_000);
-    timers = [() => document.removeEventListener('visibilitychange', onVis), unsub, () => clearInterval(iv)];
+    timers = [() => document.removeEventListener('visibilitychange', onVis), () => window.removeEventListener('pagehide', onHide), unsub, () => clearInterval(iv)];
     void offline.syncNow();
   },
   stopTriggers() { timers.forEach((t) => t()); timers = []; if (snapTimer) { clearTimeout(snapTimer); snapTimer = null; } },
@@ -78,9 +84,13 @@ export const offline = {
   async wipeAll() { offline.stopTriggers(); queue.unload(); userId = null; await offline.init(); await store.clearAll(); lastSnap = 0; bump(); },
 
   /** لقطة البيانات: بتتأجّل وبتتجمّع (مش كل تغيير) لأن حجمها كبير */
-  scheduleSnapshot() {
-    if (!userId || !hooks || snapTimer) return;
-    const wait = Math.max(5_000, 30_000 - (Date.now() - lastSnap));
+  // soon = تغيير في السجلات الطبية (تشخيص/ملف أشعة/متابعة): يتحفظ خلال ثانية ونص مش بعد 30 ثانية — لو الجهاز فصل أو اتقفل بعدها ما يضيعش
+  scheduleSnapshot(soon = false) {
+    if (!userId || !hooks) return;
+    const wait = soon ? 1_500 : Math.max(5_000, 30_000 - (Date.now() - lastSnap));
+    if (snapTimer && !(soon && snapDue - Date.now() > wait)) return;
+    if (snapTimer) clearTimeout(snapTimer);
+    snapDue = Date.now() + wait;
     snapTimer = setTimeout(() => { snapTimer = null; void offline.saveSnapshotNow(); }, wait);
   },
   async saveSnapshotNow() {

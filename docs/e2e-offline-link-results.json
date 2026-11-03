@@ -1,17 +1,17 @@
 {
-  "at": "2026-10-31T17:15:40.202Z",
+  "at": "2026-11-03T23:19:51.954Z",
   "passed": 32,
   "failed": 0,
   "results": [
     {
       "name": "حساب استقبال ربط اختبار",
       "ok": true,
-      "detail": "{\"id\":\"237a3204-2d7f-4024-9077-e9833e2b06c2\",\"name\":\"استقبال ربط اختبار\",\"username\":\"201200000971\",\"role\":\"reception\",\"p"
+      "detail": "{\"id\":\"ae01c9d1-e353-4bf6-82f6-097a5a3a234b\",\"name\":\"استقبال ربط اختبار\",\"username\":\"201200000971\",\"role\":\"reception\",\"p"
     },
     {
       "name": "حساب دكتور ربط اختبار",
       "ok": true,
-      "detail": "{\"id\":\"7bdae7b8-4d61-4922-a41d-dda0842a6434\",\"name\":\"دكتور ربط اختبار\",\"username\":\"201200000972\",\"role\":\"system_admin\",\""
+      "detail": "{\"id\":\"ebfd6b47-f07e-4990-aea6-b88b83f8fbe8\",\"name\":\"دكتور ربط اختبار\",\"username\":\"201200000972\",\"role\":\"system_admin\",\""
     },
     {
       "name": "ملفين بنفس الاسم لسيناريو المراجعة",
@@ -36,7 +36,7 @@
     {
       "name": "ملف المريض اتحفظ على جهاز الاستقبال (IndexedDB) بمعرّف محلي",
       "ok": true,
-      "detail": "[{\"kind\":\"patient.create\",\"status\":\"pending\",\"entityId\":\"22e39fb6-7734-4da4-8e91-04b3dfe16b47\"}]"
+      "detail": "[{\"kind\":\"patient.create\",\"status\":\"pending\",\"entityId\":\"17fe709f-9d70-4928-968c-6f1ca6c2d37e\"}]"
     },
     {
       "name": "الخادم ماوصلهوش حاجة لسه",
@@ -66,7 +66,7 @@
     {
       "name": "التشخيص اتحفظ على جهاز الدكتور (IndexedDB) بمعرّف مستقل",
       "ok": true,
-      "detail": "[{\"kind\":\"ortho.save\",\"status\":\"pending\",\"entityId\":\"6a1fafd4-d4d4-4d6c-80c6-5cd6cdf205af\"}]"
+      "detail": "[{\"kind\":\"ortho.save\",\"status\":\"pending\",\"entityId\":\"cf9ec123-0802-4cc7-98b3-4b1b4ca3dd8d\"}]"
     },
     {
       "name": "ظاهر في «تشخيصات محتاجة ربط» — محفوظ على الجهاز",
@@ -86,12 +86,12 @@
     {
       "name": "ملف المريض وصل الخادم بنفس المعرّف المحلي",
       "ok": true,
-      "detail": "{\"id\":\"22e39fb6-7734-4da4-8e91-04b3dfe16b47\",\"file_no\":\"TM-832\"}"
+      "detail": "{\"id\":\"17fe709f-9d70-4928-968c-6f1ca6c2d37e\",\"file_no\":\"TM-843\"}"
     },
     {
       "name": "5) الخادم ربط التشخيص بملف المريض الأساسي تلقائي",
       "ok": true,
-      "detail": "{\"patient_id\":\"22e39fb6-7734-4da4-8e91-04b3dfe16b47\",\"link_status\":null,\"link_method\":\"auto\"}"
+      "detail": "{\"patient_id\":\"17fe709f-9d70-4928-968c-6f1ca6c2d37e\",\"link_status\":null,\"link_method\":\"auto\"}"
     },
     {
       "name": "مفيش ملف مريض مكرر",
@@ -111,7 +111,7 @@
     {
       "name": "برقم ملف الاستقبال",
       "ok": true,
-      "detail": "رجوع وليد سامر ربطاختبار ملف 832 · +201200000979 ملف المريض تشخيص / TM-832"
+      "detail": "رجوع وليد سامر ربطاختبار ملف 843 · +201200000979 ملف المريض إرسال التمرينات عبر واتساب تشخيص / TM-843"
     },
     {
       "name": "ظاهر في «المرضى اللي اتشخصوا» (جهاز الاستقبال)",
@@ -151,7 +151,7 @@
     {
       "name": "الربط اليدوي ربطه بالملف اللي اتختار",
       "ok": true,
-      "detail": "{\"patient_id\":\"fff40a77-341d-4e6b-96ef-3c2d6b945db7\",\"link_method\":\"manual\"}"
+      "detail": "{\"patient_id\":\"7c0caa7b-966d-4304-a207-8f513590f6a1\",\"link_method\":\"manual\"}"
     },
     {
       "name": "اختفى من «تشخيصات محتاجة ربط»",

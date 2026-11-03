@@ -3,6 +3,8 @@
 //   node scripts/e2e-patient.mjs
 import { allDayHours, api, cairoDate, client, deleteEmployee, env, fakeEgyptianId, login, loginAdmin, randomPassword, sql, suite, URL_ } from './_harness.mjs';
 
+// حسابات المرضى اللي الاختبار ده بيعملها بتتسجّل في حد الإنشاء لكل جهاز (هجرة 931) — بتتمسح في التنظيف عشان الاختبارات ورا بعض ماتتحجبش
+const REG_START = new Date().toISOString();
 const { check, section, save } = suite();
 const PW = randomPassword();
 const P1 = { phone: '01200000931', digits: '201200000931', name: 'مريض بوابة اختبار' };
@@ -26,7 +28,7 @@ const register = async (body) => {
 try {
   section('التجهيز');
   const admin = await loginAdmin();
-  const th = await admin.rpc('save_therapist', { p: { name: 'د. اختبار بوابة', title: 'طبيب اختبار', phone: '', serviceIds: ['sv_exam', 'sv_followup'], workHours: allDayHours(), onLeave: [], active: true, defaultDurationMin: 30 } });
+  const th = await admin.rpc('save_therapist', { p: { name: 'د. اختبار بوابة', title: 'طبيب اختبار', phone: '', serviceIds: ['old_exam', 'old_consult'], workHours: allDayHours(), onLeave: [], active: true, defaultDurationMin: 30 } });
   made.therapist = th.data?.id ?? th.data;
   check('ملف طبيب الاختبار', !th.error && made.therapist, err(th));
   const rc = await api(admin, 'POST', 'staff', { name: 'استقبال بوابة اختبار', phone: RECEP.phone, country: 'EG', password: PW, role: 'reception', workHours: allDayHours() });
@@ -104,18 +106,18 @@ try {
   const dash = await pat.rpc('patient_dashboard');
   check('لوحة المريض (patient_dashboard)', !dash.error && typeof dash.data?.totalAppointments === 'number', err(dash));
   const cat = await pat.rpc('public_catalog');
-  check('كتالوج الخدمات والأطباء للحجز', !cat.error && cat.data?.services?.some((s) => s.id === 'sv_exam'), err(cat));
+  check('كتالوج الخدمات والأطباء للحجز', !cat.error && cat.data?.services?.some((s) => s.id === 'old_exam'), err(cat));
   const date = cairoDate(7);
-  const slots = await pat.rpc('doctor_day_slots', { p_therapist: made.therapist, p_service: 'sv_exam', p_date: date });
+  const slots = await pat.rpc('doctor_day_slots', { p_therapist: made.therapist, p_service: 'old_exam', p_date: date });
   const free = slots.data?.slots?.find((s) => s.available && !s.past);
   check('أوقات الطبيب المتاحة', !slots.error && slots.data?.status === 'ok' && free, err(slots) || JSON.stringify(slots.data).slice(0, 120));
-  const book = await pat.rpc('patient_book', { p: { therapistId: made.therapist, serviceId: 'sv_exam', date, time: free?.time, notes: 'اختبار' } });
+  const book = await pat.rpc('patient_book', { p: { therapistId: made.therapist, serviceId: 'old_exam', date, time: free?.time, notes: 'اختبار' } });
   check('المريض يحجز كشف أونلاين', !book.error && book.data?.id, err(book));
   const mine = await pat.rpc('patient_appointments');
   check('الحجز ظاهر في «مواعيدي»', (mine.data ?? []).some?.((a) => a.id === book.data?.id), err(mine));
   const { data: staffView } = await recep.from('appointments').select('source, status').eq('id', book.data?.id).single();
   check('الاستقبال شايف الحجز ومصدره أونلاين', staffView?.source === 'online', JSON.stringify(staffView));
-  const book2 = await pat.rpc('patient_book', { p: { therapistId: made.therapist, serviceId: 'sv_exam', date, time: free?.time } });
+  const book2 = await pat.rpc('patient_book', { p: { therapistId: made.therapist, serviceId: 'old_exam', date, time: free?.time } });
   check('حجز نفس الوقت تاني مرفوض', !!book2.error, err(book2) || 'booked!');
 
   section('عزل البيانات والصلاحيات');
@@ -137,7 +139,7 @@ try {
     const phones = made.phones.map((p) => `'${p}'`).join(',');
     const custs = await sql(`select id, auth_user_id from customers where phone in (${phones})`);
     await sql(`delete from customers where phone in (${phones});
-      delete from register_attempts where phone_last9 in (${made.phones.map((p) => `'${p.slice(-9)}'`).join(',')});
+      delete from register_ip_log where created_at >= '${REG_START}'; delete from register_attempts where phone_last9 in (${made.phones.map((p) => `'${p.slice(-9)}'`).join(',')});
       delete from activity_log where patient_id in (select id from patients where phone in (${phones}));
       delete from patients where phone in (${phones});`);
     for (const c of custs) if (c.auth_user_id) await fetch(`${URL_}/auth/v1/admin/users/${c.auth_user_id}`, { method: 'DELETE', headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE_KEY } });

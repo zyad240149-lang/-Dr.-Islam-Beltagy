@@ -84,6 +84,13 @@ async function isOnLeave(employeeId: string): Promise<boolean> {
   return !!data?.some((r) => r.type === "leave" || (r.from_time <= time && time <= r.to_time));
 }
 
+// بصمة عنوان الجهاز (مش العنوان نفسه) لحد إنشاء الحسابات — مملّحة بمفتاح الخدمة فمايتعرفش منها الـ IP
+async function hashIp(req: Request): Promise<string> {
+  const ip = req.headers.get("cf-connecting-ip") ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? req.headers.get("x-real-ip") ?? "unknown";
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(SERVICE_KEY.slice(-24) + "|" + ip));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 async function getCaller(req: Request) {
   const authHeader = req.headers.get("Authorization") ?? "";
   const token = authHeader.replace("Bearer ", "");
@@ -136,8 +143,12 @@ Deno.serve(async (req) => {
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ error: "البريد الإلكتروني غير صحيح" }, 400);
     if (password.length < 6) return json({ error: "كلمة المرور لازم ما تقل عن 6 خانات" }, 400);
     if (b.confirm !== undefined && b.confirm !== password) return json({ error: "كلمتا المرور غير متطابقتين" }, 400);
+    // حد عام (10 حسابات في الدقيقة للموقع كله) + حد لكل جهاز/شبكة (5 حسابات في الساعة) — ضد إغراق النظام بحسابات وهمية
     const { count } = await admin.from("customers").select("id", { count: "exact", head: true }).gte("member_since", new Date(Date.now() - 60_000).toISOString());
-    if ((count ?? 0) >= 30) return json({ error: "محاولات كثيرة، حاول بعد قليل" }, 429);
+    if ((count ?? 0) >= 10) return json({ error: "محاولات كثيرة، حاول بعد قليل" }, 429);
+    const ipHash = await hashIp(req);
+    const { count: mine } = await admin.from("register_ip_log").select("id", { count: "exact", head: true }).eq("ip_hash", ipHash).gte("created_at", new Date(Date.now() - 3_600_000).toISOString());
+    if ((mine ?? 0) >= 5) return json({ error: "اتعمل حسابات كتير من الجهاز ده — حاول بعد ساعة أو تواصل مع المركز" }, 429);
     const { data: exists } = await admin.from("customers").select("id").in("phone", storedVariants(phone)).limit(1);
     if (exists?.length) return json({ error: "فيه حساب بهذا الرقم — سجّل الدخول أو تواصل مع المركز" }, 409);
     const nationalId = String(b.nationalId ?? "").trim();
@@ -148,6 +159,7 @@ Deno.serve(async (req) => {
     if (authErr || !au.user) return json({ error: authErr?.message ?? "تعذّر إنشاء الحساب" }, 400);
     const { data: reg, error: regErr } = await admin.rpc("register_customer", { p_auth_user: au.user.id, p_name: name, p_phone: phone, p_email: email, p_national_id: nationalId });
     if (regErr) { await admin.auth.admin.deleteUser(au.user.id); return json({ error: regErr.message }, 400); }
+    await admin.from("register_ip_log").insert({ ip_hash: ipHash });
     return json({ ok: true, ...reg }, 201);
   }
 

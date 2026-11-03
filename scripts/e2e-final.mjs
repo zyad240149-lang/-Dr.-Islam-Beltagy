@@ -76,12 +76,12 @@ try {
   section('تذكيرات المواعيد 4 / 2 / 1 ساعة (921)');
   const [pr] = await sql(`select reminder_offsets from notification_prefs`);
   check('الإعداد = 4 و2 و1 ساعة', JSON.stringify(pr.reminder_offsets) === '[4,2,1]', JSON.stringify(pr.reminder_offsets));
-  const th = await admin.rpc('save_therapist', { p: { name: 'د. نهائي اختبار', title: 'اختبار', phone: '', serviceIds: ['sv_exam'], workHours: allDayHours(), onLeave: [], active: true, defaultDurationMin: 30 } });
+  const th = await admin.rpc('save_therapist', { p: { name: 'د. نهائي اختبار', title: 'اختبار', phone: '', serviceIds: ['old_exam'], workHours: allDayHours(), onLeave: [], active: true, defaultDurationMin: 30 } });
   made.therapist = th.data?.id ?? th.data;
   const [pat] = await sql(`insert into patients (full_name, first_name, father_name, family_name, phone, gender, nationality, referral_source, file_no)
     values ('عادل سمير نهائياختبار', 'عادل', 'سمير', 'نهائياختبار', '+201200000973', 'male', 'saudi', 'friend', '') returning id`);
   made.patient = pat.id;
-  const bk = await admin.rpc('book_appointment', { p: { patientId: pat.id, type: 'initial', serviceId: 'sv_exam', therapistId: made.therapist, date: cairoDate(3), time: '20:00', location: 'center' } });
+  const bk = await admin.rpc('book_appointment', { p: { patientId: pat.id, type: 'initial', serviceId: 'old_exam', therapistId: made.therapist, date: cairoDate(3), time: '20:00', location: 'center' } });
   const apId = bk.data?.id ?? bk.data;
   const sch = await sql(`select offset_minutes, status from notification_schedule where appointment_id = '${apId}' order by offset_minutes desc`);
   check('الحجز بيجدول 3 تذكيرات بس: قبلها بـ 4 و2 و1 ساعة', JSON.stringify(sch.map((x) => x.offset_minutes)) === '[240,120,60]' && sch.every((x) => x.status === 'pending'), JSON.stringify(sch));

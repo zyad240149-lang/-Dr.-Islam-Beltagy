@@ -1,32 +1,32 @@
 {
-  "at": "2026-11-03T18:08:57.300Z",
+  "at": "2026-11-03T23:09:11.258Z",
   "passed": 215,
   "failed": 0,
   "results": [
     {
       "name": "حساب مدير واجهة اختبار",
       "ok": true,
-      "detail": "{\"id\":\"d6345ac3-6d45-4ca7-a962-a11ff83ed04d\",\"name\":\"مدير واجهة اختبار\",\"username\":\"201200000961\",\"role\":\"system_admin\","
+      "detail": "{\"id\":\"897bedc8-35d6-4499-ada4-aec6840a4cbb\",\"name\":\"مدير واجهة اختبار\",\"username\":\"201200000961\",\"role\":\"system_admin\","
     },
     {
       "name": "حساب استقبال واجهة اختبار",
       "ok": true,
-      "detail": "{\"id\":\"128710f8-2bfc-4462-a63b-abab4d0f1a13\",\"name\":\"استقبال واجهة اختبار\",\"username\":\"201200000962\",\"role\":\"reception\","
+      "detail": "{\"id\":\"8a7f7a87-aef1-4398-9ce3-9a10a43d878e\",\"name\":\"استقبال واجهة اختبار\",\"username\":\"201200000962\",\"role\":\"reception\","
     },
     {
       "name": "حساب محاسب واجهة اختبار",
       "ok": true,
-      "detail": "{\"id\":\"a8968f90-cb87-4933-9003-2c1740093639\",\"name\":\"محاسب واجهة اختبار\",\"username\":\"201200000963\",\"role\":\"accountant\",\""
+      "detail": "{\"id\":\"8513c093-a105-426f-ba6b-818c4e2b4b5e\",\"name\":\"محاسب واجهة اختبار\",\"username\":\"201200000963\",\"role\":\"accountant\",\""
     },
     {
       "name": "حساب طبيب واجهة اختبار",
       "ok": true,
-      "detail": "{\"id\":\"a4a8c717-0bfa-4d70-89f5-03f842b98047\",\"name\":\"طبيب واجهة اختبار\",\"username\":\"201200000964\",\"role\":\"therapist\",\"ph"
+      "detail": "{\"id\":\"e6bfd7b8-5a1d-406b-bd68-0a1a32c366a3\",\"name\":\"طبيب واجهة اختبار\",\"username\":\"201200000964\",\"role\":\"therapist\",\"ph"
     },
     {
       "name": "حساب مريض الاختبار",
       "ok": true,
-      "detail": "{\"ok\":true,\"patientId\":\"3a9af255-cc3a-4bce-a10c-5b01e50cd84f\",\"customerId\":\"d7e64cd2-37bc-470d-99c8-66295a6ff118\"}"
+      "detail": "{\"ok\":true,\"patientId\":\"3d236098-29e8-4f2b-9b26-873bf5fd205f\",\"customerId\":\"a0a8b8e2-2749-4a50-8c1e-d3f1ed87bcde\"}"
     },
     {
       "name": "موعد للمريض",
@@ -269,7 +269,7 @@
       "detail": ""
     },
     {
-      "name": "المدير: /patients/3a9af255-cc3a-4bce-a10c-5b01e50cd84f «مريض واجهة اختبار»",
+      "name": "المدير: /patients/3d236098-29e8-4f2b-9b26-873bf5fd205f «مريض واجهة اختبار»",
       "ok": true,
       "detail": ""
     },
@@ -509,7 +509,7 @@
       "detail": ""
     },
     {
-      "name": "الاستقبال: /patients/3a9af255-cc3a-4bce-a10c-5b01e50cd84f «مريض واجهة اختبار»",
+      "name": "الاستقبال: /patients/3d236098-29e8-4f2b-9b26-873bf5fd205f «مريض واجهة اختبار»",
       "ok": true,
       "detail": ""
     },
@@ -964,7 +964,7 @@
       "detail": ""
     },
     {
-      "name": "الطبيب: /patients/3a9af255-cc3a-4bce-a10c-5b01e50cd84f «مريض واجهة اختبار»",
+      "name": "الطبيب: /patients/3d236098-29e8-4f2b-9b26-873bf5fd205f «مريض واجهة اختبار»",
       "ok": true,
       "detail": ""
     },

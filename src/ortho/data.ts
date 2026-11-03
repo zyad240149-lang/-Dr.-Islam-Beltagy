@@ -101,11 +101,14 @@ const COLUMNS: Record<Kind, string[]> = {
   exercises: ['name', 'group', 'description', 'media'],
   exercise_plans: ['patient_id', 'consultation_id', 'date', 'exercise_ids', 'notes', 'share_token'],
   follow_ups: ['patient_id', 'consultation_id', 'doctor_id', 'date', 'time', 'reason', 'notes', 'status', 'appointment_id'],
+  files: [], // ملفات المريض (patient_files) — قراية بس هنا؛ الرفع والحذف من db.uploadPatientFile / deletePatientFile
 };
-export type Kind = 'consultations' | 'imaging' | 'surgeries' | 'fractures' | 'nursing' | 'injections' | 'medications' | 'exercises' | 'exercise_plans' | 'follow_ups';
-type Of<K extends Kind> = K extends 'follow_ups' ? FollowUp : K extends 'exercises' ? Exercise : K extends 'exercise_plans' ? ExercisePlan : K extends 'medications' ? MedItem : K extends 'consultations' ? Consultation : K extends 'imaging' ? Imaging : K extends 'surgeries' ? Surgery : K extends 'nursing' ? Nursing : K extends 'injections' ? Injection : Fracture;
+export type Kind = 'consultations' | 'imaging' | 'surgeries' | 'fractures' | 'nursing' | 'injections' | 'medications' | 'exercises' | 'exercise_plans' | 'follow_ups' | 'files';
+type Of<K extends Kind> = K extends 'files' ? Record<string, unknown> : K extends 'follow_ups' ? FollowUp : K extends 'exercises' ? Exercise : K extends 'exercise_plans' ? ExercisePlan : K extends 'medications' ? MedItem : K extends 'consultations' ? Consultation : K extends 'imaging' ? Imaging : K extends 'surgeries' ? Surgery : K extends 'nursing' ? Nursing : K extends 'injections' ? Injection : Fracture;
 type Row = Record<string, unknown>;
 
+/** اسم الجدول: ملفات المريض جدولها patient_files (مش ortho_) — بتتحمّل وتتحفظ على الجهاز زي باقي السجلات الطبية عشان تفتح من غير إنترنت */
+const tableOf = (kind: Kind) => (kind === 'files' ? 'patient_files' : 'ortho_' + kind);
 const camel = (k: string) => k.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
 const snake = (k: string) => k.replace(/[A-Z]/g, (m) => '_' + m.toLowerCase());
 const fromRow = <T,>(r: Row) => Object.fromEntries(Object.entries(r).map(([k, v]) => [camel(k), v ?? ''])) as T;
@@ -142,7 +145,7 @@ supabase.auth.onAuthStateChange((event, session) => {
 function overlay(kind: Kind, rows: Row[]): Row[] {
   const out = rows.slice();
   for (const op of offline.queue.list()) {
-    if (op.kind !== 'ortho.save' || op.payload.table !== 'ortho_' + kind) continue;
+    if (op.kind !== 'ortho.save' || op.payload.table !== tableOf(kind)) continue;
     const local = { ...(op.payload.local as Row), pendingSync: true };
     const i = out.findIndex((r) => r.id === op.entityId);
     if (i >= 0) out[i] = { ...out[i], ...local }; else out.unshift(local);
@@ -159,10 +162,11 @@ async function load(kind: Kind) {
   loading.add(kind);
   try {
     // كل الصفوف بالترقيم بالمؤشر (كان فيه حد 5000 صف بيقص الباقي من غير ما يبان)
-    const rows = await fetchKeyset('ortho_' + kind);
+    const rows = await fetchKeyset(tableOf(kind));
     server[kind] = rows.sort(byCreatedDesc);
     cache[kind] = overlay(kind, server[kind]!);
     delete errors[kind];
+    offline.scheduleSnapshot(true); // النسخة على الجهاز تتحدّث بالسجلات الجديدة (Realtime/بعد المزامنة) فورًا تقريبًا
   } catch (e) {
     if (!cache[kind]) errors[kind] = clean(e instanceof Error ? e.message : String(e));
   } finally { loading.delete(kind); }
@@ -181,7 +185,7 @@ export function hydrateOrthoCache(x: Partial<Record<Kind, Row[]>> | null) {
   if (x) for (const k of Object.keys(x) as Kind[]) if (Array.isArray(x[k])) { server[k] = x[k]!; cache[k] = overlay(k, x[k]!); }
   bump();
 }
-const KIND_LABEL: Record<Kind, string> = { consultations: 'كشف', imaging: 'أشعة', surgeries: 'عملية', fractures: 'كسر/جبس', nursing: 'متابعة تمريض', injections: 'حقن', medications: 'دواء', exercises: 'تمرين', exercise_plans: 'خطة تمرينات', follow_ups: 'موعد متابعة' };
+const KIND_LABEL: Record<Kind, string> = { consultations: 'كشف', imaging: 'أشعة', surgeries: 'عملية', fractures: 'كسر/جبس', nursing: 'متابعة تمريض', injections: 'حقن', medications: 'دواء', exercises: 'تمرين', exercise_plans: 'خطة تمرينات', follow_ups: 'موعد متابعة', files: 'ملف' };
 /**
  * حفظ على الجهاز ← طابور المزامنة. إنشاء: بمعرّف ثابت من الجهاز (إعادة الإرسال مابتكررش). تعديل: بنحفظ قيم الخادم وقت التعديل (base)
  * ولو حد غيّر نفس الحقول على الخادم قبل المزامنة ← «تعارض» يتعرض للطبيب يقرر (مفيش كتابة فوق تشخيص بصمت).
@@ -189,7 +193,7 @@ const KIND_LABEL: Record<Kind, string> = { consultations: 'كشف', imaging: 'أ
  */
 async function saveOffline(kind: Kind, id: string | undefined, row: Record<string, unknown>, newId?: string): Promise<string> {
   if (!offline.userId) throw new Error('سجّل الدخول الأول.');
-  const table = 'ortho_' + kind;
+  const table = tableOf(kind);
   const eid = id ?? newId ?? uuid();
   const prev = server[kind]?.find((r) => r.id === eid);
   const pending = offline.queue.list().find((o) => o.kind === 'ortho.save' && o.entityId === eid && (o.status === 'pending' || o.status === 'failed'));
@@ -220,6 +224,11 @@ export const ortho = {
     if (!cache[kind]) { if (!net.isOnline() && !errors[kind]) void load(kind); return []; }
     return cache[kind]!.filter((r) => !patientId || r.patient_id === patientId).map((r) => fromRow<Of<K>>(r));
   },
+  /** الصفوف زي ما هي من الخادم (من غير تحويل الأسماء) */
+  rows(kind: Kind, patientId?: string): Row[] {
+    if (!server[kind] && !errors[kind] && net.isOnline()) void load(kind);
+    return (cache[kind] ?? []).filter((r) => !patientId || r.patient_id === patientId);
+  },
   isLoading: (kind: Kind) => !cache[kind] && !errors[kind],
   /** ربط تشخيص غير مربوط بملف مريض (اختيار المستخدم) — محتاج اتصال؛ الخادم بيسجل طلبات الأشعة/التحاليل في ملفه */
   async link(consultId: string, patientId: string) {
@@ -238,7 +247,7 @@ export const ortho = {
     if (kind === 'follow_ups') for (const k of ['consultation_id', 'doctor_id', 'time', 'appointment_id']) if (k in row && !row[k]) row[k] = null;
     // بدون إنترنت (أو السجل نفسه لسه مستني مزامنة): بيتحفظ على الجهاز ويتبعت لوحده لما الاتصال يرجع
     if (!net.isOnline() || (item.id && offline.queue.hasPendingFor(item.id))) return saveOffline(kind, item.id, row);
-    const table = supabase.from('ortho_' + kind);
+    const table = supabase.from(tableOf(kind));
     // السجل الجديد بمعرّف من الجهاز: لو الاتصال قطع بعد ما الخادم حفظ، إعادة الإرسال مابتكررش السجل
     const id = item.id ?? uuid();
     const q = item.id ? table.update(row as never).eq('id', item.id) : table.insert({ ...row, id } as never);
@@ -254,13 +263,13 @@ export const ortho = {
       if (i >= 0) list[i] = data; else list.unshift(data);
     }
     bump();
-    offline.scheduleSnapshot();
+    offline.scheduleSnapshot(true);
     return data.id as string;
   },
   async remove(kind: Kind, id: string) {
     if (!net.isOnline()) throw new Error('حذف السجلات الطبية محتاج اتصال بالإنترنت — جرّب لما الاتصال يرجع.');
     if (offline.queue.hasPendingFor(id)) throw new Error('السجل ده لسه مستني مزامنة — احذفه بعد ما يتبعت للخادم.');
-    const { data, error } = await supabase.from('ortho_' + kind).delete().eq('id', id).select('id');
+    const { data, error } = await supabase.from(tableOf(kind)).delete().eq('id', id).select('id');
     if (error) throw new Error(clean(error.message));
     if (!data?.length) throw new Error('ليس لديك صلاحية حذف هذا السجل.');
     cache[kind] = (cache[kind] ?? []).filter((r) => r.id !== id);

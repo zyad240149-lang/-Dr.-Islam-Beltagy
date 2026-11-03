@@ -121,7 +121,8 @@ export function SheetSwitch({ active, onPick, onRemove }: { active: SheetId[]; o
       <span className="sh-regions__l">شيت الكشف:</span>
       {SHEET_ORDER.map((id) => { const on = active.includes(id); return (
         <span key={id} className={`sh-region${on ? ' is-on' : ''}`}>
-          <button type="button" aria-pressed={on} className="sh-region__pick" onClick={() => onPick(id)}>{SHEET_TAB[id]}</button>
+          {/* «شيت الكشف:» مكتوبة قبل الأزرار — فكلمة «كشف» مابتتكررش في كل زرار */}
+          <button type="button" aria-pressed={on} className="sh-region__pick" onClick={() => onPick(id)}>{SHEET_TAB[id].replace(/^كشف /, '')}</button>
           {on && <button type="button" className="sh-region__x" aria-label={`إلغاء ${SHEET_TAB[id]}`} title="إلغاء ومسح اللي اتكتب فيه" onClick={() => onRemove(id)}><Icon name="close" size={14} /></button>}
         </span>
       ); })}

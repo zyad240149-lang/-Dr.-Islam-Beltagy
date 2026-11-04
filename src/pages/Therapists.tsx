@@ -11,6 +11,7 @@ import type { Leave, Role, Therapist, WorkDay, WorkHours } from '../types';
 import { ROLE_LABEL } from '../services/permissions';
 import { ROLES } from '../services/defaultPermissions';
 import { api } from '../lib/api';
+import { useAuth } from '../services/auth';
 import { staffCall } from './Employees';
 import { WorkHoursEditor, cleanHours, defaultHours, hoursError, hoursSummary } from '../components/WorkHoursEditor';
 
@@ -104,15 +105,19 @@ export function TherapistModal({ therapist, onClose }: { therapist?: Therapist; 
   const canHours = useCan()('workhours');
   const toast = useToast();
   const [busy, setBusy] = useState(false);
-  const [role, setRole] = useState<Role>('therapist');
-  const isTherapist = !!therapist || role === 'therapist'; // في التعديل يفضل معالجًا دايمًا؛ في الإضافة يتقرر بالمنصب المختار
+  // «مدير ودكتور»: حساب مدير عام مربوط بملف طبيب (بيظهر في الحجز والمواعيد)؛ «مدير فقط»: حساب إدارة من غير ملف طبيب
+  const [position, setPosition] = useState<Role | 'admin_doctor'>('therapist');
+  const adminDoctor = position === 'admin_doctor';
+  const role: Role = adminDoctor ? 'system_admin' : position;
+  const isCallerAdmin = useAuth().user?.role === 'system_admin';
+  const isTherapist = !!therapist || position === 'therapist' || adminDoctor; // في التعديل يفضل معالجًا دايمًا؛ في الإضافة يتقرر بالمنصب المختار
   const [f, setF] = useState({ name: therapist?.name ?? '', title: therapist?.title ?? '', phone: therapist?.phone ?? '', email: therapist?.email ?? '', bio: therapist?.bio ?? '', photoUrl: therapist?.photoUrl ?? '', defaultDurationMin: therapist?.defaultDurationMin ?? 30, serviceIds: therapist?.serviceIds ?? [] as string[] });
   const [hours, setHours] = useState<WorkHours[]>(() => [...(therapist?.workHours?.length ? therapist.workHours : defaultHours())].sort(byDayOrder));
   const [leaves, setLeaves] = useState<Leave[]>(therapist?.onLeave ?? []);
   const [account, setAccount] = useState({ password: '' });
   const [phoneErr, setPhoneErr] = useState<PhoneErrorCode | null>(null);
   const [tried, setTried] = useState(false);
-  const phoneRequired = !isTherapist || !!account.password; // الجوال = اسم الدخول، فبيبقى مطلوب لو هيتعمل حساب
+  const phoneRequired = !isTherapist || adminDoctor || !!account.password; // الجوال = اسم الدخول، فبيبقى مطلوب لو هيتعمل حساب
 
 
   const submit = async () => {
@@ -138,6 +143,7 @@ export function TherapistModal({ therapist, onClose }: { therapist?: Therapist; 
     if (!f.title.trim()) { toast.error('التخصص مطلوب.'); return; }
     const hErr = hoursError(hours); if (hErr) { toast.error(hErr); return; }
     if (leaves.some((l) => !l.from || !l.to || l.from > l.to)) { toast.error('تحقق من تواريخ الإجازات.'); return; }
+    if (!therapist && adminDoctor && (!f.phone.trim() || account.password.length < 6)) { toast.error('«مدير ودكتور» محتاج رقم جوال وكلمة مرور لا تقل عن 6 خانات.'); return; }
     if (account.password && !f.phone.trim()) { toast.error('أدخل رقم جوال المعالج — يُستخدم لتسجيل الدخول.'); return; }
     setBusy(true);
     const payload = { name: f.name.trim(), title: f.title.trim(), phone: f.phone, photo: initials(f.name), email: f.email.trim(), bio: f.bio.trim(), photoUrl: f.photoUrl.trim(), defaultDurationMin: f.defaultDurationMin, serviceIds: db.allServices().map((s) => s.id), workHours: cleanHours(hours), onLeave: leaves };
@@ -161,7 +167,10 @@ export function TherapistModal({ therapist, onClose }: { therapist?: Therapist; 
         <div className="form-section-title">البيانات الأساسية</div>
         {!therapist && (
           <div className="grid-form" style={{ marginBottom: 4 }}>
-            <Select id="th-role" label="المنصب *" value={role} onChange={(e) => setRole(e.target.value as Role)} options={ROLES.map((r) => ({ value: r, label: ROLE_LABEL[r] }))} />
+            <Select id="th-role" label="المنصب *" value={position} onChange={(e) => setPosition(e.target.value as Role | 'admin_doctor')} options={[
+              ...(isCallerAdmin ? [{ value: 'admin_doctor', label: 'مدير ودكتور' }, { value: 'system_admin', label: 'مدير فقط' }] : []),
+              ...ROLES.filter((r) => r !== 'system_admin').map((r) => ({ value: r, label: ROLE_LABEL[r] })),
+            ]} />
           </div>
         )}
         <div className="grid-form grid-form--3">
@@ -198,9 +207,9 @@ export function TherapistModal({ therapist, onClose }: { therapist?: Therapist; 
 
       {!therapist && (
         <div className="form-section">
-          <div className="form-section-title">{isTherapist ? 'حساب الدخول (اختياري)' : 'حساب الدخول *'}</div>
+          <div className="form-section-title">{isTherapist && !adminDoctor ? 'حساب الدخول (اختياري)' : 'حساب الدخول *'}</div>
           <p className="muted" style={{ fontSize: 13.5, marginTop: -4, marginBottom: 10 }}>
-            {isTherapist ? 'إذا تبي يتمكن المعالج من دخول النظام، أدخل كلمة مرور — سيكون الدخول برقم جواله المكتوب أعلاه.' : 'مطلوب لهذا المنصب — سيكون الدخول برقم الجوال المكتوب أعلاه.'}
+            {isTherapist && !adminDoctor ? 'إذا تبي يتمكن المعالج من دخول النظام، أدخل كلمة مرور — سيكون الدخول برقم جواله المكتوب أعلاه.' : 'مطلوب لهذا المنصب — سيكون الدخول برقم الجوال المكتوب أعلاه.'}
           </p>
           <div className="grid-form">
             <PasswordInput id="th-pass" label="كلمة المرور *" value={account.password} onChange={(e) => setAccount({ ...account, password: e.target.value })} />

@@ -175,8 +175,8 @@ try {
   for (const [d, t, why] of [[cairoDate(7), '10:30', 'متابعة بعد الحقن'], [cairoDate(21), '', 'مراجعة التحاليل']]) {
     await p.getByRole('button', { name: 'إضافة موعد متابعة' }).click();
     const m = p.locator('.modal', { hasText: 'تحديد موعد متابعة' }).last();
-    await m.locator('input[type=date]').fill(d);
-    if (t) await m.locator('input[type=time]').fill(t);
+    await m.locator('.fu-day--pick input').fill(d);
+    if (t) await m.locator('input.fu-slots__time').fill(t);
     await m.locator('textarea').first().fill(why);
     await m.getByRole('button', { name: 'إضافة للتشخيص' }).click();
   }
@@ -224,7 +224,7 @@ try {
   const c1 = await findChip('متابعة بعد الحقن');
   await c1.click();
   let m = p.locator('.modal', { hasText: 'موعد متابعة' }).last();
-  await m.locator('input[type=time]').fill('11:15');
+  await m.locator('input.fu-slots__time').fill('11:15');
   await m.getByRole('button', { name: 'حفظ' }).click();
   const moved = await waitFor(async () => String((await one(`select time from ortho_follow_ups where id = '${fus[0].id}'`))?.time).startsWith('11:15'));
   check('14. تعديل وقت الموعد من التقويم', moved);
@@ -239,7 +239,34 @@ try {
   await m.getByRole('button', { name: 'إلغاء الموعد' }).click();
   check('14. إلغاء الموعد', await waitFor(async () => (await one(`select status from ortho_follow_ups where id = '${fus[1].id}'`))?.status === 'cancelled'));
   check('الحالات: «تمت» و«ملغاة» ظاهرين في نتايج البحث', await waitFor(async () => (await p.locator('.fu-item--done').count()) === 1 && (await p.locator('.fu-item--cancelled').count()) === 1));
+  // شكل النافذة الجديدة: الأيام + أوقات دوام الطبيب + جدول اليوم
+  await p.getByPlaceholder(/ابحث باسم المريض/).fill('');
+  await p.getByRole('button', { name: 'موعد متابعة جديد' }).click();
+  await p.locator('.modal input').first().fill('اختبار المتابعات').catch(() => {});
+  await p.locator('.modal').getByText('مريض اختبار المتابعات').first().click().catch(() => {});
+  const nm = p.locator('.modal', { hasText: 'تحديد موعد متابعة' }).last();
+  const shown = await waitFor(async () => (await nm.locator('.fu-day').count()) >= 14 && (await nm.locator('.fu-slot').count()) > 0, 10000);
+  check('النافذة بتعرض أيام الأسبوعين الجايين وأوقات دوام الطبيب', !!shown, `days=${await nm.locator('.fu-day').count()} slots=${await nm.locator('.fu-slot').count()}`);
+  check('اليوم المختار مكتوب باسمه ومواعيد عمل الطبيب ظاهرة', /مواعيد عمل الطبيب/.test(await nm.locator('.fu-dayhead').innerText().catch(() => '')));
+  check('جدول الطبيب في اليوم ده ظاهر', (await nm.locator('.fu-plan').count()) === 1);
+  mkdirSync(new URL('../docs/ui-shots/', import.meta.url), { recursive: true });
+  await nm.screenshot({ path: fileURLToPath(new URL('../docs/ui-shots/follow-up-dialog.png', import.meta.url)) }).catch(() => {});
+  await nm.getByRole('button', { name: 'إغلاق' }).last().click();
+
+  // تسجيل حضور: متابعة النهارده من غير حجز ← حجز بأقرب وقت فاضي مع نفس الطبيب ويتعلّم «حضر»، والمتابعة «تمت»
+  const [todayFu] = await sql(`insert into ortho_follow_ups (patient_id, doctor_id, date, reason) values ('${made.patient}', '${made.therapist}', '${cairoDate(0)}', 'متابعة حضور اختبار') returning id`);
+  await go(p, '/follow-ups');
+  await p.waitForSelector('.fu-month', { timeout: 20000 });
+  await waitFor(async () => (await p.locator('.fu-chip', { hasText: 'متابعة حضور اختبار' }).count()) > 0, 15000);
+  await p.locator('.fu-chip', { hasText: 'متابعة حضور اختبار' }).first().click();
+  const cm = p.locator('.modal', { hasText: 'موعد متابعة' }).last();
+  await cm.getByRole('button', { name: 'تسجيل حضور المريض' }).click();
+  await cm.getByRole('button', { name: 'تأكيد الحضور' }).click();
+  const ci = await waitFor(async () => { const r = await one(`select f.status, a.status ast, a.therapist_id, a.date from ortho_follow_ups f left join appointments a on a.id = f.appointment_id where f.id = '${todayFu.id}'`); return r?.status === 'done' ? r : null; });
+  check('تسجيل حضور المريض: اتعمل حجز النهارده مع نفس الطبيب واتعلّم «حضر» والمتابعة «تمت»', ci?.ast === 'arrived' && ci?.therapist_id === made.therapist && ci?.date === cairoDate(0), JSON.stringify(ci));
+
   // 15. فتح ملف المريض من الموعد
+  await p.getByPlaceholder(/ابحث باسم المريض/).fill('01200000977');
   await p.locator('.fu-item__patient').first().click();
   check('15. فتح ملف المريض من الموعد في التقويم', await waitFor(() => new URL(p.url()).pathname === `/patients/${made.patient}`));
   await p.getByRole('button', { name: 'مواعيد المتابعة' }).first().click();

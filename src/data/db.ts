@@ -801,6 +801,8 @@ export const db = {
   },
   // حالة يوم الدكتور (يشتغل/إجازة/مش من أيام عمله/...) — نفس منطق الخادم
   doctorDay: (therapistId: string, date: string) => doctorDayWindow(therapistId, date),
+  /** كل بدايات المواعيد جوّه دوام الدكتور في اليوم ده (محجوز ولا لأ) — لشبكة الأوقات في مواعيد المتابعة */
+  doctorSlots: (therapistId: string, date: string, durationMin: number) => doctorStarts(therapistId, date, durationMin),
   // هل الوقت ده جوّه دوام الدكتور (من غير ما نبص على المحجوز)؛ بيرجّع سبب الرفض لو لأ
   doctorTimeIssue(therapistId: string, date: string, time: string, durationMin: number): string | null {
     const w = doctorDayWindow(therapistId, date);

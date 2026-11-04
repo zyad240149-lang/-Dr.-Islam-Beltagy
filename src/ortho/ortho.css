@@ -159,3 +159,44 @@
 
 .vd-live { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .vd-help ol { padding-inline-start: 20px; line-height: 1.9; }
+
+/* ===== نافذة موعد المتابعة: الأيام + أوقات دوام الطبيب + جدول اليوم + تسجيل الحضور ===== */
+.fu-who { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 14px; }
+.fu-checkin { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px; margin-bottom: 14px; border-radius: var(--r-sm); background: var(--ok-bg); border: 1px solid color-mix(in srgb, var(--ok) 30%, transparent); }
+.fu-checkin__msg { display: flex; align-items: center; gap: 8px; color: var(--ok); font-weight: 600; }
+.fu-checkin__form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; width: 100%; }
+.fu-checkin__form > .field { flex: 1 1 200px; margin: 0; }
+.fu-days { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+.fu-day { flex: none; width: 74px; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 7px 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); cursor: pointer; font: inherit; color: var(--ink); position: relative; }
+.fu-day b { font-size: 18px; line-height: 1.2; }
+.fu-day__w { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.fu-day__s { font-size: 11px; color: var(--ok); min-height: 14px; }
+.fu-day.is-off .fu-day__s { color: var(--muted); }
+.fu-day.is-off b { color: var(--faint); }
+.fu-day.is-today { border-color: var(--brand); }
+.fu-day.is-on { background: var(--brand); border-color: var(--brand); color: #fff; }
+.fu-day.is-on .fu-day__w, .fu-day.is-on .fu-day__s, .fu-day.is-on b { color: #fff; }
+.fu-day:disabled { cursor: default; opacity: .7; }
+.fu-day--pick { justify-content: center; color: var(--brand-700); }
+.fu-day--pick input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.fu-dayhead { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 10px 12px; margin: 4px 0 12px; border-radius: var(--r-sm); background: var(--bg); }
+.fu-slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 6px; }
+.fu-slot { display: flex; flex-direction: column; align-items: center; padding: 7px 4px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); cursor: pointer; font: inherit; font-weight: 600; color: var(--ink); line-height: 1.25; }
+.fu-slot small { font-size: 10.5px; font-weight: 500; }
+.fu-slot--free:hover { border-color: var(--brand); }
+.fu-slot--taken { background: var(--info-bg); color: var(--info); border-color: transparent; }
+.fu-slot--fu { background: var(--warn-bg); color: var(--warn); border-color: transparent; }
+.fu-slot--past { opacity: .4; cursor: default; text-decoration: line-through; }
+.fu-slot.is-on { background: var(--brand); color: #fff; border-color: var(--brand); }
+.fu-slots__foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+.fu-slots__time { max-width: 150px; }
+.fu-plan { border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px 12px; margin-top: 12px; }
+.fu-plan__h { font-weight: 700; margin-bottom: 6px; display: flex; gap: 6px; align-items: center; }
+.fu-plan__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 190px; overflow-y: auto; }
+.fu-plan__row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 4px 0; border-bottom: 1px dashed var(--line); }
+.fu-plan__row:last-child { border-bottom: 0; }
+.fu-plan__t { min-width: 64px; font-weight: 700; }
+@media (max-width: 640px) {
+  .fu-day { width: 64px; }
+  .fu-slots { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); }
+}

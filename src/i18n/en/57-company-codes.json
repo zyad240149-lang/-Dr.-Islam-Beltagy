@@ -8,5 +8,8 @@
  "كود شركة": "Company code",
  "بدون مدة": "No expiry",
  "بدون حد": "Unlimited",
- "بدون مدة · بدون حد للاستخدام": "No expiry · unlimited uses"
+ "بدون مدة · بدون حد للاستخدام": "No expiry · unlimited uses",
+ "مدير ودكتور": "Manager & doctor",
+ "مدير فقط": "Manager only",
+ "«مدير ودكتور» محتاج رقم جوال وكلمة مرور لا تقل عن 6 خانات.": "Manager & doctor needs a mobile number and a password of at least 6 characters."
 }

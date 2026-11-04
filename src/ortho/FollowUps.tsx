@@ -7,7 +7,7 @@ import { Button, EmptyState, Modal } from '../components/ui';
 import BookingWizard from '../components/BookingWizard';
 import { useCan } from '../components/common';
 import { useAuth } from '../services/auth';
-import { db } from '../data/db';
+import { DOCTOR_DAY_LABEL, db } from '../data/db';
 import { useDbVersion } from '../hooks/useDb';
 import { Icon } from '../utils/icons';
 import { fmtDate, fmtTime, todayYmd } from '../utils/format';
@@ -53,20 +53,59 @@ function useDefaultDoctor(patientId: string, hint?: string | null) {
 export type FuDraft = Omit<FollowUp, 'id' | 'status' | 'appointmentId' | 'consultationId'> & { key?: string };
 const emptyDraft = (patientId: string, doctorId: string): FuDraft => ({ patientId, doctorId, date: addDays(todayYmd(), 7), time: '', reason: '', notes: '' });
 
-// ---------- نافذة موعد متابعة (جديد / تعديل + تمت / إلغاء / تحويل لحجز) ----------
+// ---------- نافذة موعد متابعة (جديد / تعديل + تمت / إلغاء / تحويل لحجز / تسجيل حضور) ----------
+// الطبيب الأول ← أيام الأسبوعين الجايين (شغال/إجازة/مقفول) ← أوقات دوام الطبيب في اليوم ده (فاضي/محجوز/فيه متابعة/فات)،
+// وتحتها كل اللي عند الطبيب في اليوم ده (حجوزات + متابعات) عشان مايتحطش موعدين فوق بعض.
 // onDraft: من جوّه تشخيص لسه ما اتحفظش — بيرجّع البيانات بدل ما يحفظ (بتتحفظ مع التشخيص)
+const WD = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+const weekday = (ymd: string) => WD[new Date(ymd + 'T00:00:00').getDay()];
+const dayNum = (ymd: string) => Number(ymd.slice(8, 10));
+const longDay = (ymd: string) => new Intl.DateTimeFormat('ar-EG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(ymd + 'T00:00:00'));
+const minOf = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + (m || 0); };
+const near = (a: string, b: string, dur: number) => Math.abs(minOf(a) - minOf(b)) < dur;
+const DAYS_AHEAD = 14;
+
+function DoctorDayPlan({ doctorId, date, exceptId }: { doctorId: string; date: string; exceptId?: string }) {
+  const appts = db.appointmentsForDate(date).filter((a) => a.therapistId === doctorId && a.status !== 'cancelled');
+  const fus = ortho.list('follow_ups').filter((x) => x.date === date && x.doctorId === doctorId && x.status !== 'cancelled' && x.id !== exceptId);
+  const rows = [
+    ...appts.map((a) => ({ key: a.id, time: a.time, who: patientName(a.patientId), what: db.service(a.serviceId)?.name ?? 'حجز', kind: 'appt' as const, done: a.status === 'completed' || a.status === 'arrived' || a.status === 'in_progress' })),
+    ...fus.map((x) => ({ key: x.id, time: hhmm(x.time), who: patientName(x.patientId), what: x.reason || 'متابعة', kind: 'fu' as const, done: x.status === 'done' })),
+  ].sort((a, b) => (a.time || '99').localeCompare(b.time || '99'));
+  return (
+    <div className="fu-plan">
+      <div className="fu-plan__h">عند الدكتور في اليوم ده <span className="num">{rows.length}</span></div>
+      {rows.length === 0 ? <p className="muted-sm" style={{ margin: 0 }}>اليوم فاضي — مفيش حجوزات ولا متابعات.</p> : (
+        <ul className="fu-plan__list">
+          {rows.map((r) => (
+            <li key={r.key} className={`fu-plan__row fu-plan__row--${r.kind}`}>
+              <span className="num fu-plan__t">{r.time ? fmtTime(r.time) : 'من غير ساعة'}</span>
+              <span className={`badge badge--${r.kind === 'appt' ? 'info' : 'brand'}`}>{r.kind === 'appt' ? 'حجز' : 'متابعة'}</span>
+              <b>{r.who}</b><span className="muted-sm">{r.what}{r.done ? (r.kind === 'appt' ? ' · حضر' : ' · تمت') : ''}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export function FollowUpModal({ patientId, consultationId, initial, doctorHint, onDraft, onClose }: {
   patientId: string; consultationId?: string | null; initial?: FollowUp | FuDraft; doctorHint?: string | null; onDraft?: (d: FuDraft) => void; onClose: () => void;
 }) {
   useDbVersion();
+  useOrthoVersion();
   const perm = useFuCan();
   const { run, busy } = useRun();
   const doc = useDefaultDoctor(patientId, doctorHint);
   const saved = initial && 'id' in initial ? initial as FollowUp : null;
   const [f, setF] = useState<FuDraft>(() => (initial ? { ...initial, time: hhmm(initial.time) } : emptyDraft(patientId, doc)));
   const [book, setBook] = useState<number | null>(null); // وقت فتح الحجز — عشان نلاقي الحجز اللي اتعمل ونربطه
+  const [checkIn, setCheckIn] = useState(false);
   const set = <K extends keyof FuDraft>(k: K, v: FuDraft[K]) => setF((x) => ({ ...x, [k]: v }));
   const canSave = !!f.date && (saved ? perm.edit : perm.add);
+  const t = todayYmd();
+  const dur = db.therapist(f.doctorId)?.defaultDurationMin || 30;
 
   const save = (patch: Partial<FollowUp> = {}, msg = 'تم حفظ موعد المتابعة') => {
     if (onDraft && !saved) { onDraft(f); onClose(); return; }
@@ -84,8 +123,53 @@ export function FollowUpModal({ patientId, consultationId, initial, doctorHint, 
   };
   const appt = saved?.appointmentId ? db.appointment(saved.appointmentId) : undefined;
 
+  // الأيام: من النهارده (أو تاريخ المتابعة لو قديم) أسبوعين قدام، وحالة الطبيب في كل يوم
+  const start = saved && f.date < t ? f.date : t;
+  const days = Array.from({ length: DAYS_AHEAD }, (_, i) => addDays(start, i));
+  if (!days.includes(f.date)) days.push(f.date);
+  const dayState = (d: string) => (f.doctorId ? db.doctorDay(f.doctorId, d).status : 'ok');
+  const win = f.doctorId ? db.doctorDay(f.doctorId, f.date) : null;
+  // الأوقات: كل بدايات دوام الطبيب في اليوم ده + الوقت المختار لو برّه الدوام
+  const slots = f.doctorId ? db.doctorSlots(f.doctorId, f.date, dur) : [];
+  const taken = new Set(f.doctorId ? db.takenSlots(f.doctorId, f.date, dur, saved?.appointmentId || undefined) : []);
+  const otherFus = ortho.list('follow_ups').filter((x) => x.date === f.date && x.doctorId === f.doctorId && x.status !== 'cancelled' && x.id !== saved?.id && x.time);
+  const now = new Date(); const nowMin = now.getHours() * 60 + now.getMinutes();
+  const slotState = (s: string): 'free' | 'taken' | 'fu' | 'past' => {
+    if (f.date === t && minOf(s) < nowMin && s !== f.time) return 'past';
+    if (taken.has(s)) return 'taken';
+    if (otherFus.some((x) => near(hhmm(x.time), s, dur))) return 'fu';
+    return 'free';
+  };
+  const freeCount = slots.filter((s) => slotState(s) === 'free').length;
+  // المواعيد الفعلية = دوام الطبيب جوّه ساعات المركز (الطبيب ممكن يكون مسجّل طول اليوم والمركز فاتح من 4 لـ 10)
+  const maxT = (a?: string, b?: string) => (!a ? b : !b ? a : a > b ? a : b) ?? '';
+  const minT = (a?: string, b?: string) => (!a ? b : !b ? a : a < b ? a : b) ?? '';
+  const effFrom = maxT(win?.doctorFrom, win?.centerFrom), effTo = minT(win?.doctorTo, win?.centerTo);
+  const outside = !!f.time && f.doctorId && win?.status === 'ok' && !slots.includes(f.time);
+
+  // تسجيل حضور: الحجز المربوط بيتعلّم «حضر»، ولو مفيش حجز بيتعمل حجز بأقرب وقت فاضي النهارده مع نفس الطبيب ويتعلّم «حضر» — والمتابعة «تمت»
+  const services = db.services();
+  const [svc, setSvc] = useState(() => (services.find((s) => /متابع/.test(s.name)) ?? services.find((s) => /استشار/.test(s.name)) ?? services[0])?.id ?? '');
+  const todaySlots = f.doctorId ? db.availableSlots(f.doctorId, t, dur, undefined, patientId) : [];
+  const [ciTime, setCiTime] = useState('');
+  const doCheckIn = () => void run(async () => {
+    if (!saved) return;
+    let apptId = appt && appt.status !== 'cancelled' ? appt.id : '';
+    if (!apptId) {
+      if (!f.doctorId) throw new Error('اختار الطبيب المسؤول الأول.');
+      const time = ciTime || todaySlots[0];
+      if (!time) throw new Error('مفيش وقت فاضي عند الطبيب النهارده — اختار طبيب تاني أو احجز من «حجز موعد».');
+      const r = await db.createAppointment({ patientId, type: 'followup', serviceId: svc, therapistId: f.doctorId, date: t, time, notes: `حضور متابعة${f.reason ? ': ' + f.reason : ''}` });
+      if (!r.ok) throw new Error(r.error);
+      apptId = r.appointment.id;
+    }
+    await db.setAppointmentStatus(apptId, 'arrived');
+    await ortho.save('follow_ups', { ...saved, appointmentId: apptId, status: 'done' });
+  }, 'اتسجّل حضور المريض — والمتابعة بقت «تمت»', () => { setCheckIn(false); onClose(); });
+  const canCheckIn = !!saved && saved.status === 'scheduled' && saved.date <= t && perm.book;
+
   return (
-    <Modal title={saved ? 'موعد متابعة' : 'تحديد موعد متابعة'} onClose={onClose} footer={<>
+    <Modal wide title={saved ? 'موعد متابعة' : 'تحديد موعد متابعة'} onClose={onClose} footer={<>
       {saved && perm.edit && saved.status === 'scheduled' && <>
         <Button variant="outline" icon="check" loading={busy} onClick={() => save({ status: 'done' }, 'اتسجّلت المتابعة «تمت»')}>تمت المتابعة</Button>
         <Button variant="soft-danger" icon="close" loading={busy} onClick={() => window.confirm('إلغاء موعد المتابعة ده؟') && save({ status: 'cancelled' }, 'اتلغى موعد المتابعة')}>إلغاء الموعد</Button>
@@ -93,25 +177,103 @@ export function FollowUpModal({ patientId, consultationId, initial, doctorHint, 
       {saved && perm.edit && saved.status !== 'scheduled' && <Button variant="outline" icon="refresh" loading={busy} onClick={() => save({ status: 'scheduled' }, 'رجع موعد المتابعة «مجدول»')}>إرجاع كموعد مجدول</Button>}
       {saved && perm.del && <Button variant="soft-danger" icon="trash" loading={busy} onClick={() => window.confirm('حذف موعد المتابعة نهائيًا؟') && void run(() => ortho.remove('follow_ups', saved.id), 'تم الحذف', onClose)}>حذف</Button>}
       <Button variant="outline" onClick={onClose}>إغلاق</Button>
-      {canSave && <Button icon="check" loading={busy} onClick={() => save()}>{onDraft && !saved ? 'إضافة للتشخيص' : 'حفظ'}</Button>}
+      {canSave && <Button icon="check" loading={busy} onClick={() => { if (!f.time && freeCount && !window.confirm('مااخترتش ساعة — تحفظ المتابعة من غير ساعة؟')) return; save(); }}>{onDraft && !saved ? 'إضافة للتشخيص' : 'حفظ'}</Button>}
     </>}>
-      <p className="muted" style={{ marginTop: 0 }}>
+      <div className="fu-who">
         <Link to={`/patients/${patientId}`} onClick={onClose} className="ortho-cell-strong">{patientName(patientId)}</Link>
-        <span className="badge badge--brand" style={{ marginInlineStart: 8 }}>ملف <span className="num">{patientFile(patientId)}</span></span>
-        {saved && <span style={{ marginInlineStart: 8 }}><FuBadge f={saved} /></span>}
-      </p>
-      <div className="grid-form">
-        <Field label="تاريخ المتابعة *"><input type="date" className="input" value={f.date} min={saved ? undefined : todayYmd()} disabled={!canSave} onChange={(e) => set('date', e.target.value)} /></Field>
-        <Field label="الساعة"><input type="time" className="input" value={f.time} disabled={!canSave} onChange={(e) => set('time', e.target.value)} /></Field>
-        <Field label="الطبيب المسؤول">
-          <select className="input" value={f.doctorId} disabled={!canSave} onChange={(e) => set('doctorId', e.target.value)}>
-            <option value="">غير محدد</option>
-            {db.allTherapists().map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-          </select>
-        </Field>
+        <span className="badge badge--brand">ملف <span className="num">{patientFile(patientId)}</span></span>
+        {saved && <FuBadge f={saved} />}
+        {appt && <span className="badge badge--info">محجوز <span className="num">{appt.no}</span></span>}
       </div>
-      <Field label="سبب المتابعة"><textarea className="input" rows={2} dir="auto" value={f.reason} disabled={!canSave} onChange={(e) => set('reason', e.target.value)} placeholder="مثلاً: متابعة بعد الحقن، مراجعة الأشعة، فك الجبس…" /></Field>
-      <Field label="ملاحظات"><textarea className="input" rows={2} dir="auto" value={f.notes} disabled={!canSave} onChange={(e) => set('notes', e.target.value)} /></Field>
+
+      {canCheckIn && (
+        <div className="fu-checkin">
+          <div className="fu-checkin__msg"><Icon name="checkCircle" size={18} /><span>{saved!.date === t ? 'متابعة المريض النهارده' : 'المتابعة كان ميعادها فات'} — لما المريض يوصل سجّل حضوره.</span></div>
+          {!checkIn ? <Button icon="checkCircle" onClick={() => (appt && appt.status !== 'cancelled' ? doCheckIn() : setCheckIn(true))} loading={busy}>تسجيل حضور المريض</Button> : (
+            <div className="fu-checkin__form">
+              <Field label="الخدمة"><select className="input" value={svc} onChange={(e) => setSvc(e.target.value)}>{services.map((s) => <option key={s.id} value={s.id}>{s.name} — {s.price} ج.م</option>)}</select></Field>
+              <Field label="وقت الحضور (النهارده)">
+                <select className="input" value={ciTime || todaySlots[0] || ''} onChange={(e) => setCiTime(e.target.value)}>
+                  {todaySlots.length ? todaySlots.map((s) => <option key={s} value={s}>{fmtTime(s)}</option>) : <option value="">مفيش وقت فاضي النهارده</option>}
+                </select>
+              </Field>
+              <Button icon="check" loading={busy} disabled={!todaySlots.length || !svc} onClick={doCheckIn}>تأكيد الحضور</Button>
+              <Button variant="outline" onClick={() => setCheckIn(false)}>رجوع</Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      <Field label="الطبيب المسؤول">
+        <select className="input" value={f.doctorId} disabled={!canSave} onChange={(e) => setF((x) => ({ ...x, doctorId: e.target.value, time: '' }))}>
+          <option value="">اختار الطبيب</option>
+          {db.allTherapists().map((th) => <option key={th.id} value={th.id}>{th.name}</option>)}
+        </select>
+      </Field>
+
+      <div className="field">
+        <label>يوم المتابعة *</label>
+        <div className="fu-days" role="radiogroup" aria-label="يوم المتابعة">
+          {days.map((d) => {
+            const st = dayState(d);
+            return (
+              <button key={d} type="button" role="radio" aria-checked={f.date === d} disabled={!canSave}
+                className={`fu-day ${f.date === d ? 'is-on' : ''} ${st !== 'ok' ? 'is-off' : ''} ${d === t ? 'is-today' : ''}`}
+                title={st !== 'ok' ? DOCTOR_DAY_LABEL[st] : ''} onClick={() => setF((x) => ({ ...x, date: d, time: '' }))}>
+                <span className="fu-day__w">{d === t ? 'النهارده' : weekday(d)}</span>
+                <b className="num">{dayNum(d)}</b>
+                <span className="fu-day__s">{st === 'ok' ? (f.doctorId ? 'شغال' : '') : st === 'leave' ? 'إجازة' : 'مش شغال'}</span>
+              </button>
+            );
+          })}
+          <label className="fu-day fu-day--pick" title="تاريخ تاني">
+            <Icon name="calendar" size={16} /><span className="fu-day__w">تاريخ تاني</span>
+            <input type="date" value={f.date} min={saved ? undefined : t} disabled={!canSave} onChange={(e) => e.target.value && setF((x) => ({ ...x, date: e.target.value, time: '' }))} />
+          </label>
+        </div>
+      </div>
+
+      <div className="fu-dayhead">
+        <b>{longDay(f.date)}</b>
+        {!f.doctorId ? <span className="muted-sm">اختار الطبيب عشان تظهر مواعيد عمله</span>
+          : win && win.status !== 'ok' ? <span className="badge badge--warn">{DOCTOR_DAY_LABEL[win.status]}</span>
+          : win && <span className="muted-sm">مواعيد عمل الطبيب: <b className="num">{fmtTime(effFrom)} – {fmtTime(effTo)}</b> · <span className="num">{freeCount}</span> وقت فاضي</span>}
+      </div>
+
+      {f.doctorId && win?.status === 'ok' && (
+        <div className="field">
+          <label>الساعة</label>
+          <div className="fu-slots" role="radiogroup" aria-label="ساعة المتابعة">
+            {slots.map((s) => {
+              const st = slotState(s);
+              return (
+                <button key={s} type="button" role="radio" aria-checked={f.time === s} disabled={!canSave || st === 'past'}
+                  className={`fu-slot fu-slot--${st} ${f.time === s ? 'is-on' : ''}`} onClick={() => set('time', f.time === s ? '' : s)}
+                  title={st === 'taken' ? 'فيه حجز للطبيب في الوقت ده' : st === 'fu' ? 'فيه متابعة تانية في الوقت ده' : st === 'past' ? 'الوقت فات' : ''}>
+                  <span className="num">{fmtTime(s)}</span>
+                  {st !== 'free' && st !== 'past' && <small>{st === 'taken' ? 'محجوز' : 'متابعة'}</small>}
+                </button>
+              );
+            })}
+          </div>
+          <div className="fu-slots__foot">
+            <span className="muted-sm">وقت معيّن برّه الشبكة؟</span>
+            <input type="time" className="input fu-slots__time" value={f.time} disabled={!canSave} onChange={(e) => set('time', e.target.value)} />
+            {outside && <span className="badge badge--warn">برّه مواعيد عمل الطبيب</span>}
+          </div>
+        </div>
+      )}
+      {f.doctorId && win?.status !== 'ok' && (
+        <Field label="الساعة (اختياري)"><input type="time" className="input fu-slots__time" value={f.time} disabled={!canSave} onChange={(e) => set('time', e.target.value)} /></Field>
+      )}
+
+      {f.doctorId && <DoctorDayPlan doctorId={f.doctorId} date={f.date} exceptId={saved?.id} />}
+
+      <div className="grid-form" style={{ marginTop: 12 }}>
+        <Field label="سبب المتابعة"><textarea className="input" rows={2} dir="auto" value={f.reason} disabled={!canSave} onChange={(e) => set('reason', e.target.value)} placeholder="مثلاً: متابعة بعد الحقن، مراجعة الأشعة، فك الجبس…" /></Field>
+        <Field label="ملاحظات"><textarea className="input" rows={2} dir="auto" value={f.notes} disabled={!canSave} onChange={(e) => set('notes', e.target.value)} /></Field>
+      </div>
+
       {saved && (
         <div className="fu-book">
           {appt ? <span><Icon name="calendar" size={15} /> اتحوّل لحجز <b className="num">{appt.no}</b> — {fmtDate(appt.date)} <span className="num">{fmtTime(appt.time)}</span></span>

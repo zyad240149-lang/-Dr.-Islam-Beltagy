@@ -164,8 +164,8 @@ try {
   await D.page.getByRole('tab', { name: /تحديد موعد متابعة/ }).click();
   await D.page.getByRole('button', { name: 'إضافة موعد متابعة' }).click();
   const m = D.page.locator('.modal', { hasText: 'تحديد موعد متابعة' }).last();
-  await m.locator('input[type=date]').fill(cairoDate(10));
-  await m.locator('input[type=time]').fill('12:00');
+  await m.locator('.fu-day--pick input').fill(cairoDate(10));
+  await m.locator('input.fu-slots__time').fill('12:00');
   await m.locator('textarea').first().fill('متابعة أوفلاين');
   await m.getByRole('button', { name: 'إضافة للتشخيص' }).click();
   await D.page.locator('.sh-next').getByRole('button', { name: 'حفظ الكشف' }).click();

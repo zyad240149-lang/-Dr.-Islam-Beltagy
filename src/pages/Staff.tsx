@@ -45,7 +45,7 @@ export default function Staff({ embedded = false }: { embedded?: boolean }) {
     ...employees.map((e): Row => {
       const linked = e.therapistId ? therapists.find((t) => t.id === e.therapistId) : undefined;
       const onLeave = linked?.onLeave.some((l) => t0 >= l.from && t0 <= l.to) ?? false;
-      return { id: `e:${e.id}`, name: e.name, phone: e.phone, positionLabel: ROLE_LABEL[e.role], active: e.active, onLeave, createdAt: e.createdAt, lastLogin: e.lastLogin, employee: e, therapist: linked };
+      return { id: `e:${e.id}`, name: e.name, phone: e.phone, positionLabel: e.role === 'system_admin' && linked ? 'مدير ودكتور' : ROLE_LABEL[e.role], active: e.active, onLeave, createdAt: e.createdAt, lastLogin: e.lastLogin, employee: e, therapist: linked };
     }),
     ...therapists.filter((t) => !linkedTherapistIds.has(t.id)).map((t): Row => ({
       id: `t:${t.id}`, name: t.name, phone: t.phone, positionLabel: t.title || ROLE_LABEL.therapist, active: t.active,

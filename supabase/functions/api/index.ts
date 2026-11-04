@@ -125,14 +125,14 @@ async function getCaller(req: Request) {
 }
 
 async function can(role: string, area: string, op: string) {
-  if (role === "system_admin" || role === "center_manager") return true;
+  if (role === "system_admin") return true;
   const { data } = await admin.from("role_permissions").select("ops").eq("role", role).eq("area", area).maybeSingle();
   return !!data?.ops?.includes(op);
 }
 
 // نفس قاعدة has_perm في قاعدة البيانات: صلاحيات الموظف المخصّصة بتحل محل دوره، والصلاحيات الإضافية فوقها
 async function employeeCan(e: { role: string; perm_override?: Record<string, string[]> | null; extra_perms?: Record<string, string[]> | null }, area: string, op: string) {
-  if (e.role === "system_admin" || e.role === "center_manager") return true;
+  if (e.role === "system_admin") return true;
   if (e.extra_perms?.[area]?.includes(op)) return true;
   if (e.perm_override && area in e.perm_override) return !!e.perm_override[area]?.includes(op);
   return can(e.role, area, op);

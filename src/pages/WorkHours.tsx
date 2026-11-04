@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react';
 import { db } from '../data/db';
 import { useDbVersion, useLoading } from '../hooks/useDb';
-import { Button, Input, Skeleton, StatusBadge } from '../components/ui';
+import { Button, Input, Modal, Skeleton, StatusBadge } from '../components/ui';
 import { ConfirmDialog, useCan } from '../components/common';
 import { useToast } from '../hooks/useToast';
-import { WEEKDAY_LABEL, fmtDate, todayYmd } from '../utils/format';
-import type { DaySchedule, WorkDay } from '../types';
+import { WEEKDAY_LABEL, fmtDate, fmtTime, todayYmd } from '../utils/format';
+import { WorkHoursEditor, branchForDay, byDayOrder, cleanHours, dayLabel as hoursDayLabel, hoursError } from '../components/WorkHoursEditor';
+import { ROLE_LABEL } from '../services/permissions';
+import { staffCall } from './Employees';
+import { api } from '../lib/api';
+import type { DaySchedule, Employee, WorkDay, WorkHours as DayHours } from '../types';
 
 // الأسبوع السعودي يبدأ السبت
 const WEEK: WorkDay[] = ['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'];
@@ -98,8 +102,74 @@ export default function WorkHours() {
           )}
         </div>
       </section>
+      <StaffHours />
       <Holidays />
     </div>
+  );
+}
+
+// ساعات الموظف: لو مربوط بملف طبيب، الحجز وجدول المواعيد بيقروا من ملف الطبيب، فبنحفظ في الاتنين
+const hoursOf = (e: Employee): DayHours[] => {
+  const t = e.therapistId ? db.therapist(e.therapistId) : undefined;
+  return [...(t?.workHours?.length ? t.workHours : e.workHours ?? [])].sort(byDayOrder);
+};
+
+function StaffHours() {
+  useDbVersion();
+  const can = useCan();
+  const canEdit = can('employees', 'edit');
+  const [edit, setEdit] = useState<Employee | null>(null);
+  const list = db.employees().filter((e) => e.active);
+  return (
+    <section className="card" style={{ marginBottom: 18 }}>
+      <div className="card__head"><h2>مواعيد عمل الموظفين</h2><span className="muted" style={{ fontSize: 13 }}>الأيام والساعات والفرع لكل موظف</span></div>
+      <div className="card__body">
+        {list.length === 0 ? <p className="muted">مفيش موظفين.</p> : (
+          <div className="table-wrap"><table className="table">
+            <thead><tr><th>الموظف</th><th>مواعيد العمل والفرع</th>{canEdit && <th />}</tr></thead>
+            <tbody>{list.map((e) => {
+              const h = hoursOf(e);
+              return (
+                <tr key={e.id}>
+                  <td><strong>{e.name}</strong><div className="muted-sm">{ROLE_LABEL[e.role] ?? e.role}</div></td>
+                  <td>{h.length === 0 ? <span className="muted">لم تُحدَّد</span> : h.map((x) => {
+                    const b = branchForDay(h, x.day);
+                    return <div key={x.day} className="muted-sm">{hoursDayLabel(x.day)}: <span className="num">{fmtTime(x.from)} – {fmtTime(x.to)}</span>{b ? ` · ${b.name}` : ''}</div>;
+                  })}</td>
+                  {canEdit && <td style={{ textAlign: 'end' }}><Button size="sm" variant="outline" icon="edit" onClick={() => setEdit(e)}>تعديل</Button></td>}
+                </tr>
+              );
+            })}</tbody>
+          </table></div>
+        )}
+      </div>
+      {edit && <StaffHoursModal employee={edit} onClose={() => setEdit(null)} />}
+    </section>
+  );
+}
+
+function StaffHoursModal({ employee, onClose }: { employee: Employee; onClose: () => void }) {
+  const toast = useToast();
+  const [hours, setHours] = useState<DayHours[]>(() => hoursOf(employee));
+  const [busy, setBusy] = useState(false);
+  const save = async () => {
+    const err = hoursError(hours);
+    if (err) { toast.error(err); return; }
+    setBusy(true);
+    const clean = cleanHours(hours);
+    try {
+      if (employee.therapistId && db.therapist(employee.therapistId)) await db.updateTherapist(employee.therapistId, { workHours: clean });
+    } catch (e) { setBusy(false); toast.error((e as Error).message || 'تعذّر حفظ مواعيد الطبيب.'); return; }
+    const r = await staffCall(() => api.patch('staff', employee.id, { workHours: clean }));
+    setBusy(false);
+    if (!r.ok) { toast.error(r.error); return; }
+    toast.success(`تم حفظ مواعيد ${employee.name}.`);
+    onClose();
+  };
+  return (
+    <Modal wide title={`مواعيد عمل ${employee.name}`} onClose={onClose} footer={<><Button variant="outline" onClick={onClose} disabled={busy}>إلغاء</Button><Button icon="check" onClick={() => void save()} loading={busy}>حفظ</Button></>}>
+      <WorkHoursEditor id="sh" hours={hours} onChange={setHours} />
+    </Modal>
   );
 }
 

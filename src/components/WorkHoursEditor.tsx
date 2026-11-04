@@ -56,9 +56,9 @@ export function WorkHoursEditor({ id, hours, onChange }: { id: string; hours: Wo
   const applyAll = (src: WorkHours) => onChange(hours.map((x) => ({ ...x, from: src.from, to: src.to })));
   const opts = timeOptions(hours.flatMap((h) => [h.from, h.to]));
   const err = hoursError(hours);
-  // عمود الفرع بيظهر بس لو فيه أكتر من فرع نشط (أغلب المنشآت فرع واحد — مفيش داعي نعقّد شاشتهم)
+  // عمود الفرع بيظهر لو فيه فرع نشط واحد على الأقل
   const branches = db.branches().filter((b) => b.active);
-  const showBranch = branches.length > 1;
+  const showBranch = branches.length > 0;
   return (
     <>
       <div className="check-grid" style={{ marginBottom: 10 }}>{DAY_ORDER.map((d) => {

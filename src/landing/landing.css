@@ -45,10 +45,6 @@
 .lp-signup { padding: 8px 14px; border-radius: 10px; font-weight: 700; font-size: 14.5px; background: var(--lp-green-50); color: var(--lp-green-700); white-space: nowrap; }
 .lp-signup:hover { background: var(--lp-green); color: #fff; }
 
-.install-btn-wrap { position: relative; display: inline-flex; }
-.install-btn-tip { position: absolute; top: calc(100% + 8px); inset-inline-end: 0; z-index: 70; width: 260px; background: var(--lp-ink); color: #fff; font-size: 13px; line-height: 1.6; padding: 10px 14px; border-radius: 10px; box-shadow: 0 12px 28px rgba(0, 0, 0, .25); display: flex; align-items: flex-start; gap: 8px; }
-.install-btn-tip button { flex: none; background: none; border: none; color: #fff; opacity: .7; cursor: pointer; padding: 0; margin-inline-start: auto; }
-.install-btn-tip button:hover { opacity: 1; }
 .lp-burger { display: none; width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--lp-line); background: #fff; color: var(--lp-ink); align-items: center; justify-content: center; cursor: pointer; }
 
 /* البداية */

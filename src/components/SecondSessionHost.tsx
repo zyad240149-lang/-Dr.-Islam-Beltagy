@@ -1,5 +1,5 @@
-// نافذة «إرسال طلب جلسة ثانية للمدير» — بتظهر من أي شاشة لما الخادم يرفض جلسة تانية لنفس المريض في نفس اليوم
-// (المواعيد / الجلسات / «إكمال الجلسة التالية» في الخطة). الطلب بيروح للمدير في «حضور مرضى الباقات» + إشعار.
+// نافذة «إرسال طلب زيارة ثانية للمدير» — بتظهر من أي شاشة لما الخادم يرفض زيارة تانية لنفس المريض في نفس اليوم
+// (المواعيد / الزيارات / «إكمال الزيارة التالية» في الخطة). الطلب بيروح للمدير في «حضور مرضى الباقات» + إشعار.
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { db, type SecondSessionAsk } from '../data/db';
@@ -25,14 +25,14 @@ export default function SecondSessionHost() {
     const { error } = await supabase.rpc('request_second_session', { p_source: ask.source, p_id: ask.id, p_therapist: doctorId, p_note: '' });
     setBusy(false);
     if (error) { toast.error(error.message.replace(/^.*?ERROR:\s*/, '')); return; }
-    toast.success('تم إرسال طلب الجلسة الثانية للمدير — ستُسجَّل فور موافقته.');
+    toast.success('تم إرسال طلب الزيارة الثانية للمدير — ستُسجَّل فور موافقته.');
     setAsk(null);
   };
   return (
-    <Modal title="جلسة ثانية في نفس اليوم" onClose={() => !busy && setAsk(null)} footer={
+    <Modal title="زيارة ثانية في نفس اليوم" onClose={() => !busy && setAsk(null)} footer={
       <><Button variant="outline" onClick={() => setAsk(null)} disabled={busy}>إلغاء</Button><Button icon="check" onClick={send} loading={busy}>إرسال طلب للمدير</Button></>
     }>
-      <p style={{ marginTop: 0 }}>المريض <strong>{db.patient(ask.patientId)?.fullName ?? ''}</strong> أخذ جلسة اليوم بالفعل. الجلسة الثانية في اليوم نفسه تحتاج إلى موافقة المدير — أرسل له طلب، وستُسجَّل الجلسة فور موافقته.</p>
+      <p style={{ marginTop: 0 }}>المريض <strong>{db.patient(ask.patientId)?.fullName ?? ''}</strong> أخذ زيارة اليوم بالفعل. الزيارة الثانية في اليوم نفسه تحتاج إلى موافقة المدير — أرسل له طلب، وستُسجَّل الزيارة فور موافقته.</p>
       {/* الدكتور = الدكتور اللي فاتح السيستم (ولو الحساب مش دكتور: دكتور الخطة/الموعد) — من غير اختيار */}
       <dl className="review-list"><div><dt>الدكتور</dt><dd><strong>{db.therapist(doctorId)?.name ?? '—'}</strong></dd></div></dl>
     </Modal>

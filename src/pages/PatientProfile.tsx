@@ -34,9 +34,9 @@ import {
 import { useToast } from '../hooks/useToast';
 import type { InitialAssessment, Package, TreatmentPlan, TreatmentSession } from '../types';
 
-const TABS = ['بيانات المريض', 'المواعيد', 'الجلسات', 'التقييم', 'خطة العلاج', 'الباقات', 'الفواتير والمدفوعات', 'سجل المريض', 'الملفات والمرفقات', 'سجل الجسم', 'العلاج الطبيعي (Physiotherapy)', 'سجل الكشوفات', 'التشخيص', 'الأشعة والتحاليل', 'الكسور والجبس', 'العمليات الجراحية', 'متابعة التمريض', 'التحاليل', 'الحقن', 'مواعيد المتابعة'];
+const TABS = ['بيانات المريض', 'المواعيد', 'الزيارات', 'التقييم', 'خطة العلاج', 'الباقات', 'الفواتير والمدفوعات', 'سجل المريض', 'الملفات والمرفقات', 'سجل الجسم', 'العلاج الطبيعي (Physiotherapy)', 'سجل الكشوفات', 'التشخيص', 'الأشعة والتحاليل', 'الكسور والجبس', 'العمليات الجراحية', 'متابعة التمريض', 'التحاليل', 'الحقن', 'مواعيد المتابعة'];
 // ترتيب العرض (الأرقام فوق ثابتة عشان tab === n). عيادة عظام: «التشخيص» تبويب واحد بالشيت زي ما اتكتب (بدل «الكشوفات والتشخيص»
-// و«سجل الكشوفات»)، والجلسات/التقييم/خطة العلاج/الباقات/العلاج الطبيعي مش معروضين — الكود موجود لو احتاجوهم تاني
+// و«سجل الكشوفات»)، والزيارات/التقييم/خطة العلاج/الباقات/العلاج الطبيعي مش معروضين — الكود موجود لو احتاجوهم تاني
 // 8 = ملفات الأشعة والتحاليل (الاستقبال بيرفع منها) و 19 = مواعيد المتابعة — تبويبات لوحدها عشان الاستقبال يوصلها على طول
 const TAB_ORDER = [0, 12, 8, 19, 1, 6, 7];
 const TAB_LABEL: Record<number, string> = { 8: 'ملفات الأشعة والتحاليل' };
@@ -98,10 +98,10 @@ export default function PatientProfile() {
   const sendPlanToPatient = async (p: TreatmentPlan) => {
     const st = db.planStats(p.id);
     if (patient.phone && can('whatsapp', 'create')) {
-      const msg = `مرحبًا ${patient.fullName}، خطتك العلاجية (${p.diagnosis}) — ${st.total} جلسة، تبدأ ${fmtDate(p.startDate)}. تقدر تتابع تقدمك من حسابك في البوابة.`;
+      const msg = `مرحبًا ${patient.fullName}، خطتك العلاجية (${p.diagnosis}) — ${st.total} زيارة، تبدأ ${fmtDate(p.startDate)}. تقدر تتابع تقدمك من حسابك في البوابة.`;
       sendWhatsApp({ phone: patient.phone, text: msg, patientId: patient.id, type: 'plan' });
     }
-    const r = await db.sendCampaign({ title: 'خطة علاجية', body: `تفاصيل خطتك العلاجية: ${p.diagnosis} — ${st.total} جلسة`, audience: 'patient', patientId: patient.id });
+    const r = await db.sendCampaign({ title: 'خطة علاجية', body: `تفاصيل خطتك العلاجية: ${p.diagnosis} — ${st.total} زيارة`, audience: 'patient', patientId: patient.id });
     if (!r.ok) { toast.error(r.error); return; }
     if (r.recipients === 0) toast.error('تم فتح واتساب، لكن المريض ما عنده حساب في بوابة العملاء لإشعاره هناك.');
     else toast.success('تم إرسال الخطة للمريض — واتساب وإشعار على حسابه.');
@@ -204,18 +204,18 @@ export default function PatientProfile() {
           )}
 
           {tab === 2 && (
-            sessions.length === 0 ? <EmptyState icon="clipboard" title="ما فيه جلسات مسجّلة" /> : (
+            sessions.length === 0 ? <EmptyState icon="clipboard" title="ما فيه زيارات مسجّلة" /> : (
               sessions.map((s) => {
                 const idx = db.planSessionIndex(s.id);
                 return (
                   <div className="item-card" key={s.id}>
                     <div className="row-between" style={{ marginBottom: 8, gap: 8, flexWrap: 'wrap' }}>
-                      <strong>الجلسة رقم {s.sessionNo}{idx ? ` — الجلسة ${idx.index} من ${idx.total} في الخطة` : ''} — {fmtDate(s.date)}</strong>
+                      <strong>الزيارة رقم {s.sessionNo}{idx ? ` — الزيارة ${idx.index} من ${idx.total} في الخطة` : ''} — {fmtDate(s.date)}</strong>
                       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                         <StatusBadge label={s.status === 'completed' ? 'مكتملة' : 'قيد التنفيذ'} tone={s.status === 'completed' ? 'ok' : 'info'} />
                         
-                        {can('sessions', 'edit') && <IconAction icon="edit" label="تعديل الجلسة" onClick={() => setSession(s)} />}
-                        {can('sessions', 'delete') && <IconAction icon="trash" label="حذف الجلسة" danger onClick={() => ask('حذف الجلسة', `سيتم حذف الجلسة رقم ${s.sessionNo}. إن كانت مكتملة يعود الموعد إلى «حضر» وتُعاد الجلسة إلى رصيد الباقة.`, async () => { await db.deleteSession(s.id); toast.success('تم حذف الجلسة.'); })} />}
+                        {can('sessions', 'edit') && <IconAction icon="edit" label="تعديل الزيارة" onClick={() => setSession(s)} />}
+                        {can('sessions', 'delete') && <IconAction icon="trash" label="حذف الزيارة" danger onClick={() => ask('حذف الزيارة', `سيتم حذف الزيارة رقم ${s.sessionNo}. إن كانت مكتملة يعود الموعد إلى «حضر» وتُعاد الزيارة إلى رصيد الباقة.`, async () => { await db.deleteSession(s.id); toast.success('تم حذف الزيارة.'); })} />}
                       </div>
                     </div>
                     <div className="kv-row"><span>المعالج</span><span>{db.therapist(s.therapistId)?.name}</span></div>
@@ -253,7 +253,7 @@ export default function PatientProfile() {
                   <div className="kv-row"><span>الأدوية / الحساسية</span><span>{a.medications || '—'} / {a.allergies || '—'}</span></div>
                   <div className="kv-row"><span>الأهداف</span><span>{a.goals || '—'}</span></div>
                   <div className="kv-row"><span>خطة العلاج المقترحة</span><span>{a.plan || '—'}</span></div>
-                  <div className="kv-row"><span>عدد الجلسات المقترح</span><span className="num">{a.suggestedSessions}</span></div>
+                  <div className="kv-row"><span>عدد الزيارات المقترح</span><span className="num">{a.suggestedSessions}</span></div>
                 </div>
               ))}
             </>
@@ -278,7 +278,7 @@ export default function PatientProfile() {
                         <DetailsButton onClick={() => openPlan(p.id)} />
                         {can('plans', 'view') && <IconAction icon="phone" label="إرسال الخطة للمريض" onClick={() => sendPlanToPatient(p)} />}
                         {can('plans', 'edit') && <IconAction icon="edit" label="تعديل الخطة" onClick={() => setPlan(p)} />}
-                        {can('plans', 'delete') && <IconAction icon="trash" label="حذف الخطة" danger onClick={() => ask('حذف الخطة العلاجية', `سيتم حذف خطة «${p.diagnosis}» وفك ارتباط مواعيدها وجلساتها بها (دون حذفها).`, async () => { await db.deletePlan(p.id); toast.success('تم حذف الخطة.'); })} />}
+                        {can('plans', 'delete') && <IconAction icon="trash" label="حذف الخطة" danger onClick={() => ask('حذف الخطة العلاجية', `سيتم حذف خطة «${p.diagnosis}» وفك ارتباط مواعيدها وزياراتها بها (دون حذفها).`, async () => { await db.deletePlan(p.id); toast.success('تم حذف الخطة.'); })} />}
                       </div>
                     </div>
                     <div className="kv-row"><span>الخدمة</span><span>{db.service(p.serviceId)?.name ?? p.serviceId ?? '—'}</span></div>
@@ -288,7 +288,7 @@ export default function PatientProfile() {
                     {p.chiefComplaint && <div className="kv-row"><span>شكوى المريض</span><span>{p.chiefComplaint}</span></div>}
                     <div className="kv-row"><span>نوع العلاج</span><span>{p.therapyType || '—'}</span></div>
                     <div className="kv-row"><span>المدة</span><span>{fmtDate(p.startDate)} ← {p.endDate ? fmtDate(p.endDate) : '—'} ({p.durationWeeks} أسابيع، {p.sessionsPerWeek}/أسبوع)</span></div>
-                    <div className="kv-row"><span>إجمالي الجلسات</span><span className="num">{st.total}</span></div>
+                    <div className="kv-row"><span>إجمالي الزيارات</span><span className="num">{st.total}</span></div>
                     <div className="kv-row"><span>المكتملة</span><span className="num">{st.completed}</span></div>
                     <div className="kv-row"><span>المتبقية</span><span className="num">{st.remaining}</span></div>
                     <div className="kv-row"><span>مجدولة قادمة</span><span className="num">{st.scheduled}</span></div>
@@ -297,18 +297,18 @@ export default function PatientProfile() {
                       <div className="row-between" style={{ marginBottom: 6 }}><span className="muted" style={{ fontSize: 13 }}>نسبة الإنجاز</span><strong className="num">{st.pct}%</strong></div>
                       <div className="progress"><i style={{ width: `${st.pct}%` }} /></div>
                     </div>
-                    <div className="plan-sessions" aria-label="جلسات الخطة">
+                    <div className="plan-sessions" aria-label="زيارات الخطة">
                       {Array.from({ length: st.total }, (_, i) => {
                         const s = st.sessions[i];
                         const up = !s ? st.upcoming[i - st.sessions.length] : undefined;
                         const cls = s?.status === 'completed' ? 'plan-dot--done' : s || up ? 'plan-dot--sched' : '';
-                        const title = s ? `الجلسة ${i + 1} من ${st.total} — ${fmtDate(s.date)} — ${s.status === 'completed' ? 'مكتملة' : 'قيد التنفيذ'}` : up ? `الجلسة ${i + 1} من ${st.total} — مجدولة ${fmtDate(up.date)} ${fmtTime(up.time)}` : `الجلسة ${i + 1} من ${st.total} — غير مجدولة`;
+                        const title = s ? `الزيارة ${i + 1} من ${st.total} — ${fmtDate(s.date)} — ${s.status === 'completed' ? 'مكتملة' : 'قيد التنفيذ'}` : up ? `الزيارة ${i + 1} من ${st.total} — مجدولة ${fmtDate(up.date)} ${fmtTime(up.time)}` : `الزيارة ${i + 1} من ${st.total} — غير مجدولة`;
                         return <span key={i} className={`plan-dot ${cls}`} title={title}>{i + 1}</span>;
                       })}
                     </div>
                     <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>أخضر = مكتملة · أزرق = مجدولة/قيد التنفيذ · منقّط = غير مجدولة بعد</p>
                     <details style={{ marginTop: 8 }}>
-                      <summary style={{ cursor: 'pointer', fontWeight: 600, fontSize: 13.5 }}>مواعيد الجلسات</summary>
+                      <summary style={{ cursor: 'pointer', fontWeight: 600, fontSize: 13.5 }}>مواعيد الزيارات</summary>
                       <PlanScheduleList startDate={p.startDate} sessionsPerWeek={p.sessionsPerWeek} total={st.total} dates={p.sessionDates} actual={(i) => {
                         const s = st.sessions[i];
                         if (s) return { date: s.date, label: s.status === 'completed' ? 'مكتملة' : 'قيد التنفيذ' };
@@ -339,7 +339,7 @@ export default function PatientProfile() {
                         {p.status === 'active' && can('packages', 'edit') && <Button size="sm" variant="soft-danger" onClick={() => ask('إلغاء الباقة', `سيتم إلغاء ${p.name}. المواعيد القادمة المرتبطة بها ستُصدر لها فواتير مستقلة، وفاتورة الباقة غير المدفوعة ستُلغى.`, async () => { const r = await db.cancelPackage(p.id); if (r.ok) toast.success('تم إلغاء الباقة.'); else toast.error(r.error); }, 'تأكيد الإلغاء')}>إلغاء الباقة</Button>}
                       </div>
                     </div>
-                    <div className="kv-row"><span>إجمالي الجلسات</span><span className="num">{p.totalSessions}</span></div>
+                    <div className="kv-row"><span>إجمالي الزيارات</span><span className="num">{p.totalSessions}</span></div>
                     <div className="kv-row"><span>المستخدم</span><span className="num">{p.usedSessions}</span></div>
                     <div className="kv-row"><span>المتبقي</span><span className="num">{p.totalSessions - p.usedSessions}</span></div>
                     <div className="kv-row"><span>السعر</span><span className="num">{money(p.price)}</span></div>

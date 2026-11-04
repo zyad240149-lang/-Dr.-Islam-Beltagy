@@ -177,7 +177,7 @@ function ExtraPermsModal({ employee, onClose }: { employee: Employee; onClose: (
       <p style={{ marginTop: 0 }}><strong data-no-i18n>{employee.name}</strong> · {ROLE_LABEL[employee.role]}</p>
       <p className="muted-sm">إضافة إلى صلاحيات الدور — لا تحذف شي من صلاحياته الحالية.</p>
       {row(wa, setWa, 'إرسال رسائل واتساب للعملاء', 'تذكير المواعيد، الخطط، أكواد المكافآت والعروض — وتُسجَّل كل رسالة باسمه.')}
-      {false && row(lo, setLo, 'استبدال نقاط الولاء', 'البحث عن العميل بالاسم أو الجوال، عرض رصيده، واستبدال النقاط بجلسة مجانية له أو لشخص يختاره.')}
+      {false && row(lo, setLo, 'استبدال نقاط الولاء', 'البحث عن العميل بالاسم أو الجوال، عرض رصيده، واستبدال النقاط بزيارة مجانية له أو لشخص يختاره.')}
     </Modal>
   );
 }

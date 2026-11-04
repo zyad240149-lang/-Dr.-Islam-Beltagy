@@ -85,7 +85,7 @@ export async function executeOp(op: OfflineOp): Promise<ExecResult> {
         // ملف أشعة/تحليل اترفع من غير إنترنت: المسار والمعرّف اتحددوا على الجهاز ← الإعادة مابتكررش الملف ولا السجل
         const p = op.payload as { patientId: string; path: string; name: string; type: string; size: number; note: string; category: string; title: string; fileDate: string; uploadedByName: string; bytes: ArrayBuffer };
         const { data: u } = await supabase.auth.getUser();
-        if (!u.user) return { type: 'auth', error: 'انتهت الجلسة' };
+        if (!u.user) return { type: 'auth', error: 'انتهى تسجيل الدخول' };
         const up = await supabase.storage.from('patient-files').upload(p.path, new Blob([p.bytes], { type: p.type }), { contentType: p.type, upsert: false });
         if (up.error && !/exists|duplicate/i.test(up.error.message)) {
           return isNetworkError(up.error) || /fetch|network|timeout/i.test(up.error.message) ? { type: 'retry', error: up.error.message } : { type: 'failed', error: 'تعذّر رفع الملف: ' + up.error.message };
@@ -129,7 +129,7 @@ export async function executeOp(op: OfflineOp): Promise<ExecResult> {
         const c0 = classify(e0, s0); if (c0) return c0;
         if (!cur || cur.status === 'cancelled') return { type: 'done' };
         if (['arrived', 'in_progress', 'completed'].includes(cur.status) && !op.payload.__force) {
-          return asConflict({ reason: 'server_changed', message: 'المريض حضر/اتنفّذت الجلسة على الخادم بعد ما سجّلت الإلغاء محليًا.', fields: ['status'], serverValues: { status: cur.status } });
+          return asConflict({ reason: 'server_changed', message: 'المريض حضر/اتنفّذت الزيارة على الخادم بعد ما سجّلت الإلغاء محليًا.', fields: ['status'], serverValues: { status: cur.status } });
         }
         const { error, status } = await supabase.rpc('set_appointment_status', { p_id: op.entityId, p_status: 'cancelled', p_reason: String(op.payload.reason ?? 'إلغاء (مسجّل بدون اتصال)'), p_therapist: null });
         return classify(error, status) ?? { type: 'done' };

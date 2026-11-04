@@ -159,7 +159,7 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
     </Section>
 
     <Section icon="doc" title="التعليمات وملاحظات الطبيب">
-      <textarea className="input" rows={3} placeholder="مثال: راحة وتجنب طلوع السلم، كمادات تلج 15 دقيقة 3 مرات يوميًا، جلسات علاج طبيعي، رباط ضاغط…" value={c.plan} onChange={(e) => set('plan', e.target.value)} />
+      <textarea className="input" rows={3} placeholder="مثال: راحة وتجنب طلوع السلم، كمادات تلج 15 دقيقة 3 مرات يوميًا، زيارات علاج طبيعي، رباط ضاغط…" value={c.plan} onChange={(e) => set('plan', e.target.value)} />
     </Section>
   </div>;
 }

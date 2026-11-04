@@ -13,7 +13,6 @@
  "إشعارات الجوال مفعّلة على هذا الجهاز": "Mobile notifications are enabled on this device",
  "إضافة نسبة": "Add percentage",
  "إكمال الخطة/الباقة": "Plan/package completed",
- "إكمال جلسة": "Session completed",
  "اتبعت": "Sent",
  "اتبعت لخدمة الإشعارات": "Sent to push service",
  "اتخطّى": "Skipped",
@@ -106,5 +105,6 @@
  "وقت التذكير": "Reminder time",
  "وقت التذكير فات وقت الحجز — ما بيتبعتش بأثر رجعي": "The reminder time had passed when booked — not sent retroactively",
  "يسعدنا انضمامك إلينا. تقدر تحجز مواعيدك وتتابع زياراتك وخطتك العلاجية وفواتيرك من التطبيق.": "We are glad you joined us. You can book appointments and follow your visits, treatment plan and invoices from the app.",
- "قبل تفعيل التتبّع": "Before tracking was enabled"
+ "قبل تفعيل التتبّع": "Before tracking was enabled",
+ "إكمال زيارة": "Visit completed"
 }

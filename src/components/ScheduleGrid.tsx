@@ -21,7 +21,7 @@ const dayKeyOf = (ymd: string) => DAY_KEYS[new Date(ymd + 'T00:00:00').getDay()]
 const ST: Record<string, { label: string; cls: string; icon: string }> = {
   new: { label: 'محجوز', cls: 'booked', icon: 'clock' }, rescheduled: { label: 'محجوز (معاد جدولته)', cls: 'booked', icon: 'refresh' },
   confirmed: { label: 'مؤكد', cls: 'confirmed', icon: 'check' }, on_way: { label: 'مؤكد', cls: 'confirmed', icon: 'check' },
-  arrived: { label: 'حضر', cls: 'arrived', icon: 'user' }, in_progress: { label: 'قيد الجلسة', cls: 'arrived', icon: 'user' },
+  arrived: { label: 'حضر', cls: 'arrived', icon: 'user' }, in_progress: { label: 'قيد الزيارة', cls: 'arrived', icon: 'user' },
   completed: { label: 'مكتمل', cls: 'done', icon: 'checkCircle' }, no_show: { label: 'لم يحضر', cls: 'noshow', icon: 'alert' },
 };
 const stOf = (s: AppointmentStatus | string) => ST[s] ?? { label: APPT_STATUS[s as AppointmentStatus]?.label ?? String(s), cls: 'booked', icon: 'clock' };

@@ -177,13 +177,13 @@ function PatientsList({ tabs }: { tabs: ReactNode }) {
 
       <div className="card" style={{ marginTop: 16 }}>
         <div className="card__head" style={{ flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: 200 }}><h3 style={{ margin: 0 }}>المرضى حسب عدد الجلسات</h3><p className="muted" style={{ margin: '4px 0 0', fontSize: 13 }}>المرضى الذين أتمّوا عدد الجلسات المحدد أو أكثر.</p></div>
-          <div style={{ width: 170 }}><Input label="عدد الجلسات (على الأقل)" type="number" min={0} value={minSessions} onChange={(e) => setMinSessions(e.target.value)} /></div>
+          <div style={{ flex: 1, minWidth: 200 }}><h3 style={{ margin: 0 }}>المرضى حسب عدد الزيارات</h3><p className="muted" style={{ margin: '4px 0 0', fontSize: 13 }}>المرضى الذين أتمّوا عدد الزيارات المحدد أو أكثر.</p></div>
+          <div style={{ width: 170 }}><Input label="عدد الزيارات (على الأقل)" type="number" min={0} value={minSessions} onChange={(e) => setMinSessions(e.target.value)} /></div>
         </div>
         <div className="card__body">
-          {frequent.length === 0 ? <EmptyState icon="users" title="ما فيه مرضى مطابقون" text="ما فيه مريض وصل لعدد الجلسات المحدد بعد." /> : (
+          {frequent.length === 0 ? <EmptyState icon="users" title="ما فيه مرضى مطابقون" text="ما فيه مريض وصل لعدد الزيارات المحدد بعد." /> : (
             <div className="table-wrap"><table className="table">
-              <thead><tr><th>الاسم</th><th>رقم الملف</th><th>عدد الجلسات المكتملة</th><th className="actions"></th></tr></thead>
+              <thead><tr><th>الاسم</th><th>رقم الملف</th><th>عدد الزيارات المكتملة</th><th className="actions"></th></tr></thead>
               <tbody>{frequent.slice(0, 50).map(({ p, count }) => (
                 <tr key={p.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/patients/${p.id}`)}><td style={{ fontWeight: 600 }}>{p.fullName}</td><td className="num">{p.fileNo}</td><td className="num">{count}</td><td className="actions"><Icon name="chevronLeft" size={16} /></td></tr>
               ))}</tbody>

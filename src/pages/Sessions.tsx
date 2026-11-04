@@ -35,20 +35,20 @@ export default function Sessions() {
   const presetAppt = presetApptId ? db.appointment(presetApptId) : null;
   const presetSession = presetAppt ? db.sessionByAppointment(presetAppt.id) : null;
 
-  const start = async (appointmentId: string) => { const s = await db.startSession(appointmentId); toast.success('بدأت الجلسة'); setActiveSession(s); };
+  const start = async (appointmentId: string) => { const s = await db.startSession(appointmentId); toast.success('بدأت الزيارة'); setActiveSession(s); };
 
   return (
     <div className="page">
-      <div className="page-head"><div><h1>الجلسات</h1><p>بدء وتسجيل ومتابعة جلسات العلاج.</p></div></div>
+      <div className="page-head"><div><h1>الزيارات</h1><p>بدء وتسجيل ومتابعة زيارات العلاج.</p></div></div>
       <div style={{ maxWidth: 380, marginBottom: 14 }}><Input id="ss-q" icon="search" placeholder="اسم المريض أو الجوال أو رقم الملف أو الهوية" value={q} onChange={(e) => setQ(e.target.value)} /></div>
 
       {presetAppt && (
         <div className="alert alert-info" style={{ marginBottom: 18, alignItems: 'center' }}>
           <Icon name="clipboard" size={17} />
-          <div style={{ flex: 1 }}>الموعد {presetAppt.no} — {db.patient(presetAppt.patientId)?.fullName} {presetSession ? (presetSession.status === 'completed' ? '— الجلسة مكتملة.' : '— الجلسة قيد التنفيذ.') : 'جاهز لبدء الجلسة.'}</div>
+          <div style={{ flex: 1 }}>الموعد {presetAppt.no} — {db.patient(presetAppt.patientId)?.fullName} {presetSession ? (presetSession.status === 'completed' ? '— الزيارة مكتملة.' : '— الزيارة قيد التنفيذ.') : 'جاهز لبدء الزيارة.'}</div>
           {presetSession
-            ? can('sessions', 'edit') && <Button size="sm" onClick={() => setActiveSession(presetSession)}>{presetSession.status === 'completed' ? 'عرض/تعديل الجلسة' : 'متابعة الجلسة'}</Button>
-            : can('sessions', 'create') && <Button size="sm" icon="clipboard" onClick={() => start(presetAppt.id)}>بدء الجلسة</Button>}
+            ? can('sessions', 'edit') && <Button size="sm" onClick={() => setActiveSession(presetSession)}>{presetSession.status === 'completed' ? 'عرض/تعديل الزيارة' : 'متابعة الزيارة'}</Button>
+            : can('sessions', 'create') && <Button size="sm" icon="clipboard" onClick={() => start(presetAppt.id)}>بدء الزيارة</Button>}
         </div>
       )}
 
@@ -63,7 +63,7 @@ export default function Sessions() {
                   <div key={a.id} className="tl-card" style={{ borderInlineStartColor: 'var(--brand)' }}>
                     <div className="tl-card__info"><strong>{db.patient(a.patientId)?.fullName}</strong><span className="muted-sm num">{fmtTime(a.time)} — {db.service(a.serviceId)?.name}</span></div>
                     <StatusBadge label={st.label} tone={st.tone} />
-                    {can('sessions', 'create') && <Button size="sm" icon="clipboard" onClick={() => start(a.id)}>بدء الجلسة</Button>}
+                    {can('sessions', 'create') && <Button size="sm" icon="clipboard" onClick={() => start(a.id)}>بدء الزيارة</Button>}
                   </div>
                 );
               })}
@@ -74,12 +74,12 @@ export default function Sessions() {
 
       {inProgress.length > 0 && (
         <section className="card" style={{ marginBottom: 18 }}>
-          <div className="card__head"><h2>جلسات قيد التنفيذ</h2></div>
+          <div className="card__head"><h2>زيارات قيد التنفيذ</h2></div>
           <div className="card__body">
             {inProgress.map((s) => (
               <div key={s.id} className="tl-card" style={{ borderInlineStartColor: 'var(--info)', marginBottom: 8 }}>
-                <div className="tl-card__info"><strong>{db.patient(s.patientId)?.fullName}</strong><span className="muted-sm">جلسة رقم {s.sessionNo} — {fmtDate(s.date)}</span></div>
-                {can('sessions', 'edit') && <Button size="sm" onClick={() => setActiveSession(s)}>متابعة الجلسة</Button>}
+                <div className="tl-card__info"><strong>{db.patient(s.patientId)?.fullName}</strong><span className="muted-sm">زيارة رقم {s.sessionNo} — {fmtDate(s.date)}</span></div>
+                {can('sessions', 'edit') && <Button size="sm" onClick={() => setActiveSession(s)}>متابعة الزيارة</Button>}
               </div>
             ))}
           </div>
@@ -87,11 +87,11 @@ export default function Sessions() {
       )}
 
       <section className="card">
-        <div className="card__head"><h2>آخر الجلسات المكتملة</h2></div>
+        <div className="card__head"><h2>آخر الزيارات المكتملة</h2></div>
         <div className="card__body">
-          {recentCompleted.length === 0 ? <EmptyState icon="checkCircle" title="ما فيه جلسات مكتملة بعد" /> : (
+          {recentCompleted.length === 0 ? <EmptyState icon="checkCircle" title="ما فيه زيارات مكتملة بعد" /> : (
             <div className="table-wrap"><table className="table">
-              <thead><tr><th>المريض</th><th>رقم الجلسة</th><th>ضمن الخطة</th><th>التاريخ</th><th>المعالج</th><th>مستوى الألم</th><th className="actions"></th></tr></thead>
+              <thead><tr><th>المريض</th><th>رقم الزيارة</th><th>ضمن الخطة</th><th>التاريخ</th><th>المعالج</th><th>مستوى الألم</th><th className="actions"></th></tr></thead>
               <tbody>{recentCompleted.map((s) => {
                 const idx = db.planSessionIndex(s.id);
                 return (
@@ -100,8 +100,8 @@ export default function Sessions() {
                     <td className="num">{idx ? `${idx.index} من ${idx.total}` : '—'}</td>
                     <td>{fmtDate(s.date)}</td><td>{db.therapist(s.therapistId)?.name}</td><td className="num">{s.painScale ?? s.painLevel ?? '—'}</td>
                     <td className="actions"><RowActions>
-                      {can('sessions', 'edit') && <IconAction icon="edit" label="تعديل الجلسة" onClick={() => setActiveSession(s)} />}
-                      {can('sessions', 'delete') && <IconAction icon="trash" label="حذف الجلسة" danger onClick={() => setDeleting(s)} />}
+                      {can('sessions', 'edit') && <IconAction icon="edit" label="تعديل الزيارة" onClick={() => setActiveSession(s)} />}
+                      {can('sessions', 'delete') && <IconAction icon="trash" label="حذف الزيارة" danger onClick={() => setDeleting(s)} />}
                     </RowActions></td>
                   </tr>
                 );
@@ -112,9 +112,9 @@ export default function Sessions() {
       </section>
 
       {activeSession && <SessionModal session={activeSession} onClose={() => setActiveSession(null)} />}
-      {deleting && <ConfirmDialog title="حذف الجلسة" onClose={() => setDeleting(null)}
-        message={`سيتم حذف الجلسة رقم ${deleting.sessionNo} لـ ${db.patient(deleting.patientId)?.fullName}. يعود الموعد إلى «حضر» وتُعاد الجلسة إلى رصيد الباقة وتُحدَّث نسبة الخطة.`}
-        onConfirm={async () => { await db.deleteSession(deleting.id); toast.success('تم حذف الجلسة.'); }} />}
+      {deleting && <ConfirmDialog title="حذف الزيارة" onClose={() => setDeleting(null)}
+        message={`سيتم حذف الزيارة رقم ${deleting.sessionNo} لـ ${db.patient(deleting.patientId)?.fullName}. يعود الموعد إلى «حضر» وتُعاد الزيارة إلى رصيد الباقة وتُحدَّث نسبة الخطة.`}
+        onConfirm={async () => { await db.deleteSession(deleting.id); toast.success('تم حذف الزيارة.'); }} />}
     </div>
   );
 }

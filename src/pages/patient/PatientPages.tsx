@@ -35,7 +35,7 @@ function PointsKpi({ live }: { live: number }) {
   return <Link to="/me/points" style={{ textDecoration: 'none' }}><StatCard icon="spark" tone="brand" value={s.data.balance} label="نقاطي" /></Link>;
 }
 
-const LOYALTY_KIND_LABEL: Record<string, string> = { session: 'نقاط جلسة', plan_session: 'نقاط جلسة خطة', package: 'نقاط باقة', redeem: 'استبدال نقاط', adjust: 'تعديل إداري' };
+const LOYALTY_KIND_LABEL: Record<string, string> = { session: 'نقاط زيارة', plan_session: 'نقاط زيارة خطة', package: 'نقاط باقة', redeem: 'استبدال نقاط', adjust: 'تعديل إداري' };
 
 // ============ الرئيسية ============
 export function PatientDashboard() {
@@ -91,7 +91,7 @@ export function PatientDashboard() {
             {activePlan ? (
               <>
                 <strong>{activePlan.diagnosis}</strong>
-                <div className="muted-sm" style={{ margin: '4px 0 10px' }}>{activePlan.totalSessions} جلسات — تبدأ {fmtDate(activePlan.startDate)}</div>
+                <div className="muted-sm" style={{ margin: '4px 0 10px' }}>{activePlan.totalSessions} زيارات — تبدأ {fmtDate(activePlan.startDate)}</div>
                 <div className="progress"><i style={{ width: `${activePlan.progressPct}%` }} /></div>
                 <div className="muted-sm num" style={{ marginTop: 6 }}>{activePlan.progressPct}% مكتمل</div>
               </>
@@ -614,7 +614,7 @@ export function PatientPlans() {
             <div className="row-between"><strong>{p.diagnosis}</strong><StatusBadge label={st?.label ?? p.status} tone={st?.tone ?? 'muted'} /></div>
             <div className="muted-sm" style={{ margin: '6px 0 10px' }}>{p.mainGoal}</div>
             <div className="progress"><i style={{ width: `${p.progressPct}%` }} /></div>
-            <div className="muted-sm num" style={{ margin: '6px 0 10px' }}>{p.progressPct}% من {p.totalSessions} جلسات</div>
+            <div className="muted-sm num" style={{ margin: '6px 0 10px' }}>{p.progressPct}% من {p.totalSessions} زيارات</div>
             <dl className="plan-card__facts"><div><dt>البداية</dt><dd>{fmtDate(p.startDate)}</dd></div><div><dt>النهاية المتوقعة</dt><dd>{p.endDate ? fmtDate(p.endDate) : '—'}</dd></div></dl>
             {p.notes && <p className="muted-sm" style={{ marginTop: 8 }}>{p.notes}</p>}
           </article>); })}</div>
@@ -644,7 +644,7 @@ export function PatientPoints() {
   };
   return (
     <div className="page">
-      <Head title="نقاطي" text={`كل ${REDEEM_POINTS} نقطة = جلسة علاج طبيعي مجانية، و${REDEEM_POINTS * 2} نقطة = جلستين. استبدل نقاطك بنفسك من هنا.`} />
+      <Head title="نقاطي" text={`كل ${REDEEM_POINTS} نقطة = زيارة علاج طبيعي مجانية، و${REDEEM_POINTS * 2} نقطة = زيارتين. استبدل نقاطك بنفسك من هنا.`} />
       {summary.error ? <ErrorBox text={summary.error} retry={summary.reload} /> : summary.loading && !s ? (
         <div className="kpi-grid">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="card kpi"><Skeleton h={38} w={38} r={11} /><Skeleton h={22} w={60} /></div>)}</div>
       ) : s && (
@@ -660,15 +660,15 @@ export function PatientPoints() {
               {newCode && (
                 <div className="alert alert-success" style={{ marginBottom: 12 }}>
                   <Icon name="checkCircle" size={17} />
-                  <div>تم الاستبدال 🎁 كودك: <strong dir="ltr" style={{ fontSize: 17 }}>{newCode.code}</strong> — صالح لـ {newCode.sessions === 2 ? 'جلستين' : 'جلسة واحدة'}. قدّمه للاستقبال عند الدفع.</div>
+                  <div>تم الاستبدال 🎁 كودك: <strong dir="ltr" style={{ fontSize: 17 }}>{newCode.code}</strong> — صالح لـ {newCode.sessions === 2 ? 'زيارتين' : 'زيارة واحدة'}. قدّمه للاستقبال عند الدفع.</div>
                 </div>
               )}
               {redeemErr && <div className="alert alert-danger" style={{ marginBottom: 12 }}>{redeemErr}</div>}
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                <Button icon="spark" loading={busy === 1} disabled={!!busy || s.balance < REDEEM_POINTS} onClick={() => redeem(1)}>استبدال {REDEEM_POINTS} نقطة = جلسة</Button>
-                <Button icon="spark" variant="outline" loading={busy === 2} disabled={!!busy || s.balance < REDEEM_POINTS * 2} onClick={() => redeem(2)}>استبدال {REDEEM_POINTS * 2} نقطة = جلستين</Button>
+                <Button icon="spark" loading={busy === 1} disabled={!!busy || s.balance < REDEEM_POINTS} onClick={() => redeem(1)}>استبدال {REDEEM_POINTS} نقطة = زيارة</Button>
+                <Button icon="spark" variant="outline" loading={busy === 2} disabled={!!busy || s.balance < REDEEM_POINTS * 2} onClick={() => redeem(2)}>استبدال {REDEEM_POINTS * 2} نقطة = زيارتين</Button>
               </div>
-              {s.balance < REDEEM_POINTS && <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>تحتاج إلى {REDEEM_POINTS - s.balance} نقطة إضافية لأول جلسة مجانية.</p>}
+              {s.balance < REDEEM_POINTS && <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>تحتاج إلى {REDEEM_POINTS - s.balance} نقطة إضافية لأول زيارة مجانية.</p>}
             </div>
           </section>
         </>
@@ -676,15 +676,15 @@ export function PatientPoints() {
 
       {(codes.data ?? []).length > 0 && (
         <section className="card" style={{ marginBottom: 18 }}>
-          <div className="card__head"><h2>أكواد الجلسات المجانية</h2></div>
+          <div className="card__head"><h2>أكواد الزيارات المجانية</h2></div>
           <div className="card__body">
             <div className="table-wrap"><table className="table">
-              <thead><tr><th>الكود</th><th>الجلسات</th><th>الحالة</th><th>تاريخ الاستبدال</th><th>صالح حتى</th></tr></thead>
+              <thead><tr><th>الكود</th><th>الزيارات</th><th>الحالة</th><th>تاريخ الاستبدال</th><th>صالح حتى</th></tr></thead>
               <tbody>
                 {(codes.data ?? []).map((c) => (
                   <tr key={c.code}>
                     <td dir="ltr"><strong>{c.code}</strong></td>
-                    <td>{c.sessions === 2 ? `جلستين (متبقي ${c.usesLeft})` : 'جلسة'}</td>
+                    <td>{c.sessions === 2 ? `زيارتين (متبقي ${c.usesLeft})` : 'زيارة'}</td>
                     <td>{({ unused: 'غير مستخدم', used: 'مستخدم', cancelled: 'ملغي', expired: 'منتهي' } as const)[c.status]}</td>
                     <td>{fmtDateTime(new Date(c.createdAt).getTime())}</td>
                     <td className="num">{c.validTo}</td>
@@ -692,7 +692,7 @@ export function PatientPoints() {
                 ))}
               </tbody>
             </table></div>
-            <p className="muted" style={{ fontSize: 13, marginTop: 10 }}>قدّم الكود للاستقبال عند الدفع — كود الجلسة يُستخدم مرة، وكود الجلستين مرتين (مرة لكل جلسة).</p>
+            <p className="muted" style={{ fontSize: 13, marginTop: 10 }}>قدّم الكود للاستقبال عند الدفع — كود الزيارة يُستخدم مرة، وكود الزيارتين مرتين (مرة لكل زيارة).</p>
           </div>
         </section>
       )}
@@ -743,7 +743,7 @@ export function PatientInvoices() {
             <section className="card" style={{ marginBottom: 18 }}>
               <div className="card__head"><h2>باقاتي</h2></div>
               <div className="card__body"><div className="table-wrap"><table className="table">
-                <thead><tr><th>الباقة</th><th>عدد الجلسات</th><th>المستخدمة</th><th>المتبقية</th><th>حالة الباقة</th><th>حالة الدفع</th></tr></thead>
+                <thead><tr><th>الباقة</th><th>عدد الزيارات</th><th>المستخدمة</th><th>المتبقية</th><th>حالة الباقة</th><th>حالة الدفع</th></tr></thead>
                 <tbody>{(pk.data?.packages ?? []).filter((k) => k.status !== 'cancelled').map((k) => {
                   const i = list.find((x) => x.packageId === k.id);
                   const ps = i ? payState(i) : null;

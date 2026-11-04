@@ -53,7 +53,7 @@ const byDate = (a: { date: string }, b: { date: string }) => (a.date < b.date ? 
 const SYNC: Record<SyncKey, { table: string; label: string; map: (r: any) => any; sort?: (a: any, b: any) => number }> = {
   patients: { table: 'patients', label: 'المرضى', map: (r) => map.patient(r), sort: (a, b) => b.registeredAt - a.registeredAt },
   appointments: { table: 'appointments', label: 'المواعيد', map: (r) => map.appointment(r), sort: byDate },
-  sessions: { table: 'treatment_sessions', label: 'الجلسات', map: (r) => map.session(r), sort: byDate },
+  sessions: { table: 'treatment_sessions', label: 'الزيارات', map: (r) => map.session(r), sort: byDate },
   assessments: { table: 'initial_assessments', label: 'التقييمات', map: (r) => map.assessment(r), sort: byDate },
   plans: { table: 'treatment_plans', label: 'الخطط العلاجية', map: (r) => map.plan(r), sort: (a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0) },
   packages: { table: 'packages', label: 'الباقات', map: (r) => map.package(r) },
@@ -331,10 +331,10 @@ async function pull(keys: (Key | string)[]) {
 const cleanMsg = (m: string) => stripFileNoPrefix(m.replace(/^.*?ERROR:\s*/, ''));
 
 // استدعاء دالة على الخادم: ترجع Result، وبعد النجاح بتحدّث الجداول المتأثرة
-// «الجلسة التانية في نفس اليوم محتاجة موافقة المدير» من أي شاشة → الواجهة بتعرض «إرسال طلب للمدير» (SecondSessionHost في Layout)
+// «الزيارة التانية في نفس اليوم محتاجة موافقة المدير» من أي شاشة → الواجهة بتعرض «إرسال طلب للمدير» (SecondSessionHost في Layout)
 export interface SecondSessionAsk { source: 'plan' | 'package'; id: string; patientId: string; therapistId: string | null }
 function offerSecondSession(fn: string, args: Record<string, unknown>, message: string) {
-  if (!/موافقة المدير|طلب جلسة ثانية/.test(message) || fn === 'request_second_session' || fn === 'decide_second_session' || fn === 'attendance_check_in') return;
+  if (!/موافقة المدير|طلب زيارة ثانية/.test(message) || fn === 'request_second_session' || fn === 'decide_second_session' || fn === 'attendance_check_in') return;
   const d = load();
   let ask: SecondSessionAsk | null = null;
   const fromAppt = (id: unknown) => {
@@ -350,7 +350,7 @@ function offerSecondSession(fn: string, args: Record<string, unknown>, message: 
   else if (fn === 'complete_session') { const ss = d.sessions.find((x) => x.id === args.p_id); if (ss?.appointmentId) ask = fromAppt(ss.appointmentId); else if (ss?.planId) ask = { source: 'plan', id: ss.planId, patientId: ss.patientId, therapistId: ss.therapistId || null }; }
   if (ask) setTimeout(() => window.dispatchEvent(new CustomEvent('second-session-ask', { detail: ask })), 0);
 }
-// الجلسة التانية في نفس اليوم = طلب للمدير لكل الأدوار (حتى المدير): فحص مسبق من الكاش قبل ما الخادم يسمح للمدير بتخطّيها
+// الزيارة التانية في نفس اليوم = طلب للمدير لكل الأدوار (حتى المدير): فحص مسبق من الكاش قبل ما الخادم يسمح للمدير بتخطّيها
 const SESSION_STATES = ['arrived', 'in_progress', 'completed'];
 function secondSessionPrecheck(fn: string, args: Record<string, unknown>): boolean {
   const d = load(); const today = todayYmd();
@@ -378,7 +378,7 @@ function secondSessionPrecheck(fn: string, args: Record<string, unknown>): boole
   return true;
 }
 async function rpc<T = any>(fn: string, args: Record<string, unknown>, refresh: Key[]): Promise<Result<{ data: T }>> {
-  if (secondSessionPrecheck(fn, args)) return { ok: false, error: 'الجلسة الثانية في اليوم نفسه تحتاج إلى موافقة المدير — أرسل طلب من النافذة.' };
+  if (secondSessionPrecheck(fn, args)) return { ok: false, error: 'الزيارة الثانية في اليوم نفسه تحتاج إلى موافقة المدير — أرسل طلب من النافذة.' };
   if (!net.isOnline()) return { ok: false, error: OFFLINE_MSG };
   const { data, error } = await supabase.rpc(fn, args);
   if (error && isNetworkError(error)) return { ok: false, error: OFFLINE_MSG };
@@ -867,8 +867,8 @@ export const db = {
     if (!r.ok) return r;
     return { ok: true, appointment: load().appointments.find((a) => a.id === r.data.id)! };
   },
-  // حجز جلسة على خطة علاجية (إنشاء الخطة + مراجعة فاتورتها): الخادم بيقفل الخطة ويمنع الزيادة عن عدد جلساتها
-  // وجلستين في نفس اليوم (هجرة 165)، وبعدها نفس book_appointment. لو الهجرة لسه ماتطبّقتش → book_appointment مباشرة.
+  // حجز زيارة على خطة علاجية (إنشاء الخطة + مراجعة فاتورتها): الخادم بيقفل الخطة ويمنع الزيادة عن عدد زياراتها
+  // وزيارتين في نفس اليوم (هجرة 165)، وبعدها نفس book_appointment. لو الهجرة لسه ماتطبّقتش → book_appointment مباشرة.
   async bookPlanSession(input: { planId: string; therapistId: string; date: string; time: string }): Promise<Result> {
     const r = await rpc('book_plan_session', { p: input }, ['appointments', 'invoices', 'notifications', 'activity']);
     if (r.ok) return { ok: true };
@@ -880,7 +880,7 @@ export const db = {
   },
   // therapistId: تعيين الطبيب مع تغيير الحالة (حجز المريض من الموبايل بييجي من غير طبيب)
   async setAppointmentStatus(id: string, status: AppointmentStatus, reason?: string, therapistId?: string) {
-    // الإلغاء بس هو اللي مدعوم بدون اتصال؛ باقي الحالات (تأكيد/حضور/إنهاء) بتأثر على الفواتير والجلسات فتحتاج الخادم
+    // الإلغاء بس هو اللي مدعوم بدون اتصال؛ باقي الحالات (تأكيد/حضور/إنهاء) بتأثر على الفواتير والزيارات فتحتاج الخادم
     if (status === 'cancelled' && (!net.isOnline() || offline.queue.hasPendingFor(id))) return queueCancel(id, reason);
     await rpcOrThrow('set_appointment_status', { p_id: id, p_status: status, p_reason: reason ?? null, p_therapist: therapistId || null }, ['appointments', 'invoices', 'notifications', 'activity']);
   },
@@ -976,7 +976,7 @@ export const db = {
       .sort((a, b) => (a.date + a.time < b.date + b.time ? -1 : 1));
     return { total, completed, remaining: Math.max(0, total - completed), scheduled: upcoming.length, sessions, upcoming, pct: total ? Math.min(100, Math.round((completed / total) * 100)) : 0 };
   },
-  // موعد كل جلسة محسوب من تاريخ أول جلسة: جلسات الأسبوع موزّعة بالتساوي (جلستين = كل 3-4 أيام)،
+  // موعد كل زيارة محسوب من تاريخ أول زيارة: زيارات الأسبوع موزّعة بالتساوي (زيارتين = كل 3-4 أيام)،
   // واليوم المقفول في «مواعيد العمل» بيتأجّل لأول يوم مفتوح بعده
   planSessionDates(startDate: string, sessionsPerWeek: number, total: number): string[] {
     const week = load().center.weekSchedule;
@@ -1022,9 +1022,9 @@ export const db = {
   packagePlans: () => load().packagePlans.filter((p) => p.active),
   allPackagePlans: () => load().packagePlans,
   async savePackagePlan(input: Omit<PackagePlan, 'id'> & { id?: string }): Promise<Result> {
-    if (input.totalSessions < 1 || input.price < 0 || input.validDays < 1) return fail('تحقق من عدد الجلسات والسعر والصلاحية.');
+    if (input.totalSessions < 1 || input.price < 0 || input.validDays < 1) return fail('تحقق من عدد الزيارات والسعر والصلاحية.');
     if (!input.serviceIds.length) return fail('اختر خدمة واحدة على الأقل تشملها الباقة.');
-    if (input.kind && input.totalSessions !== (input.kind === 'pkg4' ? 4 : 6)) return fail('عدد جلسات الباقة الثابتة ما يتغير.');
+    if (input.kind && input.totalSessions !== (input.kind === 'pkg4' ? 4 : 6)) return fail('عدد زيارات الباقة الثابتة ما يتغير.');
     const row = { kind: input.kind ?? null, name: input.name, service_ids: input.serviceIds, total_sessions: input.totalSessions, price: input.price, valid_days: input.validDays, active: input.active };
     const { error } = input.id ? await supabase.from('package_plans').update(row).eq('id', input.id) : await supabase.from('package_plans').insert(row);
     if (error) return fail(cleanMsg(error.message));
@@ -1046,7 +1046,7 @@ export const db = {
     const r = await rpc('cancel_package', { p_id: id }, ['packages', 'invoices', 'appointments', 'activity']);
     return r.ok ? { ok: true } : r;
   },
-  // الباقة المطابقة في كتالوج الباقات (لتجديد باقة منتهية بنفس المواصفات) — بالاسم أولًا، وإلا النوع، وإلا الجلسات والسعر
+  // الباقة المطابقة في كتالوج الباقات (لتجديد باقة منتهية بنفس المواصفات) — بالاسم أولًا، وإلا النوع، وإلا الزيارات والسعر
   packagePlanFor(pkg: Package): PackagePlan | undefined {
     const plans = load().packagePlans.filter((p) => p.active);
     return plans.find((p) => p.name === pkg.name)
@@ -1059,7 +1059,7 @@ export const db = {
     const r = await rpc<{ id: string }>('sell_package', { p_patient: patientId, p_package_plan: plan.id }, ['packages', 'invoices', 'activity']);
     return r.ok ? { ok: true, id: r.data.id } : r;
   },
-  // تسجيل حضور جلسة الموعد (لو على باقة أو خطة علاجية) وخصمها تلقائيًا — من تفاصيل الموعد مباشرة
+  // تسجيل حضور زيارة الموعد (لو على باقة أو خطة علاجية) وخصمها تلقائيًا — من تفاصيل الموعد مباشرة
   async attendanceCheckInForAppointment(appt: Appointment): Promise<Result<{ sessionNo: number; total: number; remaining: number }>> {
     const source = appt.planId ? 'plan' : appt.packageId ? 'package' : null;
     const refId = appt.planId || appt.packageId;
@@ -1249,7 +1249,7 @@ export const db = {
       p_q: o.q ?? '', p_gender: o.gender ?? '', p_source: o.source ?? '', p_active: o.active ?? '', p_doctor: o.doctorId || null,
       p_sort: o.sort ?? 'registered_desc', p_limit: pageSize, p_offset: ((o.page ?? 1) - 1) * pageSize, p_gaps: o.gaps ?? '',
     });
-    // أي فشل من الخادم (مش بس انقطاع الشبكة — جلسة منتهية، رفض صلاحيات، خطأ 500...) ولينا نسخة محلية فعلية: نعرضها بدل ما نوقف المستخدم برسالة خطأ
+    // أي فشل من الخادم (مش بس انقطاع الشبكة — زيارة منتهية، رفض صلاحيات، خطأ 500...) ولينا نسخة محلية فعلية: نعرضها بدل ما نوقف المستخدم برسالة خطأ
     if (error) return ready ? { ok: true, ...localQueryPatients(o), local: true } : fail(cleanMsg(error.message));
     const rows: PatientRow[] = (data.rows as any[]).map((r) => ({ ...map.patient(r), doctorName: r.doctor_name ?? '', lastVisit: r.last_visit ?? null, nextVisit: r.next_visit ?? null, balance: Number(r.balance ?? 0), hasAccount: !!r.has_account }));
     return { ok: true, total: data.total as number, rows };
@@ -1311,7 +1311,7 @@ export const db = {
     if (!net.isOnline() || offline.queue.list().some((o) => o.kind === 'patient.create' && o.entityId === patientId)) return queue();
     const { data: u, error: ue } = await supabase.auth.getUser();
     if (ue && isNetworkError(ue)) return queue();
-    if (!u.user) return fail('انتهت الجلسة — سجّل الدخول من جديد.');
+    if (!u.user) return fail('انتهى تسجيل الدخول — سجّل الدخول من جديد.');
     const up = await supabase.storage.from('patient-files').upload(path, file, { contentType: file.type, upsert: false });
     if (up.error) return isNetworkError(up.error) ? queue() : fail('تعذّر رفع الملف: ' + up.error.message);
     const { error } = await supabase.from('patient_files').insert({ id, patient_id: patientId, uploaded_by: u.user.id, uploaded_by_name: byName, file_path: path, file_name: file.name, file_type: file.type, size_bytes: file.size, note: note.trim(), plan_id: link.planId ?? null, appointment_id: link.appointmentId ?? null, category, title, file_date: fileDate || null });
@@ -1385,7 +1385,7 @@ export const db = {
   async changePassword(next: string): Promise<Result> {
     if (next.length < 6) return fail('كلمة المرور الجديدة 6 خانات على الأقل.');
     const { data: u } = await supabase.auth.getUser();
-    if (!u.user?.email) return fail('انتهت الجلسة — سجّل الدخول من جديد.');
+    if (!u.user?.email) return fail('انتهى تسجيل الدخول — سجّل الدخول من جديد.');
     const { error } = await supabase.auth.updateUser({ password: next });
     return error ? fail(error.message) : { ok: true };
   },

@@ -1,4 +1,4 @@
-// اختبارات وحدة لطبقة الأوفلاين (من غير متصفح ولا خادم): الطابور، التشفير، نسخة الجهاز، صلاحية الجلسة بدون إنترنت.
+// اختبارات وحدة لطبقة الأوفلاين (من غير متصفح ولا خادم): الطابور، التشفير، نسخة الجهاز، صلاحية الزيارة بدون إنترنت.
 // الملفات TypeScript بتتجمّع بـ esbuild (جاي مع Vite) وتتشغّل في Node — نفس الكود اللي بيشتغل في المتصفح.
 //   node scripts/unit-offline.mjs
 import { build } from 'esbuild';
@@ -92,8 +92,8 @@ try {
   check('مستخدم تاني مايقراش النسخة', (await ss.readSnapshot('u2')) === undefined);
   const r1 = await ss.restore('auth-u1');
   check('فتح بدون إنترنت لنفس المستخدم في حدود المدة', r1.ok === true);
-  check('فتح بدون جلسة محفوظة مرفوض', (await ss.restore(null)).reason === 'no-session');
-  check('مستخدم تاني بجلسة على نفس الجهاز مرفوض', (await ss.restore('auth-u2')).reason === 'other-user');
+  check('فتح بدون زيارة محفوظة مرفوض', (await ss.restore(null)).reason === 'no-session');
+  check('مستخدم تاني بزيارة على نفس الجهاز مرفوض', (await ss.restore('auth-u2')).reason === 'other-user');
   check('الفتح بيتأكد بحساب الدخول المحفوظ مش بمعرّف الموظف (كان سبب رجوع شاشة الدخول)', (await ss.restore('u1')).reason === 'other-user');
   t += (m.OFFLINE_MAX_DAYS + 1) * 86400_000;
   check(`بعد ${m.OFFLINE_MAX_DAYS} يوم من آخر تحقق من الخادم: لازم اتصال`, (await ss.restore('auth-u1')).reason === 'expired');

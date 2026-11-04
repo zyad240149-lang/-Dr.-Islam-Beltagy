@@ -12,7 +12,6 @@
  "استخدم تعديلي": "Use my edit",
  "التخزين المحلي غير متاح في هذا المتصفح (ربما وضع التصفح الخاص): التغييرات المعلّقة": "Local storage is unavailable in this browser (maybe private mode): pending changes",
  "التطبيق يعمل من نسخة محفوظة على الجهاز من آخر اتصال.": "The app is running from a copy saved on this device from the last connection.",
- "المريض حضر/اتنفّذت الجلسة على الخادم بعد ما سجّلت الإلغاء محليًا.": "The patient attended / the session was done on the server after you recorded the cancellation locally.",
  "الموعد اتغيّر على الخادم إلى": "The appointment was changed on the server to",
  "الموعد لم يعد موجودًا على الخادم.": "The appointment no longer exists on the server.",
  "الموعد ملغي على الخادم.": "The appointment is cancelled on the server.",
@@ -40,7 +39,6 @@
  "لم يعد موجودًا على الخادم (اتحذف من جهاز آخر).": "no longer exists on the server (deleted from another device).",
  "متصل": "Online",
  "مزامنة الآن": "Sync now",
- "يمكنك عرض المرضى والمواعيد، وإضافة/تعديل المرضى والتشخيص، وحجز المواعيد وتغييرها وإلغائها — وتُرسل للخادم تلقائيًا عند عودة الاتصال. باقي العمليات (الفواتير، تأكيد الحضور، إنهاء الجلسة…) تحتاج اتصالًا.": "You can view patients and appointments, add/edit patients and diagnoses, and book, change and cancel appointments — they are sent to the server automatically when the connection returns. Other operations (invoices, confirming attendance, ending a session…) need a connection.",
  "على الخادم": "on the server",
  "· محاولات:": "· attempts:",
  "— عندك": "— yours",
@@ -53,5 +51,7 @@
  "تقييم/تشخيص": "Assessment/diagnosis",
  "التطبيق يحتاج اتصالًا بالإنترنت أول مرة": "The app needs an internet connection the first time",
  "لم يُحمَّل التطبيق على هذا الجهاز بعد. افتحه مرة واحدة وأنت متصل بالإنترنت ليعمل بعدها بدون اتصال، ثم أعد المحاولة.": "The app has not been loaded on this device yet. Open it once while connected to the internet so it works offline afterwards, then try again.",
- "التطبيق يعمل من نسخة محفوظة": "The app is running from a saved copy"
+ "التطبيق يعمل من نسخة محفوظة": "The app is running from a saved copy",
+ "المريض حضر/اتنفّذت الزيارة على الخادم بعد ما سجّلت الإلغاء محليًا.": "The patient attended / the visit was done on the server after you recorded the cancellation locally.",
+ "يمكنك عرض المرضى والمواعيد، وإضافة/تعديل المرضى والتشخيص، وحجز المواعيد وتغييرها وإلغائها — وتُرسل للخادم تلقائيًا عند عودة الاتصال. باقي العمليات (الفواتير، تأكيد الحضور، إنهاء الزيارة…) تحتاج اتصالًا.": "You can view patients and appointments, add/edit patients and diagnoses, and book, change and cancel appointments — they are sent to the server automatically when the connection returns. Other operations (invoices, confirming attendance, ending a visit…) need a connection."
 }

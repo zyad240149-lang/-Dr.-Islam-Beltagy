@@ -1,8 +1,8 @@
-// مواعيد جلسات الخطة العلاجية — مصدر واحد لمكانين:
+// مواعيد زيارات الخطة العلاجية — مصدر واحد لمكانين:
 //  1) «إنشاء خطة علاج جديدة» (PlanModal): مسودة صفوف (اختيارية) بتتحجز بعد حفظ الخطة مباشرة (bookDraftSessions).
 //  2) «مراجعة فاتورة الخطة العلاجية» + تفاصيل/تعديل الخطة (PlanSessionBooking): المحجوز فعلًا + حجز الباقي.
 // الاتنين بيقروا ويكتبوا نفس المواعيد الحقيقية (appointments.plan_id) عبر book_plan_session (هجرة 165):
-// الدكتور إجباري، دوام الدكتور (check_slot)، كل جلسة 30 دقيقة (الجلسة التانية في اليوم بموافقة المدير عند الحضور)، ومايزيدش عن عدد جلسات الخطة.
+// الدكتور إجباري، دوام الدكتور (check_slot)، كل زيارة 30 دقيقة (الزيارة التانية في اليوم بموافقة المدير عند الحضور)، ومايزيدش عن عدد زيارات الخطة.
 // الخطة دايمًا ليها فاتورة (مسودة لحد ما الاستقبال يراجعها) فمواعيدها مابتطلعش فواتير منفصلة.
 import { useMemo, useState } from 'react';
 import { db } from '../data/db';
@@ -18,12 +18,12 @@ export type SessionRow = { date: string; time: string; therapistId: string };
 export const emptyRow = (therapistId = ''): SessionRow => ({ date: '', time: '', therapistId });
 const filled = (r: SessionRow) => !!(r.therapistId && r.date && r.time);
 const ACTIVE = (a: Appointment) => a.status !== 'cancelled' && a.status !== 'no_show';
-// كل جلسة خطة/باقة 30 دقيقة (نفس durationMin اللي بيبعته الخادم في book_plan_session)
+// كل زيارة خطة/باقة 30 دقيقة (نفس durationMin اللي بيبعته الخادم في book_plan_session)
 export const PLAN_SESSION_MIN = 30;
 const toMin = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
 
 
-// المريض عنده موعد تاني (أي نوع) بيتقاطع مع الوقت ده؟ — جلستين في نفس اليوم مسموحين لو في وقتين مختلفين
+// المريض عنده موعد تاني (أي نوع) بيتقاطع مع الوقت ده؟ — زيارتين في نفس اليوم مسموحين لو في وقتين مختلفين
 function patientBusyAt(patientId: string, date: string, time: string): boolean {
   return db.raw().appointments.some((a) => a.patientId === patientId && a.date === date && ACTIVE(a)
     && toMin(time) < toMin(a.time) + (a.durationMin || PLAN_SESSION_MIN) && toMin(a.time) < toMin(time) + PLAN_SESSION_MIN);
@@ -58,7 +58,7 @@ export function suggestSessionRows(o: { patientId: string; serviceId: string; th
 }
 
 // مشاكل الصفوف قبل الحجز: ناقص، وقتين متقاطعين، موعد تاني للمريض في نفس الوقت، أو خارج دوام الدكتور
-// (جلستين في نفس اليوم مسموحين لو وقتهم مختلف — والجلسة التانية في الحضور بموافقة المدير)
+// (زيارتين في نفس اليوم مسموحين لو وقتهم مختلف — والزيارة التانية في الحضور بموافقة المدير)
 export function sessionRowIssues(rows: SessionRow[], patientId: string, _serviceId: string): Record<number, string> {
   const out: Record<number, string> = {};
   rows.forEach((r, i) => {
@@ -66,7 +66,7 @@ export function sessionRowIssues(rows: SessionRow[], patientId: string, _service
     if (!r.therapistId) { out[i] = 'اختر الدكتور'; return; }
     if (!r.date || !r.time) { out[i] = 'اختر التاريخ والوقت'; return; }
     const clash = rows.findIndex((o, j) => j < i && o.date === r.date && o.time && Math.abs(toMin(o.time) - toMin(r.time)) < PLAN_SESSION_MIN);
-    if (clash >= 0) { out[i] = `نفس وقت الجلسة ${clash + 1}`; return; }
+    if (clash >= 0) { out[i] = `نفس وقت الزيارة ${clash + 1}`; return; }
     if (patientBusyAt(patientId, r.date, r.time)) { out[i] = 'عند المريض موعد تاني في هالوقت'; return; }
     const why = db.doctorTimeIssue(r.therapistId, r.date, r.time, PLAN_SESSION_MIN);
     if (why) out[i] = why;
@@ -74,7 +74,7 @@ export function sessionRowIssues(rows: SessionRow[], patientId: string, _service
   return out;
 }
 
-// حجز صفوف المسودة على خطة اتحفظت: بالترتيب، ولحد عدد الجلسات الفاضية بس (الخادم بيتحقق تاني)
+// حجز صفوف المسودة على خطة اتحفظت: بالترتيب، ولحد عدد الزيارات الفاضية بس (الخادم بيتحقق تاني)
 export async function bookDraftSessions(planId: string, rows: SessionRow[]): Promise<{ booked: number; errors: string[] }> {
   const plan = db.plan(planId);
   if (!plan) return { booked: 0, errors: ['الخطة العلاجية غير موجودة'] };
@@ -104,7 +104,7 @@ export function SessionRowsEditor({ rows, onChange, serviceId, startNo, issues, 
         return (
           <div key={i} style={{ marginBottom: 6 }}>
             <div className="grid-form" style={{ gridTemplateColumns: onBook ? '70px 1fr 1fr 1fr auto' : '70px 1fr 1fr 1fr 36px', alignItems: 'end', gap: 8 }}>
-              <div className="num" style={{ paddingBottom: 10, fontWeight: 700 }}>جلسة {startNo + i}</div>
+              <div className="num" style={{ paddingBottom: 10, fontWeight: 700 }}>زيارة {startNo + i}</div>
               <Select id={`psb-d-${startNo + i}`} label="الدكتور" value={r.therapistId} onChange={(e) => set({ therapistId: e.target.value })} disabled={disabled}
                 options={[{ value: '', label: 'اختر…' }, ...doctors.map((t) => ({ value: t.id, label: t.name }))]} />
               <Input id={`psb-date-${startNo + i}`} label="التاريخ" type="date" min={todayYmd()} value={r.date} onChange={(e) => set({ date: e.target.value })} disabled={disabled} />
@@ -152,47 +152,47 @@ export default function PlanSessionBooking({ plan, canBook, ensurePriced }: { pl
   const bookOne = async (i: number): Promise<boolean> => {
     const r = list[i];
     const no = booked.length + i + 1;
-    if (!filled(r)) { toast.error(`الجلسة ${no}: اختر الدكتور والتاريخ والوقت.`); return false; }
-    if (issues[i]) { toast.error(`الجلسة ${no}: ${issues[i]}`); return false; }
+    if (!filled(r)) { toast.error(`الزيارة ${no}: اختر الدكتور والتاريخ والوقت.`); return false; }
+    if (issues[i]) { toast.error(`الزيارة ${no}: ${issues[i]}`); return false; }
     if (ensurePriced && !(await ensurePriced())) return false;
     const res = await db.bookPlanSession({ planId: plan.id, therapistId: r.therapistId, date: r.date, time: r.time });
-    if (!res.ok) { toast.error(`الجلسة ${no}: ${res.error}`); return false; }
+    if (!res.ok) { toast.error(`الزيارة ${no}: ${res.error}`); return false; }
     setRows({});
     return true;
   };
-  const book = async (i: number) => { setBusy(i); if (await bookOne(i)) toast.success('تم حجز الجلسة.'); setBusy(null); };
+  const book = async (i: number) => { setBusy(i); if (await bookOne(i)) toast.success('تم حجز الزيارة.'); setBusy(null); };
   const bookAll = async () => {
     const ready = list.map((r, i) => (filled(r) ? i : -1)).filter((i) => i >= 0);
-    if (!ready.length) { toast.error('حدد موعد جلسة واحدة على الأقل.'); return; }
+    if (!ready.length) { toast.error('حدد موعد زيارة واحدة على الأقل.'); return; }
     const bad = ready.find((i) => issues[i]);
-    if (bad !== undefined) { toast.error(`الجلسة ${booked.length + bad + 1}: ${issues[bad]}`); return; }
+    if (bad !== undefined) { toast.error(`الزيارة ${booked.length + bad + 1}: ${issues[bad]}`); return; }
     if (ensurePriced && !(await ensurePriced())) return;
     setBusy('all');
     const res = await bookDraftSessions(plan.id, ready.map((i) => list[i]));
     setRows({});
-    if (res.booked) toast.success(`تم حجز ${res.booked} جلسة.`);
+    if (res.booked) toast.success(`تم حجز ${res.booked} زيارة.`);
     res.errors.forEach((e) => toast.error(e));
     setBusy(null);
   };
 
   return (
     <div style={{ marginTop: 16 }}>
-      <h3 style={{ fontSize: 15, margin: '0 0 6px' }}>مواعيد الجلسات <span className="muted num" style={{ fontWeight: 400 }}>({booked.length} من {plan.totalSessions} محجوزة)</span></h3>
+      <h3 style={{ fontSize: 15, margin: '0 0 6px' }}>مواعيد الزيارات <span className="muted num" style={{ fontWeight: 400 }}>({booked.length} من {plan.totalSessions} محجوزة)</span></h3>
       {booked.length > 0 && (
         <div className="table-wrap" style={{ marginBottom: 10 }}><table className="table">
-          <thead><tr><th>الجلسة</th><th>التاريخ</th><th>الوقت</th><th>الدكتور</th><th>الحالة</th>{canBook && <th></th>}</tr></thead>
+          <thead><tr><th>الزيارة</th><th>التاريخ</th><th>الوقت</th><th>الدكتور</th><th>الحالة</th>{canBook && <th></th>}</tr></thead>
           <tbody>{booked.map((a, i) => <tr key={a.id}><td className="num">{i + 1}</td><td className="num date">{fmtDate(a.date)}</td><td className="num">{fmtTime(a.time)}</td><td>{db.therapist(a.therapistId)?.name ?? '—'}</td><td>{APPT_STATUS[a.status]?.label}</td>{canBook && <td>{['new', 'confirmed', 'rescheduled'].includes(a.status) && <Button size="sm" variant="outline" icon="edit" onClick={() => setEditing(a)}>تعديل الموعد</Button>}</td>}</tr>)}</tbody>
         </table></div>
       )}
-      {remaining === 0 ? <p className="muted">كل الجلسات محجوزة.</p>
+      {remaining === 0 ? <p className="muted">كل الزيارات محجوزة.</p>
         : !canBook ? <p className="muted">ما عندك صلاحية حجز المواعيد.</p>
-        : plan.status !== 'active' ? <p className="muted">الخطة غير نشطة — ما يمكن حجز جلسات عليها.</p>
-        : !priced ? <div className="alert alert-warn"><div>حدد سعر الخطة واضغط «حفظ التعديل» أولًا، وبعدها احجز مواعيد الجلسات (حتى لا تصدر لكل جلسة فاتورة منفصلة).</div></div>
+        : plan.status !== 'active' ? <p className="muted">الخطة غير نشطة — ما يمكن حجز زيارات عليها.</p>
+        : !priced ? <div className="alert alert-warn"><div>حدد سعر الخطة واضغط «حفظ التعديل» أولًا، وبعدها احجز مواعيد الزيارات (حتى لا تصدر لكل زيارة فاتورة منفصلة).</div></div>
         : (<>
-          <p className="muted" style={{ fontSize: 12.5, margin: '0 0 8px' }}>مواعيد مقترحة حسب دوام الدكتور — تقدر تغيّر الدكتور أو التاريخ أو الوقت قبل الحجز. كل جلسة 30 دقيقة، ولو حجزت جلستين في نفس اليوم الثانية بتحتاج موافقة المدير عند الحضور.</p>
+          <p className="muted" style={{ fontSize: 12.5, margin: '0 0 8px' }}>مواعيد مقترحة حسب دوام الدكتور — تقدر تغيّر الدكتور أو التاريخ أو الوقت قبل الحجز. كل زيارة 30 دقيقة، ولو حجزت زيارتين في نفس اليوم الثانية بتحتاج موافقة المدير عند الحضور.</p>
           <SessionRowsEditor rows={list} onChange={(i, r) => setRows((x) => ({ ...x, [i]: r }))} serviceId={plan.serviceId}
             startNo={booked.length + 1} issues={issues} onBook={book} busyIndex={busy} />
-          {remaining > 1 && <Button variant="outline" onClick={bookAll} loading={busy === 'all'} disabled={busy !== null}>حجز كل الجلسات المحددة</Button>}
+          {remaining > 1 && <Button variant="outline" onClick={bookAll} loading={busy === 'all'} disabled={busy !== null}>حجز كل الزيارات المحددة</Button>}
         </>)}
       {editing && <RescheduleModal appt={editing} onClose={() => setEditing(null)} />}
     </div>

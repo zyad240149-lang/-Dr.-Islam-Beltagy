@@ -1,5 +1,5 @@
 import { todayYmd } from '../utils/format';
-// باقات 4/6 جلسات: الدفع الكامل أو على دفعتين بموافقة المدير.
+// باقات 4/6 زيارات: الدفع الكامل أو على دفعتين بموافقة المدير.
 // كل القواعد مطبّقة على الخادم (هجرة 049) — هنا قراءة الطلبات + استدعاء الـ RPC + حساب «حالة الدفع» للعرض.
 import { supabase } from '../lib/supabase';
 import { db } from './db';
@@ -23,7 +23,7 @@ const toReq = (r: any): InstallmentRequest => ({
   planId: r.plan_id ?? null, firstDueDate: r.first_due_date ?? null, secondDueDate: r.second_due_date ?? null,
 });
 
-export const PACKAGE_KIND_LABEL: Record<PackageKind, string> = { pkg4: 'باقة 4 جلسات', pkg6: 'باقة 6 جلسات' };
+export const PACKAGE_KIND_LABEL: Record<PackageKind, string> = { pkg4: 'باقة 4 زيارات', pkg6: 'باقة 6 زيارات' };
 export const PACKAGE_KIND_SESSIONS: Record<PackageKind, number> = { pkg4: 4, pkg6: 6 };
 
 export const REQ_STATUS: Record<InstallmentStatus, { label: string; tone: string }> = {

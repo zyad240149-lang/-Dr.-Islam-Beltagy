@@ -30,7 +30,7 @@ export const ROLE_LABEL: Record<Role, string> = {
 
 export const AREA_LABEL: Record<Area, string> = {
   dashboard: 'لوحة التحكم', patients: 'المرضى', booking: 'حجز موعد', appointments: 'المواعيد', plans: 'خطط العلاج',
-  sessions: 'الجلسات', services: 'الخدمات', therapists: 'المعالجون', employees: 'الموظفون',
+  sessions: 'الزيارات', services: 'الخدمات', therapists: 'المعالجون', employees: 'الموظفون',
   invoices: 'الفواتير والمدفوعات', payments: 'عمليات الدفع (تعديل/حذف دفعة)', packages: 'الباقات', inventory: 'المخزون', reports: 'التقارير',
   notifications: 'الإشعارات', roles: 'الأدوار والصلاحيات', settings: 'الإعدادات', workhours: 'مواعيد العمل', requests: 'طلبات الموظفين', support: 'الدعم الفني', discounts: 'أكواد الخصم', campaigns: 'إشعارات المرضى', financial: 'البيانات المالية (الإيرادات والتقارير المالية)', attendance: 'الحضور والانصراف', loyalty: 'نقاط الولاء', products: 'بيع المنتجات', installments: 'طلبات تقسيط الباقات (الموافقة = تعديل)', inv_approve: 'زر: اعتماد الفاتورة (اطلاع = مسموح)', inv_price: 'زر: تعديل سعر/خصم الفاتورة (اطلاع = مسموح)', inv_cancel: 'زر: إلغاء الفاتورة (اطلاع = مسموح)', inv_overdraw: 'صرف مخزون أكبر من المتاح', appt_confirm: 'زر: تأكيد حضور الموعد (اطلاع = مسموح)', appt_cancel: 'زر: إلغاء الموعد (اطلاع = مسموح)',
   payroll: 'الرواتب والتارجت والفواتير الشاملة (للمدير العام فقط)',
@@ -67,7 +67,7 @@ export const ROLE_DESC: Record<Role, string> = {
   secretary: 'يدير الحجز والمرضى والمواعيد والخطط العلاجية، ويطّلع على التقارير والإشعارات.',
   reception: 'يدير استقبال المرضى والحجز والمواعيد والفواتير الأساسية.',
   accountant: 'يدير الفواتير والمدفوعات والباقات والمخزون والبيانات المالية والتقارير.',
-  therapist: 'يرى مرضاه ومواعيده وجلساته وخططه العلاجية الخاصة فقط.',
+  therapist: 'يرى مرضاه ومواعيده وزياراته وخططه العلاجية الخاصة فقط.',
 };
 
 // المعالج يرى مرضاه ومواعيده فقط

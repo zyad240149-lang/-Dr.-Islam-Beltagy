@@ -122,7 +122,7 @@ export const INVOICE_STATUS: Record<InvoiceStatus, { label: string; tone: string
   cancelled: { label: 'ملغاة', tone: 'muted' },
 };
 export const APPT_TYPE_LABEL: Record<string, string> = {
-  initial: 'تقييم أولي', session: 'جلسة علاج', followup: 'جلسة متابعة', rehab: 'جلسة تأهيل', home: 'جلسة منزلية',
+  initial: 'تقييم أولي', session: 'زيارة علاج', followup: 'زيارة متابعة', rehab: 'زيارة تأهيل', home: 'زيارة منزلية',
 };
 export const WEEKDAY_LABEL = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
@@ -195,12 +195,12 @@ export function whatsappNumber(p: { phone?: string; phone2?: string; whatsappMod
 }
 export const waLink = (phone: string, text: string) => `https://wa.me/${waPhone(phone)}?text=${encodeURIComponent(text)}`;
 
-export const sessionsLabel = (n: number) => n === 1 ? 'جلسة واحدة' : n === 2 ? 'جلستين' : n <= 10 ? `${n} جلسات` : `${n} جلسة`;
+export const sessionsLabel = (n: number) => n === 1 ? 'زيارة واحدة' : n === 2 ? 'زيارتين' : n <= 10 ? `${n} زيارات` : `${n} زيارة`;
 
-// خطة العلاج: إجمالي الجلسات = مدة الخطة بالأسابيع × الجلسات في الأسبوع — دايمًا، ونفس المعادلة في save_plan على الخادم.
+// خطة العلاج: إجمالي الزيارات = مدة الخطة بالأسابيع × الزيارات في الأسبوع — دايمًا، ونفس المعادلة في save_plan على الخادم.
 export const PLAN_LIMITS = { maxPerWeek: 7, maxWeeks: 52, maxTotal: 200 };
 export const planTotalSessions = (durationWeeks: number, sessionsPerWeek: number) => durationWeeks * sessionsPerWeek;
-// لما يتحدد عدد جلسات جاهز (عرض 4 أو 6 جلسات أو المقترح من التقييم): نختار أقرب «جلسات/أسبوع» للمطلوب يقسم العدد بالظبط، فتطلع المدة صحيحة من غير كسور
+// لما يتحدد عدد زيارات جاهز (عرض 4 أو 6 زيارات أو المقترح من التقييم): نختار أقرب «زيارات/أسبوع» للمطلوب يقسم العدد بالظبط، فتطلع المدة صحيحة من غير كسور
 export function planScheduleFor(total: number, preferredPerWeek: number) {
   const pref = Math.min(Math.max(1, Math.floor(preferredPerWeek) || 1), PLAN_LIMITS.maxPerWeek);
   let perWeek = 1;
@@ -208,9 +208,9 @@ export function planScheduleFor(total: number, preferredPerWeek: number) {
   return { sessionsPerWeek: perWeek, durationWeeks: total / perWeek, totalSessions: total };
 }
 export function planScheduleError(durationWeeks: number, sessionsPerWeek: number): string | null {
-  if (!Number.isInteger(sessionsPerWeek) || sessionsPerWeek < 1 || sessionsPerWeek > PLAN_LIMITS.maxPerWeek) return `الجلسات في الأسبوع من 1 إلى ${PLAN_LIMITS.maxPerWeek}.`;
+  if (!Number.isInteger(sessionsPerWeek) || sessionsPerWeek < 1 || sessionsPerWeek > PLAN_LIMITS.maxPerWeek) return `الزيارات في الأسبوع من 1 إلى ${PLAN_LIMITS.maxPerWeek}.`;
   if (!Number.isInteger(durationWeeks) || durationWeeks < 1 || durationWeeks > PLAN_LIMITS.maxWeeks) return `مدة الخطة من 1 إلى ${PLAN_LIMITS.maxWeeks} أسبوع.`;
-  if (planTotalSessions(durationWeeks, sessionsPerWeek) > PLAN_LIMITS.maxTotal) return `إجمالي الجلسات ما يزيد عن ${PLAN_LIMITS.maxTotal}.`;
+  if (planTotalSessions(durationWeeks, sessionsPerWeek) > PLAN_LIMITS.maxTotal) return `إجمالي الزيارات ما يزيد عن ${PLAN_LIMITS.maxTotal}.`;
   return null;
 }
 

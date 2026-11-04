@@ -42,7 +42,6 @@
  "بمبلغ": "for",
  "بياناتي": "My details",
  "تأكيد الموعد الجديد": "Confirm new time",
- "تابع مواعيدك، احجز جلساتك، واطّلع على فواتيرك في مكان واحد.": "Follow your appointments, book your sessions and view your invoices in one place.",
  "تقييم أولي شامل لتحديد التشخيص وخطة العلاج المناسبة.": "A comprehensive initial assessment to determine the diagnosis and the right treatment plan.",
  "تم إلغاء موعدك رقم": "Your appointment was cancelled, no.",
  "تم إنشاء حجزك رقم": "Your booking was created, no.",
@@ -101,7 +100,6 @@
  "مشرف النظام": "System administrator",
  "ملغى": "Cancelled",
  "مواعيد مكتملة": "Completed appointments",
- "نتمنى لك التعافي العاجل بعد جلسة MV-2610.": "We wish you a speedy recovery after session MV-2610.",
  "نقدًا عند الزيارة": "Cash on visit",
  "هذا الموعد لم يعد متاحًا. اختر وقتًا آخر.": "This time is no longer available. Choose another time.",
  "هذه نظرة سريعة على مواعيدك وحجوزاتك.": "Here's a quick look at your appointments and bookings.",
@@ -109,5 +107,7 @@
  "بوابة العميل": "Patient portal",
  "لوحة الإدارة": "Admin dashboard",
  "بوابة العميل — عيادة د. إسلام بلتاجي لجراحة العظام والكسور": "Patient portal — Dr. Islam Beltagy Orthopedic Clinic",
- "لوحة الإدارة — عيادة د. إسلام بلتاجي لجراحة العظام والكسور": "Admin dashboard — Dr. Islam Beltagy Orthopedic Clinic"
+ "لوحة الإدارة — عيادة د. إسلام بلتاجي لجراحة العظام والكسور": "Admin dashboard — Dr. Islam Beltagy Orthopedic Clinic",
+ "تابع مواعيدك، احجز زياراتك، واطّلع على فواتيرك في مكان واحد.": "Follow your appointments, book your visits and view your invoices in one place.",
+ "نتمنى لك التعافي العاجل بعد زيارة MV-2610.": "We wish you a speedy recovery after visit MV-2610."
 }

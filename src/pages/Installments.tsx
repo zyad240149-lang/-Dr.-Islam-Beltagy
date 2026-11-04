@@ -1,5 +1,5 @@
 import { patientMatches } from '../utils/phoneUtils';
-// «طلبات تقسيط الباقات» — المدير يوافق/يرفض طلبات الدفع على دفعتين لباقات 4/6 جلسات، ويشوف سجل القرارات.
+// «طلبات تقسيط الباقات» — المدير يوافق/يرفض طلبات الدفع على دفعتين لباقات 4/6 زيارات، ويشوف سجل القرارات.
 // المحاسب يشوف طلباته وحالتها بس (الموافقة محتاجة صلاحية installments/edit، والخادم بيمنع الموافقة على طلبك إنت).
 import { useState } from 'react';
 import { db } from '../data/db';
@@ -36,7 +36,7 @@ function DecideModal({ req, approve, onClose, onDone }: { req: InstallmentReques
     }>
       <dl className="review-list" style={{ marginBottom: 14 }}>
         <div><dt>المريض</dt><dd>{p?.fullName} ({p?.fileNo})</dd></div>
-        <div><dt>{pkg ? 'الباقة' : 'الخدمة'}</dt><dd>{pkg ? `${pkg.name} — ${pkg.totalSessions} جلسات` : db.invoice(req.invoiceId)?.serviceName}</dd></div>
+        <div><dt>{pkg ? 'الباقة' : 'الخدمة'}</dt><dd>{pkg ? `${pkg.name} — ${pkg.totalSessions} زيارات` : db.invoice(req.invoiceId)?.serviceName}</dd></div>
         <div><dt>إجمالي الباقة</dt><dd className="num">{money(req.total)}</dd></div>
         {req.planId && <div><dt>الخطة العلاجية</dt><dd>{db.plan(req.planId)?.diagnosis ?? '—'}</dd></div>}
         <div><dt>الدفعة الأولى</dt><dd className="num">{money(req.firstAmount)}{req.firstDueDate ? ` — تستحق ${fmtDate(req.firstDueDate)}` : ''}</dd></div>
@@ -102,7 +102,7 @@ export default function Installments() {
   return (
     <div className="page">
       <div className="page-head">
-        <div><h1>طلبات تقسيط الباقات</h1><p>طلبات الدفع على دفعتين (باقات 4/6 جلسات وفواتير الخطط العلاجية) — {canDecide ? 'الموافقة أو الرفض من هنا.' : 'متابعة حالة طلباتك.'}</p></div>
+        <div><h1>طلبات تقسيط الباقات</h1><p>طلبات الدفع على دفعتين (باقات 4/6 زيارات وفواتير الخطط العلاجية) — {canDecide ? 'الموافقة أو الرفض من هنا.' : 'متابعة حالة طلباتك.'}</p></div>
       </div>
       {error && <div className="alert alert-danger"><Icon name="alert" size={17} /><div>{error}</div></div>}
       {rows === null ? <Skeleton h={240} /> : (
@@ -129,7 +129,7 @@ export default function Installments() {
                 return (
                   <tr key={r.id}>
                     <td><strong>{p?.fullName ?? '—'}</strong><div className="muted-sm">{p?.fileNo}</div></td>
-                    <td>{pkg ? <>{pkg.name}<div className="muted-sm">{pkg.totalSessions} جلسات</div></> : <>{inv?.serviceName}<div>{r.planId ? <button type="button" style={{ border: 0, background: 'none', color: 'var(--brand-700)', cursor: 'pointer', padding: 0, fontSize: 12.5 }} onClick={() => openPlan(r.planId!)}>خطة علاجية ← عرض</button> : <span className="muted-sm">خطة علاجية</span>}</div></>}</td>
+                    <td>{pkg ? <>{pkg.name}<div className="muted-sm">{pkg.totalSessions} زيارات</div></> : <>{inv?.serviceName}<div>{r.planId ? <button type="button" style={{ border: 0, background: 'none', color: 'var(--brand-700)', cursor: 'pointer', padding: 0, fontSize: 12.5 }} onClick={() => openPlan(r.planId!)}>خطة علاجية ← عرض</button> : <span className="muted-sm">خطة علاجية</span>}</div></>}</td>
                     <td className="num">{inv?.no ?? '—'}</td>
                     <td className="num">{money(r.total)}</td>
                     <td className="num">{money(r.firstAmount)}<div className="muted-sm">{r.firstDueDate ? fmtDate(r.firstDueDate) : '—'}</div>{money(r.secondAmount)}<div className="muted-sm">{r.secondDueDate ? fmtDate(r.secondDueDate) : '—'}</div></td>

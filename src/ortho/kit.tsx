@@ -105,7 +105,7 @@ export function LoadState({ kind, children }: { kind: Kind; children: ReactNode 
   return <>{children}</>;
 }
 
-/** الكتابة السريرية: صلاحية الجلسات (نفس سياسة RLS على الخادم) */
+/** الكتابة السريرية: صلاحية الزيارات (نفس سياسة RLS على الخادم) */
 export function useClinicalCan() {
   const can = useCan();
   return { add: can('sessions', 'create'), edit: can('sessions', 'edit'), del: can('sessions', 'delete') };

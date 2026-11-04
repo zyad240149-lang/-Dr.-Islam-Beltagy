@@ -72,7 +72,7 @@ export default function Dashboard() {
   const shownStatus = shown ? APPT_STATUS[shown.status] : null;
 
   const scheduleList = tab === 'confirmed' ? confirmedToday : tab === 'pending' ? pendingToday : activeToday;
-  // حساب دكتور: «دكتور + الاسم + جملة تحفيز» ومرضاه (جلسات/كشوفات) بدل عدّادات المركز
+  // حساب دكتور: «دكتور + الاسم + جملة تحفيز» ومرضاه (زيارات/كشوفات) بدل عدّادات المركز
   const doctorName = doctorId ? db.therapist(doctorId)?.name ?? user.name : '';
 
   return (

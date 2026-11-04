@@ -27,7 +27,7 @@ const norm = (s: string) => s.replace(/\s+/g, ' ').trim();
 
 export function createTranslator(dict: Dict) {
   const exact = new Map(Object.entries(dict.exact));
-  // «{0} جلسات» ← /^(.+?) جلسات$/ ؛ الأطول الأول عشان الأدق يكسب
+  // «{0} زيارات» ← /^(.+?) زيارات$/ ؛ الأطول الأول عشان الأدق يكسب
   const patterns = Object.entries(dict.patterns)
     .sort((a, b) => b[0].length - a[0].length)
     .map(([ar, en]) => {
@@ -245,7 +245,7 @@ export function applyDocumentLang(l: Lang) {
   document.documentElement.dir = l === 'en' ? 'ltr' : 'rtl';
 }
 
-// عميل Edge Function "translate" — token: جلسة المستخدم لو موجودة (الترجمة الجديدة للمسجّلين بس، والزائر بياخد من الكاش)
+// عميل Edge Function "translate" — token: زيارة المستخدم لو موجودة (الترجمة الجديدة للمسجّلين بس، والزائر بياخد من الكاش)
 export function remoteTranslator(functionsUrl: string, anonKey: string, getToken: () => Promise<string | null>): RemoteFetch {
   return async (texts, target) => {
     const token = (await getToken()) ?? anonKey;

@@ -120,7 +120,7 @@ export const map = {
   }),
   item: (r: any): InventoryItem => ({
     id: r.id, sku: r.sku, name: r.name, category: r.category ?? '', unit: r.unit, quantity: num(r.quantity), minQuantity: num(r.min_quantity),
-    costPrice: num(r.cost_price), salePrice: num(r.sale_price), supplier: r.supplier ?? '', active: r.active, updatedAt: ts(r.updated_at),
+    costPrice: num(r.cost_price), salePrice: num(r.sale_price), supplier: r.supplier ?? '', supplierPhone: r.supplier_phone ?? '', supplierUrl: r.supplier_url ?? '', active: r.active, updatedAt: ts(r.updated_at),
   }),
   movement: (r: any): StockMovement => ({
     id: r.id, itemId: r.item_id, type: r.type, quantity: num(r.quantity), unitCost: num(r.unit_cost), reference: r.reference ?? '',

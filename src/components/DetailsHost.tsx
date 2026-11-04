@@ -190,7 +190,7 @@ function PlanDetailsModal({ planId, onClose, onBack }: { planId: string; onClose
         <div><dt>الطبيب</dt><dd>{th?.name ?? '—'}</dd></div>
         <div><dt>التخصص</dt><dd>{th?.title || '—'}</dd></div>
         <div><dt>التشخيص</dt><dd>{plan.diagnosis} <DiagnosisCode dref={plan.diagnosisRef} /></dd></div>
-        <div><dt>المدة</dt><dd>{plan.startDate ? fmtDate(plan.startDate) : '—'} ← {plan.endDate ? fmtDate(plan.endDate) : '—'} · {plan.sessionsPerWeek} جلسات/أسبوع</dd></div>
+        <div><dt>المدة</dt><dd>{plan.startDate ? fmtDate(plan.startDate) : '—'} ← {plan.endDate ? fmtDate(plan.endDate) : '—'} · {plan.sessionsPerWeek} زيارات/أسبوع</dd></div>
         <div><dt>تاريخ الإنشاء</dt><dd>{plan.createdAt ? fmtDateTime(plan.createdAt) : '—'} — {empName(plan.createdBy)}</dd></div>
         <div><dt>آخر تعديل</dt><dd>{plan.updatedAt ? `${fmtDateTime(plan.updatedAt)} — ${empName(plan.updatedBy)}` : '—'}</dd></div>
       </dl>
@@ -216,7 +216,7 @@ function PlanDetailsModal({ planId, onClose, onBack }: { planId: string; onClose
 
       <div className="section-title" style={{ marginTop: 14 }}>الخدمات والإجراءات</div>
       <div className="table-wrap" style={{ marginBottom: 10 }}><table className="table">
-        <thead><tr><th>الخدمة</th><th>عدد الجلسات</th><th>سعر الجلسة (القائمة)</th><th>سعر الخطة</th></tr></thead>
+        <thead><tr><th>الخدمة</th><th>عدد الزيارات</th><th>سعر الزيارة (القائمة)</th><th>سعر الخطة</th></tr></thead>
         <tbody><tr>
           <td>{svc?.name ?? plan.serviceId ?? '—'}{plan.therapyType && <div className="muted-sm">{plan.therapyType}</div>}</td>
           <td className="num">{st.total}</td>
@@ -233,7 +233,7 @@ function PlanDetailsModal({ planId, onClose, onBack }: { planId: string; onClose
         <div><dt>المدفوع</dt><dd className="num" style={{ color: 'var(--ok)' }}>{money(inv?.paid ?? 0)}</dd></div>
         <div><dt>المتبقي</dt><dd className="num" style={{ color: 'var(--warn)' }}>{money(inv?.remaining ?? 0)}</dd></div>
         <div><dt>نظام الدفع</dt><dd>{payMode}</dd></div>
-        <div><dt>الجلسات</dt><dd>{st.completed} مكتملة من {st.total} — {st.remaining} متبقية</dd></div>
+        <div><dt>الزيارات</dt><dd>{st.completed} مكتملة من {st.total} — {st.remaining} متبقية</dd></div>
       </dl>
 
       <div className="section-title">الفواتير والدفعات والتقسيط</div>
@@ -253,7 +253,7 @@ function PlanDetailsModal({ planId, onClose, onBack }: { planId: string; onClose
         </table></div>
       )}
 
-      {/* تحديد موعد كل جلسة بسرعة (نفس حجز «مراجعة فاتورة الخطة») — مواعيد مقترحة وحجز حقيقي مربوط بالخطة */}
+      {/* تحديد موعد كل زيارة بسرعة (نفس حجز «مراجعة فاتورة الخطة») — مواعيد مقترحة وحجز حقيقي مربوط بالخطة */}
       {plan.status === 'active' && <PlanSessionBooking plan={plan} canBook={can('appointments', 'create') || can('booking', 'create')} />}
       <LinkedFiles patientId={plan.patientId} planId={plan.id} />
     </Modal>
@@ -279,7 +279,7 @@ function VisitDetailsModal({ apptId, onClose, onBack }: { apptId: string; onClos
     <Modal title={`الزيارة ${a.no} — ${fmtDate(a.date)}`} wide onClose={onClose} footer={<>{onBack && <Button variant="outline" onClick={onBack}>رجوع</Button>}<Button onClick={onClose}>إغلاق</Button></>}>
       <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
         <StatusBadge label={st.label} tone={st.tone} />
-        {session && <StatusBadge label={session.status === 'completed' ? 'الجلسة مكتملة' : 'الجلسة قيد التنفيذ'} tone={session.status === 'completed' ? 'ok' : 'info'} />}
+        {session && <StatusBadge label={session.status === 'completed' ? 'الزيارة مكتملة' : 'الزيارة قيد التنفيذ'} tone={session.status === 'completed' ? 'ok' : 'info'} />}
         <ActorBadges a={a} />
       </div>
       <dl className="review-list" style={{ marginBottom: 14 }}>
@@ -295,7 +295,7 @@ function VisitDetailsModal({ apptId, onClose, onBack }: { apptId: string; onClos
       </dl>
 
       <div className="section-title">الملاحظات الطبية والإجراءات</div>
-      {!canMedical ? <p className="muted" style={{ fontSize: 13 }}><Icon name="lock" size={14} /> الملاحظات الطبية غير متاحة لصلاحيتك.</p> : !session ? <p className="muted" style={{ fontSize: 13 }}>لم تُسجّل جلسة لهذه الزيارة بعد.</p> : (
+      {!canMedical ? <p className="muted" style={{ fontSize: 13 }}><Icon name="lock" size={14} /> الملاحظات الطبية غير متاحة لصلاحيتك.</p> : !session ? <p className="muted" style={{ fontSize: 13 }}>لم تُسجّل زيارة لهذه الزيارة بعد.</p> : (
         <div className="item-card" style={{ marginBottom: 12 }}>
           {session.subject ? <div className="kv-row"><span>الموضوع</span><span>{session.subject}</span></div> : null}
           <div className="kv-row"><span>مقياس الألم</span><span className="num">{session.painScale ?? session.painLevel ?? '—'} / 10</span></div>

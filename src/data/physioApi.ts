@@ -1,4 +1,4 @@
-// ملف العلاج الطبيعي (Physiotherapy) — التقييم ← الخطة والأهداف ← ملاحظات التقدّم لكل جلسة.
+// ملف العلاج الطبيعي (Physiotherapy) — التقييم ← الخطة والأهداف ← ملاحظات التقدّم لكل زيارة.
 import type { Objective } from './physioObjective';
 import type { Subjective } from './physioSubjective';
 // القراءة مباشرة من الجداول (RLS: صلاحية physio/view + نطاق المريض)، والكتابة كلها عبر RPC على الخادم (هجرة 055).
@@ -137,7 +137,7 @@ export const physioApi = {
   },
 };
 
-/** عدّاد الجلسات محليًا من البيانات المحمّلة (نفس منطق physio_plan_tracking على الخادم) */
+/** عدّاد الزيارات محليًا من البيانات المحمّلة (نفس منطق physio_plan_tracking على الخادم) */
 export function planTracking(plan: PhysioPlan, notes: ProgressNote[]): Tracking {
   const completed = notes.filter((n) => n.planId === plan.id).length;
   return {

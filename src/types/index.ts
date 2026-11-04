@@ -166,7 +166,7 @@ export interface TreatmentSession {
   date: string;
   status: SessionStatus;
   painLevel: number | null;
-  subject?: string;               // موضوع الجلسة
+  subject?: string;               // موضوع الزيارة
   painScale?: number | null;      // مقياس الألم 1–10
   therapistNotes: string;
   treatmentUsed: string;
@@ -217,7 +217,7 @@ export interface TreatmentPlan {
   chiefComplaint?: string; // شكوى المريض
   shortTermGoals: string;
   longTermGoals: string;
-  sessionDates?: string[] | null; // مواعيد الجلسات المعدّلة يدويًا (null = محسوبة من تاريخ أول جلسة)
+  sessionDates?: string[] | null; // مواعيد الزيارات المعدّلة يدويًا (null = محسوبة من تاريخ أول زيارة)
   totalSessions: number;
   sessionsPerWeek: number;
   durationWeeks: number;
@@ -337,7 +337,7 @@ export interface Payment {
   date: number;
   note: string;
   createdBy?: string | null;
-  installmentNo?: 1 | 2 | null;   // دفعات باقات 4/6 جلسات بالتقسيط
+  installmentNo?: 1 | 2 | null;   // دفعات باقات 4/6 زيارات بالتقسيط
   installmentApprovedBy?: string | null; // المدير اللي وافق على التقسيط
   voidedAt?: number | null;        // دفعة ملغاة (محفوظة في السجل، مش محسوبة)
   voidReason?: string | null;
@@ -370,6 +370,8 @@ export interface InventoryItem {
   costPrice: number;
   salePrice: number;
   supplier: string;
+  supplierPhone: string;
+  supplierUrl: string;
   active: boolean;
   updatedAt: number;
 }

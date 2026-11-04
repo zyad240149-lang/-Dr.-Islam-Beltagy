@@ -145,23 +145,23 @@ try {
   check('تطبيق كود خصم على فاتورة بطلب مباشر مرفوض والفاتورة بسعر الخدمة', !!ap.error && Number(inv1b?.discount) === 0 && Number(inv1b?.total) === Number(inv1?.total), err(ap) || JSON.stringify(inv1b));
 
   // ============ 5) الخطط العلاجية ============
-  section('الخطط العلاجية وجلساتها');
+  section('الخطط العلاجية وزياراتها');
   const pd = cairoDate(12);
   const pl = await admin.rpc('save_plan', { p: { patientId: P.id, serviceId: 'old_us_follow', therapistId: D1, diagnosis: 'خشونة ركبة اختبار', mainGoal: 'تحسين الحركة', durationWeeks: 1, sessionsPerWeek: 2, totalSessions: 2, startDate: pd, price: 0, status: 'active' } });
-  check('إنشاء خطة علاج (جلستين)', !pl.error && idOf(pl), err(pl));
+  check('إنشاء خطة علاج (زيارتين)', !pl.error && idOf(pl), err(pl));
   const busyP = await book(recep, { patientId: P.id, therapistId: D2, date: pd, time: '18:00' });
   const ps1 = await recep.rpc('book_plan_session', { p: { planId: idOf(pl), therapistId: D1, date: pd, time: '18:00' } });
-  check('جلسة خطة في وقت المريض مشغول فيه مرفوضة', !busyP.error && /موعد تاني/.test(err(ps1)), err(busyP) || err(ps1) || 'accepted!');
+  check('زيارة خطة في وقت المريض مشغول فيه مرفوضة', !busyP.error && /موعد تاني/.test(err(ps1)), err(busyP) || err(ps1) || 'accepted!');
   const { data: busyRow } = await recep.from('appointments').select('plan_id').eq('id', idOf(busyP)).single();
   const { data: busyInv } = await recep.from('invoices').select('total').eq('appointment_id', idOf(busyP)).maybeSingle();
-  check('كشف لمريض عنده خطة علاج طبيعي مابيتحسبش جلسة منها وليه فاتورته', busyRow?.plan_id == null && Number(busyInv?.total) === 200, JSON.stringify({ busyRow, busyInv }));
+  check('كشف لمريض عنده خطة علاج طبيعي مابيتحسبش زيارة منها وليه فاتورته', busyRow?.plan_id == null && Number(busyInv?.total) === 200, JSON.stringify({ busyRow, busyInv }));
   const ps2 = await recep.rpc('book_plan_session', { p: { planId: idOf(pl), therapistId: D1, date: pd, time: '19:00' } });
   const ps3 = await recep.rpc('book_plan_session', { p: { planId: idOf(pl), therapistId: D1, date: cairoDate(14), time: '19:00' } });
-  check('حجز جلستين الخطة', !ps2.error && !ps3.error, err(ps2) || err(ps3));
+  check('حجز زيارتين الخطة', !ps2.error && !ps3.error, err(ps2) || err(ps3));
   const ps4 = await recep.rpc('book_plan_session', { p: { planId: idOf(pl), therapistId: D1, date: cairoDate(16), time: '19:00' } });
-  check('جلسة زيادة عن عدد جلسات الخطة مرفوضة', /كل جلسات الخطة محجوزة/.test(err(ps4)), err(ps4) || 'accepted!');
+  check('زيارة زيادة عن عدد زيارات الخطة مرفوضة', /كل زيارات الخطة محجوزة/.test(err(ps4)), err(ps4) || 'accepted!');
   const { data: planRow } = await recep.from('treatment_plans').select('total_sessions, status').eq('id', idOf(pl)).single();
-  check('الخطة محفوظة بعدد الجلسات والحالة', planRow?.total_sessions === 2 && planRow.status === 'active', JSON.stringify(planRow));
+  check('الخطة محفوظة بعدد الزيارات والحالة', planRow?.total_sessions === 2 && planRow.status === 'active', JSON.stringify(planRow));
 
   // ============ 6) الأشعة والكسور والعمليات ============
   section('الأشعة والكسور والعمليات');

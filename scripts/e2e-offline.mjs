@@ -245,7 +245,7 @@ try {
   await p2.fill('#al-phone', ADMIN.phone); await p2.fill('#al-pass', PW); await p2.click('button[type=submit]');
   await p2.waitForURL((u) => u.pathname === '/', { timeout: 60000 });
   await until(async () => (await idb(p2))?.meta?.sync?.patients?.complete, 180000, 1000);
-  // الـ Service Worker مقفول في الجلسة دي (عشان اعتراض الطلبات يشتغل)، فملفات صفحة المرضى لازم تتحمّل قبل ما الشبكة تقطع
+  // الـ Service Worker مقفول في الزيارة دي (عشان اعتراض الطلبات يشتغل)، فملفات صفحة المرضى لازم تتحمّل قبل ما الشبكة تقطع
   await nav(p2, `/patients/${p4321}`);
   await p2.waitForSelector('.page h1', { timeout: 30000 });
   await nav(p2, '/patients');

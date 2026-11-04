@@ -66,7 +66,7 @@ export default function InstallmentPatientsTab({ onOpenInvoice, onReviewPlanInvo
       </FilterBar>
       {shown.length === 0 ? <EmptyState icon="wallet" title="ما فيه مرضى مقسّطين" text="أي فاتورة باقة أو خطة علاجية عليها طلب دفع على دفعتين ستظهر هنا." /> : (
         <div className="table-wrap"><table className="table">
-          <thead><tr><th>المريض</th><th>الفاتورة</th><th>الإجمالي</th><th>الدفعة الأولى</th><th>الدفعة الثانية</th><th>المدفوع</th><th>المتبقي</th><th>الجلسات</th><th>الطلب</th><th className="actions"></th></tr></thead>
+          <thead><tr><th>المريض</th><th>الفاتورة</th><th>الإجمالي</th><th>الدفعة الأولى</th><th>الدفعة الثانية</th><th>المدفوع</th><th>المتبقي</th><th>الزيارات</th><th>الطلب</th><th className="actions"></th></tr></thead>
           <tbody>{shown.map(({ r, inv, patient, inst, st }) => {
             const rs = REQ_STATUS[r.status];
             const sessionsDone = !!st && st.total > 0 && st.remaining === 0;
@@ -87,7 +87,7 @@ export default function InstallmentPatientsTab({ onOpenInvoice, onReviewPlanInvo
                 ))}
                 <td className="num" style={{ color: 'var(--ok)' }}>{money(inv!.paid)}</td>
                 <td className="num" style={{ color: inv!.remaining > 0 ? 'var(--warn)' : undefined }}>{money(inv!.remaining)}</td>
-                <td>{st ? <><span className="num">{st.completed} / {st.total}</span>{sessionsDone && <div><StatusBadge label="اكتملت الجلسات" tone="ok" /></div>}</> : '—'}</td>
+                <td>{st ? <><span className="num">{st.completed} / {st.total}</span>{sessionsDone && <div><StatusBadge label="اكتملت الزيارات" tone="ok" /></div>}</> : '—'}</td>
                 <td><StatusBadge label={rs.label} tone={rs.tone} /></td>
                 <td className="actions" onClick={(e) => e.stopPropagation()}><RowActions>
                   {isDraft && r.planId && can('invoices', 'edit')

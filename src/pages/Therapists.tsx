@@ -58,7 +58,7 @@ export default function Therapists({ embedded = false }: { embedded?: boolean })
                   <div className="kv-row"><span>الجوال</span><span className="num">{t.phone}</span></div>
                   <div className="kv-row"><span>أيام وساعات العمل</span><span>{hoursSummary(t.workHours) || '—'}</span></div>
                   <div className="kv-row"><span>الخدمات</span><span>كل الخدمات</span></div>
-                  <div className="kv-row"><span>الجلسات المكتملة</span><span className="num">{completed}</span></div>
+                  <div className="kv-row"><span>الزيارات المكتملة</span><span className="num">{completed}</span></div>
                   <div className="kv-row"><span>مواعيد قادمة</span><span className="num">{upcoming}</span></div>
                   <div className="kv-row"><span>خطط علاجية يتابعها</span><span className="num">{plans}</span></div>
                   <div className="kv-row"><span>حساب دخول</span><span>{hasAccount ? db.employeeById(t.id)?.username : 'لا يوجد'}</span></div>

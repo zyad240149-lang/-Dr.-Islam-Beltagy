@@ -1,4 +1,4 @@
-// طلبات «جلسة ثانية في نفس اليوم» — بتظهر في «طلبات الموظفين»: المدير يوافق (الجلسة بتتسجّل فورًا) أو يرفض بسبب،
+// طلبات «زيارة ثانية في نفس اليوم» — بتظهر في «طلبات الموظفين»: المدير يوافق (الزيارة بتتسجّل فورًا) أو يرفض بسبب،
 // وباقي الموظفين بيشوفوا حالة طلباتهم. المصدر: جدول second_session_requests (RPC: request/decide_second_session).
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
@@ -9,7 +9,7 @@ import { useAuth } from '../services/auth';
 import { fmtDateTime } from '../utils/format';
 
 interface Req { id: string; source: 'package' | 'plan'; ref_id: string; patient_id: string; therapist_id: string | null; status: 'pending' | 'approved' | 'rejected'; requested_by: string | null; requested_at: string; decided_by: string | null; reject_reason: string }
-const STATUS = { pending: { label: 'بانتظار موافقة المدير', tone: 'warning' }, approved: { label: 'تمت الموافقة وسُجّلت الجلسة', tone: 'ok' }, rejected: { label: 'مرفوض', tone: 'danger' } } as const;
+const STATUS = { pending: { label: 'بانتظار موافقة المدير', tone: 'warning' }, approved: { label: 'تمت الموافقة وسُجّلت الزيارة', tone: 'ok' }, rejected: { label: 'مرفوض', tone: 'danger' } } as const;
 const clean = (m: string) => m.replace(/^.*?ERROR:\s*/, '');
 
 export default function SecondSessionRequests() {
@@ -32,7 +32,7 @@ export default function SecondSessionRequests() {
     const { data, error } = await supabase.rpc('decide_second_session', { p_id: r.id, p_approve: approve, p_reason: why });
     setBusy(null);
     if (error) { toast.error(clean(error.message)); void load(); return; }
-    if (approve) { const x = data as { sessionNo: number; total: number }; toast.success(`تمت الموافقة وتسجيل الجلسة ${x.sessionNo} من ${x.total}.`); }
+    if (approve) { const x = data as { sessionNo: number; total: number }; toast.success(`تمت الموافقة وتسجيل الزيارة ${x.sessionNo} من ${x.total}.`); }
     else toast.success('تم رفض الطلب.');
     setRejecting(null); setReason('');
     void db.refresh('appointments', 'packages', 'plans', 'sessions', 'activity'); void load();
@@ -42,7 +42,7 @@ export default function SecondSessionRequests() {
   const name = (id: string | null) => (id ? db.employees().find((e) => e.id === id)?.name : null) ?? '—';
   return (
     <section className="card" style={{ marginBottom: 18 }}>
-      <div className="card__head"><h2>طلبات جلسة ثانية في نفس اليوم <span className="num muted">({mine.filter((r) => r.status === 'pending').length} بانتظار)</span></h2></div>
+      <div className="card__head"><h2>طلبات زيارة ثانية في نفس اليوم <span className="num muted">({mine.filter((r) => r.status === 'pending').length} بانتظار)</span></h2></div>
       <div className="card__body">
         <div className="table-wrap"><table className="table">
           <thead><tr><th>المريض</th><th>الدكتور</th><th>طلبه</th><th>الوقت</th><th>الحالة</th>{isManager && <th></th>}</tr></thead>
@@ -62,7 +62,7 @@ export default function SecondSessionRequests() {
         </table></div>
       </div>
       {rejecting && (
-        <Modal title="رفض طلب الجلسة الثانية" onClose={() => setRejecting(null)} footer={<><Button variant="outline" onClick={() => setRejecting(null)}>إلغاء</Button><Button variant="danger" loading={busy === rejecting.id} onClick={() => decide(rejecting, false, reason)}>رفض</Button></>}>
+        <Modal title="رفض طلب الزيارة الثانية" onClose={() => setRejecting(null)} footer={<><Button variant="outline" onClick={() => setRejecting(null)}>إلغاء</Button><Button variant="danger" loading={busy === rejecting.id} onClick={() => decide(rejecting, false, reason)}>رفض</Button></>}>
           <Input id="ssr-reason" label="سبب الرفض *" value={reason} onChange={(e) => setReason(e.target.value)} />
         </Modal>
       )}

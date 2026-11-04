@@ -1,4 +1,4 @@
-// تبويب «العلاج الطبيعي» في ملف المريض: لوحة مختصرة + التقييم + الخطة + الأهداف + الجلسات + ملاحظات التقدّم.
+// تبويب «العلاج الطبيعي» في ملف المريض: لوحة مختصرة + التقييم + الخطة + الأهداف + الزيارات + ملاحظات التقدّم.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { db } from '../data/db';
 import {
@@ -93,8 +93,8 @@ function planToForm(p: PhysioPlan): PlanForm {
 
 function validatePlan(p: PlanForm, done = 0): Record<string, string> {
   const e: Record<string, string> = {};
-  if (!Number.isInteger(p.totalSessions) || p.totalSessions < 1 || p.totalSessions > 100) e.totalSessions = 'عدد الجلسات من 1 إلى 100';
-  else if (p.totalSessions < done) e.totalSessions = `مسجّل بالفعل ${done} جلسة — ما يمكن التقليل عنها`;
+  if (!Number.isInteger(p.totalSessions) || p.totalSessions < 1 || p.totalSessions > 100) e.totalSessions = 'عدد الزيارات من 1 إلى 100';
+  else if (p.totalSessions < done) e.totalSessions = `مسجّل بالفعل ${done} زيارة — ما يمكن التقليل عنها`;
   if (p.sessionsPerWeek != null && (p.sessionsPerWeek < 1 || p.sessionsPerWeek > 7)) e.sessionsPerWeek = 'من 1 إلى 7';
   if (p.durationValue != null && (p.durationValue < 1 || p.durationValue > 52)) e.durationValue = 'من 1 إلى 52';
   if (!isYmd(p.startDate)) e.startDate = 'تاريخ غير صحيح';
@@ -110,12 +110,12 @@ function PlanFields({ patientId, f, set, errors }: { patientId: string; f: PlanF
   return (
     <div className="grid-form">
       <Input id="pp-freq" label="تكرار العلاج (PT Frequency)" placeholder="مثال: 3 sessions/week" value={f.ptFrequency} onChange={(e) => set('ptFrequency', e.target.value)} />
-      <Input id="pp-total" label="عدد الجلسات *" type="number" min={1} max={100} value={f.totalSessions} error={errors.totalSessions} onChange={(e) => set('totalSessions', Math.trunc(Number(e.target.value)))} />
+      <Input id="pp-total" label="عدد الزيارات *" type="number" min={1} max={100} value={f.totalSessions} error={errors.totalSessions} onChange={(e) => set('totalSessions', Math.trunc(Number(e.target.value)))} />
       <div className="pt-pair">
         <Input id="pp-dur" label="مدة الخطة" type="number" min={1} max={52} value={f.durationValue ?? ''} error={errors.durationValue} onChange={(e) => set('durationValue', num(e.target.value))} />
         <Select id="pp-unit" label="الوحدة" value={f.durationUnit ?? ''} onChange={(e) => set('durationUnit', (e.target.value || null) as PlanForm['durationUnit'])} options={[{ value: '', label: '—' }, { value: 'week', label: 'أسبوع' }, { value: 'month', label: 'شهر' }]} />
       </div>
-      <Input id="pp-spw" label="عدد الجلسات في الأسبوع" type="number" min={1} max={7} value={f.sessionsPerWeek ?? ''} error={errors.sessionsPerWeek} onChange={(e) => set('sessionsPerWeek', num(e.target.value))} />
+      <Input id="pp-spw" label="عدد الزيارات في الأسبوع" type="number" min={1} max={7} value={f.sessionsPerWeek ?? ''} error={errors.sessionsPerWeek} onChange={(e) => set('sessionsPerWeek', num(e.target.value))} />
       <Input id="pp-reeval" label="موعد إعادة التقييم (Re-evaluation)" type="date" value={f.reevaluationDate ?? ''} error={errors.reevaluationDate} onChange={(e) => set('reevaluationDate', e.target.value || null)} />
     </div>
   );
@@ -131,7 +131,7 @@ function GoalsFields({ f, set }: { f: Pick<PlanForm, 'shortGoals' | 'longGoals'>
 }
 
 // ================= التقييم جوه نموذج «إنشاء خطة علاج جديدة» (نفس الصفحة) =================
-// العمر والشكوى والتشخيص وعدد الجلسات بتيجي من حقول الخطة نفسها — هنا باقي التقييم بس.
+// العمر والشكوى والتشخيص وعدد الزيارات بتيجي من حقول الخطة نفسها — هنا باقي التقييم بس.
 export interface PhysioInline {
   painVas: number | null; painLocation: string; onset: EvalForm['onset']; duration: string; painCharacter: string[];
   aggravatingFactors: string; relievingFactors: string; medicalHistory: string; medications: string;
@@ -354,7 +354,7 @@ function PlanModal({ plan, done, onClose, onSaved, goalsOnly }: { plan: PhysioPl
       {goalsOnly ? <GoalsFields f={p} set={setPlan} /> : (
         <>
           <PlanFields patientId={plan.patientId} f={p} set={setPlan} errors={errors} />
-          <p className="muted" style={{ fontSize: 12.5 }}>مسجّل للحين {done} جلسة — ما يمكن تقليل عدد الجلسات عن ذلك. زيادة العدد هي الطريقة المعتمدة لإضافة جلسات بعد انتهاء الباقة.</p>
+          <p className="muted" style={{ fontSize: 12.5 }}>مسجّل للحين {done} زيارة — ما يمكن تقليل عدد الزيارات عن ذلك. زيادة العدد هي الطريقة المعتمدة لإضافة زيارات بعد انتهاء الباقة.</p>
         </>
       )}
     </Modal>
@@ -391,17 +391,17 @@ function NoteModal({ plan, evaluation, note, nextNo, onClose, onSaved }: {
     const r = await physioApi.saveNote({ ...f, id: note?.id, sessionNo: note ? undefined : sessionNo });
     setBusy(false);
     if (!r.ok) { setServerErr(r.error); return; }
-    toast.success(note ? 'تم تعديل ملاحظة التقدّم.' : `تم تسجيل الجلسة ${r.tracking.sessionNo}/${r.tracking.total} — المتبقي ${r.tracking.remaining}.`);
+    toast.success(note ? 'تم تعديل ملاحظة التقدّم.' : `تم تسجيل الزيارة ${r.tracking.sessionNo}/${r.tracking.total} — المتبقي ${r.tracking.remaining}.`);
     onSaved(); onClose();
   };
   return (
-    <Modal title={`ملاحظة تقدّم (Progress Note) — الجلسة ${sessionNo}/${plan.totalSessions}`} wide onClose={onClose}
+    <Modal title={`ملاحظة تقدّم (Progress Note) — الزيارة ${sessionNo}/${plan.totalSessions}`} wide onClose={onClose}
       footer={<><Button variant="outline" onClick={onClose} disabled={busy}>إلغاء</Button><Button onClick={submit} loading={busy}>حفظ</Button></>}>
       {serverErr && <div className="pt-alert pt-alert--danger" role="alert" style={{ marginBottom: 12 }}>{serverErr}</div>}
       <div className="form-section">
-        <div className="form-section-title">1. بيانات الجلسة (Session Information)</div>
+        <div className="form-section-title">1. بيانات الزيارة (Session Information)</div>
         <div className="grid-form">
-          <Input id="pn-no" label="رقم الجلسة (Number of PT Session)" value={`${sessionNo} / ${plan.totalSessions}`} disabled />
+          <Input id="pn-no" label="رقم الزيارة (Number of PT Session)" value={`${sessionNo} / ${plan.totalSessions}`} disabled />
         </div>
       </div>
       <div className="form-section">
@@ -462,7 +462,7 @@ export function PhysioPlanDetails({ treatmentPlanId }: { treatmentPlanId: string
         <Kv k="Red Flags" v={e.redFlags ? 'Yes' : 'No'} />
         {e.redFlagsNotes ? <Kv k="Red Flags Notes" v={e.redFlagsNotes} /> : null}
         <Kv k="Re-evaluation Date" v={p.reevaluationDate ? fmtDate(p.reevaluationDate) : ''} />
-        <Kv k="الجلسات" v={`${tr.completed} / ${tr.total} — المتبقية ${tr.remaining}`} />
+        <Kv k="الزيارات" v={`${tr.completed} / ${tr.total} — المتبقية ${tr.remaining}`} />
       </div>
       <div className="pt-box"><h4>الأهداف (Goals)</h4>
         <div className="muted-sm">Short Term</div>
@@ -551,35 +551,35 @@ export default function PhysioTab({ patientId }: { patientId: string }) {
       <div className="stats-grid physio-stats">
         <StatCard icon="stethoscope" tone="brand" value={evaluation?.diagnosis || '—'} label="التشخيص (Diagnosis)" />
         <StatCard icon="alert" tone={((lastNote?.painVas ?? evaluation?.painVas ?? 0) >= 7) ? 'danger' : 'warn'} value={lastNote?.painVas ?? evaluation?.painVas ?? '—'} label="مستوى الألم الحالي /10" />
-        <StatCard icon="box" tone="info" value={tr ? `${tr.total} جلسات` : '—'} label="الباقة (Package)" />
+        <StatCard icon="box" tone="info" value={tr ? `${tr.total} زيارات` : '—'} label="الباقة (Package)" />
         <StatCard icon="refresh" tone={reevalDue ? 'danger' : 'info'} value={plan?.reevaluationDate ? fmtDate(plan.reevaluationDate) : '—'} label={reevalDue ? 'إعادة التقييم مستحقة' : 'موعد إعادة التقييم'} />
       </div>
 
       <div className="row-between" style={{ marginBottom: 12, gap: 8, flexWrap: 'wrap' }}>
         {data.plans.length > 1 ? (
           <div style={{ minWidth: 240 }}><Select id="pt-plan-sel" label="الخطة المعروضة" value={plan?.id ?? ''} onChange={(e) => setPlanSel(e.target.value)}
-            options={data.plans.map((p) => ({ value: p.id, label: `${fmtDate(p.startDate)} — ${p.totalSessions} جلسات — ${PLAN_STATUS[p.status].label}` }))} /></div>
+            options={data.plans.map((p) => ({ value: p.id, label: `${fmtDate(p.startDate)} — ${p.totalSessions} زيارات — ${PLAN_STATUS[p.status].label}` }))} /></div>
         ) : <span className="muted" style={{ fontSize: 13 }}>{data.evaluations.length} تقييم · {data.plans.length} خطة · {data.notes.length} ملاحظة تقدّم</span>}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {can('physio', 'create') && <Button size="sm" variant={noEval ? 'primary' : 'outline'} icon="stethoscope" onClick={() => setModal({ kind: 'eval' })}>{noEval ? 'تقييم جديد' : 'إعادة تقييم (Re-evaluation)'}</Button>}
           {plan && can('physio', 'create') && (
             <Button size="sm" icon="clipboard" disabled={!canAddNote} onClick={() => setModal({ kind: 'note', plan })}
-              title={tr && tr.remaining === 0 ? 'انتهت جلسات الخطة — عدّل الخطة لزيادة عدد الجلسات' : undefined}>
-              {tr?.nextSessionNo ? `تسجيل الجلسة ${tr.nextSessionNo}/${tr.total}` : 'تسجيل جلسة'}
+              title={tr && tr.remaining === 0 ? 'انتهت زيارات الخطة — عدّل الخطة لزيادة عدد الزيارات' : undefined}>
+              {tr?.nextSessionNo ? `تسجيل الزيارة ${tr.nextSessionNo}/${tr.total}` : 'تسجيل زيارة'}
             </Button>
           )}
         </div>
       </div>
       {plan && tr && tr.remaining === 0 && plan.status !== 'cancelled' && (
         <div className="pt-alert pt-alert--warn" role="status" style={{ marginBottom: 12 }}>
-          اكتملت جلسات الخطة ({tr.total}/{tr.total}). ما يمكن تسجيل جلسة إضافية إلا بزيادة عدد الجلسات من «تعديل الخطة»{can('physio', 'edit') ? '' : ' (يتطلب صلاحية تعديل)'}، أو بإعادة تقييم وإنشاء خطة جديدة.
+          اكتملت زيارات الخطة ({tr.total}/{tr.total}). ما يمكن تسجيل زيارة إضافية إلا بزيادة عدد الزيارات من «تعديل الخطة»{can('physio', 'edit') ? '' : ' (يتطلب صلاحية تعديل)'}، أو بإعادة تقييم وإنشاء خطة جديدة.
         </div>
       )}
 
       <div className="tabs tabs--sub" style={{ overflowX: 'auto' }}>{SUBTABS.map((t, i) => <button key={t} className={`tab ${sub === i ? 'active' : ''}`} onClick={() => setSub(i)}>{t}</button>)}</div>
       <div style={{ paddingTop: 14 }}>
         {noEval ? (
-          <EmptyState icon="stethoscope" title="ما فيه تقييم علاج طبيعي" text="ابدأ بتقييم أولي — يتضمن الخطة والأهداف، وبعدها تُسجَّل ملاحظة تقدّم لكل جلسة."
+          <EmptyState icon="stethoscope" title="ما فيه تقييم علاج طبيعي" text="ابدأ بتقييم أولي — يتضمن الخطة والأهداف، وبعدها تُسجَّل ملاحظة تقدّم لكل زيارة."
             action={can('physio', 'create') ? <Button icon="stethoscope" onClick={() => setModal({ kind: 'eval' })}>تقييم جديد</Button> : undefined} />
         ) : (
           <>
@@ -616,9 +616,9 @@ export default function PhysioTab({ patientId }: { patientId: string }) {
                   </div>
                 </div>
                 <Kv k="PT Frequency" v={plan.ptFrequency} />
-                <Kv k="عدد الجلسات" v={plan.totalSessions} />
+                <Kv k="عدد الزيارات" v={plan.totalSessions} />
                 <Kv k="مدة الخطة" v={plan.durationValue ? `${plan.durationValue} ${UNIT_LABEL[plan.durationUnit ?? 'week']}` : ''} />
-                <Kv k="جلسات في الأسبوع" v={plan.sessionsPerWeek ? `${plan.sessionsPerWeek} sessions/week` : ''} />
+                <Kv k="زيارات في الأسبوع" v={plan.sessionsPerWeek ? `${plan.sessionsPerWeek} sessions/week` : ''} />
                 <Kv k="Re-evaluation Date" v={plan.reevaluationDate ? fmtDate(plan.reevaluationDate) : ''} />
               </div>
             ))}
@@ -636,10 +636,10 @@ export default function PhysioTab({ patientId }: { patientId: string }) {
               </div>
             ))}
 
-            {sub === 3 && (planNotes.length === 0 ? <EmptyState icon="clipboard" title="ما فيه ملاحظات تقدّم" text={plan ? 'سجّل أول جلسة من زر «تسجيل الجلسة».' : undefined} /> : [...planNotes].reverse().map((n) => (
+            {sub === 3 && (planNotes.length === 0 ? <EmptyState icon="clipboard" title="ما فيه ملاحظات تقدّم" text={plan ? 'سجّل أول زيارة من زر «تسجيل الزيارة».' : undefined} /> : [...planNotes].reverse().map((n) => (
               <div key={n.id} className="item-card">
                 <div className="row-between" style={{ marginBottom: 8, gap: 8, flexWrap: 'wrap' }}>
-                  <strong>الجلسة {n.sessionNo}/{plan!.totalSessions}</strong>
+                  <strong>الزيارة {n.sessionNo}/{plan!.totalSessions}</strong>
                   <RowActions>
                     {can('physio', 'edit') && <IconAction icon="edit" label="تعديل الملاحظة" onClick={() => setModal({ kind: 'note', plan: plan!, note: n })} />}
                     {can('physio', 'delete') && n.sessionNo === planNotes.length && <IconAction icon="trash" label="حذف الملاحظة" danger onClick={() => setDel(n)} />}
@@ -665,7 +665,7 @@ export default function PhysioTab({ patientId }: { patientId: string }) {
       {(modal?.kind === 'plan' || modal?.kind === 'goals') && <PlanModal plan={modal.plan} goalsOnly={modal.kind === 'goals'} done={data.notes.filter((n) => n.planId === modal.plan.id).length} onClose={() => setModal(null)} onSaved={load} />}
       {modal?.kind === 'note' && <NoteModal plan={modal.plan} evaluation={data.evaluations.find((e) => e.id === modal.plan.evaluationId)} note={modal.note}
         nextNo={planTracking(modal.plan, data.notes).nextSessionNo ?? modal.plan.totalSessions + 1} onClose={() => setModal(null)} onSaved={load} />}
-      {del && <ConfirmDialog title="حذف ملاحظة التقدّم" message={`سيتم حذف ملاحظة الجلسة ${del.sessionNo} نهائيًا (آخر جلسة فقط يمكن حذفها للحفاظ على التسلسل).`}
+      {del && <ConfirmDialog title="حذف ملاحظة التقدّم" message={`سيتم حذف ملاحظة الزيارة ${del.sessionNo} نهائيًا (آخر زيارة فقط يمكن حذفها للحفاظ على التسلسل).`}
         onConfirm={async () => { const r = await physioApi.deleteNote(del.id); if (r.ok) { toast.success('تم حذف الملاحظة.'); load(); } else toast.error(r.error); }} onClose={() => setDel(null)} />}
     </div>
   );

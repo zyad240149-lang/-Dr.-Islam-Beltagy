@@ -30,7 +30,7 @@ function useLoyaltyLive() {
 }
 
 const KIND_LABEL: Record<LoyaltyKind, string> = {
-  session: 'نقاط جلسة', plan_session: 'نقاط جلسة خطة', package: 'نقاط باقة', redeem: 'استبدال نقاط', adjust: 'تعديل إداري', reversal: 'إرجاع نقاط',
+  session: 'نقاط زيارة', plan_session: 'نقاط زيارة خطة', package: 'نقاط باقة', redeem: 'استبدال نقاط', adjust: 'تعديل إداري', reversal: 'إرجاع نقاط',
 };
 const CODE_STATUS: Record<LoyaltyCodeStatus, { label: string; tone: string }> = {
   unused: { label: 'غير مستخدم', tone: 'warn' }, used: { label: 'مستخدم', tone: 'ok' }, cancelled: { label: 'ملغي', tone: 'danger' }, expired: { label: 'منتهي', tone: 'muted' },
@@ -61,24 +61,24 @@ function ConfirmRedeemModal({ patient, summary, onClose, onDone }: { patient: Pa
   };
 
   return (
-    <Modal title="استبدال نقاط بجلسة مجانية" onClose={onClose} footer={
+    <Modal title="استبدال نقاط بزيارة مجانية" onClose={onClose} footer={
       <><Button variant="outline" onClick={onClose} disabled={busy}>إلغاء</Button><Button icon="check" onClick={submit} loading={busy}>تأكيد الاستبدال</Button></>
     }>
       <div className="field">
         <label>المكافأة</label>
         <div className="seg">
-          <button type="button" className={`seg__btn ${sessions === 1 ? 'active' : ''}`} onClick={() => setSessions(1)}>{summary.redeemCost} نقطة = جلسة</button>
-          <button type="button" className={`seg__btn ${sessions === 2 ? 'active' : ''}`} disabled={summary.balance < summary.redeemCost * 2} onClick={() => setSessions(2)}>{summary.redeemCost * 2} نقطة = جلستين</button>
+          <button type="button" className={`seg__btn ${sessions === 1 ? 'active' : ''}`} onClick={() => setSessions(1)}>{summary.redeemCost} نقطة = زيارة</button>
+          <button type="button" className={`seg__btn ${sessions === 2 ? 'active' : ''}`} disabled={summary.balance < summary.redeemCost * 2} onClick={() => setSessions(2)}>{summary.redeemCost * 2} نقطة = زيارتين</button>
         </div>
       </div>
       <div className="alert alert-info">
         <Icon name="spark" size={17} />
-        <div>سيتم خصم <strong className="num">{cost}</strong> نقطة من رصيد «{patient.fullName}» وإصدار كود جلسة مجانية.</div>
+        <div>سيتم خصم <strong className="num">{cost}</strong> نقطة من رصيد «{patient.fullName}» وإصدار كود زيارة مجانية.</div>
       </div>
       <p className="muted" style={{ fontSize: 13, marginBottom: 16 }}>الرصيد الحالي: <strong className="num">{summary.balance}</strong> نقطة — بعد الاستبدال: <strong className="num">{summary.balance - cost}</strong> نقطة.</p>
 
       <div className="field">
-        <label>لمن الجلسة المجانية؟</label>
+        <label>لمن الزيارة المجانية؟</label>
         <div className="seg">
           <button type="button" className={`seg__btn ${beneficiaryType === 'self' ? 'active' : ''}`} onClick={() => setBeneficiaryType('self')}>لنفسي</button>
           <button type="button" className={`seg__btn ${beneficiaryType === 'other' ? 'active' : ''}`} onClick={() => setBeneficiaryType('other')}>لشخص آخر</button>
@@ -96,8 +96,8 @@ function ConfirmRedeemModal({ patient, summary, onClose, onDone }: { patient: Pa
 }
 
 const waText = (name: string, code: string) =>
-  `مرحبًا ${name}، تم استبدال نقاط الولاء الخاصة بك بجلسة علاج طبيعي مجانية 🎁
-كود الجلسة: ${code}
+  `مرحبًا ${name}، تم استبدال نقاط الولاء الخاصة بك بزيارة علاج طبيعي مجانية 🎁
+كود الزيارة: ${code}
 قدّم الكود للاستقبال عند الدفع — يُستخدم مرة واحدة فقط.
 عيادة د. إسلام بلتاجي لجراحة العظام والكسور`;
 
@@ -114,7 +114,7 @@ function SuccessModal({ patient, code, remaining, onClose }: { patient: Patient;
           <div><dt>النقاط المتبقية</dt><dd className="num">{remaining}</dd></div>
         </dl>
         <div className="field" style={{ marginTop: 16 }}>
-          <label>كود الجلسة المجانية</label>
+          <label>كود الزيارة المجانية</label>
           <div className="control has-icon">
             <Icon name="spark" size={18} />
             <input className="input" dir="ltr" readOnly value={code} style={{ fontWeight: 700, textAlign: 'center' }} />
@@ -187,11 +187,11 @@ function RedeemPanel() {
                 <div className="muted" style={{ fontSize: 13.5 }}>⭐ رصيد النقاط</div>
                 <div style={{ fontSize: 34, fontWeight: 800, margin: '4px 0 6px' }} className="num">{summary.balance} <span style={{ fontSize: 15, fontWeight: 500 }}>نقطة</span></div>
                 {summary.availableRewards > 0 ? (
-                  <div className="muted" style={{ fontSize: 13.5, marginBottom: 14 }}>🎁 المكافآت المتاحة: <strong className="num">{summary.availableRewards}</strong> جلسة مجانية</div>
+                  <div className="muted" style={{ fontSize: 13.5, marginBottom: 14 }}>🎁 المكافآت المتاحة: <strong className="num">{summary.availableRewards}</strong> زيارة مجانية</div>
                 ) : (
                   <div className="muted" style={{ fontSize: 13.5, marginBottom: 14 }}>يحتاج العميل <strong className="num">{summary.redeemCost - summary.balance}</strong> نقطة إضافية للوصول لأول مكافأة ({summary.redeemCost} نقطة).</div>
                 )}
-                {summary.availableRewards > 0 && can('loyalty', 'create') && <Button icon="spark" onClick={() => setConfirming(true)}>استبدال {summary.redeemCost} نقطة بجلسة مجانية</Button>}
+                {summary.availableRewards > 0 && can('loyalty', 'create') && <Button icon="spark" onClick={() => setConfirming(true)}>استبدال {summary.redeemCost} نقطة بزيارة مجانية</Button>}
                 <dl className="review-list" style={{ marginTop: 20, textAlign: 'start' }}>
                   <div><dt>إجمالي المكتسب</dt><dd className="num">{summary.totalEarned}</dd></div>
                   <div><dt>إجمالي المستبدل</dt><dd className="num">{summary.totalRedeemed}</dd></div>
@@ -318,9 +318,9 @@ function LoyaltySettingsCard() {
       <div className="card__head"><h2>إعدادات نقاط الولاء</h2></div>
       <div className="card__body">
         <div className="grid-form grid-form--3">
-          <Input id="ls-session" label="نقاط الكشف/الجلسة" type="number" min={0} value={f.sessionPoints} onChange={(e) => setF({ ...f, sessionPoints: Number(e.target.value) })} />
+          <Input id="ls-session" label="نقاط الكشف/الزيارة" type="number" min={0} value={f.sessionPoints} onChange={(e) => setF({ ...f, sessionPoints: Number(e.target.value) })} />
           <Input id="ls-package" label="نقاط شراء الباقة" type="number" min={0} value={f.packagePoints} onChange={(e) => setF({ ...f, packagePoints: Number(e.target.value) })} />
-          <Input id="ls-cost" label="تكلفة المكافأة (نقطة = جلسة مجانية)" type="number" min={1} value={f.redeemCost} onChange={(e) => setF({ ...f, redeemCost: Number(e.target.value) })} />
+          <Input id="ls-cost" label="تكلفة المكافأة (نقطة = زيارة مجانية)" type="number" min={1} value={f.redeemCost} onChange={(e) => setF({ ...f, redeemCost: Number(e.target.value) })} />
         </div>
         <Button icon="check" onClick={save} loading={busy}>حفظ الإعدادات</Button>
       </div>
@@ -337,12 +337,12 @@ export default function Loyalty() {
   return (
     <div className="page">
       <div className="page-head">
-        <div><h1>استبدال نقاط العملاء</h1><p>حوّل نقاط العميل إلى مكافآت وجلسات مجانية بسهولة.</p></div>
+        <div><h1>استبدال نقاط العملاء</h1><p>حوّل نقاط العميل إلى مكافآت وزيارات مجانية بسهولة.</p></div>
       </div>
 
       {canManage && (
         <div className="kpi-grid">
-          <StatCard icon="spark" tone="info" value={center.loyaltyRedeemCost ?? 30} label="نقطة = جلسة مجانية" />
+          <StatCard icon="spark" tone="info" value={center.loyaltyRedeemCost ?? 30} label="نقطة = زيارة مجانية" />
         </div>
       )}
 

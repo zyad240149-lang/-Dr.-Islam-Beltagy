@@ -16,12 +16,12 @@ import type { CampaignAudience, Patient, ReferralSource } from '../types';
 
 const AUDIENCE_LABEL: Record<CampaignAudience, string> = {
   all: 'كل المرضى', with_account: 'المرضى الذين عندهم حساب', source: 'حسب مصدر التعرف', patient: 'مريض محدد',
-  new: 'مرضى جدد (آخر 30 يوم)', active_plan: 'مرضى عليهم جلسات (خطة علاج نشطة)', inactive: 'حضروا سابقًا ولم يعودوا (60 يومًا فأكثر)',
-  has_sessions: 'مرضى عليهم جلسات قادمة', has_exam: 'مرضى عليهم كشف قادم',
+  new: 'مرضى جدد (آخر 30 يوم)', active_plan: 'مرضى عليهم زيارات (خطة علاج نشطة)', inactive: 'حضروا سابقًا ولم يعودوا (60 يومًا فأكثر)',
+  has_sessions: 'مرضى عليهم زيارات قادمة', has_exam: 'مرضى عليهم كشف قادم',
 };
 const UPCOMING = new Set(['new', 'confirmed', 'on_way', 'arrived', 'in_progress', 'rescheduled']);
 const isExam = (serviceId: string) => (db.service(serviceId)?.name ?? '').includes('كشف');
-// المواعيد القادمة للمريض مقسّمة: جلسات / كشف — نفس قاعدة الخادم (send_campaign)
+// المواعيد القادمة للمريض مقسّمة: زيارات / كشف — نفس قاعدة الخادم (send_campaign)
 function upcomingOf(patientId: string) {
   const today = riyadhTodayYmd();
   const list = db.appointmentsForPatient(patientId).filter((a) => a.date >= today && UPCOMING.has(a.status));
@@ -34,8 +34,8 @@ const DAY_MS = 86400000;
 
 const TEMPLATES = [
   { label: 'عرض الكشف', title: 'عرض خاص على الكشف', body: 'خصم خاص على كشف العظام هذا الشهر — احجز موعدك الآن.' },
-  { label: 'تذكير بالمتابعة', title: 'حان وقت جلستك القادمة', body: 'نتمنى أن تكون بخير. لا تنسَ متابعة خطتك العلاجية — احجز جلستك القادمة من البوابة.' },
-  { label: 'خصم خاص', title: 'خصم خاص لك', body: 'استمتع بخصم خاص على جلستك القادمة في عيادة د. إسلام بلتاجي لجراحة العظام والكسور.' },
+  { label: 'تذكير بالمتابعة', title: 'حان وقت زيارتك القادمة', body: 'نتمنى أن تكون بخير. لا تنسَ متابعة خطتك العلاجية — احجز زيارتك القادمة من البوابة.' },
+  { label: 'خصم خاص', title: 'خصم خاص لك', body: 'استمتع بخصم خاص على زيارتك القادمة في عيادة د. إسلام بلتاجي لجراحة العظام والكسور.' },
 ];
 
 export default function Campaigns() {
@@ -164,9 +164,9 @@ export default function Campaigns() {
             {(audience === 'has_sessions' || audience === 'has_exam') && (
               <div className="field">
                 <label>المرضى المختارين ({recipients.length})</label>
-                {recipients.length === 0 ? <p className="muted">ما فيه مرضى عليهم {audience === 'has_exam' ? 'كشف قادم' : 'جلسات قادمة'}.</p> : (
+                {recipients.length === 0 ? <p className="muted">ما فيه مرضى عليهم {audience === 'has_exam' ? 'كشف قادم' : 'زيارات قادمة'}.</p> : (
                   <div className="table-wrap" style={{ maxHeight: 320, overflowY: 'auto' }}><table className="table">
-                    <thead><tr><th>المريض</th><th>الجوال</th><th>جلسات قادمة</th><th>كشف قادم</th><th>أقرب موعد</th><th>المتبقي عليه</th></tr></thead>
+                    <thead><tr><th>المريض</th><th>الجوال</th><th>زيارات قادمة</th><th>كشف قادم</th><th>أقرب موعد</th><th>المتبقي عليه</th></tr></thead>
                     <tbody>{recipients.map((p) => { const u = upcomingOf(p.id); return (
                       <tr key={p.id}>
                         <td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{p.fullName}</td>

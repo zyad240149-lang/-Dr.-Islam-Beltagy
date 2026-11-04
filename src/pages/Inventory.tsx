@@ -6,7 +6,8 @@ import { useDbVersion, useLoading } from '../hooks/useDb';
 import { Button, EmptyState, Input, Modal, Select, Skeleton, StatusBadge } from '../components/ui';
 import { ConfirmDialog, FilterBar, IconAction, RowActions, useCan } from '../components/common';
 import { useToast } from '../hooks/useToast';
-import { fmtDateTime, money, todayYmd } from '../utils/format';
+import { PhoneInput } from '../components/PhoneInput';
+import { fmtDateTime, money, todayYmd, waPhone } from '../utils/format';
 import type { InventoryItem, StockMovementType } from '../types';
 
 const MOVE_LABEL: Record<StockMovementType, string> = { purchase: 'شراء / توريد', issue: 'صرف', adjust_in: 'تسوية بالزيادة', adjust_out: 'تسوية بالنقص' };
@@ -67,7 +68,11 @@ export default function Inventory() {
                     <td className="num"><strong>{it.quantity}</strong> {it.unit}</td>
                     <td className="num">{it.minQuantity}</td>
                     <td className="num">{money(it.costPrice)}</td>
-                    <td>{it.supplier || '—'}</td>
+                    <td>
+                      {it.supplier || (it.supplierPhone || it.supplierUrl ? '' : '—')}
+                      {it.supplierPhone && <div className="muted-sm"><a href={`tel:${it.supplierPhone}`} dir="ltr" className="num">{it.supplierPhone}</a> · <a href={`https://wa.me/${waPhone(it.supplierPhone)}`} target="_blank" rel="noopener noreferrer">واتساب</a></div>}
+                      {/^https?:\/\//i.test(it.supplierUrl) && <div className="muted-sm"><a href={it.supplierUrl} target="_blank" rel="noopener noreferrer">فتح اللينك</a></div>}
+                    </td>
                     <td>{!it.active ? <StatusBadge label="متوقف" tone="muted" /> : low(it) ? <StatusBadge label="وصل للحد الأدنى" tone="warn" /> : <StatusBadge label="متوفر" tone="ok" />}</td>
                     <td className="actions">
                       <RowActions>
@@ -103,18 +108,26 @@ function ItemModal({ item, onClose }: { item: InventoryItem | null; onClose: () 
   const [f, setF] = useState(() => ({
     sku: item?.sku ?? '', name: item?.name ?? '', category: item?.category ?? '', unit: item?.unit ?? 'قطعة', quantity: '0',
     minQuantity: String(item?.minQuantity ?? 0), costPrice: String(item?.costPrice ?? 0), salePrice: String(item?.salePrice ?? 0),
-    supplier: item?.supplier ?? '', active: item?.active ?? true,
+    supplier: item?.supplier ?? '', supplierPhone: item?.supplierPhone ?? '', supplierUrl: item?.supplierUrl ?? '', active: item?.active ?? true,
   }));
   const [busy, setBusy] = useState(false);
+  const [phoneErr, setPhoneErr] = useState(false);
+  const [tried, setTried] = useState(false);
+  const url = (() => { const u = f.supplierUrl.trim(); return !u || /^https?:\/\//i.test(u) ? u : `https://${u}`; })();
+  const urlOk = !url || URL.canParse(url);
+  const cost = Number(f.costPrice.replace(/[^\d.]/g, '')) || 0, sale = Number(f.salePrice.replace(/[^\d.]/g, '')) || 0;
   const set = (k: keyof typeof f, v: string | boolean) => setF((x) => ({ ...x, [k]: v }));
   const num = (v: string) => Number(v.replace(/[^\d.]/g, '')) || 0;
   const save = async () => {
+    setTried(true);
     if (!f.name.trim()) { toast.error('اسم الصنف مطلوب.'); return; }
+    if (phoneErr) { toast.error('رقم المورّد مش صحيح.'); return; }
+    if (!urlOk) { toast.error('لينك المورّد مش صحيح.'); return; }
     setBusy(true);
     const r = await db.saveItem({
       ...(item ? { id: item.id } : { quantity: num(f.quantity) }),
       sku: f.sku.trim(), name: f.name.trim(), category: f.category.trim(), unit: f.unit.trim() || 'قطعة',
-      minQuantity: num(f.minQuantity), costPrice: num(f.costPrice), salePrice: num(f.salePrice), supplier: f.supplier.trim(), active: f.active,
+      minQuantity: num(f.minQuantity), costPrice: num(f.costPrice), salePrice: num(f.salePrice), supplier: f.supplier.trim(), supplierPhone: f.supplierPhone, supplierUrl: url, active: f.active,
     });
     setBusy(false);
     if (!r.ok) { toast.error(r.error); return; }
@@ -122,20 +135,41 @@ function ItemModal({ item, onClose }: { item: InventoryItem | null; onClose: () 
     onClose();
   };
   return (
-    <Modal title={item ? 'تعديل صنف' : 'إضافة صنف'} onClose={onClose}
+    <Modal wide title={item ? 'تعديل صنف' : 'إضافة صنف'} onClose={onClose}
       footer={<><Button variant="outline" onClick={onClose} disabled={busy}>إلغاء</Button><Button icon="check" onClick={() => void save()} loading={busy}>حفظ</Button></>}>
-      <div className="grid-form">
-        <Input id="it-name" label="اسم الصنف *" value={f.name} onChange={(e) => set('name', e.target.value)} />
-        <Input id="it-sku" label="كود الصنف" dir="ltr" placeholder="يتولد تلقائي لو فاضي" value={f.sku} onChange={(e) => set('sku', e.target.value)} />
-        <Input id="it-cat" label="الفئة" placeholder="مستلزمات / جبس / أدوات" value={f.category} onChange={(e) => set('category', e.target.value)} />
-        <Input id="it-unit" label="الوحدة" value={f.unit} onChange={(e) => set('unit', e.target.value)} />
-        {!item && <Input id="it-qty" label="الكمية الحالية" inputMode="decimal" value={f.quantity} onChange={(e) => set('quantity', e.target.value)} />}
-        <Input id="it-min" label="الحد الأدنى (تنبيه)" inputMode="decimal" value={f.minQuantity} onChange={(e) => set('minQuantity', e.target.value)} />
-        <Input id="it-cost" label="سعر التكلفة" inputMode="decimal" value={f.costPrice} onChange={(e) => set('costPrice', e.target.value)} />
-        <Input id="it-sale" label="سعر البيع (لو بيتباع)" inputMode="decimal" value={f.salePrice} onChange={(e) => set('salePrice', e.target.value)} />
-        <Input id="it-sup" label="المورّد" value={f.supplier} onChange={(e) => set('supplier', e.target.value)} />
-        <Select id="it-active" label="الحالة" value={f.active ? 'on' : 'off'} onChange={(e) => set('active', e.target.value === 'on')} options={[{ value: 'on', label: 'مفعّل' }, { value: 'off', label: 'متوقف' }]} />
-      </div>
+      <section className="form-section" style={{ borderBottom: 0, paddingBottom: 0 }}>
+        <h4 className="form-section-title">بيانات الصنف</h4>
+        <div className="grid-form">
+          <Input id="it-name" label="اسم الصنف *" value={f.name} onChange={(e) => set('name', e.target.value)} />
+          <Input id="it-sku" label="كود الصنف" dir="ltr" placeholder="يتولد تلقائي لو فاضي" value={f.sku} onChange={(e) => set('sku', e.target.value)} />
+          <Input id="it-cat" label="الفئة" placeholder="مستلزمات / جبس / أدوات" value={f.category} onChange={(e) => set('category', e.target.value)} />
+          <Select id="it-active" label="الحالة" value={f.active ? 'on' : 'off'} onChange={(e) => set('active', e.target.value === 'on')} options={[{ value: 'on', label: 'مفعّل' }, { value: 'off', label: 'متوقف' }]} />
+        </div>
+      </section>
+      <section className="form-section" style={{ borderBottom: 0, paddingBottom: 0 }}>
+        <h4 className="form-section-title">الكمية</h4>
+        <div className="grid-form">
+          <Input id="it-unit" label="الوحدة" value={f.unit} onChange={(e) => set('unit', e.target.value)} />
+          {!item && <Input id="it-qty" label="الكمية الحالية" inputMode="decimal" value={f.quantity} onChange={(e) => set('quantity', e.target.value)} />}
+          <Input id="it-min" label="الحد الأدنى (تنبيه)" inputMode="decimal" value={f.minQuantity} onChange={(e) => set('minQuantity', e.target.value)} />
+        </div>
+      </section>
+      <section className="form-section" style={{ borderBottom: 0, paddingBottom: 0 }}>
+        <h4 className="form-section-title">الأسعار</h4>
+        <div className="grid-form">
+          <Input id="it-cost" label="سعر التكلفة" inputMode="decimal" value={f.costPrice} onChange={(e) => set('costPrice', e.target.value)} />
+          <Input id="it-sale" label="سعر البيع (لو بيتباع)" inputMode="decimal" value={f.salePrice} onChange={(e) => set('salePrice', e.target.value)} />
+        </div>
+        {sale > 0 && <p className="muted-sm" style={{ marginBottom: 0 }}>هامش الربح في القطعة: <strong className="num">{money(sale - cost)}</strong></p>}
+      </section>
+      <section className="form-section" style={{ borderBottom: 0, paddingBottom: 0 }}>
+        <h4 className="form-section-title">المورّد</h4>
+        <div className="grid-form">
+          <Input id="it-sup" label="اسم المورّد" value={f.supplier} onChange={(e) => set('supplier', e.target.value)} />
+          <PhoneInput id="it-sup-phone" label="رقم المورّد" required={false} showError={tried} value={f.supplierPhone} onChange={(v, err) => { setPhoneErr(!!err); if (v !== f.supplierPhone) set('supplierPhone', v); }} />
+          <Input id="it-sup-url" label="لينك المورّد" dir="ltr" placeholder="https://example.com" value={f.supplierUrl} onChange={(e) => set('supplierUrl', e.target.value)} error={tried && !urlOk ? 'اللينك مش صحيح.' : undefined} />
+        </div>
+      </section>
       {item && <p className="muted-sm" style={{ marginBottom: 0 }}>الكمية بتتغيّر من «حركة (توريد / صرف)» بس — عشان كل تغيير يتسجّل.</p>}
     </Modal>
   );

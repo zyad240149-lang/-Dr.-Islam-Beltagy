@@ -12,7 +12,6 @@
  "تم إرسال الفاتورة عبر WhatsApp بنجاح.": "The invoice was sent via WhatsApp successfully.",
  "الفاتورة ملغاة — لا يمكن إرسالها.": "The invoice is cancelled — it cannot be sent.",
  "الفاتورة لسه مسودة — اعتمدها أولًا.": "The invoice is still a draft — approve it first.",
- "انتهت الجلسة — سجّل الدخول مرة أخرى.": "Session expired — sign in again.",
  "تعذّر إنشاء ملف PDF.": "Could not create the PDF file.",
  "خدمة WhatsApp غير مفعّلة بعد — لم يُرسل أي شيء.": "The WhatsApp service is not activated yet — nothing was sent.",
  "جاري إرسال هذه الفاتورة بالفعل — انتظر لحظات.": "This invoice is already being sent — wait a moment.",
@@ -55,5 +54,6 @@
  "افتح محادثة المريض": "Open the patient's chat",
  "تنفتح لك المحادثة برقمه حتى لو مو محفوظ عندك، ويتنزّل الملف. أرفقه من 📎 ثم «مستند» وأرسل.": "The chat opens by their number even if it isn't saved, and the file downloads. Attach it from 📎 then «document» and send.",
  "يوجد تحديث جديد للنظام — اضغط تحديث لتشتغل على آخر نسخة.": "A new version of the system is available — press Update to use the latest version.",
- "تحديث": "Update"
+ "تحديث": "Update",
+ "انتهى تسجيل الدخول — سجّل الدخول مرة أخرى.": "Visit expired — sign in again."
 }

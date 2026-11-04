@@ -1,6 +1,4 @@
 {
- "الجلسة القادمة": "Next session",
- "الجلسة القادمة (تقديري)": "Next session (estimated)",
  "(تقديري)": "(estimated)",
  "فاضل": "Remaining",
  "يوم": "days",
@@ -10,5 +8,7 @@
  "موعدها اليوم": "Due today",
  "تسجيل الحضور (حضور مرضى الباقات)": "Record attendance (Package attendance)",
  "عرض الفاتورة": "View invoice",
- "تصدير ملف المرضى (Excel)": "Export full patients file (Excel)"
+ "تصدير ملف المرضى (Excel)": "Export full patients file (Excel)",
+ "الزيارة القادمة": "Next visit",
+ "الزيارة القادمة (تقديري)": "Next visit (estimated)"
 }

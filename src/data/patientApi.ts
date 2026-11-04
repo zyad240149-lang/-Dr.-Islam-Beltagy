@@ -109,7 +109,7 @@ export const patientApi = {
     if (file.size > 10 * 1024 * 1024) throw new PatientApiError('حجم الملف أكبر من 10 ميجابايت.');
     if (!allowed.includes(file.type)) throw new PatientApiError('نوع الملف غير مدعوم (PDF أو صورة أو مستند).');
     const { data: u } = await supabase.auth.getUser();
-    if (!u.user) throw new PatientApiError('انتهت الجلسة — سجّل الدخول من جديد.');
+    if (!u.user) throw new PatientApiError('انتهى تسجيل الدخول — سجّل الدخول من جديد.');
     const ext = (file.name.split('.').pop() ?? 'bin').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8) || 'bin';
     const path = `${patientId}/${crypto.randomUUID()}.${ext}`;
     const up = await supabase.storage.from('patient-files').upload(path, file, { contentType: file.type });
@@ -120,7 +120,7 @@ export const patientApi = {
   async fileUrl(path: string) { return (await supabase.storage.from('patient-files').createSignedUrl(path, 300)).data?.signedUrl ?? null; },
 
   loyaltySummary: () => call<{ balance: number; totalEarned: number; totalRedeemed: number; redemptionsCount: number }>('my_loyalty_summary'),
-  // المريض يستبدل نقاطه بنفسه (30 = جلسة، 60 = جلستين) — الهوية من الجلسة على الخادم
+  // المريض يستبدل نقاطه بنفسه (30 = زيارة، 60 = زيارتين) — الهوية من الزيارة على الخادم
   async redeemLoyalty(sessions: 1 | 2): Promise<{ code: string; sessions: number; points: number; remaining: number }> {
     return call('patient_redeem_loyalty', { p_sessions: sessions, p_idempotency_key: crypto.randomUUID() });
   },

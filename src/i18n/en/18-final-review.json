@@ -11,10 +11,8 @@
  "الدكتور عنده موعد في هذا الوقت — اختر دكتورًا آخر للزيارة المباشرة": "The doctor has an appointment at this time — choose another doctor for the direct visit",
  "هذا الرقم مسجّل بالفعل للمريض": "This number is already registered for the patient",
  "هذا المريض مسجّل بالفعل": "This patient is already registered",
- "اكتملت جلسات الباقة — لا توجد جلسات متبقية": "The package sessions are completed — no sessions remaining",
  "تم تسجيل حضور هذا المريض على هذه الباقة اليوم من قبل": "This patient was already checked in on this package today",
  "عذرًا، هذا الموعد تم حجزه للتو. يرجى اختيار موعد آخر.": "Sorry, this time was just booked. Please choose another time.",
- "حضر اليوم ✓ — اكتملت جلسة اليوم": "Attended today ✓ — today's session completed",
  "تحديث النظام": "Refresh app",
  "جارٍ التحديث…": "Refreshing…",
  "تحديث": "Refresh",
@@ -48,5 +46,7 @@
  "الإجمالي": "Total",
  "اعتماد المسؤول: ................................": "Approved by: ................................",
  "التوقيع: ................................": "Signature: ................................",
- "حذف نهائي": "Delete permanently"
+ "حذف نهائي": "Delete permanently",
+ "اكتملت زيارات الباقة — لا توجد زيارات متبقية": "The package visits are completed — no visits remaining",
+ "حضر اليوم ✓ — اكتملت زيارة اليوم": "Attended today ✓ — today's visit completed"
 }

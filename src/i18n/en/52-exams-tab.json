@@ -9,12 +9,12 @@
  "كشف": "Examination",
  "تفاصيل الزيارة": "Visit details",
  "الشكوى": "Complaint",
- "ملاحظات الجلسة": "Session notes",
  "الخطة بعد الكشف": "Plan after the exam",
  "خطة علاجية": "Treatment plan",
  "ما اتسجّلش تقييم لهذا الكشف — سجّله من تبويب «التقييم» أو «العلاج الطبيعي».": "No assessment was recorded for this exam — record it from the Assessment or Physiotherapy tab.",
  "كشوفاتك السابقة والقادمة.": "Your past and upcoming examinations.",
  "ما عندك أي كشف مسجّل للحين.": "You have no examinations recorded yet.",
  "حجز كشف": "Book an exam",
- "سبب الإلغاء:": "Cancellation reason:"
+ "سبب الإلغاء:": "Cancellation reason:",
+ "ملاحظات الزيارة": "Visit notes"
 }

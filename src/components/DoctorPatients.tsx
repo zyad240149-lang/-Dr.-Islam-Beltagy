@@ -1,5 +1,5 @@
 // الرئيسية لحساب الدكتور (مربوط بـ employees.therapist_id): ترحيب قوي «صباح/مساء الخير يا دكتور + جملة تحفيز»
-// والمرضى اللي خلص معاهم جلسات/كشوفات **النهارده** بس — للعرض بس (من غير فتح ملفات ولا أزرار).
+// والمرضى اللي خلص معاهم زيارات/كشوفات **النهارده** بس — للعرض بس (من غير فتح ملفات ولا أزرار).
 // المصدر: مواعيد اليوم باسمه بحالة «حضر» أو «مكتمل» من الكاش اللحظي.
 import { db } from '../data/db';
 import { useDbVersion } from '../hooks/useDb';
@@ -11,12 +11,12 @@ const MOTIVATION = [
   'كل مريض سيخرج من عندك أفضل مما دخل — هذا أثرك الحقيقي، واصل! 🔥',
   'يدك التي تعالج اليوم هي أمل مريض الغد — وأنت أهلٌ لذلك 💙',
   'الأبطال ما ينتظرون الفرصة، بل يصنعونها — وأنت بطل في عملك كل يوم 🏆',
-  'كل جلسة تُجريها خطوة في رحلة شفاء أحدهم — اليوم يوم إنجاز جديد ✨',
+  'كل زيارة تُجريها خطوة في رحلة شفاء أحدهم — اليوم يوم إنجاز جديد ✨',
   'الاستمرارية تصنع الفرق — وأنت مثال للالتزام والتميّز 🌟',
   'ابتسامتك وعملك المتقن أول علاج لأي مريض — اجعل يومك مليئًا بالنجاح 💪',
 ];
 const DONE = new Set(['arrived', 'completed']); // «خلص معاه» = حضر أو مكتمل
-// الكشف = خدمة اسمها فيها «كشف» — غير كده جلسة
+// الكشف = خدمة اسمها فيها «كشف» — غير كده زيارة
 const isExam = (serviceId: string) => /كشف/.test(db.service(serviceId)?.name ?? '');
 
 // اسم الدكتور من غير «د.» عشان مايبقاش «دكتور د. ...»
@@ -38,11 +38,11 @@ export default function DoctorPatients({ therapistId }: { therapistId: string })
   return (
     <section className="card" style={{ marginBottom: 18 }}>
       <div className="card__head">
-        <h2>المرضى الذين أنهيت جلساتهم اليوم</h2>
-        <span className="muted-sm"><span className="num">{sessions}</span> جلسة · <span className="num">{exams}</span> كشف</span>
+        <h2>المرضى الذين أنهيت زياراتهم اليوم</h2>
+        <span className="muted-sm"><span className="num">{sessions}</span> زيارة · <span className="num">{exams}</span> كشف</span>
       </div>
       <div className="card__body">
-        {done.length === 0 ? <EmptyState icon="users" title="ما فيه جلسات منتهية اليوم بعد" text="ستظهر هنا فور تسجيل زيارة «حضر» أو «مكتمل» باسمك اليوم." />
+        {done.length === 0 ? <EmptyState icon="users" title="ما فيه زيارات منتهية اليوم بعد" text="ستظهر هنا فور تسجيل زيارة «حضر» أو «مكتمل» باسمك اليوم." />
           : (
             <div className="table-wrap"><table className="table">
               <thead><tr><th>الوقت</th><th>المريض</th><th>رقم الملف</th><th>النوع</th><th>الخدمة</th></tr></thead>
@@ -53,7 +53,7 @@ export default function DoctorPatients({ therapistId }: { therapistId: string })
                     <td className="num">{fmtTime(a.time)}</td>
                     <td style={{ fontWeight: 600 }}>{p?.fullName ?? '—'}</td>
                     <td className="num">{p?.fileNo || '—'}</td>
-                    <td>{isExam(a.serviceId) ? 'كشف' : 'جلسة'}</td>
+                    <td>{isExam(a.serviceId) ? 'كشف' : 'زيارة'}</td>
                     <td>{db.service(a.serviceId)?.name ?? '—'}</td>
                   </tr>
                 );

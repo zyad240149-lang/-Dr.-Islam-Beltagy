@@ -13,7 +13,7 @@ import { useCan } from './common';
 import { useInstallmentRequests } from './PackagePayment';
 import { requestFor } from '../data/installments';
 
-// «تعديل» واحد: الخدمة + السعر + الدكتور + التاريخ/الوقت + نوع الجلسة + الملاحظات. الحفظ بيحدّث الموعد والفاتورة المرتبطة معًا (قبل التأكيد أو بعده).
+// «تعديل» واحد: الخدمة + السعر + الدكتور + التاريخ/الوقت + نوع الزيارة + الملاحظات. الحفظ بيحدّث الموعد والفاتورة المرتبطة معًا (قبل التأكيد أو بعده).
 // السعر (= الفاتورة) بيتعدّل من قسم الفواتير بس (fromInvoices)؛ من المواعيد السعر بيفضل زي ما هو
 export function EditAppointmentModal({ appt, onClose, fromInvoices = false }: { appt: Appointment; onClose: () => void; fromInvoices?: boolean }) {
   const toast = useToast();
@@ -78,7 +78,7 @@ export function EditAppointmentModal({ appt, onClose, fromInvoices = false }: { 
             : <button key={s} type="button" className={`slot ${time === s ? 'selected' : ''}`} onClick={() => setTime(s)}>{fmtTime(s)}</button>)}</div>
         ) : <p className="muted">ما فيه مواعيد لهذا الدكتور في هاليوم — جرّب يوم ثاني.</p>}
       </div>}
-      <Select label="نوع الجلسة" value={type} onChange={(e) => setType(e.target.value as typeof type)}
+      <Select label="نوع الزيارة" value={type} onChange={(e) => setType(e.target.value as typeof type)}
         options={Object.entries(APPT_TYPE_LABEL).filter(([v]) => v !== 'home').map(([value, label]) => ({ value, label }))} />
       <div className="field" style={{ marginBottom: 0 }}>
         <label htmlFor="ea-notes">ملاحظات</label>
@@ -226,7 +226,7 @@ export function StatusMenu({ appt }: { appt: Appointment }) {
     setCheckInBusy(false);
     if (!r.ok) { toast.error(r.error); return; }
     const patientName = db.patient(appt.patientId)?.fullName ?? '';
-    toast.success(`تم تسجيل حضور ${patientName} — الجلسة ${r.sessionNo} من ${r.total}، المتبقي ${r.remaining}.`);
+    toast.success(`تم تسجيل حضور ${patientName} — الزيارة ${r.sessionNo} من ${r.total}، المتبقي ${r.remaining}.`);
     if (r.remaining <= 0 && appt.packageId) {
       const pkg = db.raw().packages.find((x) => x.id === appt.packageId);
       if (pkg) setRenewPkg(pkg);
@@ -236,7 +236,7 @@ export function StatusMenu({ appt }: { appt: Appointment }) {
   return (
     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
       {canCheckInSession(appt) && (
-        <Button variant="primary" size="sm" icon="checkCircle" loading={checkInBusy} onClick={checkInSession}>تسجيل حضور الجلسة (خصم من الباقة/الخطة)</Button>
+        <Button variant="primary" size="sm" icon="checkCircle" loading={checkInBusy} onClick={checkInSession}>تسجيل حضور الزيارة (خصم من الباقة/الخطة)</Button>
       )}
       {options.filter(([s]) => s !== appt.status).map(([s, label]) => (
         <Button key={s} variant="outline" size="sm" onClick={async () => { if (await changeStatus(appt, s)) toast.success(`تم تحديث الحالة إلى: ${APPT_STATUS[s].label}`); }}>
@@ -253,7 +253,7 @@ export function StatusMenu({ appt }: { appt: Appointment }) {
   );
 }
 
-// آخر جلسة في الباقة: زرار تجديد يبيع نفس الباقة من كتالوج الباقات للمريض تلقائيًا (فاتورة جديدة بنفس السعر)
+// آخر زيارة في الباقة: زرار تجديد يبيع نفس الباقة من كتالوج الباقات للمريض تلقائيًا (فاتورة جديدة بنفس السعر)
 function RenewPackageModal({ pkg, onClose }: { pkg: ReturnType<typeof db.raw>['packages'][number]; onClose: () => void }) {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
@@ -268,11 +268,11 @@ function RenewPackageModal({ pkg, onClose }: { pkg: ReturnType<typeof db.raw>['p
     onClose();
   };
   return (
-    <Modal title="اكتملت جلسات الباقة" onClose={onClose} footer={
+    <Modal title="اكتملت زيارات الباقة" onClose={onClose} footer={
       <><Button variant="outline" onClick={onClose} disabled={busy}>ليس الآن</Button><Button icon="checkCircle" onClick={renew} loading={busy} disabled={!plan}>تجديد الباقة</Button></>
     }>
-      <p>باقة <strong>{pkg.name}</strong> للمريض <strong>{patient?.fullName}</strong> خلصت جلساتها.</p>
-      {plan ? <p className="muted-sm">سيُنشأ باقة جديدة ({plan.totalSessions} جلسات — {money(plan.price)}) وفاتورتها تلقائيًا.</p>
+      <p>باقة <strong>{pkg.name}</strong> للمريض <strong>{patient?.fullName}</strong> خلصت زياراتها.</p>
+      {plan ? <p className="muted-sm">سيُنشأ باقة جديدة ({plan.totalSessions} زيارات — {money(plan.price)}) وفاتورتها تلقائيًا.</p>
         : <p className="muted-sm" style={{ color: 'var(--danger)' }}>ما قدرنا نلاقي نفس الباقة في كتالوج الباقات — افتح «بيع باقة» من ملف المريض واختَرها يدويًا.</p>}
     </Modal>
   );

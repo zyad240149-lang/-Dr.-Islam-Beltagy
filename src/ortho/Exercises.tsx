@@ -23,7 +23,7 @@ function ExerciseModal({ initial, groups, onClose }: { initial: Draft; groups: s
   const toast = useToast();
   const [e, setE] = useState<Draft>(initial);
   const [up, setUp] = useState(false);
-  const added = useRef<ExerciseMedia[]>([]); // اتضافت في الجلسة دي — لو ألغى المستخدم بتتشال من التخزين
+  const added = useRef<ExerciseMedia[]>([]); // اتضافت في الزيارة دي — لو ألغى المستخدم بتتشال من التخزين
   const fileRef = useRef<HTMLInputElement>(null);
   const onFiles = async (files: FileList | null) => {
     if (!files?.length) return;

@@ -41,7 +41,7 @@ export function exportPatientsWorkbook() {
   const patientsSheet = sheet('المرضى',
     ['رقم الملف', 'اسم المريض', 'الجنسية', 'الرقم القومي / جواز السفر', 'الجنس', 'تاريخ الميلاد', 'العمر', 'رقم الجوال', 'البريد الإلكتروني', 'المدينة', 'الحي', 'الشارع / العنوان',
       'مصدر المعرفة', 'طريقة التسجيل', 'الطبيب المسؤول', 'الحالة', 'تاريخ التسجيل', 'الشكوى الرئيسية', 'التشخيص', 'ICD-10', 'التاريخ المرضي', 'جهة الطوارئ', 'جوال الطوارئ', 'ملاحظات',
-      'عدد المواعيد', 'الجلسات المكتملة', 'آخر زيارة', 'إجمالي الفواتير', 'المدفوع', 'المتبقي'],
+      'عدد المواعيد', 'الزيارات المكتملة', 'آخر زيارة', 'إجمالي الفواتير', 'المدفوع', 'المتبقي'],
     patients.map((p) => {
       const m = money3.get(p.id);
       return [p.fileNo, p.fullName, p.nationality === 'saudi' ? 'مصري' : p.nationality === 'non_saudi' ? 'أجنبي' : '', p.nationalId, p.gender === 'male' ? 'ذكر' : p.gender === 'female' ? 'أنثى' : '',
@@ -53,7 +53,7 @@ export function exportPatientsWorkbook() {
     [10, 24, 11, 16, 8, 12, 7, 15, 24, 12, 14, 28, 14, 14, 18, 8, 12, 28, 28, 10, 30, 18, 15, 28, 9, 11, 12, 12, 11, 11]);
 
   const plansSheet = sheet('الخطط العلاجية',
-    ['رقم الملف', 'اسم المريض', 'التشخيص', 'الخدمة', 'الطبيب', 'تاريخ البداية', 'تاريخ النهاية', 'إجمالي الجلسات', 'المكتملة', 'المتبقية', 'جلسات/أسبوع', 'السعر', 'الحالة', 'الهدف الرئيسي'],
+    ['رقم الملف', 'اسم المريض', 'التشخيص', 'الخدمة', 'الطبيب', 'تاريخ البداية', 'تاريخ النهاية', 'إجمالي الزيارات', 'المكتملة', 'المتبقية', 'زيارات/أسبوع', 'السعر', 'الحالة', 'الهدف الرئيسي'],
     [...d.plans].sort((a, b) => ((b.startDate ?? '') > (a.startDate ?? '') ? 1 : -1)).map((p) => {
       const done = d.sessions.filter((s) => s.planId === p.id && s.status === 'completed').length;
       return [...who(p.patientId), p.diagnosis, svc(p.serviceId), doc(p.therapistId), p.startDate, p.endDate, p.totalSessions, done, Math.max(0, p.totalSessions - done), p.sessionsPerWeek, num(p.price), PLAN_STATUS[p.status]?.label ?? p.status, p.mainGoal];

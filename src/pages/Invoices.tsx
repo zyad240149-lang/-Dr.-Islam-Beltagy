@@ -83,7 +83,7 @@ export function InvoicePrintTemplate({ invoiceId }: { invoiceId: string }) {
   );
 }
 
-// باقات 4/6 جلسات: تفاصيل السداد (كامل أو على دفعتين) في الفاتورة المطبوعة / PDF
+// باقات 4/6 زيارات: تفاصيل السداد (كامل أو على دفعتين) في الفاتورة المطبوعة / PDF
 function PackageInvoiceBlock({ invoice, pkg }: { invoice: Invoice; pkg?: Package }) {
   const pays = db.paymentsForInvoice(invoice.id).filter((p) => !p.voidedAt).sort((a, b) => a.date - b.date);
   const name = (id?: string | null) => (id ? db.employees().find((e) => e.id === id)?.name : undefined) ?? '—';
@@ -92,7 +92,7 @@ function PackageInvoiceBlock({ invoice, pkg }: { invoice: Invoice; pkg?: Package
   const state = invoice.remaining <= 0 ? 'مدفوع بالكامل' : invoice.paid > 0 ? 'مدفوع جزئيًا' : 'بانتظار الدفع';
   return (
     <div className="pinv__pkg" dir="rtl">
-      {pkg && <div><dt>الباقة / عدد الجلسات</dt><dd>{pkg.name} — {pkg.totalSessions} جلسات</dd></div>}
+      {pkg && <div><dt>الباقة / عدد الزيارات</dt><dd>{pkg.name} — {pkg.totalSessions} زيارات</dd></div>}
       <div><dt>{pkg ? 'إجمالي قيمة الباقة' : 'إجمالي الفاتورة'}</dt><dd className="num">{invoice.total.toFixed(2)}</dd></div>
       {first ? (<>
         <div><dt>الدفعة الأولى — {fmtDateTime(first.date)}</dt><dd className="num">{first.amount.toFixed(2)}</dd></div>
@@ -291,7 +291,7 @@ export default function Invoices() {
             <FilterBar>
               <Input id="inv-q" label="بحث" icon="search" placeholder="اسم المريض أو الجوال أو رقم الملف أو الهوية أو الفاتورة" value={q} onChange={(e) => setQ(e.target.value)} />
               <Select id="inv-status" label="الحالة" value={status} onChange={(e) => setStatus(e.target.value)} options={[{ value: '', label: 'كل الحالات' }, ...Object.entries(INVOICE_STATUS).map(([value, v]) => ({ value, label: v.label }))]} />
-              <Select id="inv-kind" label="النوع" value={kind} onChange={(e) => setKind(e.target.value)} options={[{ value: '', label: 'الكل' }, { value: 'service', label: 'جلسات/خدمات' }, { value: 'package', label: 'باقات' }]} />
+              <Select id="inv-kind" label="النوع" value={kind} onChange={(e) => setKind(e.target.value)} options={[{ value: '', label: 'الكل' }, { value: 'service', label: 'زيارات/خدمات' }, { value: 'package', label: 'باقات' }]} />
               <Input id="inv-from" label="من تاريخ" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
               <Input id="inv-to" label="إلى تاريخ" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
             </FilterBar>
@@ -416,7 +416,7 @@ function InvoiceModal({ invoiceId, canEdit, canDelete, canPay, canEditPay, canDe
   const taxAmount = invoice.taxAmount ?? 0;
   const taxableAmount = invoice.price - invoice.discount;
   const lastPaymentMethod = payments.length ? PAYMENT_METHOD_LABEL[payments[payments.length - 1].method] : '—';
-  // باقة 4/6 جلسات: الدفع بـ Workflow خاص (كامل أو دفعتين بموافقة المدير) — بدون تعديل/حذف دفعات ولا تعديل السعر بعد أي دفع
+  // باقة 4/6 زيارات: الدفع بـ Workflow خاص (كامل أو دفعتين بموافقة المدير) — بدون تعديل/حذف دفعات ولا تعديل السعر بعد أي دفع
   const fixedPkg = fixedPackageOf(invoice);
   const { openPlan, openVisit } = useDetails();
   const instReqs = useInstallmentRequests();
@@ -600,13 +600,13 @@ function PlanInvoiceModal({ invoice, onClose }: { invoice: Invoice; onClose: () 
   const req = reqRows ? requestFor(reqRows, inv0.id) : undefined;
   const instState = instStateOf(inv0, req);
   const locked = req?.status === 'pending' || req?.status === 'approved'; // السعر والخصم مقفولين بعد طلب التقسيط
-  // طلب الدكتور بييجي بسعر 0 → السعر بيتحدد تلقائي (عرض الخطة أو سعر الخدمة × عدد الجلسات) وتقدر تعدّله
+  // طلب الدكتور بييجي بسعر 0 → السعر بيتحدد تلقائي (عرض الخطة أو سعر الخدمة × عدد الزيارات) وتقدر تعدّله
   const autoPrice = plan && !inv0.price ? autoPlanPriceInfo({ therapyType: plan.therapyType ?? '', serviceId: plan.serviceId, totalSessions: plan.totalSessions }) : null;
   const [f, setF] = useState({ price: inv0.price || autoPrice?.price || 0, discount: inv0.discount, note: inv0.note ?? '' });
   const [busy, setBusy] = useState<'save' | 'issue' | 'request' | null>(null);
   // طريقة الدفع: دفع كامل (زي الأول) أو طلب الدفع على دفعتين (يتبعت للمدير والفاتورة لسه هنا في المراجعة)
   const [payMode, setPayMode] = useState<'full' | 'installments'>('full');
-  // عدد الجلسات قابل للتعديل في المراجعة؛ السعر بيتحسب تلقائي معاه لو ماتعدّلش بالإيد
+  // عدد الزيارات قابل للتعديل في المراجعة؛ السعر بيتحسب تلقائي معاه لو ماتعدّلش بالإيد
   const [sessCount, setSessCount] = useState(plan?.totalSessions ?? 1);
   const [sessOther, setSessOther] = useState((plan?.totalSessions ?? 1) > 12);
   const [priceTouched, setPriceTouched] = useState(!!inv0.price);
@@ -686,14 +686,14 @@ function PlanInvoiceModal({ invoice, onClose }: { invoice: Invoice; onClose: () 
         <div><dt>المريض</dt><dd>{patient?.fullName} · <span className="num">{patient?.fileNo}</span> · <span className="num">{patient?.phone}</span> <CompletenessBadge patient={patient} /></dd></div>
         <div><dt>الخطة العلاجية</dt><dd>{plan ? <button type="button" style={{ border: 0, background: 'none', color: 'var(--brand-700)', cursor: 'pointer', padding: 0, fontWeight: 600 }} onClick={() => openPlan(plan.id)}>{plan.diagnosis} ← عرض التفاصيل</button> : '—'}</dd></div>
         <div><dt>الخدمة</dt><dd>{inv0.serviceName.replace('خطة علاج: ', '')}</dd></div>
-        {plan && <div><dt>المدة</dt><dd>{fmtDate(plan.startDate)} ← {plan.endDate ? fmtDate(plan.endDate) : '—'} · <span className="num">{plan.sessionsPerWeek}</span> جلسات/أسبوع</dd></div>}
+        {plan && <div><dt>المدة</dt><dd>{fmtDate(plan.startDate)} ← {plan.endDate ? fmtDate(plan.endDate) : '—'} · <span className="num">{plan.sessionsPerWeek}</span> زيارات/أسبوع</dd></div>}
         <div><dt>أنشأها</dt><dd>{creator?.name ?? '—'}</dd></div>
       </dl>
       <div className="grid-form">
-        {plan && <Select id="pi-sessions" label="عدد الجلسات" value={sessOther ? 'other' : String(sessCount)} disabled={locked || !isDraft}
+        {plan && <Select id="pi-sessions" label="عدد الزيارات" value={sessOther ? 'other' : String(sessCount)} disabled={locked || !isDraft}
           onChange={(e) => { if (e.target.value === 'other') setSessOther(true); else { setSessOther(false); changeSessions(Number(e.target.value)); } }}
-          options={[...Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: `${i + 1} ${i + 1 === 1 ? 'جلسة' : i + 1 === 2 ? 'جلستين' : i + 1 <= 10 ? 'جلسات' : 'جلسة'}` })), { value: 'other', label: 'عدد آخر (اكتب العدد)' }]} />}
-        {plan && sessOther && <Input id="pi-sessions-other" label="اكتب عدد الجلسات" type="number" min={1} max={52} value={sessCount} disabled={locked || !isDraft} onChange={(e) => changeSessions(Number(e.target.value))} />}
+          options={[...Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: `${i + 1} ${i + 1 === 1 ? 'زيارة' : i + 1 === 2 ? 'زيارتين' : i + 1 <= 10 ? 'زيارات' : 'زيارة'}` })), { value: 'other', label: 'عدد آخر (اكتب العدد)' }]} />}
+        {plan && sessOther && <Input id="pi-sessions-other" label="اكتب عدد الزيارات" type="number" min={1} max={52} value={sessCount} disabled={locked || !isDraft} onChange={(e) => changeSessions(Number(e.target.value))} />}
         <Input id="pi-price" label="سعر الخطة (ج.م)" type="number" min={0} value={f.price} disabled={locked} onChange={(e) => { setPriceTouched(true); setF({ ...f, price: Number(e.target.value) }); }} />
         <Input id="pi-discount" label="الخصم (ج.م)" type="number" min={0} value={f.discount} disabled={locked} onChange={(e) => setF({ ...f, discount: Number(e.target.value) })} />
       </div>
@@ -703,7 +703,7 @@ function PlanInvoiceModal({ invoice, onClose }: { invoice: Invoice; onClose: () 
         <textarea id="pi-note" className="input" rows={2} value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} />
       </div>
       <div className="review-total">
-        <div><div style={{ fontWeight: 700 }}>الإجمالي بعد الخصم</div>{plan && <div className="muted" style={{ fontSize: 12.5 }}>≈ <span className="num">{money(Math.round(perSession))}</span> للجلسة ({sessCount} جلسات)</div>}</div>
+        <div><div style={{ fontWeight: 700 }}>الإجمالي بعد الخصم</div>{plan && <div className="muted" style={{ fontSize: 12.5 }}>≈ <span className="num">{money(Math.round(perSession))}</span> للزيارة ({sessCount} زيارات)</div>}</div>
         <strong className="num" style={{ fontSize: 22, color: 'var(--brand-700)' }}>{money(total)}</strong>
       </div>
       {isDraft && payMode === 'full' && can('payments', 'create') && (

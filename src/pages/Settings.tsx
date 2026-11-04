@@ -72,7 +72,7 @@ export default function Settings() {
             <>
               <div className="grid-form">
                 <Input id="st-remind" label="تنبيه الموعد القريب قبل (ساعات)" type="number" min={1} max={168} value={f.reminderHoursBefore} disabled={!edit} onChange={(e) => set('reminderHoursBefore', Number(e.target.value))} />
-                <Input id="st-low" label="تنبيه نفاد الباقة عند بقاء (جلسات)" type="number" min={0} max={10} value={f.packageLowThreshold} disabled={!edit} onChange={(e) => set('packageLowThreshold', Number(e.target.value))} />
+                <Input id="st-low" label="تنبيه نفاد الباقة عند بقاء (زيارات)" type="number" min={0} max={10} value={f.packageLowThreshold} disabled={!edit} onChange={(e) => set('packageLowThreshold', Number(e.target.value))} />
               </div>
               <p className="muted" style={{ fontSize: 12.5 }}>تُفحص التنبيهات الآلية (موعد قريب، باقة قاربت على الانتهاء، مبالغ متأخرة، مخزون منخفض) عند فتح النظام وكل دقيقة.</p>
               {saveBtn(['reminderHoursBefore', 'packageLowThreshold'])}
@@ -88,7 +88,7 @@ export default function Settings() {
               </div>
               {db.allPackagePlans().length === 0 ? <EmptyState icon="box" title="ما فيه باقات في الكتالوج" /> : (
                 <div className="table-wrap"><table className="table">
-                  <thead><tr><th>الباقة</th><th>الجلسات</th><th>السعر</th><th>الصلاحية</th><th>الخدمات</th><th>الحالة</th><th className="actions"></th></tr></thead>
+                  <thead><tr><th>الباقة</th><th>الزيارات</th><th>السعر</th><th>الصلاحية</th><th>الخدمات</th><th>الحالة</th><th className="actions"></th></tr></thead>
                   <tbody>{db.allPackagePlans().map((p) => (
                     <tr key={p.id}>
                       <td style={{ fontWeight: 600 }}>{p.name}{p.kind && <div className="muted-sm">{PACKAGE_KIND_LABEL[p.kind]} — يقبل الدفع على دفعتين بموافقة المدير</div>}</td><td className="num">{p.totalSessions}</td><td className="num">{money(p.price)}</td><td className="num">{p.validDays} يوم</td>
@@ -146,9 +146,9 @@ function PackagePlanModal({ plan, onClose }: { plan?: PackagePlan; onClose: () =
         <Input id="pp-name" label="اسم الباقة *" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
         <Select id="pp-kind" label="نوع الباقة" value={f.kind ?? ''} disabled={!!plan}
           onChange={(e) => { const k = (e.target.value || null) as PackageKind | null; setF({ ...f, kind: k, totalSessions: k ? PACKAGE_KIND_SESSIONS[k] : f.totalSessions }); }}
-          options={[{ value: '', label: 'باقة عادية' }, { value: 'pkg4', label: 'باقة 4 جلسات (دفع كامل / دفعتين بموافقة المدير)' }, { value: 'pkg6', label: 'باقة 6 جلسات (دفع كامل / دفعتين بموافقة المدير)' }]} />
-        <Input id="pp-sessions" label="عدد الجلسات" type="number" min={1} value={f.totalSessions} disabled={!!f.kind} hint={f.kind ? 'ثابت لهذا النوع من الباقات' : undefined} onChange={(e) => setF({ ...f, totalSessions: Number(e.target.value) })} />
-        <Input id="pp-price" label="سعر الباقة (ج.م)" type="number" min={0} value={f.price} onChange={(e) => setF({ ...f, price: Number(e.target.value) })} hint={unit ? `قيمة الجلسات منفردة: ${money(unit * f.totalSessions)}` : undefined} />
+          options={[{ value: '', label: 'باقة عادية' }, { value: 'pkg4', label: 'باقة 4 زيارات (دفع كامل / دفعتين بموافقة المدير)' }, { value: 'pkg6', label: 'باقة 6 زيارات (دفع كامل / دفعتين بموافقة المدير)' }]} />
+        <Input id="pp-sessions" label="عدد الزيارات" type="number" min={1} value={f.totalSessions} disabled={!!f.kind} hint={f.kind ? 'ثابت لهذا النوع من الباقات' : undefined} onChange={(e) => setF({ ...f, totalSessions: Number(e.target.value) })} />
+        <Input id="pp-price" label="سعر الباقة (ج.م)" type="number" min={0} value={f.price} onChange={(e) => setF({ ...f, price: Number(e.target.value) })} hint={unit ? `قيمة الزيارات منفردة: ${money(unit * f.totalSessions)}` : undefined} />
         <Input id="pp-days" label="الصلاحية (يوم)" type="number" min={1} value={f.validDays} onChange={(e) => setF({ ...f, validDays: Number(e.target.value) })} />
         <Select id="pp-active" label="الحالة" value={f.active ? 'on' : 'off'} onChange={(e) => setF({ ...f, active: e.target.value === 'on' })} options={[{ value: 'on', label: 'مفعّلة للبيع' }, { value: 'off', label: 'موقوفة' }]} />
       </div>

@@ -1,7 +1,6 @@
 {
  "حضور مرضى الباقات": "Package patients check-in",
  "تقرير التسويق": "Marketing report",
- "ابحث عن المريض، شوف جلسات باقته، وسجّل حضوره عند وصوله للمركز.": "Search the patient, see their package sessions, and check them in when they arrive.",
  "الاسم / رقم الجوال / رقم الملف — أو اتركه فاضي لمرضى الباقات اللي عندهم موعد اليوم": "Name / mobile / file number — or leave empty for package patients with an appointment today",
  "لا يوجد مريض بباقة فعّالة يطابق البحث": "No patient with an active package matches the search",
  "لا يوجد مرضى باقات لديهم موعد اليوم": "No package patients have an appointment today",
@@ -14,7 +13,6 @@
  "تسجيل حضور": "Check in",
  "بدون دكتور": "No doctor",
  "الباقة منتهية الصلاحية": "The package has expired",
- "لا توجد جلسات متبقية": "No sessions remaining",
  "لا يمكن تسجيل حضور على هذه الباقة.": "Check-in is not possible on this package.",
  "كيف عرف المرضى الجدد عن المركز — حسب المصدر والنوع، شهريًا.": "How new patients heard about the center — by source and gender, monthly.",
  "تصدير Excel": "Export Excel",
@@ -46,7 +44,6 @@
  "مقياس الألم (Pain Scale) من 1 إلى 10": "Pain Scale (1 to 10)",
  "الموضوع": "Subject",
  "مقياس الألم": "Pain scale",
- "حدّد مقياس الألم (Pain Scale) من 1 إلى 10 قبل إنهاء الجلسة.": "Set the Pain Scale from 1 to 10 before completing the session.",
  "ملاحظات العلامات الخطيرة (Red Flags Notes) — اكتب ما هي العلامات الخطيرة": "Red Flags Notes — write what the red flags are",
  "ROM: الدرجة من -360 إلى 360 (القيم السالبة مسموحة).": "ROM: degrees from -360 to 360 (negative values allowed).",
  "فتح الملف الحالي": "Open the existing file",
@@ -63,6 +60,9 @@
  "منتهية الصلاحية": "Expired",
  "باقي يوم": "1 day left",
  "تنتهي": "Expires",
- "متبقٍ {0} جلسة": "{0} sessions left",
- "فتح ملف مريض جديد": "Open a new patient file"
+ "فتح ملف مريض جديد": "Open a new patient file",
+ "ابحث عن المريض، شوف زيارات باقته، وسجّل حضوره عند وصوله للمركز.": "Search the patient, see their package visits, and check them in when they arrive.",
+ "لا توجد زيارات متبقية": "No visits remaining",
+ "حدّد مقياس الألم (Pain Scale) من 1 إلى 10 قبل إنهاء الزيارة.": "Set the Pain Scale from 1 to 10 before completing the visit.",
+ "متبقٍ {0} زيارة": "{0} visits left"
 }

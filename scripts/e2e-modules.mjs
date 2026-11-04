@@ -60,8 +60,8 @@ try {
   check('الأجنبي برقم جواز سفر يعتبر ملفه مكتمل', !gaps.error && !rows(gaps).rows?.some((r) => r.id === PF.id), err(gaps));
 
   // ============ 2) الباقات والحضور ============
-  section('الباقات وحضور الجلسات');
-  const pp = await admin.from('package_plans').insert({ name: 'باقة اختبار تأهيل 3 جلسات', service_ids: ['old_us_follow'], total_sessions: 3, price: 900, valid_days: 30, active: true }).select().single();
+  section('الباقات وحضور الزيارات');
+  const pp = await admin.from('package_plans').insert({ name: 'باقة اختبار تأهيل 3 زيارات', service_ids: ['old_us_follow'], total_sessions: 3, price: 900, valid_days: 30, active: true }).select().single();
   if (pp.data) made.packagePlans.push(pp.data.id);
   check('إضافة باقة للكتالوج (المدير)', !pp.error, err(pp));
   const sR = await recep.rpc('sell_package', { p_patient: P.id, p_package_plan: pp.data?.id });
@@ -70,15 +70,15 @@ try {
   const pkgId = sold.data?.id;
   check('المحاسب يبيع الباقة', !sold.error && pkgId, err(sold));
   const { data: pkg } = await admin.from('packages').select('status, total_sessions, price').eq('id', pkgId).single();
-  check('الباقة فعّالة بعدد جلسات وسعر الكتالوج', pkg?.status === 'active' && pkg.total_sessions === 3 && Number(pkg.price) === 900, JSON.stringify(pkg));
+  check('الباقة فعّالة بعدد زيارات وسعر الكتالوج', pkg?.status === 'active' && pkg.total_sessions === 3 && Number(pkg.price) === 900, JSON.stringify(pkg));
   const { data: pinv } = await admin.from('invoices').select('id, total, status').eq('package_id', pkgId).single();
   check('فاتورة الباقة اتعملت بقيمتها', Number(pinv?.total) === 900 && pinv?.status === 'due', JSON.stringify(pinv));
   const [ls1] = await sql(`select count(*)::int n from loyalty_ledger where patient_id = '${P.id}'`);
   check('شراء الباقة ما بيضيفش نقاط ولاء (النقاط اتشالت — 920)', ls1.n === 0, JSON.stringify(ls1));
   const ci = await recep.rpc('attendance_check_in', { p_source: 'package', p_id: pkgId, p_appointment: null, p_therapist: made.therapist, p_second: false });
-  check('تسجيل حضور جلسة من الباقة (زيارة مباشرة)', !ci.error && ci.data?.sessionNo === 1 && ci.data?.remaining === 2, JSON.stringify(ci.data ?? err(ci)));
+  check('تسجيل حضور زيارة من الباقة (زيارة مباشرة)', !ci.error && ci.data?.sessionNo === 1 && ci.data?.remaining === 2, JSON.stringify(ci.data ?? err(ci)));
   const ci2 = await recep.rpc('attendance_check_in', { p_source: 'package', p_id: pkgId, p_appointment: null, p_therapist: made.therapist, p_second: false });
-  check('جلسة ثانية في نفس اليوم مرفوضة بدون موافقة المدير', /حضر جلسة اليوم|موافقة المدير/.test(err(ci2)), err(ci2) || 'accepted!');
+  check('زيارة ثانية في نفس اليوم مرفوضة بدون موافقة المدير', /حضر زيارة اليوم|موافقة المدير/.test(err(ci2)), err(ci2) || 'accepted!');
   const pal = await recep.rpc('package_attendance_list', { p_q: 'مريض اختبار وحدات' });
   const prow = rows(pal).find?.((r) => r.packageId === pkgId);
   check('قائمة حضور الباقات بتعرض المتبقي صح', prow && prow.remaining === 2 && prow.total === 3, JSON.stringify(prow ?? err(pal)).slice(0, 150));
@@ -95,12 +95,12 @@ try {
   const ci3 = await recep.rpc('attendance_check_in', { p_source: 'package', p_id: pkgId, p_appointment: null, p_therapist: made.therapist, p_second: false });
   check('حضور على باقة ملغاة مرفوض', !!ci3.error, err(ci3) || 'accepted!');
 
-  section('تقسيط الباقات (4 جلسات)');
-  const pp4 = await admin.from('package_plans').insert({ kind: 'pkg4', name: 'باقة اختبار 4 جلسات', service_ids: ['old_us_follow'], total_sessions: 4, price: 1200, valid_days: 60, active: true }).select().single();
+  section('تقسيط الباقات (4 زيارات)');
+  const pp4 = await admin.from('package_plans').insert({ kind: 'pkg4', name: 'باقة اختبار 4 زيارات', service_ids: ['old_us_follow'], total_sessions: 4, price: 1200, valid_days: 60, active: true }).select().single();
   if (pp4.data) made.packagePlans.push(pp4.data.id);
   const s4 = await acc.rpc('sell_package', { p_patient: PF.id, p_package_plan: pp4.data?.id });
   const { data: pk4 } = await admin.from('packages').select('status').eq('id', s4.data?.id).single();
-  check('باقة الـ4 جلسات بتبدأ «بانتظار الدفع»', !s4.error && pk4?.status === 'pending_payment', err(s4) || pk4?.status);
+  check('باقة الـ4 زيارات بتبدأ «بانتظار الدفع»', !s4.error && pk4?.status === 'pending_payment', err(s4) || pk4?.status);
   const inv4 = s4.data?.invoiceId;
   const rq = await recep.rpc('request_package_installment', { p_invoice: inv4, p_reason: 'اختبار', p_first_due: null, p_second_due: null });
   check('الاستقبال يطلب الدفع على دفعتين', !rq.error && rq.data, err(rq));

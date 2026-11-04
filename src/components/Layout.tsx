@@ -120,7 +120,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       if (handled) return;
       handled = true;
       logout({ keepOffline: true }); // العمليات المعلّقة تفضل محفوظة لنفس المستخدم لحد ما يرجع يسجّل دخول
-      toast.error('انتهت الجلسة، سجّل الدخول من جديد.');
+      toast.error('انتهى تسجيل الدخول، سجّل الدخول من جديد.');
       navigate('/login');
     };
     window.addEventListener('unhandledrejection', onErr);

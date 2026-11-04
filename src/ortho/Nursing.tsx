@@ -89,7 +89,7 @@ export function NursingModal({ patientId, appointmentId = null, initial, onClose
       onClose();
     });
   };
-  // إلغاء: الصور اللي اترفعت في الجلسة دي ومش هتتحفظ بتتمسح
+  // إلغاء: الصور اللي اترفعت في الزيارة دي ومش هتتحفظ بتتمسح
   const cancel = () => {
     const keep = new Set(normRx(initial?.sheet.rx).attachments.map((a) => a.path));
     rx.attachments.filter((a) => !keep.has(a.path)).forEach((a) => void ortho.removeAttachment(a.path));

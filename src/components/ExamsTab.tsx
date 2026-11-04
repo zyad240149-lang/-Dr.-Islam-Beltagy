@@ -1,5 +1,5 @@
 // «سجل الكشوفات» في ملف المريض: كل زيارات الكشف (الخدمات اللي اسمها فيه «كشف») من الأحدث للأقدم،
-// ومع كل كشف اللي اتسجّل فيه: الطبيب والحالة والفاتورة، وتقييم العلاج الطبيعي/التقييم الأولي بنفس اليوم، وملاحظات الجلسة.
+// ومع كل كشف اللي اتسجّل فيه: الطبيب والحالة والفاتورة، وتقييم العلاج الطبيعي/التقييم الأولي بنفس اليوم، وملاحظات الزيارة.
 import { useEffect, useState } from 'react';
 import { db } from '../data/db';
 import { physioApi, type PhysioEvaluation } from '../data/physioApi';
@@ -72,7 +72,7 @@ export function ExamsTab({ patientId }: { patientId: string }) {
               {(ev?.chiefComplaint || ass?.mainComplaint) && <div className="kv-row"><span>الشكوى</span><span>{ev?.chiefComplaint || ass?.mainComplaint}</span></div>}
               {(ev?.diagnosis || ass?.medicalDiagnosis) && <div className="kv-row"><span>التشخيص</span><span>{ev?.diagnosis || ass?.medicalDiagnosis}</span></div>}
               {(ev || ass) && <div className="kv-row"><span>مستوى الألم</span><span className="num">{ev ? ev.painVas : ass?.painLevel} / 10</span></div>}
-              {ses?.subject && <div className="kv-row"><span>ملاحظات الجلسة</span><span>{ses.subject}</span></div>}
+              {ses?.subject && <div className="kv-row"><span>ملاحظات الزيارة</span><span>{ses.subject}</span></div>}
             </>}
             {plan && <div className="kv-row"><span>الخطة بعد الكشف</span><span>
               <button type="button" className="link-btn" style={{ border: 0, background: 'none', color: 'var(--brand-700)', cursor: 'pointer', padding: 0 }} onClick={() => openPlan(plan.id)}>

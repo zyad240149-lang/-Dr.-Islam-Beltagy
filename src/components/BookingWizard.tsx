@@ -101,7 +101,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
   const packageId = packageChoice === 'auto' ? eligiblePkgs[0]?.id ?? null : packageChoice === 'none' ? null : packageChoice;
   const activePkg = eligiblePkgs.find((p) => p.id === packageId);
   const patientPlans = patientId ? db.plansForPatient(patientId).filter((p) => p.status === 'active') : [];
-  // «تلقائي» = الخطة اللي خدمتها نفس خدمة الموعد بس — كشف أو متابعة لمريض عنده خطة علاج طبيعي مايتحسبش جلسة منها وليه فاتورته
+  // «تلقائي» = الخطة اللي خدمتها نفس خدمة الموعد بس — كشف أو متابعة لمريض عنده خطة علاج طبيعي مايتحسبش زيارة منها وليه فاتورته
   const planId = planChoice === 'auto' ? (patientPlans.find((p) => p.serviceId === serviceId)?.id ?? null) : planChoice === 'none' ? null : planChoice;
   const pricedPlan = !packageId && planId ? ((db.plan(planId)?.price ?? 0) > 0) : false;
   // فاتورة مستقلة تُنشأ فقط لو الموعد مش مغطّى بباقة أو خطة علاجية مدفوعة — عندها فقط يصح تسجيل دفعة فورية
@@ -373,7 +373,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
           <div><dt>الدكتور</dt><dd>{db.therapist(therapistId)?.name}</dd></div>
           <div><dt>التاريخ</dt><dd>{date && fmtDate(date)}</dd></div>
           <div><dt>الوقت</dt><dd className="num">{time && fmtTime(time)}</dd></div>
-          <div><dt>مدة الجلسة</dt><dd>{duration} دقيقة</dd></div>
+          <div><dt>مدة الزيارة</dt><dd>{duration} دقيقة</dd></div>
           <div><dt>الجنسية</dt><dd>{(patient ? patient.nationality : np.nationality) === 'non_saudi' ? 'أجنبي' : 'مصري'}</dd></div>
           <div><dt>السعر</dt><dd className="num">{pricedPlan ? 'مشمول في سعر الخطة العلاجية' : money(shownPrice)}</dd></div>
           <div><dt>الباقة</dt><dd>{activePkg ? `${activePkg.name} (متبقٍ ${activePkg.totalSessions - activePkg.usedSessions})` : pricedPlan ? 'بدون باقة' : 'بدون باقة — ستصدر فاتورة'}</dd></div>

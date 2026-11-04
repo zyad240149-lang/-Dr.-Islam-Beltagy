@@ -1,6 +1,6 @@
-// «خطة علاجية سريعة» — من غير تشخيص: المريض ← الدكتور ← عدد الجلسات. وخلاص.
+// «خطة علاجية سريعة» — من غير تشخيص: المريض ← الدكتور ← عدد الزيارات. وخلاص.
 // بتعمل الخطة (save_plan) بسعر محسوب تلقائي (الدكتور: 0 والاستقبال يحدده من «فواتير الخطط العلاجية»).
-// مواعيد الجلسات اتشالت من هنا بطلب المستخدم — بتتحجز بعدين من تفاصيل الخطة أو «مراجعة فاتورة الخطة» (PlanSessionBooking).
+// مواعيد الزيارات اتشالت من هنا بطلب المستخدم — بتتحجز بعدين من تفاصيل الخطة أو «مراجعة فاتورة الخطة» (PlanSessionBooking).
 import { useState } from 'react';
 import { db } from '../data/db';
 import { Button, Input, Modal, Select } from './ui';
@@ -27,7 +27,7 @@ export default function QuickPlanModal({ onClose }: { onClose: () => void }) {
     if (!patient) { toast.error('اختر المريض.'); return; }
     if (!doctorId) { toast.error('اختر الدكتور.'); return; }
     if (!service) { toast.error('ما فيه خدمة فعّالة.'); return; }
-    if (!(Number.isInteger(count) && count >= 1 && count <= 52)) { toast.error('عدد الجلسات من 1 إلى 52.'); return; }
+    if (!(Number.isInteger(count) && count >= 1 && count <= 52)) { toast.error('عدد الزيارات من 1 إلى 52.'); return; }
     setBusy(true);
     const price = autoPlanPriceInfo({ therapyType: '', serviceId: service.id, totalSessions: count }).price;
     try {
@@ -37,7 +37,7 @@ export default function QuickPlanModal({ onClose }: { onClose: () => void }) {
       } as Parameters<typeof db.savePlan>[0]);
     } catch (e) { setBusy(false); toast.error((e as Error).message || 'تعذّر إنشاء الخطة.'); return; }
     setBusy(false);
-    toast.success(`تم إنشاء الخطة (${count} جلسة).`);
+    toast.success(`تم إنشاء الخطة (${count} زيارة).`);
     onClose();
   };
 
@@ -59,10 +59,10 @@ export default function QuickPlanModal({ onClose }: { onClose: () => void }) {
         )}
         <Select id="qp-doc" label="الدكتور *" value={doctorId} onChange={(e) => setDoctorId(e.target.value)}
           options={[{ value: '', label: 'اختر الدكتور' }, ...db.therapists().map((t) => ({ value: t.id, label: t.name }))]} />
-        <Select id="qp-count" label="عدد الجلسات *" value={other ? 'other' : String(count)}
+        <Select id="qp-count" label="عدد الزيارات *" value={other ? 'other' : String(count)}
           onChange={(e) => { if (e.target.value === 'other') setOther(true); else { setOther(false); setCount(Number(e.target.value)); } }}
-          options={[...Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: `${i + 1} ${i + 1 === 1 ? 'جلسة' : i + 1 === 2 ? 'جلستين' : i + 1 <= 10 ? 'جلسات' : 'جلسة'}` })), { value: 'other', label: 'عدد آخر (اكتب العدد)' }]} />
-        {other && <Input id="qp-count-o" label="اكتب عدد الجلسات" type="number" min={1} max={52} value={count} onChange={(e) => setCount(Number(e.target.value))} />}
+          options={[...Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: `${i + 1} ${i + 1 === 1 ? 'زيارة' : i + 1 === 2 ? 'زيارتين' : i + 1 <= 10 ? 'زيارات' : 'زيارة'}` })), { value: 'other', label: 'عدد آخر (اكتب العدد)' }]} />
+        {other && <Input id="qp-count-o" label="اكتب عدد الزيارات" type="number" min={1} max={52} value={count} onChange={(e) => setCount(Number(e.target.value))} />}
       </div>
     </Modal>
   );

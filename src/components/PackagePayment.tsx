@@ -1,4 +1,4 @@
-// لوحة الدفع الخاصة بباقات 4/6 جلسات داخل نافذة الفاتورة — بتحل محل «تسجيل دفعة» العادي لهذه الفواتير بس.
+// لوحة الدفع الخاصة بباقات 4/6 زيارات داخل نافذة الفاتورة — بتحل محل «تسجيل دفعة» العادي لهذه الفواتير بس.
 // المبالغ هنا للعرض فقط: الخادم هو اللي بيفرض (دفع كامل / 50% بالظبط بعد الموافقة / المتبقي بالظبط).
 import { useEffect, useState } from 'react';
 import { db } from '../data/db';
@@ -49,7 +49,7 @@ export function PackagePaymentPanel({ invoice, pkg }: { invoice: Invoice; pkg?: 
     if (!r.ok) { toast.error(r.error); return; }
     await db.refresh('packages');
     const inv = db.invoice(invoice.id);
-    toast.success(inv && inv.remaining <= 0 ? (pkg ? `تم السداد بالكامل — تم تفعيل ${pkg.name} (${pkg.totalSessions} جلسات).` : 'تم السداد بالكامل.') : 'تم تسجيل الدفعة الأولى — الحالة: مدفوع جزئيًا.');
+    toast.success(inv && inv.remaining <= 0 ? (pkg ? `تم السداد بالكامل — تم تفعيل ${pkg.name} (${pkg.totalSessions} زيارات).` : 'تم السداد بالكامل.') : 'تم تسجيل الدفعة الأولى — الحالة: مدفوع جزئيًا.');
     setNote('');
   };
   const sendRequest = async () => {
@@ -81,7 +81,7 @@ export function PackagePaymentPanel({ invoice, pkg }: { invoice: Invoice; pkg?: 
       </div>
 
       <dl className="review-list" style={{ marginBottom: 14 }}>
-        {pkg && <div><dt>عدد الجلسات</dt><dd className="num">{pkg.totalSessions}</dd></div>}
+        {pkg && <div><dt>عدد الزيارات</dt><dd className="num">{pkg.totalSessions}</dd></div>}
         <div><dt>{pkg ? 'إجمالي قيمة الباقة' : 'إجمالي الفاتورة'}</dt><dd className="num">{money(invoice.total)}</dd></div>
         <div><dt>المدفوع</dt><dd className="num">{money(invoice.paid)}</dd></div>
         <div><dt>المتبقي</dt><dd className="num"><strong>{money(invoice.remaining)}</strong></dd></div>
@@ -137,7 +137,7 @@ export function PackagePaymentPanel({ invoice, pkg }: { invoice: Invoice; pkg?: 
           <div className="alert alert-info"><Icon name="shield" size={17} /><div>سيُرسل الطلب للمدير للموافقة. ما يمكن تسجيل أي دفعة على هالفاتورة حتى يتم القرار.</div></div>
           <dl className="review-list" style={{ margin: '12px 0' }}>
             <div><dt>المريض</dt><dd>{db.patient(invoice.patientId)?.fullName} ({db.patient(invoice.patientId)?.fileNo})</dd></div>
-            <div><dt>{pkg ? 'الباقة' : 'الخدمة'}</dt><dd>{pkg ? `${pkg.name} — ${pkg.totalSessions} جلسات` : invoice.serviceName}</dd></div>
+            <div><dt>{pkg ? 'الباقة' : 'الخدمة'}</dt><dd>{pkg ? `${pkg.name} — ${pkg.totalSessions} زيارات` : invoice.serviceName}</dd></div>
             <div><dt>الإجمالي</dt><dd className="num">{money(invoice.total)}</dd></div>
             <div><dt>الدفعة الأولى (50%)</dt><dd className="num">{money(half)}</dd></div>
             <div><dt>الدفعة الثانية (50%)</dt><dd className="num">{money(Math.round((invoice.total - half) * 100) / 100)}</dd></div>

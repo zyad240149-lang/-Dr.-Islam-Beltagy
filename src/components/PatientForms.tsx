@@ -258,7 +258,7 @@ export function AssessmentModal({ patientId, assessment, onClose }: { patientId:
           <Input id="as-balance" label="التوازن" value={f.balance} onChange={(e) => set('balance', e.target.value)} />
           <Input id="as-gait" label="المشي" value={f.gait} onChange={(e) => set('gait', e.target.value)} />
           <Input id="as-tests" label="الاختبارات الخاصة" value={f.specialTests} onChange={(e) => set('specialTests', e.target.value)} />
-          <Input id="as-sessions" label="عدد الجلسات المقترح" type="number" min={1} value={f.suggestedSessions} onChange={(e) => set('suggestedSessions', Number(e.target.value))} />
+          <Input id="as-sessions" label="عدد الزيارات المقترح" type="number" min={1} value={f.suggestedSessions} onChange={(e) => set('suggestedSessions', Number(e.target.value))} />
         </div>
       </div>
       <div className="form-section">
@@ -271,10 +271,10 @@ export function AssessmentModal({ patientId, assessment, onClose }: { patientId:
   );
 }
 
-// عروض جاهزة (عروض اليوم الوطني) — عدد الجلسات وسعرها الإجمالي
+// عروض جاهزة (عروض اليوم الوطني) — عدد الزيارات وسعرها الإجمالي
 const PLAN_OFFERS = [
-  { label: '6 جلسات', sessions: 6, price: 1096 },
-  { label: '4 جلسات', sessions: 4, price: 796 },
+  { label: '6 زيارات', sessions: 6, price: 1096 },
+  { label: '4 زيارات', sessions: 4, price: 796 },
 ];
 
 type PlanForm =Omit<TreatmentPlan, 'id' | 'progressPct' | 'endDate'>;
@@ -292,17 +292,17 @@ function caseInfoFor(patientId: string) {
   return { patientAge: age, painOnset: a?.onsetDate || '', chiefComplaint: a?.mainComplaint || p?.mainComplaint || '' };
 }
 
-// أسعار الجلسات من «خدمات خطط العلاج» حسب نوع العلاج المختار، وإلا العروض الافتراضية
+// أسعار الزيارات من «خدمات خطط العلاج» حسب نوع العلاج المختار، وإلا العروض الافتراضية
 function offersFor(therapyType: string) {
   const typeOffers = db.planServices().find((p) => p.name === therapyType)?.offers ?? [];
   return typeOffers.length ? typeOffers.map((o) => ({ label: sessionsLabel(o.sessions), ...o })) : PLAN_OFFERS;
 }
-// السعر التلقائي: لو فيه عرض بنفس عدد الجلسات ياخد سعره، وإلا سعر الخدمة × عدد الجلسات
+// السعر التلقائي: لو فيه عرض بنفس عدد الزيارات ياخد سعره، وإلا سعر الخدمة × عدد الزيارات
 export function autoPlanPriceInfo(f: Pick<PlanForm, 'therapyType' | 'serviceId' | 'totalSessions'>) {
   const offer = offersFor(f.therapyType).find((o) => o.sessions === f.totalSessions);
   if (offer) return { price: offer.price, note: `سعر عرض ${offer.label}` };
   const unit = db.service(f.serviceId)?.price ?? 0;
-  return { price: unit * f.totalSessions, note: `${money(unit)} للجلسة × ${f.totalSessions} جلسة` };
+  return { price: unit * f.totalSessions, note: `${money(unit)} للزيارة × ${f.totalSessions} زيارة` };
 }
 const autoPlanPrice = (f: Pick<PlanForm, 'therapyType' | 'serviceId' | 'totalSessions'>) => autoPlanPriceInfo(f).price;
 export function PlanModal({ patientId, plan, presetServiceId, presetDiagnosis, onClose }: { patientId?: string; plan?: TreatmentPlan; presetServiceId?: string; presetDiagnosis?: string; onClose: () => void }) {
@@ -331,11 +331,11 @@ export function PlanModal({ patientId, plan, presetServiceId, presetDiagnosis, o
   const [withPhysio, setWithPhysio] = useState(physioAllowed);
   const [pi, setPi] = useState<PhysioInline>(newPhysioInline);
   const [piErrors, setPiErrors] = useState<Record<string, string>>({});
-  // الدكتور بيختار عدد الجلسات بس — السعر والمواعيد بيحددهم الاستقبال/المحاسب من «فواتير الخطط العلاجية»
-  const doctorMode = true; // (2026-10-14 بطلب الإدارة) الكل — مش الدكتور بس — بيختار عدد الجلسات بس؛ السعر والمواعيد من «مراجعة فاتورة الخطة»
+  // الدكتور بيختار عدد الزيارات بس — السعر والمواعيد بيحددهم الاستقبال/المحاسب من «فواتير الخطط العلاجية»
+  const doctorMode = true; // (2026-10-14 بطلب الإدارة) الكل — مش الدكتور بس — بيختار عدد الزيارات بس؛ السعر والمواعيد من «مراجعة فاتورة الخطة»
   const [docCount, setDocCount] = useState(plan?.totalSessions ?? 6);
   const [docOther, setDocOther] = useState((plan?.totalSessions ?? 6) > 12);
-  // مواعيد الجلسات (اختياري) وقت إنشاء الخطة: بتتحجز بعد الحفظ كمواعيد حقيقية مربوطة بالخطة — ونفسها بتظهر في «مراجعة فاتورة الخطة»
+  // مواعيد الزيارات (اختياري) وقت إنشاء الخطة: بتتحجز بعد الحفظ كمواعيد حقيقية مربوطة بالخطة — ونفسها بتظهر في «مراجعة فاتورة الخطة»
   const canBook = can('appointments', 'create') || can('booking', 'create');
   const [withDates, setWithDates] = useState(false);
   const [draft, setDraft] = useState<SessionRow[]>([]);
@@ -371,14 +371,14 @@ export function PlanModal({ patientId, plan, presetServiceId, presetDiagnosis, o
     const targetId = pid;
     if (!targetId) { toast.error('اختر المريض من البحث.'); return; }
     if (f.patientAge != null && !(Number.isInteger(f.patientAge) && f.patientAge >= 0 && f.patientAge <= 120)) { toast.error('العمر غير صحيح.'); return; }
-    if (doctorMode && !(Number.isInteger(docCount) && docCount >= 1 && docCount <= 52)) { toast.error('عدد الجلسات من 1 إلى 52.'); return; }
+    if (doctorMode && !(Number.isInteger(docCount) && docCount >= 1 && docCount <= 52)) { toast.error('عدد الزيارات من 1 إلى 52.'); return; }
     const fp = doctorMode ? { ...f, durationWeeks: docCount, sessionsPerWeek: 1, sessionDates: null, price: plan?.price ?? 0, startDate: plan?.startDate ?? todayYmd() } : f;
     const schedErr = planScheduleError(fp.durationWeeks, fp.sessionsPerWeek);
     if (schedErr) { toast.error(schedErr); return; }
     if (f.price < 0) { toast.error('السعر ما ينفع يكون سالبًا.'); return; }
     const bookRows = !plan && withDates && canBook ? draftRows.filter((r) => r.date || r.time) : [];
     const firstIssue = Object.entries(draftIssues)[0];
-    if (bookRows.length && firstIssue) { toast.error(`الجلسة ${Number(firstIssue[0]) + 1}: ${firstIssue[1]}`); return; }
+    if (bookRows.length && firstIssue) { toast.error(`الزيارة ${Number(firstIssue[0]) + 1}: ${firstIssue[1]}`); return; }
     // كل الخانات اختيارية: لو تقييم العلاج الطبيعي ناقص، الخطة بتتحفظ من غيره
     const physioOk = physioAllowed && withPhysio && Object.keys(validatePhysioInline(pi, f.startDate)).length === 0 && !!(f.chiefComplaint ?? '').trim();
     setBusy(true);
@@ -390,11 +390,11 @@ export function PlanModal({ patientId, plan, presetServiceId, presetDiagnosis, o
       setBusy(false); toast.error((e as Error).message || 'تعذّر حفظ الخطة.'); return;
     }
     if (plan) {
-      // تعديل الخطة بعد عملها: فاتورتها تتحدّث بنفس السعر والخدمة وعدد الجلسات (نفس قيود تعديل الفاتورة: مايقلّش عن المدفوع، ولا يتعدّل لو مقفول)
+      // تعديل الخطة بعد عملها: فاتورتها تتحدّث بنفس السعر والخدمة وعدد الزيارات (نفس قيود تعديل الفاتورة: مايقلّش عن المدفوع، ولا يتعدّل لو مقفول)
       const inv = db.invoicesForPatient(targetId).find((i) => i.planId === plan.id && i.status !== 'cancelled');
       const total = planTotalSessions(f.durationWeeks, f.sessionsPerWeek);
       if (inv) {
-        const desc = `خطة علاج: ${f.therapyType || db.service(f.serviceId)?.name || ''} (${total} جلسات)`;
+        const desc = `خطة علاج: ${f.therapyType || db.service(f.serviceId)?.name || ''} (${total} زيارات)`;
         if (inv.price !== f.price) {
           const r = await db.updatePlanInvoice(inv.id, { price: f.price, discount: Math.min(inv.discount, f.price), note: inv.note ?? '' }, false);
           if (!r.ok) toast.error(`عُدّلت الخطة، لكن الفاتورة ${inv.no} لم تُعدَّل: ${r.error}`);
@@ -424,9 +424,9 @@ export function PlanModal({ patientId, plan, presetServiceId, presetDiagnosis, o
       const created = db.plansForPatient(targetId).find((x) => !before.has(x.id));
       if (created) {
         const r = await bookDraftSessions(created.id, bookRows);
-        if (r.booked) toast.success(`تم حجز ${r.booked} جلسة للخطة — تظهر في «مراجعة فاتورة الخطة العلاجية».`);
+        if (r.booked) toast.success(`تم حجز ${r.booked} زيارة للخطة — تظهر في «مراجعة فاتورة الخطة العلاجية».`);
         r.errors.forEach((e) => toast.error(e));
-        if (r.errors.length) toast.info('حُفظت الخطة — أكمل حجز الجلسات المتبقية من «مراجعة فاتورة الخطة العلاجية».');
+        if (r.errors.length) toast.info('حُفظت الخطة — أكمل حجز الزيارات المتبقية من «مراجعة فاتورة الخطة العلاجية».');
       }
     }
     setBusy(false);
@@ -512,34 +512,34 @@ export function PlanModal({ patientId, plan, presetServiceId, presetDiagnosis, o
           <label className="pt-optin">
             <input type="checkbox" checked={withPhysio} onChange={(e) => setWithPhysio(e.target.checked)} />
             <span><strong>تقييم علاج طبيعي كامل (Physiotherapy Evaluation)</strong><br />
-              <span className="muted">يُؤخذ العمر والشكوى والتشخيص وعدد الجلسات من الخطة أعلاه. بعد الحفظ سجّل Progress Note لكل جلسة من ملف المريض ← «العلاج الطبيعي».</span></span>
+              <span className="muted">يُؤخذ العمر والشكوى والتشخيص وعدد الزيارات من الخطة أعلاه. بعد الحفظ سجّل Progress Note لكل زيارة من ملف المريض ← «العلاج الطبيعي».</span></span>
           </label>
           {withPhysio && <PhysioInlineSections v={pi} onChange={setPi} errors={piErrors} />}
         </>
       )}
       {doctorMode ? (
         <div className="form-section">
-          <div className="form-section-title">عدد الجلسات</div>
+          <div className="form-section-title">عدد الزيارات</div>
           <div className="grid-form grid-form--3">
-            <Select id="pl-count" label="عدد الجلسات *" value={docOther ? 'other' : String(docCount)}
+            <Select id="pl-count" label="عدد الزيارات *" value={docOther ? 'other' : String(docCount)}
               onChange={(e) => { if (e.target.value === 'other') { setDocOther(true); } else { setDocOther(false); setDocCount(Number(e.target.value)); } }}
-              options={[...Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: `${i + 1} ${i + 1 === 1 ? 'جلسة' : i + 1 === 2 ? 'جلستين' : i + 1 <= 10 ? 'جلسات' : 'جلسة'}` })), { value: 'other', label: 'عدد آخر (اكتب العدد)' }]} />
-            {docOther && <Input id="pl-count-other" label="اكتب عدد الجلسات" type="number" min={1} max={52} value={docCount} onChange={(e) => setDocCount(Number(e.target.value))} />}
+              options={[...Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: `${i + 1} ${i + 1 === 1 ? 'زيارة' : i + 1 === 2 ? 'زيارتين' : i + 1 <= 10 ? 'زيارات' : 'زيارة'}` })), { value: 'other', label: 'عدد آخر (اكتب العدد)' }]} />
+            {docOther && <Input id="pl-count-other" label="اكتب عدد الزيارات" type="number" min={1} max={52} value={docCount} onChange={(e) => setDocCount(Number(e.target.value))} />}
             {plan && <Select id="pl-status2" label="الحالة" value={f.status} onChange={(e) => set('status', e.target.value as PlanStatus)} options={[{ value: 'active', label: 'نشطة' }, { value: 'paused', label: 'متوقفة' }, { value: 'completed', label: 'مكتملة' }]} />}
           </div>
-          <div className="alert alert-info" style={{ marginTop: 12 }}>بعد الحفظ يُرسل طلب إلى الاستقبال/المحاسب في «فواتير الخطط العلاجية» لتحديد سعر الخطة وحجز موعد كل جلسة.</div>
+          <div className="alert alert-info" style={{ marginTop: 12 }}>بعد الحفظ يُرسل طلب إلى الاستقبال/المحاسب في «فواتير الخطط العلاجية» لتحديد سعر الخطة وحجز موعد كل زيارة.</div>
         </div>
       ) : null}
       {doctorMode && !plan && pid && canBook ? (
         <div className="form-section">
           <label className="pt-optin" style={{ marginBottom: withDates ? 10 : 0 }}>
             <input type="checkbox" checked={withDates} onChange={(e) => { setWithDates(e.target.checked); if (e.target.checked && !draft.some((r) => r.date)) suggestDraft(); }} />
-            <span><strong>تحديد مواعيد الجلسات الحين (اختياري)</strong><br />
-              <span className="muted">تاريخ ووقت ودكتور كل جلسة — تُحجز مواعيد فعلية مرتبطة بالخطة بعد الحفظ، دون فواتير منفصلة. وما تتركه فارغًا تُكمله من «مراجعة فاتورة الخطة العلاجية».</span></span>
+            <span><strong>تحديد مواعيد الزيارات الحين (اختياري)</strong><br />
+              <span className="muted">تاريخ ووقت ودكتور كل زيارة — تُحجز مواعيد فعلية مرتبطة بالخطة بعد الحفظ، دون فواتير منفصلة. وما تتركه فارغًا تُكمله من «مراجعة فاتورة الخطة العلاجية».</span></span>
           </label>
           {withDates && (<>
             <div className="row-between" style={{ marginBottom: 8 }}>
-              <span className="muted" style={{ fontSize: 12.5 }}>مقترحة حسب دوام الدكتور — كل جلسة 30 دقيقة، والجلسة التانية في نفس اليوم بموافقة المدير عند الحضور.</span>
+              <span className="muted" style={{ fontSize: 12.5 }}>مقترحة حسب دوام الدكتور — كل زيارة 30 دقيقة، والزيارة التانية في نفس اليوم بموافقة المدير عند الحضور.</span>
               <Button type="button" size="sm" variant="outline" icon="refresh" onClick={suggestDraft}>اقتراح المواعيد تلقائيًا</Button>
             </div>
             <SessionRowsEditor rows={draftRows} serviceId={f.serviceId} startNo={1} issues={draftIssues}
@@ -551,7 +551,7 @@ export function PlanModal({ patientId, plan, presetServiceId, presetDiagnosis, o
         plan.status === 'active' ? <div className="form-section"><PlanSessionBooking plan={plan} canBook={canBook} /></div> : null
       ) : doctorMode ? null : (<>
       <div className="form-section">
-        <div className="form-section-title">عدد الجلسات والسعر</div>
+        <div className="form-section-title">عدد الزيارات والسعر</div>
         <div className="offer-grid">
           {offers.map((o) => {
             const active = f.totalSessions === o.sessions && f.price === o.price;
@@ -575,7 +575,7 @@ export function PlanModal({ patientId, plan, presetServiceId, presetDiagnosis, o
             <div className="muted" style={{ fontSize: 12.5 }}>
               {priceTouched
                 ? <>سعر مكتوب يدويًا. <button type="button" className="link-more" style={{ fontSize: 12.5, background: "none", border: 0, padding: 0, cursor: "pointer" }} onClick={() => { setPriceTouched(false); setF((x) => ({ ...x, price: autoPlanPrice(x) })); }}>رجوع للسعر التلقائي ({money(auto.price)})</button></>
-                : <>محسوب تلقائيًا: {auto.note} — يتغيّر مع عدد الجلسات، وتقدر تكتب سعر مختلف.</>}
+                : <>محسوب تلقائيًا: {auto.note} — يتغيّر مع عدد الزيارات، وتقدر تكتب سعر مختلف.</>}
               {' '}{plan ? 'تعديل السعر هنا يعدّل فاتورة الخطة أيضًا (ما يقل عن المدفوع).' : 'تُرسل الفاتورة لقسم «فواتير الخطط العلاجية» ليراجعها الاستقبال ويعتمدها.'}
             </div>
           </div>
@@ -589,14 +589,14 @@ export function PlanModal({ patientId, plan, presetServiceId, presetDiagnosis, o
         <div className="form-section-title">الجدول الزمني</div>
         <div className="grid-form grid-form--3">
           <Input id="pl-weeks" label="مدة الخطة (أسابيع)" type="number" min={1} max={52} value={f.durationWeeks} onChange={(e) => set('durationWeeks', Number(e.target.value))} />
-          <Input id="pl-week" label="جلسات/أسبوع" type="number" min={1} max={7} value={f.sessionsPerWeek} onChange={(e) => set('sessionsPerWeek', Number(e.target.value))} />
-          <Input id="pl-total" label="إجمالي الجلسات (محسوب تلقائيًا)" type="number" value={f.totalSessions} readOnly disabled
-            hint={`${f.durationWeeks} أسبوع × ${f.sessionsPerWeek} جلسة/أسبوع`} />
-          <Input id="pl-start" label="تاريخ أول جلسة" type="date" value={f.startDate} onChange={(e) => set('startDate', e.target.value)} />
+          <Input id="pl-week" label="زيارات/أسبوع" type="number" min={1} max={7} value={f.sessionsPerWeek} onChange={(e) => set('sessionsPerWeek', Number(e.target.value))} />
+          <Input id="pl-total" label="إجمالي الزيارات (محسوب تلقائيًا)" type="number" value={f.totalSessions} readOnly disabled
+            hint={`${f.durationWeeks} أسبوع × ${f.sessionsPerWeek} زيارة/أسبوع`} />
+          <Input id="pl-start" label="تاريخ أول زيارة" type="date" value={f.startDate} onChange={(e) => set('startDate', e.target.value)} />
           {plan && <Select id="pl-status" label="الحالة" value={f.status} onChange={(e) => set('status', e.target.value as PlanStatus)} options={[{ value: 'active', label: 'نشطة' }, { value: 'paused', label: 'متوقفة' }, { value: 'completed', label: 'مكتملة' }]} />}
         </div>
         <div className="field" style={{ marginTop: 12 }}>
-          <label>مواعيد الجلسات — محسوبة من تاريخ أول جلسة، وتقدر تعدّل أي تاريخ (تُزاح الجلسات التي بعده معه)</label>
+          <label>مواعيد الزيارات — محسوبة من تاريخ أول زيارة، وتقدر تعدّل أي تاريخ (تُزاح الزيارات التي بعده معه)</label>
           {f.sessionDates && <button type="button" className="link-more" style={{ fontSize: 12.5, background: 'none', border: 0, padding: 0, cursor: 'pointer' }} onClick={() => setF((x) => ({ ...x, sessionDates: null }))}>رجوع للمواعيد التلقائية</button>}
           <PlanScheduleList startDate={f.startDate} sessionsPerWeek={f.sessionsPerWeek} total={f.totalSessions} dates={f.sessionDates} onEdit={(d) => setF((x) => ({ ...x, sessionDates: d }))} />
         </div>
@@ -630,7 +630,7 @@ export function SellPackageModal({ patientId, onClose }: { patientId: string; on
           <Select id="sp-plan" label="الباقة" value={planId} onChange={(e) => setPlanId(e.target.value)} options={plans.map((p) => ({ value: p.id, label: `${p.name} — ${money(p.price)}` }))} />
           {plan && (
             <dl className="dl" style={{ marginTop: 14 }}>
-              <div><dt>عدد الجلسات</dt><dd className="num">{plan.totalSessions}</dd></div>
+              <div><dt>عدد الزيارات</dt><dd className="num">{plan.totalSessions}</dd></div>
               <div><dt>صلاحية الباقة</dt><dd>{plan.validDays} يومًا من تاريخ البيع</dd></div>
               <div><dt>السعر</dt><dd className="num">{money(plan.price)}</dd></div>
               <div><dt>الخدمات المشمولة</dt><dd>{plan.serviceIds.map((id) => db.service(id)?.name).filter(Boolean).join('، ')}</dd></div>
@@ -642,9 +642,9 @@ export function SellPackageModal({ patientId, onClose }: { patientId: string; on
   );
 }
 
-// جدول مواعيد جلسات الخطة: المتوقع من تاريخ أول جلسة، والفعلي لو الجلسة اتعملت أو اتحجز لها موعد
-// جدول مواعيد جلسات الخطة: المتوقع من تاريخ أول جلسة (أو المعدّل يدويًا)، والفعلي لو الجلسة اتعملت أو اتحجز لها موعد.
-// onEdit موجود = التواريخ قابلة للتعديل: تغيير جلسة بيزحزح الجلسات اللي بعدها بنفس الفرق.
+// جدول مواعيد زيارات الخطة: المتوقع من تاريخ أول زيارة، والفعلي لو الزيارة اتعملت أو اتحجز لها موعد
+// جدول مواعيد زيارات الخطة: المتوقع من تاريخ أول زيارة (أو المعدّل يدويًا)، والفعلي لو الزيارة اتعملت أو اتحجز لها موعد.
+// onEdit موجود = التواريخ قابلة للتعديل: تغيير زيارة بيزحزح الزيارات اللي بعدها بنفس الفرق.
 export function PlanScheduleList({ startDate, sessionsPerWeek, total, dates: custom, onEdit, actual }: {
   startDate: string; sessionsPerWeek: number; total: number; dates?: string[] | null; onEdit?: (dates: string[]) => void;
   actual?: (i: number) => { date: string; time?: string; label: string } | undefined;
@@ -659,7 +659,7 @@ export function PlanScheduleList({ startDate, sessionsPerWeek, total, dates: cus
   return (
     <div className="table-wrap" style={{ marginTop: 10, maxHeight: 320, overflowY: 'auto' }}>
       <table className="table">
-        <thead><tr><th>الجلسة</th><th>اليوم</th><th>التاريخ</th><th>الحالة</th></tr></thead>
+        <thead><tr><th>الزيارة</th><th>اليوم</th><th>التاريخ</th><th>الحالة</th></tr></thead>
         <tbody>{dates.map((d, i) => {
           const a = actual?.(i);
           const date = a?.date ?? d;
@@ -668,7 +668,7 @@ export function PlanScheduleList({ startDate, sessionsPerWeek, total, dates: cus
               <td className="num">{i + 1}</td>
               <td>{WEEKDAY_LABEL[new Date(date + 'T00:00:00').getDay()]}</td>
               <td className="num">{onEdit && !a
-                ? <input type="date" className="input" style={{ height: 38, maxWidth: 170 }} aria-label={`تاريخ الجلسة ${i + 1}`} value={d} min={i > 0 ? dates[i - 1] : undefined} onChange={(e) => edit(i, e.target.value)} />
+                ? <input type="date" className="input" style={{ height: 38, maxWidth: 170 }} aria-label={`تاريخ الزيارة ${i + 1}`} value={d} min={i > 0 ? dates[i - 1] : undefined} onChange={(e) => edit(i, e.target.value)} />
                 : <>{fmtDate(date)}{a?.time ? ` · ${fmtTime(a.time)}` : ''}</>}</td>
               <td className={a ? '' : 'muted'}>{a?.label ?? (custom ? 'معدّل' : 'متوقع')}</td>
             </tr>
@@ -678,6 +678,6 @@ export function PlanScheduleList({ startDate, sessionsPerWeek, total, dates: cus
     </div>
   );
 }
-// المواعيد المعدّلة لو عددها مطابق، وإلا المحسوبة من تاريخ أول جلسة
+// المواعيد المعدّلة لو عددها مطابق، وإلا المحسوبة من تاريخ أول زيارة
 export const planDates = (startDate: string, sessionsPerWeek: number, total: number, custom?: string[] | null) =>
   custom && custom.length === total ? custom : db.planSessionDates(startDate, sessionsPerWeek, total);

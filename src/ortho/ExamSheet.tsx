@@ -413,7 +413,7 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
               <Txt a={a} k="n.onset" label="بداية المشكلة / كيفية حدوثها" stack />
               <Row label="هل توجد إصابة حديثة؟"><Pick a={a} g="n.injury" items={YES_NO} /></Row>
               {a.has('n.injury', 'نعم') && <Txt a={a} k="n.injury.what" label="إذا نعم، ما هي؟" stack />}
-              <Txt a={a} k="n.done" label="ماذا تم عمله حتى الآن؟ (علاج / جبس / عملية / جلسات …)" stack />
+              <Txt a={a} k="n.done" label="ماذا تم عمله حتى الآن؟ (علاج / جبس / عملية / زيارات …)" stack />
             </div>
           </div>
         </Box>

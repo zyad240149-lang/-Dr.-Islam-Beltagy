@@ -182,7 +182,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
     if (draftHasContent(c)) saveConsultDraft(c.patientId, c); else clearConsultDraft(c.patientId);
   }, [initial, c]);
 
-  // إلغاء تعديل كشف محفوظ: الملفات اللي اترفعت في الجلسة دي ومش هتتحفظ بتتمسح (الكشف الجديد بيفضل محتفظ بيها في المسودة)
+  // إلغاء تعديل كشف محفوظ: الملفات اللي اترفعت في الزيارة دي ومش هتتحفظ بتتمسح (الكشف الجديد بيفضل محتفظ بيها في المسودة)
   function cancel() {
     if (initial) {
       const keep = new Set(initial.attachments.map((a) => a.path));

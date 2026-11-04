@@ -19,7 +19,6 @@
  "محجوز (معاد جدولته)": "Booked (rescheduled)",
  "مؤكد": "Confirmed",
  "حضر": "Arrived",
- "قيد الجلسة": "In session",
  "مكتمل": "Completed",
  "لم يحضر": "No-show",
  "نتائج البحث": "Search results",
@@ -36,5 +35,6 @@
  "كل مواعيد اليوم": "All today's appointments",
  "لا توجد مواعيد في هذا اليوم.": "There are no appointments on this day.",
  "بدون طبيب": "No doctor",
- "التفاصيل": "Details"
+ "التفاصيل": "Details",
+ "قيد الزيارة": "In visit"
 }

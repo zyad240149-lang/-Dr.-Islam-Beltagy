@@ -4,6 +4,8 @@ import { useDbVersion, useLoading } from '../hooks/useDb';
 import { Button, Input, Modal, Skeleton, StatusBadge } from '../components/ui';
 import { ConfirmDialog, useCan } from '../components/common';
 import { useToast } from '../hooks/useToast';
+import { useAuth } from '../services/auth';
+import { Link } from 'react-router-dom';
 import { WEEKDAY_LABEL, fmtDate, fmtTime, todayYmd } from '../utils/format';
 import { WorkHoursEditor, branchForDay, byDayOrder, cleanHours, dayLabel as hoursDayLabel, hoursError } from '../components/WorkHoursEditor';
 import { ROLE_LABEL } from '../services/permissions';
@@ -117,16 +119,18 @@ const hoursOf = (e: Employee): DayHours[] => {
 function StaffHours() {
   useDbVersion();
   const can = useCan();
+  const { user } = useAuth();
   const canEdit = can('employees', 'edit');
   const [edit, setEdit] = useState<Employee | null>(null);
-  const list = db.employees().filter((e) => e.active);
+  // الموظف بيشوف مواعيده بس؛ اللي عنده صلاحية تعديل الموظفين بيشوف الكل
+  const list = db.employees().filter((e) => e.active && (canEdit || e.id === user?.id));
   return (
     <section className="card" style={{ marginBottom: 18 }}>
       <div className="card__head"><h2>مواعيد عمل الموظفين</h2><span className="muted" style={{ fontSize: 13 }}>الأيام والساعات والفرع لكل موظف</span></div>
       <div className="card__body">
         {list.length === 0 ? <p className="muted">مفيش موظفين.</p> : (
           <div className="table-wrap"><table className="table">
-            <thead><tr><th>الموظف</th><th>مواعيد العمل والفرع</th>{canEdit && <th />}</tr></thead>
+            <thead><tr><th>الموظف</th><th>مواعيد العمل والفرع</th><th /></tr></thead>
             <tbody>{list.map((e) => {
               const h = hoursOf(e);
               return (
@@ -134,9 +138,9 @@ function StaffHours() {
                   <td><strong>{e.name}</strong><div className="muted-sm">{ROLE_LABEL[e.role] ?? e.role}</div></td>
                   <td>{h.length === 0 ? <span className="muted">لم تُحدَّد</span> : h.map((x) => {
                     const b = branchForDay(h, x.day);
-                    return <div key={x.day} className="muted-sm">{hoursDayLabel(x.day)}: <span className="num">{fmtTime(x.from)} – {fmtTime(x.to)}</span>{b ? ` · ${b.name}` : ''}</div>;
+                    return <div key={x.day} className="muted-sm">{hoursDayLabel(x.day)}: <span className="num"><bdi>{fmtTime(x.from)}</bdi> – <bdi>{fmtTime(x.to)}</bdi></span>{b ? ` · ${b.name}` : ''}</div>;
                   })}</td>
-                  {canEdit && <td style={{ textAlign: 'end' }}><Button size="sm" variant="outline" icon="edit" onClick={() => setEdit(e)}>تعديل</Button></td>}
+                  <td style={{ textAlign: 'end' }}>{canEdit ? <Button size="sm" variant="outline" icon="edit" onClick={() => setEdit(e)}>تعديل</Button> : <Link className="btn btn--outline btn--sm" to="/my-hours">تعديل مواعيدي</Link>}</td>
                 </tr>
               );
             })}</tbody>

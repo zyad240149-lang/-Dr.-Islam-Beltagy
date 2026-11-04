@@ -5,19 +5,14 @@ import { Icon } from '../utils/icons';
 import { Button, EmptyState, Input, Modal, Select, Skeleton, StatusBadge } from '../components/ui';
 import { ConfirmDialog, FilterBar, IconAction, useCan } from '../components/common';
 import BookingWizard from '../components/BookingWizard';
-import { money, sessionsLabel } from '../utils/format';
+import { money } from '../utils/format';
 import { useToast } from '../hooks/useToast';
-import type { PlanService, Service } from '../types';
+import type { Service } from '../types';
 
 export default function Services() {
-  const [tab, setTab] = useState<'catalog' | 'plans'>('catalog');
   return (
     <div className="page">
-      <div className="tabs" style={{ marginBottom: 16 }}>
-        <button className={`tab ${tab === 'catalog' ? 'active' : ''}`} onClick={() => setTab('catalog')}>الخدمات والأسعار</button>
-        <button className={`tab ${tab === 'plans' ? 'active' : ''}`} onClick={() => setTab('plans')}>خدمات خطط العلاج</button>
-      </div>
-      {tab === 'catalog' ? <ServicesCatalog /> : <PlanServicesTab />}
+      <ServicesCatalog />
     </div>
   );
 }
@@ -101,95 +96,6 @@ function ServicesCatalog() {
         message={`سيتم حذف خدمة «${deleting.name}» الحين. المواعيد والفواتير القديمة تحتفظ باسمها.`}
         onConfirm={async () => { const r = await db.deleteService(deleting.id); if (r.ok) toast.success('تم حذف الخدمة.'); else toast.error(r.error); }} />}
     </>
-  );
-}
-
-function PlanServicesTab() {
-  useDbVersion();
-  const toast = useToast();
-  const can = useCan();
-  const [editing, setEditing] = useState<PlanService | 'new' | null>(null);
-  const [deleting, setDeleting] = useState<PlanService | null>(null);
-  const list = db.allPlanServices();
-
-  return (
-    <>
-      <div className="page-head">
-        <div><h1>خدمات خطط العلاج</h1><p>قائمة منفصلة عن كتالوج الخدمات والأسعار الرسمي — لكل خدمة أسعار حسب عدد الجلسات (مثلًا 4 أو 6 جلسات) تظهر كاختيارات جاهزة عند إنشاء خطة علاجية.</p></div>
-        {can('plans', 'create') && <Button icon="plus" onClick={() => setEditing('new')}>إضافة خدمة</Button>}
-      </div>
-      {list.length === 0 ? <EmptyState icon="spark" title="ما فيه خدمات خطط علاج بعد" text="أضف أول خدمة وأسعار جلساتها." /> : (
-        <div className="card"><div className="card__body">
-          <div className="table-wrap"><table className="table">
-            <thead><tr><th>اسم الخدمة</th><th>الأسعار حسب عدد الجلسات</th><th>الحالة</th><th className="actions">الإجراءات</th></tr></thead>
-            <tbody>{list.map((p) => (
-              <tr key={p.id}>
-                <td style={{ fontWeight: 600 }}>{p.name}</td>
-                <td>{p.offers.length === 0 ? <span className="muted-sm">ما فيه أسعار</span> : (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {p.offers.map((o) => (
-                      <span key={o.sessions} style={{ padding: '3px 10px', borderRadius: 999, background: 'var(--surface-2, #eef0f6)', fontSize: 13 }}>
-                        {sessionsLabel(o.sessions)} — <strong className="num">{money(o.price)}</strong>
-                      </span>
-                    ))}
-                  </div>
-                )}</td>
-                <td><StatusBadge label={p.active ? 'مفعّلة' : 'موقوفة'} tone={p.active ? 'ok' : 'muted'} /></td>
-                <td className="actions">
-                  {can('plans', 'edit') && <IconAction icon="edit" label="تعديل" onClick={() => setEditing(p)} />}
-                  {can('plans', 'delete') && <IconAction icon="trash" label="حذف" danger onClick={() => setDeleting(p)} />}
-                </td>
-              </tr>
-            ))}</tbody>
-          </table></div>
-        </div></div>
-      )}
-      {editing && <PlanServiceModal service={editing === 'new' ? undefined : editing} onClose={() => setEditing(null)} />}
-      {deleting && <ConfirmDialog title="حذف الخدمة" message={`سيتم حذف «${deleting.name}» وأسعارها نهائيًا. الخطط العلاجية الحالية التي تستخدمها لا تتأثر.`} onClose={() => setDeleting(null)}
-        onConfirm={async () => { const r = await db.deletePlanService(deleting.id); if (r.ok) toast.success('تم حذف الخدمة.'); else toast.error(r.error); }} />}
-    </>
-  );
-}
-
-function PlanServiceModal({ service, onClose }: { service?: PlanService; onClose: () => void }) {
-  const toast = useToast();
-  const [name, setName] = useState(service?.name ?? '');
-  const [active, setActive] = useState(service?.active ?? true);
-  const [offers, setOffers] = useState<{ sessions: string; price: string }[]>(
-    service?.offers.length ? service.offers.map((o) => ({ sessions: String(o.sessions), price: String(o.price) })) : [{ sessions: '4', price: '' }, { sessions: '6', price: '' }]);
-  const [busy, setBusy] = useState(false);
-  const setOffer = (i: number, k: 'sessions' | 'price', v: string) => setOffers((xs) => xs.map((x, j) => j === i ? { ...x, [k]: v } : x));
-  const submit = async () => {
-    if (!name.trim()) { toast.error('اسم الخدمة مطلوب.'); return; }
-    const rows = offers.filter((o) => o.sessions.trim() || o.price.trim());
-    for (const o of rows) {
-      const n = Number(o.sessions);
-      if (!Number.isInteger(n) || n < 1) { toast.error('عدد الجلسات لازم يكون رقم صحيح 1 أو أكثر.'); return; }
-      if (o.price.trim() === '' || !(Number(o.price) >= 0)) { toast.error(`اكتب سعر ${sessionsLabel(n)}.`); return; }
-    }
-    if (new Set(rows.map((o) => Number(o.sessions))).size !== rows.length) { toast.error('ما يمكن تكرار نفس عدد الجلسات مرتين.'); return; }
-    setBusy(true);
-    const r = await db.savePlanService({ id: service?.id, name: name.trim(), active, offers: rows.map((o) => ({ sessions: Number(o.sessions), price: Number(o.price) })) });
-    setBusy(false);
-    if (!r.ok) { toast.error(r.error); return; }
-    toast.success(service ? 'تم حفظ التعديلات.' : 'تمت إضافة الخدمة.'); onClose();
-  };
-  return (
-    <Modal title={service ? 'تعديل خدمة خطة العلاج' : 'إضافة خدمة خطة علاج'} onClose={onClose} footer={<><Button variant="outline" onClick={onClose} disabled={busy}>إلغاء</Button><Button onClick={submit} loading={busy}>حفظ</Button></>}>
-      <Input id="ps-name" label="اسم الخدمة *" placeholder="مثال: العلاج الطبيعي" value={name} onChange={(e) => setName(e.target.value)} />
-      {service && <Select id="ps-active" label="الحالة" value={active ? 'on' : 'off'} onChange={(e) => setActive(e.target.value === 'on')} options={[{ value: 'on', label: 'مفعّلة' }, { value: 'off', label: 'موقوفة' }]} />}
-      <div className="field" style={{ marginTop: 12 }}>
-        <label>الأسعار حسب عدد الجلسات</label>
-        {offers.map((o, i) => (
-          <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gridTemplateRows: 'auto', gap: 8, alignItems: 'end', marginBottom: 8 }}>
-            <Input id={`ps-s-${i}`} label="عدد الجلسات" type="number" min={1} value={o.sessions} onChange={(e) => setOffer(i, 'sessions', e.target.value)} />
-            <Input id={`ps-p-${i}`} label="السعر الإجمالي (ج.م)" type="number" min={0} value={o.price} onChange={(e) => setOffer(i, 'price', e.target.value)} />
-            <IconAction icon="trash" label="حذف السعر" danger onClick={() => setOffers((xs) => xs.filter((_, j) => j !== i))} />
-          </div>
-        ))}
-        <Button variant="outline" icon="plus" onClick={() => setOffers((xs) => [...xs, { sessions: '', price: '' }])}>إضافة سعر</Button>
-      </div>
-    </Modal>
   );
 }
 

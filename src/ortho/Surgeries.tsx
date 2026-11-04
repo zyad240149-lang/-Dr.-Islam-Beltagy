@@ -140,6 +140,7 @@ function StagesModal({ surgery, onClose }: { surgery: Surgery; onClose: () => vo
   const locked = surgery.status === 'done';
   const done = stages.filter((x) => x.status === 'done').length;
   const skipped = stages.filter((x) => x.status === 'skipped').length;
+  const left = stages.length - done - skipped;
   const saveStage = (st: SurgeryStage, patch: Partial<SurgeryStage>) => run(() => ortho.save('surgery_stages', { ...st, ...patch }));
   const add = () => run(async () => {
     await ortho.save('surgery_stages', { surgeryId: surgery.id, position: (stages[stages.length - 1]?.position ?? 0) + 1, name: name.trim(), details: details.trim(), status: 'pending' });
@@ -152,8 +153,10 @@ function StagesModal({ surgery, onClose }: { surgery: Surgery; onClose: () => vo
   });
   return (
     <Modal wide title={`مراحل العملية والدفع — ${surgery.procedure}`} onClose={onClose} footer={<>
+      {!locked && perm.edit && left > 0 && <span className="muted-sm" style={{ marginInlineEnd: 'auto' }}>عشان تنهي العملية: نفّذ أو تخطّى <span className="num">{left}</span> {left > 1 ? 'مراحل' : 'مرحلة'}</span>}
+      {!locked && perm.edit && !stages.length && <span className="muted-sm" style={{ marginInlineEnd: 'auto' }}>ضيف مراحل العملية الأول عشان تنهيها</span>}
       <Button variant="outline" onClick={onClose}>إغلاق</Button>
-      {!locked && perm.edit && <Button icon="check" disabled={!stages.length || done + skipped < stages.length} onClick={() => setFinishing(true)}>إنهاء العملية</Button>}
+      {!locked && perm.edit && <Button icon="check" disabled={!stages.length || left > 0} onClick={() => setFinishing(true)}>إنهاء العملية</Button>}
     </>}>
       <p className="muted" style={{ marginTop: 0 }}>{patientName(surgery.patientId)} · {surgery.hospital || '—'} · اتنفذ {done} من {stages.length} مرحلة{skipped > 0 ? ` · اتخطّى ${skipped}` : ''}</p>
       <h4 style={{ margin: '12px 0 8px' }}>مراحل العملية</h4>
@@ -163,7 +166,7 @@ function StagesModal({ surgery, onClose }: { surgery: Surgery; onClose: () => vo
           <div className="ortho-row" style={{ gap: 8, flexWrap: 'wrap' }}>
             <strong style={{ flex: 1, minWidth: 160 }}><span className="num">{i + 1}.</span> {st.name}</strong>
             {locked || !perm.edit ? <Tone s={STAGE_STATUS[st.status]} /> : (
-              <select className="input" style={{ width: 'auto' }} aria-label="حالة المرحلة" value={st.status} disabled={busy} onChange={(e) => saveStage(st, { status: e.target.value as StageStatus })}>
+              <select className="input" style={{ width: 'auto', minWidth: 130 }} aria-label="حالة المرحلة" value={st.status} disabled={busy} onChange={(e) => saveStage(st, { status: e.target.value as StageStatus })}>
                 {Object.entries(STAGE_STATUS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
               </select>
             )}
@@ -197,7 +200,7 @@ function StagesModal({ surgery, onClose }: { surgery: Surgery; onClose: () => vo
           </div>
         </div>
       ))}
-      {plan.length > 0 && <p>إجمالي الدفعات: <strong className="num">{money(planTotal)}</strong></p>}
+      {plan.length > 0 && <p>إجمالي الدفعات: <strong className="num">{money(planTotal)}</strong>{plan.some((x) => x.status === 'skipped') && <span className="muted-sm"> — من غير الدفعات المتخطاة</span>}</p>}
       {!locked && perm.add && (
         <div className="grid-form" style={{ marginTop: 12 }}>
           <Field label="اسم الدفعة"><input className="input" value={payName} onChange={(e) => setPayName(e.target.value)} placeholder="مثال: مقدم" /></Field>
@@ -224,6 +227,7 @@ function FinishModal({ surgery, onClose, onDone }: { surgery: Surgery; onClose: 
   const [method, setMethod] = useState(PAYMENT_METHOD_OPTIONS[0]?.value ?? 'cash');
   const [supplies, setSupplies] = useState<Record<string, string>>({});
   const nPrice = amount(price), nPaid = amount(paid);
+  const details = paymentsOf(surgery.id).filter((x) => x.status !== 'skipped');
   const invalid = nPaid > nPrice;
   const finish = () => run(async () => {
     const list = Object.entries(supplies).map(([itemId, qty]) => ({ itemId, qty: amount(qty) })).filter((x) => x.qty > 0);
@@ -231,7 +235,7 @@ function FinishModal({ surgery, onClose, onDone }: { surgery: Surgery; onClose: 
     if (error) throw new Error(error.message);
     await ortho.reload('surgeries');
     void db.hydrate();
-  }, 'اتسجلت العملية مكتملة واترحّل المبلغ للحسابات', () => { onClose(); onDone(); });
+  }, 'اتسجلت العملية مكتملة واتعملت فاتورتها بتفاصيل الدفع', () => { onClose(); onDone(); });
   return (
     <Modal title="إنهاء العملية" onClose={onClose} footer={<>
       <Button variant="outline" onClick={onClose}>رجوع</Button>
@@ -243,6 +247,12 @@ function FinishModal({ surgery, onClose, onDone }: { surgery: Surgery; onClose: 
         {nPaid > 0 && <Field label="طريقة الدفع"><select className="input" value={method} onChange={(e) => setMethod(e.target.value)}>{PAYMENT_METHOD_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select></Field>}
         <Field label="تكلفة العملية على العيادة"><input className="input" inputMode="decimal" value={cost} onChange={(e) => setCost(e.target.value)} /></Field>
       </div>
+      {details.length > 0 && (
+        <div style={{ marginBottom: 10 }}>
+          <b>تفاصيل الدفع اللي هتتكتب في الفاتورة</b>
+          {details.map((x) => <div className="muted-sm" key={x.id}>{x.name}: <span className="num">{money(Number(x.amount) || 0)}</span>{x.dueDate ? <> — {fmtDate(x.dueDate)}</> : null}</div>)}
+        </div>
+      )}
       <p className={invalid ? 'alert alert-danger' : 'muted-sm'}>المتبقي على المريض: <strong className="num">{money(Math.max(nPrice - nPaid, 0))}</strong>{invalid ? ' — المدفوع أكبر من المستحق' : ''}</p>
       {items.length > 0 && (
         <details>

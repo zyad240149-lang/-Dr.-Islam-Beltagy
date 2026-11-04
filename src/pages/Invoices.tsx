@@ -486,6 +486,7 @@ function InvoiceModal({ invoiceId, canEdit, canDelete, canPay, canEditPay, canDe
           <div><dt>الإجمالي</dt><dd className="num">{money(invoice.total)}</dd></div>
           <div><dt>المدفوع</dt><dd className="num">{money(invoice.paid)}</dd></div>
         </dl>
+        {invoice.note && <div style={{ marginBottom: 16 }}><b>تفاصيل وملاحظات</b><p style={{ margin: '4px 0 0', whiteSpace: 'pre-wrap' }}>{invoice.note}</p></div>}
         <div className="review-total"><span>المتبقي</span><strong className="num">{money(invoice.remaining)}</strong></div>
       </div>
 

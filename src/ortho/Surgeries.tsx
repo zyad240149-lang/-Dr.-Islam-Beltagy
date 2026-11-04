@@ -13,7 +13,7 @@ const paymentsOf = (surgeryId: string) => ortho.list('surgery_payment_stages').f
 const amount = (v: string) => Number(v.replace(/[^\d.]/g, '')) || 0;
 
 type StageDraft = { key: string; id?: string; name: string; details: string; status: StageStatus };
-type PayDraft = { key: string; id?: string; name: string; amount: string; dueDate: string };
+type PayDraft = { key: string; id?: string; name: string; amount: string; dueDate: string; skipped?: boolean };
 type DraftKind = 'surgery_stages' | 'surgery_payment_stages';
 
 export function SurgeryModal({ initial, patientId = '', onClose }: { initial?: Surgery; patientId?: string; onClose: () => void }) {
@@ -28,11 +28,11 @@ export function SurgeryModal({ initial, patientId = '', onClose }: { initial?: S
   const discountInvalid = nDiscount > nTotal;
   // المسودات بتحتفظ بالمعرّف بعد الحفظ، فإعادة المحاولة بعد خطأ مابتكررش صفوف
   const [stages, setStages] = useState<StageDraft[]>(() => (initial ? stagesOf(initial.id) : []).map((x) => ({ key: x.id, id: x.id, name: x.name, details: x.details, status: x.status })));
-  const [pays, setPays] = useState<PayDraft[]>(() => (initial ? paymentsOf(initial.id) : []).map((x) => ({ key: x.id, id: x.id, name: x.name, amount: String(x.amount || ''), dueDate: x.dueDate || '' })));
+  const [pays, setPays] = useState<PayDraft[]>(() => (initial ? paymentsOf(initial.id) : []).map((x) => ({ key: x.id, id: x.id, name: x.name, amount: String(x.amount || ''), dueDate: x.dueDate || '', skipped: x.status === 'skipped' })));
   const [removed, setRemoved] = useState<{ kind: DraftKind; id: string }[]>([]);
   const canRemove = (id?: string) => !id || perm.del;
   const drop = (kind: DraftKind, id?: string) => { if (id) setRemoved((x) => [...x, { kind, id }]); };
-  const total = pays.reduce((n, x) => n + amount(x.amount), 0);
+  const total = pays.reduce((n, x) => n + (x.skipped ? 0 : amount(x.amount)), 0);
   const draftsValid = stages.every((x) => x.name.trim()) && pays.every((x) => x.name.trim());
   const save = () => run(async () => {
     const surgeryId = await ortho.save('surgeries', locked ? s : { ...s, totalPrice: nTotal, discount: nDiscount, price: net });
@@ -131,7 +131,7 @@ function StagesModal({ surgery, onClose }: { surgery: Surgery; onClose: () => vo
   const [payName, setPayName] = useState('');
   const [payAmount, setPayAmount] = useState('');
   const [payDate, setPayDate] = useState('');
-  const planTotal = plan.reduce((n, x) => n + (Number(x.amount) || 0), 0);
+  const planTotal = plan.reduce((n, x) => n + (x.status === 'skipped' ? 0 : Number(x.amount) || 0), 0);
   const addPayment = () => run(async () => {
     await ortho.save('surgery_payment_stages', { surgeryId: surgery.id, position: (plan[plan.length - 1]?.position ?? 0) + 1, name: payName.trim(), amount: amount(payAmount), dueDate: payDate });
     setPayName(''); setPayAmount(''); setPayDate('');
@@ -189,9 +189,10 @@ function StagesModal({ surgery, onClose }: { surgery: Surgery; onClose: () => vo
       {plan.map((p) => (
         <div className="card" key={p.id} style={{ padding: 12, marginBottom: 8 }}>
           <div className="ortho-row" style={{ gap: 8, flexWrap: 'wrap' }}>
-            <strong style={{ flex: 1, minWidth: 140 }}>{p.name}</strong>
+            <strong style={{ flex: 1, minWidth: 140 }}>{p.name}{p.status === 'skipped' && <span className="muted-sm"> (متخطاة)</span>}</strong>
             <span className="num">{money(Number(p.amount) || 0)}</span>
             {p.dueDate && <span className="muted-sm">{fmtDate(p.dueDate)}</span>}
+            {!locked && perm.edit && <Button variant="outline" size="sm" disabled={busy} onClick={() => run(() => ortho.save('surgery_payment_stages', { ...p, status: p.status === 'skipped' ? 'pending' : 'skipped' }))}>{p.status === 'skipped' ? 'إلغاء التخطي' : 'تخطي'}</Button>}
             {!locked && perm.del && <IconBtn icon="trash" label="حذف الدفعة" danger onClick={() => confirmDelete('هذه الدفعة') && run(() => ortho.remove('surgery_payment_stages', p.id), 'تم الحذف')} />}
           </div>
         </div>
@@ -217,7 +218,7 @@ function StagesModal({ surgery, onClose }: { surgery: Surgery; onClose: () => vo
 function FinishModal({ surgery, onClose, onDone }: { surgery: Surgery; onClose: () => void; onDone: () => void }) {
   const { run, busy } = useRun();
   const items = db.inventory().filter((x) => x.active);
-  const [price, setPrice] = useState(String(surgery.price || paymentsOf(surgery.id).reduce((n, x) => n + (Number(x.amount) || 0), 0) || ''));
+  const [price, setPrice] = useState(String(surgery.price || paymentsOf(surgery.id).reduce((n, x) => n + (x.status === 'skipped' ? 0 : Number(x.amount) || 0), 0) || ''));
   const [cost, setCost] = useState(String(surgery.cost || ''));
   const [paid, setPaid] = useState('');
   const [method, setMethod] = useState(PAYMENT_METHOD_OPTIONS[0]?.value ?? 'cash');

@@ -14,7 +14,7 @@ export type SurgeryStatus = 'planned' | 'scheduled' | 'in_progress' | 'done' | '
 export type StageStatus = 'pending' | 'in_progress' | 'done' | 'skipped';
 export interface SurgeryStage { id: string; surgeryId: string; position: number; name: string; details: string; status: StageStatus; doneAt?: string }
 export const STAGE_STATUS: Record<StageStatus, { label: string; tone: string }> = { pending: { label: 'لم تبدأ', tone: 'muted' }, in_progress: { label: 'جارية', tone: 'info' }, done: { label: 'تمت', tone: 'ok' }, skipped: { label: 'متخطاة', tone: 'muted' } };
-export interface SurgeryPaymentStage { id: string; surgeryId: string; position: number; name: string; amount: number; dueDate: string }
+export interface SurgeryPaymentStage { id: string; surgeryId: string; position: number; name: string; amount: number; dueDate: string; status?: 'pending' | 'skipped' }
 export type FollowUpKind = 'surgery' | 'imaging';
 export const FOLLOW_UP_KIND: Record<FollowUpKind, string> = { surgery: 'متابعة عمليات', imaging: 'متابعة صور' };
 export type FractureStatus = 'casted' | 'healing' | 'healed' | 'surgical';
@@ -101,7 +101,7 @@ const COLUMNS: Record<Kind, string[]> = {
   imaging: ['patient_id', 'kind', 'region', 'requested_at', 'status', 'finding', 'attachments'],
   surgeries: ['patient_id', 'procedure', 'region', 'side', 'hospital', 'date', 'implant', 'status', 'notes', 'total_price', 'discount', 'price', 'cost'],
   surgery_stages: ['surgery_id', 'position', 'name', 'details', 'status'],
-  surgery_payment_stages: ['surgery_id', 'position', 'name', 'amount', 'due_date'],
+  surgery_payment_stages: ['surgery_id', 'position', 'name', 'amount', 'due_date', 'status'],
   fractures: ['patient_id', 'bone', 'side', 'kind', 'injury_date', 'cast_date', 'removal_due', 'status'],
   nursing: ['patient_id', 'appointment_id', 'date', 'sheet'],
   injections: ['patient_id', 'appointment_id', 'date', 'sheet'],

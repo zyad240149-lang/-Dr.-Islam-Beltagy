@@ -34,7 +34,7 @@ export default function Therapists({ embedded = false }: { embedded?: boolean })
     <div className={embedded ? undefined : "page"}>
       <div className="page-head">
         {embedded ? <p className="muted">مقدمو الخدمة: التخصص، الخدمات، ساعات العمل، الإجازات، والأداء.</p> : <div><h1>الأطباء والمعالجون</h1><p>مقدمو الخدمة: التخصص، الخدمات، ساعات العمل، الإجازات، والأداء.</p></div>}
-        {can('therapists', 'create') && <Button icon="stethoscope" onClick={() => setEditing('new')}>إضافة معالج</Button>}
+        {can('therapists', 'create') && <Button icon="stethoscope" onClick={() => setEditing('new')}>إضافة موظف</Button>}
       </div>
       {loading ? <div className="stats-grid">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="card"><div className="card__body"><Skeleton h={120} /></div></div>)}</div>
         : therapists.length === 0 ? <EmptyState icon="stethoscope" title="ما فيه معالجون" /> : (
@@ -162,7 +162,7 @@ export function TherapistModal({ therapist, onClose }: { therapist?: Therapist; 
   };
 
   return (
-    <Modal title={therapist ? 'تعديل بيانات المعالج' : 'إضافة معالج'} wide onClose={onClose} footer={<><Button variant="outline" onClick={onClose} disabled={busy}>إلغاء</Button><Button onClick={submit} loading={busy}>حفظ</Button></>}>
+    <Modal title={therapist ? 'تعديل بيانات المعالج' : 'إضافة موظف'} wide onClose={onClose} footer={<><Button variant="outline" onClick={onClose} disabled={busy}>إلغاء</Button><Button onClick={submit} loading={busy}>حفظ</Button></>}>
       <div className="form-section">
         <div className="form-section-title">البيانات الأساسية</div>
         {!therapist && (

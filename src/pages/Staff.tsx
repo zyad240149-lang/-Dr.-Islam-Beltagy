@@ -72,7 +72,7 @@ export default function Staff({ embedded = false }: { embedded?: boolean }) {
       <div className="page-head">
         {embedded ? <p className="muted">حسابات الموظفين، والأطباء والمعالجون في مكان واحد.</p> : <div><h1>الموظفون</h1><p>حسابات الموظفين، والأطباء والمعالجون في مكان واحد.</p></div>}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {(can('therapists', 'create') || can('employees', 'create')) && <Button icon="stethoscope" onClick={() => setEditingTherapist('new')}>إضافة معالج</Button>}
+          {(can('therapists', 'create') || can('employees', 'create')) && <Button icon="stethoscope" onClick={() => setEditingTherapist('new')}>إضافة موظف</Button>}
         </div>
       </div>
       <div className="card">

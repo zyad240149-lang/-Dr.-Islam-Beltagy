@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from './services/auth';
-import { can, type Area } from './services/permissions';
+import { AREA_LABEL, can, type Area } from './services/permissions';
 import Layout from './components/Layout';
 import { Icon } from './utils/icons';
 import { EmptyState } from './components/ui';
@@ -26,6 +26,7 @@ const Requests = lazy(() => import('./pages/Requests'));
 const Support = lazy(() => import('./pages/Support'));
 const Campaigns = lazy(() => import('./pages/Campaigns'));
 const WorkHours = lazy(() => import('./pages/WorkHours'));
+const MyWorkHours = lazy(() => import('./pages/MyWorkHours'));
 const Invoices = lazy(() => import('./pages/Invoices'));
 const Reports = lazy(() => import('./pages/Reports'));
 const Inventory = lazy(() => import('./pages/Inventory'));
@@ -104,6 +105,7 @@ const ROUTES: { path: string; area: Area; anyOf?: Area[]; el: JSX.Element }[] = 
   { path: '/exercises', area: 'patients', el: <Exercises /> },
   { path: '/employees', area: 'employees', el: <Staff /> },
   { path: '/work-hours', area: 'workhours', el: <WorkHours /> },
+  { path: '/my-hours', area: 'dashboard', anyOf: Object.keys(AREA_LABEL) as Area[], el: <MyWorkHours /> }, // لأي موظف
   { path: '/requests', area: 'requests', el: <Requests /> },
   { path: '/attendance', area: 'attendance', el: <Attendance /> },
   { path: '/loyalty', area: 'loyalty', el: <Navigate to="/" replace /> }, // اتشالت (هجرة 920)

@@ -757,6 +757,10 @@ export const db = {
     }
     return { ok: true, therapist: t };
   },
+  async saveMyWorkHours(hours: NonNullable<Employee['workHours']>): Promise<Result> {
+    const r = await rpc('save_my_work_hours', { p: hours }, ['employees', 'catalog', 'activity']);
+    return r.ok ? { ok: true } : r;
+  },
   async updateTherapist(id: string, patch: Partial<Omit<Therapist, 'id'>>) {
     const cur = load().therapists.find((x) => x.id === id);
     if (!cur) return;

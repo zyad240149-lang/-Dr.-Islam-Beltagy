@@ -7,7 +7,7 @@ import { Icon } from '../utils/icons';
 import { leaveMessage, useAuth } from '../services/auth';
 import { db, type SearchHit } from '../data/db';
 import { useDbVersion } from '../hooks/useDb';
-import { can, ROLE_LABEL, type Area } from '../services/permissions';
+import { AREA_LABEL, can, ROLE_LABEL, type Area } from '../services/permissions';
 import { initials } from '../utils/format';
 import { useToast } from '../hooks/useToast';
 import { prefetchRoute } from '../routeImports';
@@ -48,6 +48,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     { to: '/attendance', label: 'الحضور والانصراف', icon: 'checkCircle', area: 'attendance' },
     { to: '/requests', label: 'طلبات الموظفين', icon: 'inbox', area: 'requests' },
     { to: '/work-hours', label: 'مواعيد العمل', icon: 'clock', area: 'workhours' },
+    { to: '/my-hours', label: 'مواعيد شغلي', icon: 'clock', area: 'dashboard', anyOf: Object.keys(AREA_LABEL) as Area[] },
   ] },
   { title: 'المخزون والتواصل', items: [
     { to: '/inventory', label: 'المخزون', icon: 'box', area: 'inventory' },

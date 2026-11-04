@@ -210,7 +210,7 @@ function StagesModal({ surgery, onClose }: { surgery: Surgery; onClose: () => vo
         </div>
       )}
       {locked && (
-        <p style={{ marginBottom: 0 }}>المستحق: <strong className="num">{money(Number(surgery.price) || 0)}</strong> · المدفوع عند الإنهاء: <strong className="num">{money(Number(surgery.paidAtFinish) || 0)}</strong> · التكلفة: <strong className="num">{money(Number(surgery.cost) || 0)}</strong></p>
+        <p style={{ marginBottom: 0 }}>المستحق: <strong className="num">{money(Number(surgery.price) || 0)}</strong> · المدفوع عند الإنهاء: <strong className="num">{money(Number(surgery.paidAtFinish) || 0)}</strong></p>
       )}
       {finishing && <FinishModal surgery={surgery} onClose={() => setFinishing(false)} onDone={onClose} />}
     </Modal>
@@ -222,7 +222,6 @@ function FinishModal({ surgery, onClose, onDone }: { surgery: Surgery; onClose: 
   const { run, busy } = useRun();
   const items = db.inventory().filter((x) => x.active);
   const [price, setPrice] = useState(String(surgery.price || paymentsOf(surgery.id).reduce((n, x) => n + (x.status === 'skipped' ? 0 : Number(x.amount) || 0), 0) || ''));
-  const [cost, setCost] = useState(String(surgery.cost || ''));
   const [paid, setPaid] = useState('');
   const [method, setMethod] = useState(PAYMENT_METHOD_OPTIONS[0]?.value ?? 'cash');
   const [supplies, setSupplies] = useState<Record<string, string>>({});
@@ -231,7 +230,7 @@ function FinishModal({ surgery, onClose, onDone }: { surgery: Surgery; onClose: 
   const invalid = nPaid > nPrice;
   const finish = () => run(async () => {
     const list = Object.entries(supplies).map(([itemId, qty]) => ({ itemId, qty: amount(qty) })).filter((x) => x.qty > 0);
-    const { error } = await supabase.rpc('finish_surgery', { p: { id: surgery.id, price: nPrice, cost: amount(cost), paid: nPaid, method, supplies: list } });
+    const { error } = await supabase.rpc('finish_surgery', { p: { id: surgery.id, price: nPrice, cost: Number(surgery.cost) || 0, paid: nPaid, method, supplies: list } });
     if (error) throw new Error(error.message);
     await ortho.reload('surgeries');
     void db.hydrate();
@@ -245,7 +244,6 @@ function FinishModal({ surgery, onClose, onDone }: { surgery: Surgery; onClose: 
         <Field label="المبلغ المستحق على المريض"><input className="input" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} /></Field>
         <Field label="المدفوع الآن"><input className="input" inputMode="decimal" value={paid} onChange={(e) => setPaid(e.target.value)} /></Field>
         {nPaid > 0 && <Field label="طريقة الدفع"><select className="input" value={method} onChange={(e) => setMethod(e.target.value)}>{PAYMENT_METHOD_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select></Field>}
-        <Field label="تكلفة العملية على العيادة"><input className="input" inputMode="decimal" value={cost} onChange={(e) => setCost(e.target.value)} /></Field>
       </div>
       {details.length > 0 && (
         <div style={{ marginBottom: 10 }}>

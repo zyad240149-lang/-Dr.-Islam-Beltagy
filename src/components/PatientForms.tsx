@@ -85,7 +85,7 @@ export function EditPatientModal({ patient, onClose }: { patient: Patient; onClo
           <Input id="ep-email" label="البريد الإلكتروني" dir="ltr" value={f.email ?? ''} onChange={(e) => set('email', e.target.value)} />
           <Select id="ep-gender" label="النوع" value={f.gender} onChange={(e) => set('gender', e.target.value as Patient['gender'])} options={[...(!f.gender ? [{ value: '', label: '— غير محدد —' }] : []), { value: 'male', label: 'رجل' }, { value: 'female', label: 'امرأة' }]} />
           <Input id="ep-birth" label="تاريخ الميلاد" type="date" value={f.birthDate} max={todayYmd()} onChange={(e) => set('birthDate', e.target.value)} />
-          <Select id="ep-doctor" label="الطبيب المسؤول" value={f.doctorId ?? ''} onChange={(e) => set('doctorId', e.target.value || null)} options={[{ value: '', label: 'غير محدد' }, ...db.allTherapists().map((t) => ({ value: t.id, label: t.name }))]} />
+          <Select id="ep-doctor" label="الطبيب المسؤول" value={f.doctorId ?? ''} onChange={(e) => set('doctorId', e.target.value || null)} options={[{ value: '', label: 'غير محدد' }, ...db.allTherapists().filter((t) => t.active || t.id === f.doctorId).map((t) => ({ value: t.id, label: t.name }))]} />
           <Select id="ep-source" label="كيف عرف عن المركز" value={f.referralSource} onChange={(e) => set('referralSource', e.target.value as ReferralSource)} options={Object.entries(REFERRAL_SOURCE_LABEL).map(([value, label]) => ({ value, label }))} />
         </div>
       </div>
@@ -203,7 +203,7 @@ export function NewPatientModal({ onClose, onCreated }: { onClose: () => void; o
       <div className="form-section">
         <div className="form-section-title">تفاصيل أخرى</div>
         <div className="grid-form">
-          <Select id="np-doctor" label="الطبيب المسؤول" value={f.doctorId} onChange={(e) => set('doctorId', e.target.value)} options={[{ value: '', label: 'غير محدد' }, ...db.allTherapists().map((t) => ({ value: t.id, label: t.name }))]} />
+          <Select id="np-doctor" label="الطبيب المسؤول" value={f.doctorId} onChange={(e) => set('doctorId', e.target.value)} options={[{ value: '', label: 'غير محدد' }, ...db.allTherapists().filter((t) => t.active || t.id === f.doctorId).map((t) => ({ value: t.id, label: t.name }))]} />
           <Select id="np-source" label="كيف عرفت عن المركز؟" value={f.referralSource} onChange={(e) => set('referralSource', e.target.value as ReferralSource)} options={Object.entries(REFERRAL_SOURCE_LABEL).map(([value, label]) => ({ value, label }))} />
         </div>
         <TextArea id="np-notes" label="ملاحظات" value={f.notes} onChange={(v) => set('notes', v)} />

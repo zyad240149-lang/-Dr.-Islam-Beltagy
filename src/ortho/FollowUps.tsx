@@ -47,7 +47,10 @@ export function FuBadge({ f }: { f: Pick<FollowUp, 'status' | 'date'> }) {
 /** الطبيب الافتراضي: طبيب الزيارة ← الطبيب المسؤول عن المريض ← حساب الطبيب اللي فاتح */
 function useDefaultDoctor(patientId: string, hint?: string | null) {
   const { user } = useAuth();
-  return hint || db.patient(patientId)?.doctorId || user?.therapistId || '';
+  const active = db.therapists();
+  const ok = (id?: string | null) => (id && active.some((t) => t.id === id) ? id : '');
+  // الطبيب الموقوف مايتحطش افتراضي؛ ولو فيه طبيب نشط واحد بس يتختار لوحده
+  return ok(hint) || ok(db.patient(patientId)?.doctorId) || ok(user?.therapistId) || (active.length === 1 ? active[0].id : '');
 }
 
 export type FuDraft = Omit<FollowUp, 'id' | 'status' | 'appointmentId' | 'consultationId'> & { key?: string };
@@ -207,7 +210,7 @@ export function FollowUpModal({ patientId, consultationId, initial, doctorHint, 
       <Field label="الطبيب المسؤول">
         <select className="input" value={f.doctorId} disabled={!canSave} onChange={(e) => setF((x) => ({ ...x, doctorId: e.target.value, time: '' }))}>
           <option value="">اختار الطبيب</option>
-          {db.allTherapists().map((th) => <option key={th.id} value={th.id}>{th.name}</option>)}
+          {db.allTherapists().filter((th) => th.active || th.id === saved?.doctorId).map((th) => <option key={th.id} value={th.id}>{th.name}</option>)}
         </select>
       </Field>
 

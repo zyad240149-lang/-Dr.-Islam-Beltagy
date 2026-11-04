@@ -194,7 +194,7 @@ export default function Diagnosis() {
               <LoadState kind="consultations">
                 {pending.length === 0
                   ? (visits.length === 0
-                    ? <EmptyState icon="calendarPlus" title="ما فيه مرضى اتعملهم حضور النهارده" text="أول ما الاستقبال يعمل حضور لمريض، هيظهر هنا عشان يتشخّص." />
+                    ? <EmptyState icon="calendarPlus" title="ما فيه مرضى حضروا كشف أو استشارة النهارده" text="أول ما الاستقبال يعمل حضور كشف أو استشارة لمريض، هيظهر هنا عشان يتشخّص." />
                     : <EmptyState icon="checkCircle" title="كل المرضى اللي حضروا النهارده اتشخصوا ✓" text="تشخيصاتهم في «المرضى اللي اتشخصوا»." />)
                   : (
                     <div className="dx-queue">
@@ -218,7 +218,7 @@ export default function Diagnosis() {
                             <div className="dx-queue__act">
                               {p && whatsappNumber(p) && <WhatsappLink phone={whatsappNumber(p)} patientId={p.id} button />}
                               {!perm.add ? null
-                                : state === 'incomplete' && consult ? <Button size="sm" icon="refresh" onClick={() => openSaved(consult, true)}>استكمال</Button>
+                                : state === 'incomplete' && consult ? <Button size="sm" icon="refresh" onClick={() => (consult.patientId ? openSaved(consult, true) : setUnlinkedEdit(consult))}>استكمال</Button>
                                 : local ? <Button size="sm" icon="refresh" onClick={() => resumeDraft(a.patientId, true)}>استكمال</Button>
                                 : <Button size="sm" icon="stethoscope" onClick={() => startNew(a.patientId, a.id)}>تشخيص</Button>}
                             </div>

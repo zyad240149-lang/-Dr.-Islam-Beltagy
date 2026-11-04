@@ -123,8 +123,8 @@ function DoctorDayPlan({ doctorId, date, exceptId }: { doctorId: string; date: s
   );
 }
 
-export function FollowUpModal({ patientId, consultationId, initial, doctorHint, onDraft, onSaved, onClose }: {
-  patientId: string; consultationId?: string | null; initial?: FollowUp | FuDraft; doctorHint?: string | null; onDraft?: (d: FuDraft) => void; onSaved?: (id: string) => void; onClose: () => void;
+export function FollowUpModal({ patientId, consultationId, initial, doctorHint, presetDate, onDraft, onSaved, onClose }: {
+  patientId: string; consultationId?: string | null; initial?: FollowUp | FuDraft; doctorHint?: string | null; presetDate?: string; onDraft?: (d: FuDraft) => void; onSaved?: (id: string) => void; onClose: () => void;
 }) {
   useDbVersion();
   useOrthoVersion();
@@ -132,7 +132,7 @@ export function FollowUpModal({ patientId, consultationId, initial, doctorHint, 
   const { run, busy } = useRun();
   const doc = useDefaultDoctor(patientId, doctorHint);
   const saved = initial && 'id' in initial ? initial as FollowUp : null;
-  const [f, setF] = useState<FuDraft>(() => (initial ? { ...initial, time: hhmm(initial.time) } : emptyDraft(patientId, doc)));
+  const [f, setF] = useState<FuDraft>(() => (initial ? { ...initial, time: hhmm(initial.time) } : { ...emptyDraft(patientId, doc), ...(presetDate ? { date: presetDate } : {}) }));
   const [book, setBook] = useState<number | null>(null); // وقت فتح الحجز — عشان نلاقي الحجز اللي اتعمل ونربطه
   const createdId = useRef<string | undefined>(undefined); // لو الحجز فشل بعد حفظ المتابعة، إعادة المحاولة ماتكررهاش
   const [checkIn, setCheckIn] = useState(false);

@@ -7,7 +7,8 @@ import { DOCTOR } from '../landing/content';
 import { fmtDate, todayYmd } from '../utils/format';
 import { fileNoText } from '../utils/phoneUtils';
 import { openPrintWindow, printHtml } from '../utils/printDoc';
-import { ortho, type Nursing, type NursingSheet, type RxData } from './data';
+import { addDays, ortho, useOrthoVersion, type Nursing, type NursingSheet, type RxData } from './data';
+import { FollowUpModal, fuWhen, useFuCan } from './FollowUps';
 import { RxEditor, cleanRx, hasRx, normRx, registerRxRequests } from './Rx';
 import { printRx } from './printRx';
 import { Field, IconBtn, confirmDelete, useClinicalCan, useRun } from './kit';
@@ -29,6 +30,7 @@ const OPT = {
   instr: ['راحة نسبية', 'تمارين منزلية', 'علاج طبيعي', 'تجنب مجهود معين'],
   fu: ['أسبوع', 'أسبوعين', 'شهر'],
 };
+const FU_DAYS: Record<string, number> = { 'أسبوع': 7, 'أسبوعين': 14, 'شهر': 30 };
 const emptyPlan = (): NonNullable<NursingSheet['plan']> => ({ tx: [], txOther: '', instr: [], instrOther: '', fu: '' });
 
 export const emptyNursing = (): NursingSheet => ({
@@ -63,7 +65,10 @@ const Box = ({ title, children, on, onToggle }: { title: string; children: React
 );
 
 export function NursingModal({ patientId, appointmentId = null, initial, onClose }: { patientId: string; appointmentId?: string | null; initial?: Nursing; onClose: () => void }) {
+  useOrthoVersion();
   const { run, busy } = useRun();
+  const fuPerm = useFuCan();
+  const [fuOpen, setFuOpen] = useState(false);
   const visitNo = appointmentId ? String(db.appointments().find((a) => a.id === appointmentId)?.no ?? '') : '';
   const [date, setDate] = useState(initial?.date ?? todayYmd());
   const [s, setS] = useState<NursingSheet>(() => initial ? norm(initial.sheet) : { ...emptyNursing(), visitNo });
@@ -74,6 +79,8 @@ export function NursingModal({ patientId, appointmentId = null, initial, onClose
   const setPlan = <K extends keyof typeof pl>(k: K, v: (typeof pl)[K]) => setS((x) => ({ ...x, plan: { ...(x.plan ?? emptyPlan()), [k]: v } }));
   const [rx, setRx] = useState<RxData>(() => normRx(initial?.sheet.rx));
   const [uploading, setUploading] = useState(false);
+  const visitDoctor = appointmentId ? db.appointment(appointmentId)?.therapistId : undefined;
+  const nextFu = ortho.list('follow_ups', patientId).filter((f) => f.status === 'scheduled' && f.date >= todayYmd()).sort((a, b) => a.date.localeCompare(b.date))[0];
   const item = { id: initial?.id, patientId, appointmentId: initial ? initial.appointmentId ?? null : appointmentId, date, sheet: { ...s, rx: cleanRx(rx) } };
   const save = (print: 'sheet' | 'rx' | null) => {
     const win = print ? openPrintWindow() : undefined;
@@ -159,13 +166,17 @@ export function NursingModal({ patientId, appointmentId = null, initial, onClose
             <input className="input" style={{ marginTop: 6 }} placeholder="تفاصيل" value={pl.txOther} onChange={(e) => setPlan('txOther', e.target.value)} /></Field>
           <Field label="التعليمات"><Multi options={OPT.instr} value={pl.instr} onChange={(v) => setPlan('instr', v)} />
             <input className="input" style={{ marginTop: 6 }} placeholder="تعليمات أخرى" value={pl.instrOther} onChange={(e) => setPlan('instrOther', e.target.value)} /></Field>
-          <Field label="موعد المتابعة — بعد"><Pick options={OPT.fu} value={pl.fu} onChange={(v) => setPlan('fu', v)} /></Field>
+          <Field label="موعد المتابعة — بعد"><Pick options={OPT.fu} value={pl.fu} onChange={(v) => setPlan('fu', v)} />
+            {nextFu && <small className="muted" style={{ display: 'block', marginTop: 6 }}>الموعد الجاي: <bdi className="num">{fuWhen(nextFu)}</bdi></small>}
+            {fuPerm.add && <Button size="sm" variant="outline" icon="calendarPlus" style={{ marginTop: 6 }} onClick={() => setFuOpen(true)}>تحديد موعد متابعة</Button>}
+          </Field>
         </div>
       </Box>
 
       <Box title="الروشتة والأشعة والتحاليل">
         <RxEditor value={rx} onChange={setRx} patientId={patientId} region={ortho.list('consultations', patientId).sort((a, b) => b.date.localeCompare(a.date))[0]?.region} onUploading={setUploading} />
       </Box>
+      {fuOpen && <FollowUpModal patientId={patientId} doctorHint={visitDoctor} presetDate={addDays(todayYmd(), FU_DAYS[pl.fu] ?? 7)} onClose={() => setFuOpen(false)} />}
     </Modal>
   );
 }

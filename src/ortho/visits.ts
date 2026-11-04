@@ -3,23 +3,41 @@
 import { db } from '../data/db';
 import { isIncomplete, ortho, type Consultation } from './data';
 import type { Appointment } from '../types';
+import { normalizeSearch, phoneMatches } from '../utils/phoneUtils';
 
 export const ATTENDED = new Set(['arrived', 'in_progress', 'completed']);
 export type VisitState = 'waiting' | 'incomplete' | 'done';
 export interface VisitDx { a: Appointment; consult?: Consultation; state: VisitState }
 
-/** تشخيص الزيارة: المربوط بيها — أو (كشوفات قبل الربط) كشف نفس اليوم لنفس المريض من غير زيارة */
-export function consultForVisit(a: Appointment, consults: Consultation[]): Consultation | undefined {
-  return consults.find((c) => c.appointmentId === a.id)
-    ?? consults.find((c) => !c.appointmentId && c.patientId === a.patientId && c.date === a.date);
+/** تشخيص اتعمل بالاسم من غير ملف (غالبًا والنت فاصل) لنفس مريض الزيارة: نفس اليوم ونفس الاسم، والموبايل مايختلفش لو الاتنين مكتوبين */
+function unlinkedMatchesVisit(c: Consultation, a: Appointment): boolean {
+  if (c.patientId || c.date !== a.date || !c.pendingPatient?.name) return false;
+  const p = db.patient(a.patientId);
+  if (!p || normalizeSearch(c.pendingPatient.name) !== normalizeSearch(p.fullName)) return false;
+  const phone = c.pendingPatient.phone?.trim();
+  return !phone || !p.phone || phoneMatches(p.phone, phone);
 }
 
-/** زيارات النهارده اللي اتعملها حضور — زيارة واحدة لكل مريض (أول زيارة لسه ما اتشخصتش، وإلا آخر زيارة اتشخصت) */
+/** الزيارة تستنى تشخيص: حضور كشف أو استشارة بس — زيارات المتابعة والخدمات التانية مالهاش مكان في القايمة */
+export function needsDiagnosis(a: Appointment): boolean {
+  if (a.type === 'followup') return false;
+  const name = db.service(a.serviceId)?.name;
+  return !name || /كشف|استشار/.test(name);
+}
+
+/** تشخيص الزيارة: المربوط بيها — أو (كشوفات قبل الربط) كشف نفس اليوم لنفس المريض من غير زيارة، أو بنفس الاسم من غير ملف */
+export function consultForVisit(a: Appointment, consults: Consultation[]): Consultation | undefined {
+  return consults.find((c) => c.appointmentId === a.id)
+    ?? consults.find((c) => !c.appointmentId && c.patientId === a.patientId && c.date === a.date)
+    ?? consults.find((c) => unlinkedMatchesVisit(c, a));
+}
+
+/** زيارات النهارده اللي اتعملها حضور كشف أو استشارة — زيارة واحدة لكل مريض (أول زيارة لسه ما اتشخصتش، وإلا آخر زيارة اتشخصت) */
 export function todaysVisits(): VisitDx[] {
   const consults = ortho.list('consultations');
   const byPatient = new Map<string, VisitDx>();
   const order: VisitState[] = ['incomplete', 'waiting', 'done'];
-  for (const a of db.todayAppointments().filter((x) => ATTENDED.has(x.status)).sort((x, y) => x.time.localeCompare(y.time))) {
+  for (const a of db.todayAppointments().filter((x) => ATTENDED.has(x.status) && needsDiagnosis(x)).sort((x, y) => x.time.localeCompare(y.time))) {
     const consult = consultForVisit(a, consults);
     const state: VisitState = !consult ? 'waiting' : isIncomplete(consult) ? 'incomplete' : 'done';
     const cur = byPatient.get(a.patientId);

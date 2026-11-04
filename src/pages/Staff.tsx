@@ -34,8 +34,8 @@ export default function Staff({ embedded = false }: { embedded?: boolean }) {
   const [role, setRole] = useState('');
   const [state, setState] = useState('');
 
-  // المدير العام ومدير المركز بس يشوفوا كل الحسابات — باقي الموظفين يشوفوا حسابهم هم بس
-  const canViewAll = (can('employees', 'view') || can('therapists', 'view')) && (user?.role === 'system_admin' || user?.role === 'center_manager');
+  // المدير واللي معاه صلاحية إضافة أو تعديل الموظفين بيشوفوا كل الحسابات — الباقي بيشوفوا حسابهم بس
+  const canViewAll = ((can('employees', 'view') || can('therapists', 'view')) && (user?.role === 'system_admin' || user?.role === 'center_manager')) || can('employees', 'create') || can('employees', 'edit');
   const employees = db.employees();
   const therapists = db.allTherapists();
   const t0 = todayYmd();

@@ -14,8 +14,9 @@ import { EditPatientModal } from './PatientForms';
 type GapInput = Parameters<typeof patientGaps>[0];
 
 // شارة صغيرة جنب اسم المريض في القوائم ونتايج البحث
-export function CompletenessBadge({ patient, full = false }: { patient?: GapInput | null; full?: boolean }) {
+export function CompletenessBadge({ patient, full = false }: { patient?: (GapInput & { isGuest?: boolean }) | null; full?: boolean }) {
   if (!patient) return null;
+  if (patient.isGuest) return <span className="gap-badge" title="اتحجز بالمكالمة — كمّل بيانات المريض لما يوصل">حجز مكالمة — استكمال بيانات</span>;
   const g = patientGaps(patient);
   if (!g.length) return <span className="ok-badge" title="بيانات المريض مكتملة">✓ مكتمل</span>;
   return <span className="gap-badge" title={INCOMPLETE_MESSAGE}>غير مكتمل{full ? `: ${g.join('، ')}` : ''}</span>;
@@ -43,6 +44,12 @@ export function IncompleteAlert({ patientId, showComplete = false, style }: { pa
   const p = patientId ? db.patient(patientId) : undefined;
   if (!p) return null;
   const g = patientGaps(p);
+  if (p.isGuest && !g.length) return (
+    <div className="alert alert-warn" role="alert" style={{ marginBottom: 12, ...style }}>
+      <div style={{ flex: 1 }}><strong>المريض حجز عن طريق مكالمة — كمّل بياناته لما يوصل.</strong></div>
+      <CompleteDataButton patientId={p.id} />
+    </div>
+  );
   if (!g.length) return showComplete ? <div className="alert alert-ok" style={{ marginBottom: 12, ...style }}><div>✓ بيانات المريض مكتملة.</div></div> : null;
   return (
     <div className="alert alert-warn" role="alert" style={{ marginBottom: 12, ...style }}>

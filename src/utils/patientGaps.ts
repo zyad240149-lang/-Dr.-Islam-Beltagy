@@ -22,4 +22,6 @@ export function patientGaps(p: Pick<Patient, 'fullName' | 'phone' | 'nationalId'
   return g;
 }
 
+/** محتاج استكمال: ملف ناقص، أو متصل حجز بالمكالمة ولسه ملفه ما اتكملش (ده تنبيه بس، مش بيمنع تأكيد الموعد) */
+export const needsCompletion = (p: Parameters<typeof patientGaps>[0] & { isGuest?: boolean }) => !!p.isGuest || patientGaps(p).length > 0;
 export const isPatientComplete = (p: Parameters<typeof patientGaps>[0]) => patientGaps(p).length === 0;

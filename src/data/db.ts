@@ -706,9 +706,13 @@ export const db = {
   async updatePatient(id: string, patch: Partial<Patient>) {
     // لو للمريض عمليات معلّقة نعدّل عن طريق الطابور عشان الترتيب يفضل سليم
     const pendingCreate = offline.queue.list().find((o) => o.kind === 'patient.create' && o.entityId === id);
+    // متصل حجز بالمكالمة: استكمال بياناته بيحوّله لمريض ظاهر في «المرضى» (زي createPatient)، وده محتاج الخادم
+    const guest = guests.find((x) => x.id === id);
+    if (guest && !net.isOnline()) throw new DbError(OFFLINE_MSG);
     if (net.isOnline() && !offline.queue.hasPendingFor(id)) {
-      const { data, error } = await supabase.from('patients').update(map.patientRow(patch)).eq('id', id).select().single();
+      const { data, error } = await supabase.from('patients').update({ ...map.patientRow(patch), ...(guest ? { is_guest: false } : {}) }).eq('id', id).select().single();
       if (!error) {
+        if (guest) { guests = guests.filter((x) => x.id !== id); load().patients.push(map.patient(data)); }
         const i = load().patients.findIndex((x) => x.id === id);
         if (i >= 0) load().patients[i] = map.patient(data);
         commit();

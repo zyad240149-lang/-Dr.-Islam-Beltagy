@@ -1,6 +1,7 @@
 // جدول المواعيد (Day / Week): الوقت عمودي والأطباء أعمدة. كل موعد Block ممتد بطول مدته الفعلية، وكل خانة فاضية زرار حجز مباشر.
 // المصدر: المواعيد الفعلية في db (Supabase + Realtime) فأي حجز/إلغاء بيظهر فورًا من غير Refresh. الأوقات من «مواعيد العمل» (ساعات المركز) + إجازة الدكتور + المواعيد القائمة.
 // الحجز نفسه بيتحقق منه الخادم (check_slot + تريجر منع التداخل) — الواجهة هنا عرض وتسهيل بس.
+import { needsCompletion } from '../utils/patientGaps';
 import { useEffect, useMemo, useState } from 'react';
 import { db, DOCTOR_DAY_LABEL, type DoctorDayWindow } from '../data/db';
 import { useDbVersion } from '../hooks/useDb';
@@ -198,7 +199,7 @@ export default function ScheduleGrid({ mode, date, doctorId, scopedDoctorId, mat
                     className={`tg-appt tg-appt--${st.cls} ${current ? 'is-current' : ''} ${dim ? 'is-dim' : ''} ${searching && !dim ? 'is-hit' : ''}`}
                     style={{ top, height: h - 2, insetInlineStart: `${(ln.lane * 100) / ln.of}%`, width: `calc(${100 / ln.of}% - 3px)` }}>
                     <span className="tg-appt__top"><Icon name={st.icon} size={12} /><span className="tg-appt__st">{st.label}</span>{isOnline(a) && <b className="tg-badge tg-badge--web" title="حجزه المريض بنفسه من الموقع">حجز أونلاين من الموقع</b>}{a.createdByKind === 'staff' && <b className="tg-badge tg-badge--by" title={bookedTitle(a)}><span>حجزه:</span> <Who name={a.createdByName?.split(' ')[0]} role={a.createdByRole} /></b>}{current && <b className="tg-badge tg-badge--now">الآن</b>}{!current && upcomingId === a.id && <b className="tg-badge">التالي</b>}</span>
-                    <strong className="tg-appt__name">{p?.fullName ?? 'مريض'}{a.pendingSync && <span title="بانتظار المزامنة — لم يصل للخادم بعد" aria-label="بانتظار المزامنة"> ⟳</span>}</strong>
+                    <strong className="tg-appt__name">{p && needsCompletion(p) && <span title="محتاج استكمال بيانات" aria-label="محتاج استكمال بيانات">⚠ </span>}{p?.fullName ?? 'مريض'}{a.pendingSync && <span title="بانتظار المزامنة — لم يصل للخادم بعد" aria-label="بانتظار المزامنة"> ⟳</span>}</strong>
                     {!compact && <span className="tg-appt__svc">{db.service(a.serviceId)?.name ?? '—'}</span>}
                     <span className="tg-appt__time num">{fmtTime(a.time)} – {fmtTime(toHm(end))}</span>
                   </button>

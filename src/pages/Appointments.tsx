@@ -1,6 +1,6 @@
-import { CompletenessBadge, IncompleteAlert } from '../components/PatientCompleteness';
+import { CompleteDataButton, CompletenessBadge, IncompleteAlert } from '../components/PatientCompleteness';
+import { needsCompletion } from '../utils/patientGaps';
 import { PendingSyncTag } from '../components/OfflineStatus';
-import { isPatientComplete } from '../utils/patientGaps';
 import { patientMatches } from '../utils/phoneUtils';
 import { isEn } from '../i18n';
 import { useEffect, useState } from 'react';
@@ -194,13 +194,14 @@ export default function Appointments() {
                             <div className="tl-time num">{fmtTime(a.time)}</div>
                             <div className={`tl-card st-${a.status}`}>
                               <div className="tl-card__info">
-                                <strong>{p?.fullName}</strong> {a.pendingSync && <PendingSyncTag />}{p && !isPatientComplete(p) && <CompletenessBadge patient={p} />}
+                                <strong>{p?.fullName}</strong> {a.pendingSync && <PendingSyncTag />}{p && needsCompletion(p) && <CompletenessBadge patient={p} />}
                                 <span className="muted-sm">{svc?.name} · {APPT_TYPE_LABEL[a.type]} · {th?.name ?? 'بدون طبيب'}{branch ? ` · ${branch.name}` : ''}</span>
                               </div>
                               <StatusBadge label={st.label} tone={st.tone} />
                               {live && <Countdown target={new Date(`${a.date}T${a.time}:00+03:00`).getTime()} />}
                               {CONFIRMABLE.includes(a.status) && attendanceOpen(a) && can('appointments', 'edit') && can('appt_confirm', 'view') && <ConfirmApptButton appt={a} />}
                               {canConfirmUpcoming(a) && can('appointments', 'edit') && <ConfirmUpcomingButton appt={a} />}
+                              {p && needsCompletion(p) && <CompleteDataButton patientId={p.id} />}
                               <Button variant="outline" size="sm" onClick={() => setDetail(a)}>التفاصيل</Button>
                             </div>
                           </div>
@@ -230,7 +231,7 @@ export default function Appointments() {
                     const st = APPT_STATUS[a.status]; const th = db.therapist(a.therapistId); const branch = th ? branchForDate(th.workHours, a.date) : null;
                     return (
                     <tr key={a.id}><td className="num">{a.no}</td><td>{fmtDate(a.date)}</td><td className="num">{fmtTime(a.time)}</td><td>{db.patient(a.patientId)?.fullName} {a.pendingSync && <PendingSyncTag />}<CompletenessBadge patient={db.patient(a.patientId)} /></td><td>{db.service(a.serviceId)?.name}</td><td>{th?.name}{branch && <div className="muted-sm">{branch.name}</div>}</td><td><StatusBadge label={st.label} tone={st.tone} /></td><td><ActorBadges a={a} /></td>
-                      <td style={{ whiteSpace: 'nowrap' }}>{canConfirmUpcoming(a) && can('appointments', 'edit') && <ConfirmUpcomingButton appt={a} />} <Button variant="outline" size="sm" onClick={() => setDetail(a)}>التفاصيل</Button></td></tr>); })}</tbody></table></div>
+                      <td style={{ whiteSpace: 'nowrap' }}>{canConfirmUpcoming(a) && can('appointments', 'edit') && <ConfirmUpcomingButton appt={a} />} {(() => { const lp = db.patient(a.patientId); return lp && needsCompletion(lp) ? <CompleteDataButton patientId={lp.id} /> : null; })()} <Button variant="outline" size="sm" onClick={() => setDetail(a)}>التفاصيل</Button></td></tr>); })}</tbody></table></div>
                 <div className="row-between" style={{ marginTop: 12 }}><span className="muted">صفحة <span className="num">{listPage}</span> من <span className="num">{listPages}</span></span>
                   <span className="row-actions"><Button variant="outline" size="sm" disabled={listPage <= 1} onClick={() => setListPage(listPage - 1)}>السابق</Button><Button variant="outline" size="sm" disabled={listPage >= listPages} onClick={() => setListPage(listPage + 1)}>التالي</Button></span></div>
               </>

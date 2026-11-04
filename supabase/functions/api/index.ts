@@ -130,6 +130,15 @@ async function can(role: string, area: string, op: string) {
   return !!data?.ops?.includes(op);
 }
 
+// نفس قاعدة has_perm في قاعدة البيانات: صلاحيات الموظف المخصّصة بتحل محل دوره، والصلاحيات الإضافية فوقها
+async function employeeCan(e: { role: string; perm_override?: Record<string, string[]> | null; extra_perms?: Record<string, string[]> | null }, area: string, op: string) {
+  if (e.role === "system_admin" || e.role === "center_manager") return true;
+  if (e.extra_perms?.[area]?.includes(op)) return true;
+  if (e.perm_override && area in e.perm_override) return !!e.perm_override[area]?.includes(op);
+  return can(e.role, area, op);
+}
+const isManager = (role: string) => role === "system_admin" || role === "center_manager";
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", {
@@ -237,7 +246,7 @@ Deno.serve(async (req) => {
   if (table === "support" && req.method === "POST") {
     const caller = await getCaller(req);
     if (!caller || caller.kind !== "staff") return json({ error: "غير مصرح — سجّل الدخول بحساب موظف" }, 401);
-    if (!(await can(caller.employee.role, "support", "edit"))) return json({ error: "ما فيه صلاحية للدعم الفني" }, 403);
+    if (!(await employeeCan(caller.employee, "support", "edit"))) return json({ error: "ما فيه صلاحية للدعم الفني" }, 403);
     const body = await req.json().catch(() => ({}));
 
     // نبحث بحساب واحد محدَّد بالـ id (اللي رجعناه من lookup) عشان reset-password ميلمسش حساب تاني غلط.
@@ -287,7 +296,7 @@ Deno.serve(async (req) => {
     const caller = await getCaller(req);
     if (!caller || caller.kind !== "staff") return json({ error: "غير مصرح — سجّل الدخول بحساب موظف" }, 401);
     const opMap: Record<string, string> = { GET: "view", POST: "create", PATCH: "edit", DELETE: "delete" };
-    if (!(await can(caller.employee.role, "employees", opMap[req.method] ?? "x"))) return json({ error: "ما فيه صلاحية لإدارة الموظفين" }, 403);
+    if (!(await employeeCan(caller.employee, "employees", opMap[req.method] ?? "x"))) return json({ error: "ما فيه صلاحية لإدارة الموظفين" }, 403);
     const ROLES = ["system_admin", "center_manager", "secretary", "therapist", "reception", "accountant"];
 
     if (req.method === "GET") {
@@ -308,6 +317,7 @@ Deno.serve(async (req) => {
       if (password.length < 6) return json({ error: "كلمة المرور لازم ما تقل عن 6 خانات" }, 400);
       if (!ROLES.includes(b.role)) return json({ error: "دور غير صالح" }, 400);
       if (b.role === "system_admin" && caller.employee.role !== "system_admin") return json({ error: "مدير النظام فقط يقدر ينشئ مدير نظام" }, 403);
+      if (b.role === "center_manager" && !isManager(caller.employee.role)) return json({ error: "المدير بس يقدر ينشئ حساب مدير مركز" }, 403);
       const variants = storedVariants(phone);
       const { data: exists } = await admin.from("employees").select("id")
         .or(`username.in.(${variants.map((v) => `"${v}"`).join(",")}),phone.in.(${variants.map((v) => `"${v}"`).join(",")})`).limit(1);
@@ -328,6 +338,7 @@ Deno.serve(async (req) => {
     if (!target) return json({ error: "الموظف غير موجود" }, 404);
     const isSelf = target.id === caller.employee.id;
     if (target.role === "system_admin" && caller.employee.role !== "system_admin") return json({ error: "ما تقدر تعدّل حساب مدير النظام" }, 403);
+    if (target.role === "center_manager" && !isManager(caller.employee.role)) return json({ error: "ما تقدر تعدّل حساب مدير المركز" }, 403);
 
     if (req.method === "PATCH") {
       const b = await req.json().catch(() => ({}));
@@ -343,6 +354,7 @@ Deno.serve(async (req) => {
         if (isSelf && b.role !== target.role) return json({ error: "ما تقدر تغيّر دورك بنفسك" }, 400);
         if (!ROLES.includes(b.role)) return json({ error: "دور غير صالح" }, 400);
         if (b.role === "system_admin" && caller.employee.role !== "system_admin") return json({ error: "فقط مدير النظام يعيّن مدير نظام" }, 403);
+        if (b.role === "center_manager" && !isManager(caller.employee.role)) return json({ error: "المدير بس يعيّن مدير مركز" }, 403);
         patch.role = b.role;
       }
       if (typeof b.active === "boolean") {
@@ -435,11 +447,10 @@ Deno.serve(async (req) => {
   }
 
   // ===== نطاق الموظف (staff) — يمر عبر RBAC role_permissions =====
-  const role = caller.employee.role;
   const area = AREA_BY_TABLE[table] ?? table;
   const opMap: Record<string, string> = { GET: "view", POST: "create", PATCH: "edit", DELETE: "delete" };
   const op = opMap[req.method];
-  if (!op || !(await can(role, area, op))) return json({ error: "ما فيه صلاحية" }, 403);
+  if (!op || !(await employeeCan(caller.employee, area, op))) return json({ error: "ما فيه صلاحية" }, 403);
 
   // هذا المسار العام (insert/update/delete خام بدون أي تحقق على مستوى الحقول) بيستخدم مفتاح service_role
   // فبيتخطى RLS بالكامل — والجداول دي مقصود إنها RPC-only بالضبط عشان الكتابة المباشرة فيها بتتخطى منطق

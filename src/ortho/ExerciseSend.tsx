@@ -7,7 +7,7 @@ import { useToast } from '../hooks/useToast';
 import { waPhone } from '../utils/format';
 import { ortho, useOrthoVersion, type Exercise, type ExerciseMedia } from './data';
 import { MediaThumb } from './Exercises';
-import { SearchBox, useClinicalCan, useRun } from './kit';
+import { Field, PatientSelect, SearchBox, useClinicalCan, useRun } from './kit';
 
 type Mode = 'images' | 'videos' | 'pdfs' | 'link' | 'open';
 const isPdf = (m: ExerciseMedia) => m.type === 'application/pdf';
@@ -18,7 +18,18 @@ const fileFor = async (m: ExerciseMedia) => {
   return new File([blob], m.name || m.path, { type: m.type });
 };
 
-export function ExerciseSendModal({ patientId, onClose }: { patientId: string; onClose: () => void }) {
+/** من مكتبة التمرينات: اختيار المريض الأول، وبعدها نفس شاشة الإرسال والتمرين متعلّم */
+export function ExerciseSendPickPatient({ exercise, onClose }: { exercise: Exercise; onClose: () => void }) {
+  const [patientId, setPatientId] = useState('');
+  if (patientId) return <ExerciseSendModal patientId={patientId} initialSel={[exercise.id]} onClose={onClose} />;
+  return (
+    <Modal title={`إرسال «${exercise.name}» عبر واتساب`} onClose={onClose} footer={<Button variant="outline" onClick={onClose}>إلغاء</Button>}>
+      <Field label="اختار المريض"><PatientSelect value={patientId} onChange={setPatientId} /></Field>
+    </Modal>
+  );
+}
+
+export function ExerciseSendModal({ patientId, initialSel, onClose }: { patientId: string; initialSel?: string[]; onClose: () => void }) {
   useOrthoVersion();
   const toast = useToast();
   const perm = useClinicalCan();
@@ -27,7 +38,7 @@ export function ExerciseSendModal({ patientId, onClose }: { patientId: string; o
   const exercises = ortho.list('exercises');
   const plans = ortho.list('exercise_plans', patientId);
   const last = plans[0];
-  const [sel, setSel] = useState<string[]>(last?.exerciseIds ?? []);
+  const [sel, setSel] = useState<string[]>(initialSel ?? last?.exerciseIds ?? []);
   const [notes, setNotes] = useState(last?.notes ?? '');
   const [q, setQ] = useState('');
   const [queue, setQueue] = useState<{ list: ExerciseMedia[]; i: number } | null>(null); // الكمبيوتر: نسخ الصور واحدة واحدة ولصقها في الشات

@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import { Button, EmptyState, Modal } from '../components/ui';
 import { useToast } from '../hooks/useToast';
 import { ortho, useOrthoVersion, type Exercise, type ExerciseMedia } from './data';
+import { ExerciseSendPickPatient } from './ExerciseSend';
 import { Field, IconBtn, LoadState, PageHead, SearchBox, confirmDelete, useClinicalCan, useRun } from './kit';
 
 type Draft = Omit<Exercise, 'id'> & { id?: string };
@@ -76,6 +77,7 @@ export default function Exercises() {
   const { run } = useRun();
   const [q, setQ] = useState('');
   const [edit, setEdit] = useState<Draft | null>(null);
+  const [sending, setSending] = useState<Exercise | null>(null);
   const all = ortho.list('exercises');
   const groups = [...new Set(all.map((x) => x.group).filter(Boolean))];
   const term = q.trim().toLowerCase();
@@ -106,6 +108,7 @@ export default function Exercises() {
                       <div className="ortho-sub">{x.media.filter((m) => !isVideo(m) && !isPdf(m)).length} صورة · {x.media.filter(isVideo).length} فيديو · {x.media.filter(isPdf).length} PDF</div>
                     </div>
                     <div style={{ display: 'flex', gap: 6 }}>
+                      <Button variant="outline" size="sm" icon="share" onClick={() => setSending(x)}>واتساب</Button>
                       {perm.edit && <IconBtn icon="edit" label="تعديل" onClick={() => setEdit({ ...x })} />}
                       {perm.del && <IconBtn icon="trash" label="حذف" danger onClick={() => remove(x)} />}
                     </div>
@@ -117,6 +120,7 @@ export default function Exercises() {
         </div>
       </section>
       {edit && <ExerciseModal initial={edit} groups={groups} onClose={() => setEdit(null)} />}
+      {sending && <ExerciseSendPickPatient exercise={sending} onClose={() => setSending(null)} />}
     </div>
   );
 }

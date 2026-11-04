@@ -1410,7 +1410,7 @@ export const db = {
     }
     // السجلات الطبية (التشخيص/الأشعة/المتابعات/ملفات الأشعة والتحاليل): أي تغيير من جهاز تاني ← الشاشة بتتحدّث من غير إعادة تحميل
     const orthoLive: Record<string, OrthoKind> = { ortho_consultations: 'consultations', ortho_imaging: 'imaging', ortho_follow_ups: 'follow_ups', patient_files: 'files',
-      ortho_nursing: 'nursing', ortho_injections: 'injections', ortho_fractures: 'fractures', ortho_surgeries: 'surgeries', ortho_surgery_stages: 'surgery_stages' };
+      ortho_nursing: 'nursing', ortho_injections: 'injections', ortho_fractures: 'fractures', ortho_surgeries: 'surgeries', ortho_surgery_stages: 'surgery_stages', ortho_surgery_payment_stages: 'surgery_payment_stages' };
     const orthoTimers: Record<string, ReturnType<typeof setTimeout>> = {};
     for (const [table, kind] of Object.entries(orthoLive)) {
       ch.on('postgres_changes', { event: '*', schema: 'public', table }, () => {

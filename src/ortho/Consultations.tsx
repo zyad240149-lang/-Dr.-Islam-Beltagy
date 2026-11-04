@@ -211,7 +211,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
     void run(async () => {
       const consultId = await ortho.save('consultations', { ...payload, pendingFollowUps: undefined } as Draft);
       // مواعيد المتابعة اللي اتحددت في الكشف ← مربوطة بالتشخيص ده
-      if (c.patientId && pendingFus.length) {
+      if (c.patientId) {
         const problems = await savePendingFollowUps(c.patientId, consultId, pendingFus, fuPerm.book);
         if (problems.length) toast.error(`التشخيص اتحفظ، بس الحجز ما اتعملش — ${problems.join(' · ')}`);
       }

@@ -11,12 +11,12 @@ import { net } from '../offline/net';
 import { useAuth } from '../services/auth';
 import { DOCTOR_DAY_LABEL, db } from '../data/db';
 import { useDbVersion } from '../hooks/useDb';
-import { useToast } from '../hooks/useToast';
+import { isScopedToOwnPatients } from '../services/permissions';
 import { Icon } from '../utils/icons';
-import { APPT_STATUS, fmtDate, fmtTime, todayYmd } from '../utils/format';
+import { APPT_STATUS, fmtDate, fmtTime, riyadhNow, todayYmd } from '../utils/format';
 import type { Appointment } from '../types';
 import { normalizeSearch, phoneMatches } from '../utils/phoneUtils';
-import { FOLLOW_UP_KIND, addDays, ortho, useOrthoVersion, type FollowUp } from './data';
+import { FOLLOW_UP_KIND, addDays, ortho, useOrthoVersion, type FollowUp, type FollowUpKind } from './data';
 import { Field, LoadState, PageHead, PatientSelect, SearchBox, patientFile, patientName, useRun } from './kit';
 
 export type FuState = 'upcoming' | 'today' | 'done' | 'missed' | 'cancelled';
@@ -68,6 +68,7 @@ function followUpServices(doctorId: string) {
   const rank = (name: string) => (/متابع/.test(name) ? 0 : /استشار/.test(name) ? 1 : 2);
   return [...list].sort((a, b) => rank(a.name) - rank(b.name) || a.price - b.price);
 }
+const kindOfService = (name = ''): FollowUpKind | '' => (/عملي|جراح/.test(name) ? 'surgery' : /اشع|أشع|صور|سونار/.test(name) ? 'imaging' : '');
 /** بيعمل الحجز ويرجّع رقمه — نفس دالة الحجز العادية (فحص الوقت والفاتورة والإشعارات) */
 async function bookFollowUp(d: { patientId: string; doctorId: string; date: string; time: string; reason: string }, serviceId?: string) {
   const svc = serviceId || followUpServices(d.doctorId)[0]?.id;
@@ -122,8 +123,8 @@ function DoctorDayPlan({ doctorId, date, exceptId }: { doctorId: string; date: s
   );
 }
 
-export function FollowUpModal({ patientId, consultationId, initial, doctorHint, onDraft, onClose }: {
-  patientId: string; consultationId?: string | null; initial?: FollowUp | FuDraft; doctorHint?: string | null; onDraft?: (d: FuDraft) => void; onClose: () => void;
+export function FollowUpModal({ patientId, consultationId, initial, doctorHint, onDraft, onSaved, onClose }: {
+  patientId: string; consultationId?: string | null; initial?: FollowUp | FuDraft; doctorHint?: string | null; onDraft?: (d: FuDraft) => void; onSaved?: (id: string) => void; onClose: () => void;
 }) {
   useDbVersion();
   useOrthoVersion();
@@ -137,8 +138,6 @@ export function FollowUpModal({ patientId, consultationId, initial, doctorHint, 
   const [checkIn, setCheckIn] = useState(false);
   const set = <K extends keyof FuDraft>(k: K, v: FuDraft[K]) => setF((x) => ({ ...x, [k]: v }));
   const canSave = !!f.date && (saved ? perm.edit : perm.add);
-  const toast = useToast();
-  const requireKind = !saved && (!!onDraft || !!consultationId); // من جوّه التشخيص النوع إلزامي (والخادم بيتحقق تاني)
   const t = todayYmd();
   const dur = db.therapist(f.doctorId)?.defaultDurationMin || 30;
 
@@ -147,8 +146,10 @@ export function FollowUpModal({ patientId, consultationId, initial, doctorHint, 
   const services = followUpServices(f.doctorId);
   const [svc, setSvc] = useState(() => services[0]?.id ?? '');
   const svcId = services.some((s) => s.id === svc) ? svc : services[0]?.id ?? '';
+  // النوع بييجي من الخدمة المختارة؛ الموعد المحجوز بيحتفظ بنوعه
+  const kind = linked ? f.kind ?? '' : kindOfService(db.service(svcId)?.name);
   const row = (patch: Partial<FollowUp>, id?: string) => ({
-    ...(saved ?? {}), id: id ?? saved?.id ?? createdId.current, patientId, consultationId: saved?.consultationId || consultationId || '', doctorId: f.doctorId, date: f.date, time: f.time, reason: f.reason.trim(), notes: f.notes.trim(), kind: f.kind ?? '',
+    ...(saved ?? {}), id: id ?? saved?.id ?? createdId.current, patientId, consultationId: saved?.consultationId || consultationId || '', doctorId: f.doctorId, date: f.date, time: f.time, reason: f.reason.trim(), notes: f.notes.trim(), kind,
     status: saved?.status ?? 'scheduled', appointmentId: linked?.id ?? '', ...patch,
   } as FollowUp);
 
@@ -169,6 +170,7 @@ export function FollowUpModal({ patientId, consultationId, initial, doctorHint, 
     if (canBook) { const issue = db.doctorTimeIssue(f.doctorId, f.date, f.time, dur); if (issue) throw new Error(issue); }
     const id = await ortho.save('follow_ups', row(patch));
     createdId.current = id;
+    onSaved?.(id);
     let apptId = linked?.id ?? '';
     if (canBook) {
       apptId = await bookFollowUp({ patientId, doctorId: f.doctorId, date: f.date, time: f.time, reason: f.reason.trim() }, svcId);
@@ -178,8 +180,7 @@ export function FollowUpModal({ patientId, consultationId, initial, doctorHint, 
     return apptId;
   };
   const save = (patch: Partial<FollowUp> = {}, msg?: string) => {
-    if (requireKind && !f.kind) { toast.error('اختار نوع المتابعة: متابعة عمليات أو متابعة صور.'); return; }
-    if (onDraft && !saved) { onDraft({ ...f, serviceId: svcId }); onClose(); return; }
+    if (onDraft && !saved) { onDraft({ ...f, serviceId: svcId, kind }); onClose(); return; }
     const willBook = !linked && !!f.time && !!f.doctorId && perm.book;
     const text = msg ?? (linked ? 'اتحفظ الموعد في المتابعات والمواعيد' : willBook && net.isOnline() ? 'اتحجز الموعد وظهر في المواعيد والمتابعات' : willBook ? 'اتحفظت المتابعة — افتحها واحفظها لما النت يرجع عشان تتحجز' : 'اتحفظت المتابعة — مش هتظهر في المواعيد لحد ما تحدد الساعة');
     void run(() => persist(patch), text, onClose);
@@ -345,20 +346,14 @@ export function FollowUpModal({ patientId, consultationId, initial, doctorHint, 
         <Field label="الساعة (اختياري)"><input type="time" className="input fu-slots__time" value={f.time} disabled={!canSave} onChange={(e) => set('time', e.target.value)} /></Field>
       )}
 
-      {!linked && canSave && perm.book && f.doctorId && services.length > 0 && (
-        <Field label="الخدمة (هتتسجل في الحجز والفاتورة)">
+      {!linked && canSave && f.doctorId && services.length > 0 && (
+        <Field label="الخدمة">
           <select className="input" value={svcId} onChange={(e) => setSvc(e.target.value)}>{services.map((s) => <option key={s.id} value={s.id}>{s.name} — {s.price} ج.م</option>)}</select>
         </Field>
       )}
       {f.doctorId && <DoctorDayPlan doctorId={f.doctorId} date={f.date} exceptId={saved?.id} />}
 
       <div className="grid-form" style={{ marginTop: 12 }}>
-        <Field label={requireKind ? 'نوع المتابعة *' : 'نوع المتابعة'}>
-          <select className="input" value={f.kind ?? ''} disabled={!canSave} onChange={(e) => set('kind', e.target.value as FuDraft['kind'])}>
-            <option value="">اختار النوع</option>
-            {Object.entries(FOLLOW_UP_KIND).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-          </select>
-        </Field>
         <Field label="سبب المتابعة"><textarea className="input" rows={2} dir="auto" value={f.reason} disabled={!canSave} onChange={(e) => set('reason', e.target.value)} placeholder="مثلاً: متابعة بعد الحقن، مراجعة الأشعة، فك الجبس…" /></Field>
         <Field label="ملاحظات"><textarea className="input" rows={2} dir="auto" value={f.notes} disabled={!canSave} onChange={(e) => set('notes', e.target.value)} /></Field>
       </div>
@@ -438,7 +433,8 @@ export function FollowUpsModal({ patientId, onClose }: { patientId: string; onCl
   return <Modal wide title={`مواعيد المتابعة — ${patientName(patientId)}`} onClose={onClose}><PatientFollowUps patientId={patientId} /></Modal>;
 }
 
-/** خطوة «تحديد موعد متابعة» جوّه التشخيص: المتابعات المحفوظة للتشخيص ده + الجديدة (بتتحفظ مع حفظ التشخيص) */
+const unlinkedFromStep = new Map<string, Set<string>>();
+/** خطوة «تحديد موعد متابعة» جوّه التشخيص: الموعد بيتحفظ فورًا، ولو التشخيص لسه جديد بيترتبط بيه عند حفظه */
 export function FollowUpStep({ patientId, consultationId, pending, onPending, doctorHint }: {
   patientId: string; consultationId?: string; pending: FuDraft[]; onPending: (p: FuDraft[]) => void; doctorHint?: string | null;
 }) {
@@ -451,7 +447,7 @@ export function FollowUpStep({ patientId, consultationId, pending, onPending, do
   const others = ortho.list('follow_ups', patientId).filter((f) => f.consultationId !== consultationId && f.status === 'scheduled' && f.date >= t).sort(byWhen);
   return (
     <div>
-      <p className="muted-sm" style={{ marginTop: 0 }}>حدد ميعاد أو أكتر لمتابعة المريض — المتابعة اللي ليها ساعة بتتحجز وتظهر في «المواعيد» مع حفظ التشخيص، وتقدر تأكدها من أي مكان فيهم.</p>
+      <p className="muted-sm" style={{ marginTop: 0 }}>حدد ميعاد أو أكتر لمتابعة المريض — الموعد بيتحفظ أول ما تدوس «حفظ» من غير حفظ التشخيص، واللي ليه ساعة بيظهر في «المواعيد».</p>
       {mine.length > 0 && <><div className="section-title">متابعات التشخيص ده</div><FollowUpList items={mine} onOpen={setEdit} /></>}
       {pending.length > 0 && <>
         <div className="section-title">هتتحفظ مع التشخيص</div>
@@ -471,11 +467,8 @@ export function FollowUpStep({ patientId, consultationId, pending, onPending, do
       {others.length > 0 && <><div className="section-title" style={{ marginTop: 14 }}>متابعات قادمة تانية للمريض</div><FollowUpList items={others} onOpen={setEdit} /></>}
       {edit && (
         <FollowUpModal patientId={patientId} consultationId={consultationId} doctorHint={doctorHint} initial={edit === 'new' ? undefined : edit}
-          onDraft={(d) => {
-            const old = edit !== 'new' && !('id' in edit) ? edit : null;
-            const item = { ...d, key: old?.key ?? crypto.randomUUID() };
-            onPending(old ? pending.map((x) => (x === old ? item : x)) : [...pending, item]);
-          }}
+          onDraft={edit !== 'new' && !('id' in edit) ? (d) => onPending(pending.map((x) => (x === edit ? { ...d, key: edit.key } : x))) : undefined}
+          onSaved={consultationId ? undefined : (id) => unlinkedFromStep.set(patientId, (unlinkedFromStep.get(patientId) ?? new Set<string>()).add(id))}
           onClose={() => setEdit(null)} />
       )}
     </div>
@@ -485,6 +478,12 @@ export function FollowUpStep({ patientId, consultationId, pending, onPending, do
 /** بعد حفظ التشخيص: المتابعات الجديدة بتتسجل مربوطة بيه */
 export async function savePendingFollowUps(patientId: string, consultationId: string, pending: FuDraft[], canBook = true): Promise<string[]> {
   const problems: string[] = [];
+  // المتابعات اللي اتحفظت من خطوة التشخيص قبل ما التشخيص نفسه يتحفظ بتترتبط بيه دلوقتي
+  for (const id of unlinkedFromStep.get(patientId) ?? []) {
+    const f = ortho.list('follow_ups', patientId).find((x) => x.id === id);
+    if (f && !f.consultationId) await ortho.save('follow_ups', { ...f, consultationId });
+  }
+  unlinkedFromStep.delete(patientId);
   for (const d of pending) {
     const row = { patientId, consultationId, doctorId: d.doctorId, date: d.date, time: d.time, reason: d.reason.trim(), notes: d.notes.trim(), kind: d.kind ?? '', status: 'scheduled' as const, appointmentId: '' };
     const id = await ortho.save('follow_ups', row);
@@ -524,11 +523,101 @@ const monthTitle = (s: string) => new Intl.DateTimeFormat('ar-EG', { month: 'lon
 const dayTitle = (s: string) => new Intl.DateTimeFormat('ar-EG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(parse(s));
 const FILTERS: [FuState | '', string][] = [['', 'الكل'], ['upcoming', 'قادمة'], ['today', 'اليوم'], ['done', 'تمت'], ['missed', 'فائتة'], ['cancelled', 'ملغاة']];
 
+/** جدول اليوم: كل الحجوزات والمتابعات مرتبة بالساعة، والأوقات الفاضية الجاية عند الأطباء */
+function DaySchedule({ date, follows, filtered, onOpen, onBook }: {
+  date: string; follows: FollowUp[]; filtered: boolean; onOpen: (f: FollowUp) => void; onBook: (p: { date: string; time: string; doctorId?: string }) => void;
+}) {
+  const { user } = useAuth();
+  const { openVisit } = useDetails();
+  const perm = useFuCan();
+  const { run, busy } = useRun();
+  const today = todayYmd();
+  const ownOnly = isScopedToOwnPatients(user?.role) || !!user?.therapistId;
+  const mine = (doctorId?: string | null) => !ownOnly || doctorId === user?.therapistId;
+  const allFu = ortho.list('follow_ups');
+  const appts = db.appointmentsForDate(date).filter((a) => a.status !== 'cancelled' && mine(a.therapistId));
+  const rows = [
+    ...appts.flatMap((a) => {
+      const fu = allFu.find((x) => x.appointmentId === a.id);
+      if (filtered && !(fu && follows.includes(fu))) return [];
+      return [{ key: a.id, time: hhmm(a.time), patientId: a.patientId, doctorId: a.therapistId, fu, appt: a }];
+    }),
+    ...follows.filter((f) => mine(f.doctorId) && !appts.some((a) => a.id === f.appointmentId)).map((f) => ({ key: f.id, time: hhmm(f.time), patientId: f.patientId, doctorId: f.doctorId, fu: f, appt: undefined as Appointment | undefined })),
+  ];
+
+  // الأوقات الفاضية: وقت لسه ماعدّاش وطبيب واحد على الأقل فاضي فيه
+  const doctors = db.therapists().filter((d) => mine(d.id));
+  const now = riyadhNow(); const nowMin = now.getHours() * 60 + now.getMinutes();
+  const free = new Map<string, string[]>();
+  if (!filtered && date >= today) for (const d of doctors) {
+    const dur = d.defaultDurationMin || 30;
+    const taken = new Set(db.takenSlots(d.id, date, dur));
+    const fus = allFu.filter((x) => x.date === date && x.doctorId === d.id && x.status !== 'cancelled' && x.time);
+    for (const s of db.doctorSlots(d.id, date, dur)) {
+      if ((date === today && minOf(s) <= nowMin) || taken.has(s) || fus.some((x) => near(hhmm(x.time), s, dur))) continue;
+      free.set(s, [...(free.get(s) ?? []), d.id]);
+    }
+  }
+  const lines = [
+    ...rows.map((r) => ({ at: r.time || '99:99', order: 0, r, freeAt: '' })),
+    ...[...free.keys()].map((s) => ({ at: s, order: 1, r: undefined, freeAt: s })),
+  ].sort((a, b) => a.at.localeCompare(b.at) || a.order - b.order);
+
+  const pending = rows.filter((r) => r.appt && NEEDS_CONFIRM.has(r.appt.status)).length;
+  if (!lines.length) return <p className="cx-empty">{filtered ? 'مفيش مواعيد بالفلتر ده في اليوم ده.' : 'مفيش حجوزات في اليوم ده، والأطباء مش شغالين فيه.'}</p>;
+  return (
+    <>
+      <div className="fu-sched__sum muted-sm">
+        <span><b className="num">{rows.length}</b> موعد</span>
+        <span><b className="num">{pending}</b> محتاج تأكيد</span>
+        {!filtered && <span><b className="num">{free.size}</b> وقت فاضي</span>}
+      </div>
+      <div className="table-wrap">
+        <table className="table fu-sched">
+          <thead><tr><th>الساعة</th><th>المريض</th><th>النوع</th><th>الخدمة / السبب</th><th>الطبيب</th><th>الحالة</th><th className="actions" aria-label="إجراء" /></tr></thead>
+          <tbody>
+            {lines.map(({ r, freeAt }) => {
+              if (!r) {
+                const ids = free.get(freeAt)!;
+                return (
+                  <tr key={`free-${freeAt}`} className="fu-sched__free">
+                    <td className="num">{fmtTime(freeAt)}</td>
+                    <td colSpan={3} className="muted-sm">فاضي</td>
+                    <td className="muted-sm">{ids.map((id) => db.therapist(id)?.name).join('، ')}</td>
+                    <td />
+                    <td className="actions">{perm.book && <Button size="sm" variant="outline" icon="plus" onClick={() => onBook({ date, time: freeAt, doctorId: ids.length === 1 ? ids[0] : undefined })}>حجز</Button>}</td>
+                  </tr>
+                );
+              }
+              const { fu, appt } = r;
+              return (
+                <tr key={r.key}>
+                  <td className="num"><b>{r.time ? fmtTime(r.time) : 'من غير ساعة'}</b></td>
+                  <td>
+                    <button type="button" className="fu-sched__who" onClick={() => (fu ? onOpen(fu) : openVisit(appt!.id))}>{patientName(r.patientId)}</button>
+                    <div className="muted-sm">ملف <span className="num">{patientFile(r.patientId)}</span></div>
+                  </td>
+                  <td><span className={`badge badge--${fu ? 'brand' : 'info'}`}>{fu ? (fu.kind ? FOLLOW_UP_KIND[fu.kind] : 'متابعة') : 'حجز'}</span></td>
+                  <td dir="auto">{(appt && db.service(appt.serviceId)?.name) || fu?.reason || '—'}</td>
+                  <td>{r.doctorId ? db.therapist(r.doctorId)?.name : '—'}</td>
+                  <td>{appt ? <ApptBadge a={appt} /> : <FuBadge f={fu!} />}</td>
+                  <td className="actions">{appt && perm.edit && NEEDS_CONFIRM.has(appt.status) && <Button size="sm" icon="checkCircle" loading={busy} onClick={() => void run(() => db.setAppointmentStatus(appt.id, 'confirmed'), 'اتأكد الموعد في المتابعات والمواعيد')}>تأكيد</Button>}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
+
 export default function FollowUpsPage() {
   useOrthoVersion();
   useDbVersion();
   const t = todayYmd();
-  const [view, setView] = useState<View>(() => (window.matchMedia?.('(max-width: 640px)').matches ? 'day' : 'month'));
+  const [view, setView] = useState<View>('day');
+  const [bookAt, setBookAt] = useState<{ date: string; time: string; doctorId?: string } | null>(null);
   const [cursor, setCursor] = useState(t);
   const [filter, setFilter] = useState<FuState | ''>('');
   const [q, setQ] = useState('');
@@ -582,9 +671,11 @@ export default function FollowUpsPage() {
       {f.time && <b className="num">{hhmm(f.time)}</b>} {patientName(f.patientId)}{f.reason ? <span className="fu-chip__r"> · {f.reason}</span> : null}
     </button>
   );
-  const DayList = ({ day }: { day: string }) => {
-    const items = byDay.get(day) ?? [];
-    return items.length ? <FollowUpList items={items} onOpen={setOpen} showPatient /> : <p className="cx-empty">مفيش متابعات في اليوم ده.</p>;
+  // الحجوزات العادية (من غير متابعة مربوطة) بتظهر كعدد في الشهر والأسبوع
+  const plainCount = (d: string) => (filter ? 0 : db.appointmentsForDate(d).filter((a) => a.status !== 'cancelled' && !all.some((x) => x.appointmentId === a.id)).length);
+  const PlainMore = ({ day }: { day: string }) => {
+    const n = plainCount(day);
+    return n ? <button type="button" className="fu-more" onClick={() => { setCursor(day); setView('day'); }}><span className="num">{n}</span> حجز</button> : null;
   };
 
   return (
@@ -655,6 +746,7 @@ export default function FollowUpsPage() {
                         <button type="button" className="fu-month__n num" onClick={() => { setCursor(d); setView('day'); }} aria-label={`عرض يوم ${fmtDate(d)}`}>{parse(d).getDate()}</button>
                         {items.slice(0, 3).map((f) => <Chip key={f.id} f={f} />)}
                         {items.length > 3 && <button type="button" className="fu-more" onClick={() => { setCursor(d); setView('day'); }}>+{items.length - 3} كمان</button>}
+                        <PlainMore day={d} />
                       </div>
                     );
                   })}
@@ -666,18 +758,20 @@ export default function FollowUpsPage() {
                     <div key={d} className={`fu-week__day ${d === t ? 'is-today' : ''}`}>
                       <button type="button" className="fu-week__h" onClick={() => { setCursor(d); setView('day'); }}>{WEEKDAYS[i]} <span className="num">{fmtDate(d)}</span></button>
                       {(byDay.get(d) ?? []).map((f) => <Chip key={f.id} f={f} />)}
-                      {!(byDay.get(d) ?? []).length && <span className="muted-sm">—</span>}
+                      <PlainMore day={d} />
+                      {!(byDay.get(d) ?? []).length && !plainCount(d) && <span className="muted-sm">—</span>}
                     </div>
                   ))}
                 </div>
               )}
-              {view === 'day' && <DayList day={cursor} />}
+              {view === 'day' && <DaySchedule date={cursor} follows={byDay.get(cursor) ?? []} filtered={!!filter} onOpen={setOpen} onBook={setBookAt} />}
             </>}
           </LoadState>
         </div>
       </section>
       {open && <FollowUpModal patientId={open.patientId} initial={open} onClose={() => setOpen(null)} />}
       {adding && <NewFollowUp onClose={() => setAdding(false)} />}
+      {bookAt && <BookingWizard presetDate={bookAt.date} presetTime={bookAt.time} presetTherapistId={bookAt.doctorId} onClose={() => setBookAt(null)} />}
     </div>
   );
 }

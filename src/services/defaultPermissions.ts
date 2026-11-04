@@ -8,7 +8,7 @@ const ACC_ACCOUNTANT: Area[] = ['accounting.access', 'accounting.expenses.create
 export const AREAS: Area[] = [
   'dashboard', 'patients', 'booking', 'appointments', 'plans', 'sessions', 'services', 'therapists',
   'employees', 'invoices', 'payments', 'packages', 'inventory', 'reports', 'notifications', 'roles', 'settings', 'workhours', 'requests', 'support', 'discounts', 'campaigns', 'financial', 'attendance', 'loyalty', 'whatsapp', 'products', 'installments', 'physio', 'payroll','pkg_checkin', 'bodymap', 'marketing', 'pt_f_gender', 'pt_f_source', 'pt_f_doctor', 'pt_f_status', 'pt_f_sort',
-  'inv_approve', 'inv_price', 'inv_cancel', 'appt_confirm', 'appt_cancel',
+  'inv_approve', 'inv_price', 'inv_cancel', 'inv_overdraw', 'appt_confirm', 'appt_cancel',
   ...ACC_AREAS,
 ];
 export const OPS: Op[] = ['view', 'create', 'edit', 'delete'];

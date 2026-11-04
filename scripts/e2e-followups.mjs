@@ -81,9 +81,9 @@ try {
   check('سجلات الملفات مش ظاهرة لزائر بدون دخول', (anonRows.data ?? []).length === 0);
 
   console.log('— 11-14. مواعيد المتابعة');
-  const f1 = await doc.from('ortho_follow_ups').insert({ patient_id: created.patient, consultation_id: c1.data.id, doctor_id: th.id, date: cairoDate(7), time: '10:30', reason: 'متابعة بعد الحقن', notes: 'يجيب الأشعة' }).select().single();
+  const f1 = await doc.from('ortho_follow_ups').insert({ patient_id: created.patient, consultation_id: c1.data.id, kind: 'surgery', doctor_id: th.id, date: cairoDate(7), time: '10:30', reason: 'متابعة بعد الحقن', notes: 'يجيب الأشعة' }).select().single();
   check('11. موعد متابعة من داخل التشخيص (مربوط بالمريض والتشخيص والطبيب)', !f1.error && f1.data?.status === 'scheduled' && f1.data?.consultation_id === c1.data.id && f1.data?.doctor_id === th.id, f1.error?.message);
-  const f2 = await doc.from('ortho_follow_ups').insert({ patient_id: created.patient, consultation_id: c1.data.id, date: cairoDate(21), reason: 'مراجعة نتيجة التحاليل' }).select().single();
+  const f2 = await doc.from('ortho_follow_ups').insert({ patient_id: created.patient, consultation_id: c1.data.id, kind: 'imaging', date: cairoDate(21), reason: 'مراجعة نتيجة التحاليل' }).select().single();
   const f3 = await recep.from('ortho_follow_ups').insert({ patient_id: created.patient, date: cairoDate(0), time: '18:00', reason: 'متابعة من الاستقبال' }).select().single();
   check('12. أكتر من موعد لنفس المريض (طبيب + استقبال)', !f2.error && !f3.error, f2.error?.message ?? f3.error?.message);
   const cal = await recep.from('ortho_follow_ups').select('id').gte('date', cairoDate(0)).lte('date', cairoDate(40)).eq('patient_id', created.patient);

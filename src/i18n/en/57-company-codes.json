@@ -11,5 +11,13 @@
  "بدون مدة · بدون حد للاستخدام": "No expiry · unlimited uses",
  "مدير ودكتور": "Manager & doctor",
  "مدير فقط": "Manager only",
- "«مدير ودكتور» محتاج رقم جوال وكلمة مرور لا تقل عن 6 خانات.": "Manager & doctor needs a mobile number and a password of at least 6 characters."
+ "«مدير ودكتور» محتاج رقم جوال وكلمة مرور لا تقل عن 6 خانات.": "Manager & doctor needs a mobile number and a password of at least 6 characters.",
+ "تأكيد الموعد": "Confirm appointment",
+ "محتاج تأكيد": "Needs confirmation",
+ "مواعيد محتاجة تأكيد": "Appointments needing confirmation",
+ "فتح في المواعيد": "Open in appointments",
+ "لسه مش في المواعيد": "Not in appointments yet",
+ "تم تأكيد الموعد": "Appointment confirmed",
+ "اتأكد الموعد في المتابعات والمواعيد": "Appointment confirmed in follow-ups and appointments",
+ "الخدمة (هتتسجل في الحجز والفاتورة)": "Service (saved on the booking and invoice)"
 }

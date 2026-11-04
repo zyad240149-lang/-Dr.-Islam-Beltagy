@@ -1,6 +1,7 @@
-// قراءة .env للسكريبتات (بدون أي مكتبة)
+// قراءة .env للسكريبتات (بدون أي مكتبة). ENV_FILE=.env.staging بيوجّه السكريبت لبيئة الاختبار
 import { readFileSync } from 'node:fs';
-export const env = Object.fromEntries(readFileSync(new URL('../.env', import.meta.url), 'utf8')
+export const ENV_FILE = process.env.ENV_FILE || '.env';
+export const env = Object.fromEntries(readFileSync(new URL(`../${ENV_FILE}`, import.meta.url), 'utf8')
   .split(/\r?\n/).filter((l) => /^[A-Z_]+=/.test(l)).map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1)]));
 export const REF = env.SUPABASE_PROJECT_REF;
 export async function sql(query) {

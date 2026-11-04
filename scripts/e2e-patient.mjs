@@ -21,7 +21,7 @@ const newFile = (c, full, phone, nid = '') => {
 const err = (r) => r.error?.message ?? '';
 
 const register = async (body) => {
-  const r = await fetch(`${URL_}/functions/v1/api/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const r = await fetch(`${URL_}/functions/v1/api/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gender: 'male', ...body }) });
   return { status: r.status, body: await r.json().catch(() => null) };
 };
 

@@ -21,7 +21,7 @@ import { openPrintWindow } from '../utils/printDoc';
 import { DiagnosisOutput } from './DiagnosisOutput';
 import { InjectionList, InjectionModal } from './Injections';
 import { PatientMedicalFiles } from './PatientMedicalFiles';
-import { FollowUpStep, FollowUpsOfConsult, savePendingFollowUps, type FuDraft } from './FollowUps';
+import { FollowUpStep, FollowUpsOfConsult, savePendingFollowUps, useFuCan, type FuDraft } from './FollowUps';
 import type { DxPart } from './printDiagnosis';
 import { db } from '../data/db';
 import { Field, IconBtn, LoadState, PageHead, PatientSelect, SearchBox, Tone, confirmDelete, patientFile, patientName, useClinicalCan, useRun } from './kit';
@@ -99,6 +99,7 @@ type Tab = typeof TABS[number][0];
 export function ConsultModal({ initial, resume, patientId = '', appointmentId, pending, onClose }: { initial?: Consultation; resume?: boolean; patientId?: string; appointmentId?: string | null; pending?: { name: string; phone?: string }; onClose: () => void }) {
   const { run, busy } = useRun();
   const toast = useToast();
+  const fuPerm = useFuCan();
   const [c, setC] = useState<Draft>(() => {
     const basics = (d: Draft) => ({ ...d, sheet: withPatientBasics(normSheet(d.sheet), d.patientId ? db.patient(d.patientId) : null) });
     // الزيارة: تاريخ الكشف = تاريخ الزيارة
@@ -210,7 +211,10 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
     void run(async () => {
       const consultId = await ortho.save('consultations', { ...payload, pendingFollowUps: undefined } as Draft);
       // مواعيد المتابعة اللي اتحددت في الكشف ← مربوطة بالتشخيص ده
-      if (c.patientId && pendingFus.length) await savePendingFollowUps(c.patientId, consultId, pendingFus);
+      if (c.patientId && pendingFus.length) {
+        const problems = await savePendingFollowUps(c.patientId, consultId, pendingFus, fuPerm.book);
+        if (problems.length) toast.error(`التشخيص اتحفظ، بس الحجز ما اتعملش — ${problems.join(' · ')}`);
+      }
       // من غير ملف مريض: طلبات الأشعة والتحاليل بيسجلها الخادم في ملف المريض لما التشخيص يتربط
       if (!c.patientId) return;
       // طلبات الأشعة الجديدة بتتسجل في «الأشعة والتحاليل» كـ «مطلوبة» عشان تتابع وصولها وقراءتها

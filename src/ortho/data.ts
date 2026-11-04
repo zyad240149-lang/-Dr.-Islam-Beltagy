@@ -10,7 +10,12 @@ import { fetchKeyset } from '../data/download';
 export type Side = 'right' | 'left' | 'both' | 'na';
 export type ImagingKind = 'xray' | 'mri' | 'ct' | 'dexa' | 'us' | 'lab';
 export type ImagingStatus = 'requested' | 'received' | 'reviewed';
-export type SurgeryStatus = 'planned' | 'scheduled' | 'done' | 'postponed';
+export type SurgeryStatus = 'planned' | 'scheduled' | 'in_progress' | 'done' | 'postponed';
+export type StageStatus = 'pending' | 'in_progress' | 'done';
+export interface SurgeryStage { id: string; surgeryId: string; position: number; name: string; details: string; status: StageStatus; doneAt?: string }
+export const STAGE_STATUS: Record<StageStatus, { label: string; tone: string }> = { pending: { label: 'لم تبدأ', tone: 'muted' }, in_progress: { label: 'جارية', tone: 'info' }, done: { label: 'تمت', tone: 'ok' } };
+export type FollowUpKind = 'surgery' | 'imaging';
+export const FOLLOW_UP_KIND: Record<FollowUpKind, string> = { surgery: 'متابعة عمليات', imaging: 'متابعة صور' };
 export type FractureStatus = 'casted' | 'healing' | 'healed' | 'surgical';
 
 export interface Medication { name: string; dose: string; frequency: string; duration: string; notes: string }
@@ -38,7 +43,7 @@ export const isUnlinked = (c: { patientId?: string | null }) => !c.patientId;
 export interface CurrentMed { name: string; dose: string; freq: string }
 export interface ExamSheet { on: string[]; txt: Record<string, string>; meds: CurrentMed[]; pain: string[] }
 export interface Imaging { id: string; patientId: string; kind: ImagingKind; region: string; requestedAt: string; status: ImagingStatus; finding: string; attachments: Attachment[] }
-export interface Surgery { id: string; patientId: string; procedure: string; region: string; side: Side; hospital: string; date: string; implant: string; status: SurgeryStatus; notes: string }
+export interface Surgery { id: string; patientId: string; procedure: string; region: string; side: Side; hospital: string; date: string; implant: string; status: SurgeryStatus; notes: string; price?: number; cost?: number; paidAtFinish?: number; invoiceId?: string; finishedAt?: string }
 // شيت متابعة التمريض (هجرة 919): خانات الاختيار قيم نصية ('' = متعلّمش)، والجبس والعملية بيتملوا بس لو المريض عنده جبس/عملية
 export interface NursingSheet {
   visitNo: string; pain: number | ''; adherence: string; mobility: string; vsLast: string;
@@ -66,7 +71,7 @@ export interface Exercise { id: string; name: string; group: string; description
 export interface ExercisePlan { id: string; patientId: string; consultationId?: string | null; date: string; exerciseIds: string[]; notes: string; shareToken: string }
 // مواعيد المتابعات (هجرة 929): سجل مستقل مش حجز — بيتربط بالمريض والتشخيص والطبيب، و appointmentId لما يتحوّل لحجز فعلي
 export type FollowUpStatus = 'scheduled' | 'done' | 'cancelled';
-export interface FollowUp { id: string; patientId: string; consultationId: string; doctorId: string; date: string; time: string; reason: string; notes: string; status: FollowUpStatus; appointmentId: string; createdAt?: string; createdBy?: string }
+export interface FollowUp { id: string; patientId: string; consultationId: string; doctorId: string; date: string; time: string; reason: string; notes: string; status: FollowUpStatus; appointmentId: string; kind?: FollowUpKind | ''; createdAt?: string; createdBy?: string }
 export interface Fracture { id: string; patientId: string; bone: string; side: Side; kind: string; injuryDate: string; castDate: string; removalDue: string; status: FractureStatus }
 
 export const SIDE: Record<Side, string> = { right: 'يمين', left: 'شمال', both: 'الجانبين', na: '—' };
@@ -82,7 +87,7 @@ export const ORTHO_PROCEDURES = [
 ];
 export const IMAGING_KIND: Record<ImagingKind, string> = { xray: 'أشعة عادية X-Ray', mri: 'رنين مغناطيسي MRI', ct: 'أشعة مقطعية CT', dexa: 'قياس كثافة العظام DEXA', us: 'سونار Ultrasound', lab: 'تحليل معملي' };
 export const IMAGING_STATUS: Record<ImagingStatus, { label: string; tone: string }> = { requested: { label: 'مطلوبة', tone: 'warn' }, received: { label: 'وصلت', tone: 'info' }, reviewed: { label: 'تمت القراءة', tone: 'ok' } };
-export const SURGERY_STATUS: Record<SurgeryStatus, { label: string; tone: string }> = { planned: { label: 'مقترحة', tone: 'muted' }, scheduled: { label: 'محددة', tone: 'info' }, done: { label: 'تمت', tone: 'ok' }, postponed: { label: 'مؤجلة', tone: 'warn' } };
+export const SURGERY_STATUS: Record<SurgeryStatus, { label: string; tone: string }> = { planned: { label: 'مقترحة', tone: 'muted' }, scheduled: { label: 'محددة', tone: 'info' }, in_progress: { label: 'جارية', tone: 'info' }, done: { label: 'تمت', tone: 'ok' }, postponed: { label: 'مؤجلة', tone: 'warn' } };
 export const FRACTURE_STATUS: Record<FractureStatus, { label: string; tone: string }> = { casted: { label: 'في الجبس', tone: 'info' }, healing: { label: 'في مرحلة الالتئام', tone: 'brand' }, healed: { label: 'التأم', tone: 'ok' }, surgical: { label: 'تحتاج تدخل جراحي', tone: 'danger' } };
 
 export const daysBetween = (a: string, b: string) => Math.round((new Date(b + 'T00:00:00').getTime() - new Date(a + 'T00:00:00').getTime()) / 86400000);
@@ -93,18 +98,19 @@ const todayYmd = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cair
 const COLUMNS: Record<Kind, string[]> = {
   consultations: ['patient_id', 'date', 'complaint', 'region', 'side', 'examination', 'diagnosis', 'plan', 'history', 'pain_score', 'icd10', 'medications', 'labs', 'imaging_requests', 'attachments', 'follow_up', 'sheet', 'complete', 'appointment_id', 'pending_patient', 'visit_reason'],
   imaging: ['patient_id', 'kind', 'region', 'requested_at', 'status', 'finding', 'attachments'],
-  surgeries: ['patient_id', 'procedure', 'region', 'side', 'hospital', 'date', 'implant', 'status', 'notes'],
+  surgeries: ['patient_id', 'procedure', 'region', 'side', 'hospital', 'date', 'implant', 'status', 'notes', 'price', 'cost'],
+  surgery_stages: ['surgery_id', 'position', 'name', 'details', 'status'],
   fractures: ['patient_id', 'bone', 'side', 'kind', 'injury_date', 'cast_date', 'removal_due', 'status'],
   nursing: ['patient_id', 'appointment_id', 'date', 'sheet'],
   injections: ['patient_id', 'appointment_id', 'date', 'sheet'],
   medications: ['name', 'group', 'dose', 'frequency', 'duration'],
   exercises: ['name', 'group', 'description', 'media'],
   exercise_plans: ['patient_id', 'consultation_id', 'date', 'exercise_ids', 'notes', 'share_token'],
-  follow_ups: ['patient_id', 'consultation_id', 'doctor_id', 'date', 'time', 'reason', 'notes', 'status', 'appointment_id'],
+  follow_ups: ['patient_id', 'consultation_id', 'doctor_id', 'date', 'time', 'reason', 'notes', 'status', 'appointment_id', 'kind'],
   files: [], // ملفات المريض (patient_files) — قراية بس هنا؛ الرفع والحذف من db.uploadPatientFile / deletePatientFile
 };
-export type Kind = 'consultations' | 'imaging' | 'surgeries' | 'fractures' | 'nursing' | 'injections' | 'medications' | 'exercises' | 'exercise_plans' | 'follow_ups' | 'files';
-type Of<K extends Kind> = K extends 'files' ? Record<string, unknown> : K extends 'follow_ups' ? FollowUp : K extends 'exercises' ? Exercise : K extends 'exercise_plans' ? ExercisePlan : K extends 'medications' ? MedItem : K extends 'consultations' ? Consultation : K extends 'imaging' ? Imaging : K extends 'surgeries' ? Surgery : K extends 'nursing' ? Nursing : K extends 'injections' ? Injection : Fracture;
+export type Kind = 'consultations' | 'imaging' | 'surgeries' | 'surgery_stages' | 'fractures' | 'nursing' | 'injections' | 'medications' | 'exercises' | 'exercise_plans' | 'follow_ups' | 'files';
+type Of<K extends Kind> = K extends 'files' ? Record<string, unknown> : K extends 'follow_ups' ? FollowUp : K extends 'exercises' ? Exercise : K extends 'exercise_plans' ? ExercisePlan : K extends 'medications' ? MedItem : K extends 'consultations' ? Consultation : K extends 'imaging' ? Imaging : K extends 'surgeries' ? Surgery : K extends 'surgery_stages' ? SurgeryStage : K extends 'nursing' ? Nursing : K extends 'injections' ? Injection : Fracture;
 type Row = Record<string, unknown>;
 
 /** اسم الجدول: ملفات المريض جدولها patient_files (مش ortho_) — بتتحمّل وتتحفظ على الجهاز زي باقي السجلات الطبية عشان تفتح من غير إنترنت */
@@ -185,7 +191,7 @@ export function hydrateOrthoCache(x: Partial<Record<Kind, Row[]>> | null) {
   if (x) for (const k of Object.keys(x) as Kind[]) if (Array.isArray(x[k])) { server[k] = x[k]!; cache[k] = overlay(k, x[k]!); }
   bump();
 }
-const KIND_LABEL: Record<Kind, string> = { consultations: 'كشف', imaging: 'أشعة', surgeries: 'عملية', fractures: 'كسر/جبس', nursing: 'متابعة تمريض', injections: 'حقن', medications: 'دواء', exercises: 'تمرين', exercise_plans: 'خطة تمرينات', follow_ups: 'موعد متابعة', files: 'ملف' };
+const KIND_LABEL: Record<Kind, string> = { consultations: 'كشف', imaging: 'أشعة', surgeries: 'عملية', surgery_stages: 'مرحلة عملية', fractures: 'كسر/جبس', nursing: 'متابعة تمريض', injections: 'حقن', medications: 'دواء', exercises: 'تمرين', exercise_plans: 'خطة تمرينات', follow_ups: 'موعد متابعة', files: 'ملف' };
 /**
  * حفظ على الجهاز ← طابور المزامنة. إنشاء: بمعرّف ثابت من الجهاز (إعادة الإرسال مابتكررش). تعديل: بنحفظ قيم الخادم وقت التعديل (base)
  * ولو حد غيّر نفس الحقول على الخادم قبل المزامنة ← «تعارض» يتعرض للطبيب يقرر (مفيش كتابة فوق تشخيص بصمت).
@@ -244,7 +250,7 @@ export const ortho = {
     const row: Record<string, unknown> = toRow(kind, item);
     // تشخيص من غير ملف مريض: يتبعت null وقت الإنشاء بس — التعديل مايبعتش patient_id عشان مايفكّش ربط عمله الخادم
     if (kind === 'consultations' && !row.patient_id) { if (item.id) delete row.patient_id; else row.patient_id = null; }
-    if (kind === 'follow_ups') for (const k of ['consultation_id', 'doctor_id', 'time', 'appointment_id']) if (k in row && !row[k]) row[k] = null;
+    if (kind === 'follow_ups') for (const k of ['consultation_id', 'doctor_id', 'time', 'appointment_id', 'kind']) if (k in row && !row[k]) row[k] = null;
     // بدون إنترنت (أو السجل نفسه لسه مستني مزامنة): بيتحفظ على الجهاز ويتبعت لوحده لما الاتصال يرجع
     if (!net.isOnline() || (item.id && offline.queue.hasPendingFor(item.id))) return saveOffline(kind, item.id, row);
     const table = supabase.from(tableOf(kind));

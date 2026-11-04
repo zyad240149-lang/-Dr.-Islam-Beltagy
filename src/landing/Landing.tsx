@@ -70,6 +70,7 @@ export default function Landing() {
               <a className="lp-btn" href={tel(main.number)}><Icon name="phone" size={18} />اتصل واحجز: <span className="num">{main.number}</span></a>
               <a className="lp-btn lp-btn--wa" href={`https://wa.me/${DOCTOR.whatsapp}`} target="_blank" rel="noopener noreferrer"><WhatsappIcon />واتساب</a>
               <Link className="lp-btn lp-btn--outline" to="/signup"><Icon name="calendar" size={18} />احجز أونلاين</Link>
+              <InstallButton />
             </div>
             <ul className="lp-stats">
               {DOCTOR.stats.map((s) => <li key={s.label}><strong>{s.value}</strong><span>{s.label}</span></li>)}

@@ -221,7 +221,7 @@ try {
 
   // ============ 8) بوابة المريض: سجلي الطبي والحجز ============
   section('بوابة المريض — سجلي الطبي والحجز والتعديل والإلغاء');
-  const reg = await fetch(`${URL_}/functions/v1/api/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: PORTAL.name, phone: PORTAL.phone, password: PW, confirm: PW }) });
+  const reg = await fetch(`${URL_}/functions/v1/api/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: PORTAL.name, phone: PORTAL.phone, gender: 'male', password: PW, confirm: PW }) });
   const regB = await reg.json().catch(() => null);
   const PP = regB?.patientId;
   if (PP) made.patients.push(PP);

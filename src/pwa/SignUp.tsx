@@ -4,13 +4,32 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../services/auth';
 import { api } from '../lib/api';
+import { supabase } from '../lib/supabase';
 import { PhoneInput } from '../components/PhoneInput';
-import { Button, Input, PasswordInput } from '../components/ui';
+import { Button, Input, PasswordInput, Select } from '../components/ui';
 import { isArabicName, nameWords } from '../utils/patientGaps';
 import { NID_RE, PASSPORT_RE } from '../utils/format';
 import { phoneErrorMessage, type PhoneErrorCode } from '../utils/phoneUtils';
 import { Icon } from '../utils/icons';
 import { DOCTOR } from '../landing/content';
+
+/** زر الدخول بجوجل — بيظهر بس لما VITE_GOOGLE_AUTH=1 (بعد تفعيل المزود في Supabase) */
+export function GoogleButton() {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  if (import.meta.env.VITE_GOOGLE_AUTH !== '1') return null;
+  const go = async () => {
+    setBusy(true); setErr('');
+    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + '/' } });
+    if (error) { setBusy(false); setErr('تعذّر فتح تسجيل جوجل — حاول تاني.'); }
+  };
+  return (
+    <div style={{ marginTop: 10 }}>
+      {err && <div className="alert alert-danger" style={{ marginBottom: 8 }} role="alert">{err}</div>}
+      <Button type="button" variant="outline" block loading={busy} onClick={go}>المتابعة بحساب Google</Button>
+    </div>
+  );
+}
 
 export function AuthBrand() {
   return (
@@ -32,6 +51,7 @@ export default function SignUp() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [phoneErr, setPhoneErr] = useState<PhoneErrorCode | null>('required');
+  const [gender, setGender] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -46,6 +66,7 @@ export default function SignUp() {
   const nid = normId(nationalId);
   const errors = {
     name: !clean ? 'اكتب اسمك الثلاثي.' : nameWords(clean) < 3 ? 'الاسم لازم يكون ثلاثي (الاسم واسم الأب واسم الجد).' : !isArabicName(clean) ? 'اكتب الاسم بحروف عربية.' : '',
+    gender: gender ? '' : 'اختار النوع.',
     email: email.trim() && !EMAIL_RE.test(email.trim()) ? 'البريد الإلكتروني غير صحيح.' : '',
     password: password.length < 6 ? 'كلمة المرور 6 خانات على الأقل.' : '',
     confirm: confirm !== password ? 'كلمتا المرور غير متطابقتين.' : '',
@@ -55,11 +76,11 @@ export default function SignUp() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setTried(true); setErr('');
-    const first = errors.name || (phoneErr && phoneErrorMessage(phoneErr)) || errors.email || errors.password || errors.confirm || errors.nationalId;
+    const first = errors.name || (phoneErr && phoneErrorMessage(phoneErr)) || errors.gender || errors.email || errors.password || errors.confirm || errors.nationalId;
     if (first) { setErr(first); return; }
     setBusy(true);
     try {
-      await api.post('register', { name: clean, phone, email: email.trim(), password, confirm, nationalId: askId ? nid : '' });
+      await api.post('register', { name: clean, phone, gender, email: email.trim(), password, confirm, nationalId: askId ? nid : '' });
     } catch (x) {
       setBusy(false);
       const code = (x as { code?: string }).code;
@@ -104,6 +125,8 @@ export default function SignUp() {
         )}
         <Input id="su-name" label="الاسم الثلاثي بالعربي" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} error={tried ? errors.name : ''} placeholder="مثال: محمد أحمد علي" />
         <PhoneInput id="su-phone" label="رقم الموبايل" value={phone} showError={tried} onChange={onPhone} />
+        <Select id="su-gender" label="النوع" value={gender} onChange={(e) => setGender(e.target.value)} error={tried ? errors.gender : ''}
+          options={[{ value: '', label: 'اختار النوع' }, { value: 'male', label: 'ذكر' }, { value: 'female', label: 'أنثى' }]} />
         {askId && (
           <Input id="su-nid" label="الرقم القومي المسجّل في ملفك" dir="ltr" inputMode="text" autoComplete="off" value={nationalId}
             onChange={(e) => setNationalId(e.target.value)} error={tried ? errors.nationalId : ''}
@@ -113,6 +136,7 @@ export default function SignUp() {
         <PasswordInput id="su-pass" label="كلمة المرور" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} error={tried ? errors.password : ''} />
         <PasswordInput id="su-confirm" label="تأكيد كلمة المرور" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} error={tried ? errors.confirm : ''} />
         <Button type="submit" block loading={busy} disabled={link === 'contact_clinic' || link === 'locked'}>إنشاء الحساب</Button>
+        <GoogleButton />
         <p style={{ textAlign: 'center', marginTop: 14, fontSize: 14.5 }}>عندك حساب بالفعل؟ <Link to="/login" style={{ fontWeight: 700, color: 'var(--brand-700)' }}>سجّل الدخول</Link></p>
         </form>
         <a href="/" className="al-back">الرجوع لموقع العيادة</a>

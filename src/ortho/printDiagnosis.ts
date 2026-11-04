@@ -298,6 +298,18 @@ export function printDiagnosis(c: DxConsult, p?: DxPatient | null, visitNo?: num
   void printHtml(diagnosisHtml(c, p, visitNo, parts, compact), openPrintWindow());
 }
 
+/** أقرب سطر فاضي فوق حد القص (98% من بكسلاته بيضا) عشان القص مايقطعش نص؛ لو مفيش بيقص عند الحد */
+function quietRow(canvas: HTMLCanvasElement, limit: number, range: number): number {
+  const ctx = canvas.getContext('2d')!;
+  for (let y = limit; y > limit - range; y--) {
+    const px = ctx.getImageData(0, y, canvas.width, 1).data;
+    let white = 0;
+    for (let i = 0; i < px.length; i += 4) if (px[i] > 245 && px[i + 1] > 245 && px[i + 2] > 245) white++;
+    if (white / canvas.width >= 0.98) return y;
+  }
+  return limit;
+}
+
 /** نفس الصفحات كملف PDF: الشيتات A4 بالعرض والروشتة A5 — كل صفحة صورة بتتظبط على المساحة المطبوعة */
 export async function buildDiagnosisPdf(c: DxConsult, p?: DxPatient | null, visitNo?: number, parts?: DxPart[], compact = false): Promise<Blob> {
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import('html2canvas'), import('jspdf')]);
@@ -311,9 +323,18 @@ export async function buildDiagnosisPdf(c: DxConsult, p?: DxPatient | null, visi
       const rx = el.classList.contains('rxw');
       const [format, orientation, w, h, m] = rx ? ['a5', 'portrait', 148, 210, 12] as const : ['a4', 'landscape', 297, 210, 7] as const;
       const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-      if (!pdf) pdf = new jsPDF({ unit: 'mm', format, orientation }); else pdf.addPage(format, orientation);
-      const k = Math.min((w - 2 * m) / canvas.width, (h - 2 * m) / canvas.height);
-      pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', (w - canvas.width * k) / 2, m, canvas.width * k, canvas.height * k);
+      // الروشتة صفحة واحدة. الشيت بياخد عرض الصفحة ويتقسم عند الفراغ بين الأقسام (تصغيره لصفحة واحدة كان بيخلي الخط مايتقراش)
+      const k = rx ? Math.min((w - 2 * m) / canvas.width, (h - 2 * m) / canvas.height) : (w - 2 * m) / canvas.width;
+      const sliceMax = Math.floor((h - 2 * m) / k);
+      for (let top = 0; top < canvas.height;) {
+        const end = rx || top + sliceMax >= canvas.height ? canvas.height : quietRow(canvas, top + sliceMax, Math.floor(sliceMax * 0.3));
+        const part = document.createElement('canvas');
+        part.width = canvas.width; part.height = end - top;
+        part.getContext('2d')!.drawImage(canvas, 0, -top);
+        if (!pdf) pdf = new jsPDF({ unit: 'mm', format, orientation }); else pdf.addPage(format, orientation);
+        pdf.addImage(part.toDataURL('image/jpeg', 0.92), 'JPEG', (w - part.width * k) / 2, m, part.width * k, part.height * k);
+        top = end;
+      }
     }
     return pdf!.output('blob');
   } finally { f.remove(); }

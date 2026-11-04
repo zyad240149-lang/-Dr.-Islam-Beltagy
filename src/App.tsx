@@ -48,6 +48,7 @@ const Diagnosis = lazy(() => import('./ortho/Diagnosis'));
 const FollowUps = lazy(() => import('./ortho/FollowUps'));
 const Landing = lazy(() => import('./landing/Landing'));
 const SignUp = lazy(() => import('./pwa/SignUp'));
+const CompleteProfile = lazy(() => import('./pwa/CompleteProfile'));
 
 // شاشة الدخول داخل النظام نفسه
 function GoToSiteLogin() {
@@ -155,7 +156,8 @@ function PatientProtected({ children }: { children: JSX.Element }) {
 }
 
 export default function App() {
-  const { user, patient, loading } = useAuth();
+  const { user, patient, loading, pendingProfile } = useAuth();
+  if (pendingProfile) return <Suspense fallback={<FullLoader />}><CompleteProfile pending={pendingProfile} /></Suspense>;
   return (
     <Routes>
       <Route path="/login" element={loading ? <FullLoader /> : user ? <Navigate to="/" replace /> : patient ? <Navigate to={hasPendingBook() ? '/me/book' : '/me'} replace /> : <GoToSiteLogin />} />

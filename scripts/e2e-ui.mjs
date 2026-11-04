@@ -45,7 +45,7 @@ try {
     if (r.body?.id) made.employees.push(r.body.id);
     check(`حساب ${s.name}`, r.status === 201, JSON.stringify(r.body).slice(0, 120));
   }
-  const reg = await fetch(`${URL_}/functions/v1/api/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: PATIENT.name, phone: PATIENT.phone, password: PW, confirm: PW }) });
+  const reg = await fetch(`${URL_}/functions/v1/api/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: PATIENT.name, phone: PATIENT.phone, gender: 'male', password: PW, confirm: PW }) });
   const regB = await reg.json().catch(() => null);
   if (regB?.patientId) made.patients.push(regB.patientId);
   check('حساب مريض الاختبار', reg.status === 201, JSON.stringify(regB));

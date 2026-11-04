@@ -7,6 +7,7 @@ import { ConfirmDialog } from '../../components/common';
 import { StatCard } from '../../components/StatCard';
 import { useToast } from '../../hooks/useToast';
 import { useAsync } from '../../hooks/useAsync';
+import MyExercises from './MyExercises';
 import { useAuth } from '../../services/auth';
 import { useLive } from '../../components/PatientLayout';
 import { DOCTOR_DAY_MESSAGE, patientApi, ymd, type Catalog, type DoctorDaySlots, type PatientAppointment } from '../../data/patientApi';
@@ -592,6 +593,7 @@ export function PatientRecords() {
                 ))}</div></div>
               </section>
             )}
+            <MyExercises />
           </div>
         </>
       )}

@@ -55,6 +55,20 @@ function Countdown({ target }: { target: number }) {
   );
 }
 
+// موعد جاي (لسه يومه ماجاش): التأكيد بيغيّر الحالة لـ «مؤكد» على نفس السجل، وبيظهر في المتابعات المربوطة بيه
+function ConfirmUpcomingButton({ appt, primary }: { appt: Appointment; primary?: boolean }) {
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const confirm = async () => {
+    setBusy(true);
+    try { await db.setAppointmentStatus(appt.id, 'confirmed'); toast.success('تم تأكيد الموعد'); }
+    catch (e) { toast.error((e as Error).message || 'تعذّر تأكيد الموعد.'); }
+    finally { setBusy(false); }
+  };
+  return <Button variant={primary ? 'primary' : 'outline'} size={primary ? undefined : 'sm'} icon="check" onClick={confirm} loading={busy}>تأكيد الموعد</Button>;
+}
+const canConfirmUpcoming = (a: Appointment) => (a.status === 'new' || a.status === 'rescheduled') && !attendanceOpen(a);
+
 function ConfirmApptButton({ appt }: { appt: Appointment }) {
   const [run, busy, doctorModal] = useConfirmAppointment();
   return <><Button variant="outline" size="sm" icon="check" onClick={() => run(appt)} loading={busy}>تأكيد</Button>{doctorModal}</>;
@@ -70,8 +84,9 @@ export default function Appointments() {
   // أي حساب دكتور (دور المعالج أو حساب مربوط بملف دكتور) بيشوف مواعيده هو بس
   const scoped = isScopedToOwnPatients(user?.role) || !!user?.therapistId;
   const [date, setDate] = useState(todayYmd());
-  const [view, setView] = useState<'day' | 'week' | 'month' | 'list'>('day');
   const [params] = useSearchParams();
+  // البحث بيدور في كل الأيام، مش في اليوم المعروض بس
+  const [view, setView] = useState<'day' | 'week' | 'month' | 'list'>(() => (params.get('q') ? 'list' : 'day'));
   const [listPage, setListPage] = useState(1);
   const [booking, setBooking] = useState(false);
   const [preset, setPreset] = useState<Preset | null>(null); // حجز من خانة فاضية في الجدول: الدكتور والتاريخ والوقت محددين مسبقًا
@@ -121,7 +136,7 @@ export default function Appointments() {
 
       <div className="card">
         <FilterBar>
-          <Input id="ap-q" label="بحث" icon="search" placeholder="اسم المريض أو الجوال أو رقم الملف أو الهوية أو رقم الموعد" value={q} onChange={(e) => setQ(e.target.value)} />
+          <Input id="ap-q" label="بحث" icon="search" placeholder="اسم المريض أو الجوال أو رقم الملف أو الهوية أو رقم الموعد" value={q} onChange={(e) => { setQ(e.target.value); if (e.target.value.trim()) setView('list'); }} />
           <Select id="ap-status" label="الحالة" value={status} onChange={(e) => setStatus(e.target.value)} options={[{ value: '', label: 'كل الحالات' }, ...Object.entries(APPT_STATUS).map(([value, v]) => ({ value, label: v.label }))]} />
           <Select id="ap-src" label="مصدر الحجز" value={src} onChange={(e) => setSrc(e.target.value)} options={[{ value: '', label: 'كل الحجوزات' }, { value: 'online', label: 'حجوزات أونلاين من الموقع' }, { value: 'staff', label: 'حجوزات من الإدارة' }]} />
           {!scoped && <Select id="ap-th" label="المعالج" value={therapist} onChange={(e) => setTherapist(e.target.value)} options={[{ value: '', label: 'كل المعالجين' }, ...db.allTherapists().map((t) => ({ value: t.id, label: t.name }))]} />}
@@ -185,6 +200,7 @@ export default function Appointments() {
                               <StatusBadge label={st.label} tone={st.tone} />
                               {live && <Countdown target={new Date(`${a.date}T${a.time}:00+03:00`).getTime()} />}
                               {CONFIRMABLE.includes(a.status) && attendanceOpen(a) && can('appointments', 'edit') && can('appt_confirm', 'view') && <ConfirmApptButton appt={a} />}
+                              {canConfirmUpcoming(a) && can('appointments', 'edit') && <ConfirmUpcomingButton appt={a} />}
                               <Button variant="outline" size="sm" onClick={() => setDetail(a)}>التفاصيل</Button>
                             </div>
                           </div>
@@ -214,7 +230,7 @@ export default function Appointments() {
                     const st = APPT_STATUS[a.status]; const th = db.therapist(a.therapistId); const branch = th ? branchForDate(th.workHours, a.date) : null;
                     return (
                     <tr key={a.id}><td className="num">{a.no}</td><td>{fmtDate(a.date)}</td><td className="num">{fmtTime(a.time)}</td><td>{db.patient(a.patientId)?.fullName} {a.pendingSync && <PendingSyncTag />}<CompletenessBadge patient={db.patient(a.patientId)} /></td><td>{db.service(a.serviceId)?.name}</td><td>{th?.name}{branch && <div className="muted-sm">{branch.name}</div>}</td><td><StatusBadge label={st.label} tone={st.tone} /></td><td><ActorBadges a={a} /></td>
-                      <td><Button variant="outline" size="sm" onClick={() => setDetail(a)}>التفاصيل</Button></td></tr>); })}</tbody></table></div>
+                      <td style={{ whiteSpace: 'nowrap' }}>{canConfirmUpcoming(a) && can('appointments', 'edit') && <ConfirmUpcomingButton appt={a} />} <Button variant="outline" size="sm" onClick={() => setDetail(a)}>التفاصيل</Button></td></tr>); })}</tbody></table></div>
                 <div className="row-between" style={{ marginTop: 12 }}><span className="muted">صفحة <span className="num">{listPage}</span> من <span className="num">{listPages}</span></span>
                   <span className="row-actions"><Button variant="outline" size="sm" disabled={listPage <= 1} onClick={() => setListPage(listPage - 1)}>السابق</Button><Button variant="outline" size="sm" disabled={listPage >= listPages} onClick={() => setListPage(listPage + 1)}>التالي</Button></span></div>
               </>
@@ -274,6 +290,7 @@ export function AppointmentDetailModal({ appt, onClose, onOpenPatient, onResched
         {/* الموعد */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, width: '100%' }}>
           {CONFIRMABLE.includes(a.status) && attendanceOpen(a) && can('appointments', 'edit') && can('appt_confirm', 'view') && <Button variant="primary" icon="check" onClick={() => confirmAppt(a)} loading={busy}>تأكيد</Button>}
+          {canConfirmUpcoming(a) && can('appointments', 'edit') && <ConfirmUpcomingButton appt={a} primary />}
           {canAct && <Button variant="outline" icon="edit" onClick={onEdit}>تعديل</Button>}
           <span className="spacer" />
           {canAct && can('appt_cancel', 'view') && <Button variant="danger" onClick={onCancel}>إلغاء الموعد</Button>}

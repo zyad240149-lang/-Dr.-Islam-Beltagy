@@ -5,7 +5,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../services/auth';
 import { PhoneInput } from '../components/PhoneInput';
 import { Button, PasswordInput } from '../components/ui';
-import { AuthBrand } from './SignUp';
+import { AuthBrand, GoogleButton } from './SignUp';
+import InstallButton from './InstallButton';
 import { phoneErrorMessage, type PhoneErrorCode } from '../utils/phoneUtils';
 import { Icon } from '../utils/icons';
 import { DOCTOR } from '../landing/content';
@@ -44,8 +45,10 @@ export default function AppLogin() {
           <PhoneInput id="al-phone" label="رقم الموبايل" value={phone} showError={tried} onChange={(v, e) => { setPhone(v); setPhoneErr(e); }} />
           <PasswordInput id="al-pass" label="كلمة المرور" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
           <Button type="submit" block loading={busy}>دخول</Button>
+          <GoogleButton />
           <p style={{ textAlign: 'center', marginTop: 16, fontSize: 14.5 }}>مريض جديد؟ <Link to="/signup" style={{ fontWeight: 700, color: 'var(--brand)' }}>أنشئ حسابك</Link></p>
         </form>
+        <div style={{ textAlign: 'center', marginTop: 12 }}><InstallButton className="btn btn--outline" /></div>
         <a href="/" className="al-back">الرجوع لموقع العيادة</a>
       </div>
       <aside className="al-aside" aria-hidden="true">

@@ -1206,12 +1206,17 @@ export const db = {
   // ---------- inventory ----------
   inventory: () => load().inventory,
   stockMovements: () => load().stockMovements.slice().sort((a, b) => b.date - a.date),
-  async saveItem(input: Omit<InventoryItem, 'id' | 'sku' | 'updatedAt' | 'quantity'> & { id?: string; quantity?: number }): Promise<Result> {
+  async inventoryReport(from: string, to: string) {
+    const { data, error } = await supabase.rpc('inventory_report', { p_from: from, p_to: to });
+    if (error) throw new Error(error.message);
+    return data as { totalValue: number; rows: { id: string; sku: string; name: string; unit: string; opening: number; in: number; out: number; closing: number; value: number; low: boolean }[] };
+  },
+  async saveItem(input: Omit<InventoryItem, 'id' | 'sku' | 'updatedAt' | 'quantity'> & { id?: string; quantity?: number; sku?: string }): Promise<Result> {
     const r = await rpc('save_item', { p: input }, ['inventory', 'activity']);
     return r.ok ? { ok: true } : r;
   },
   async deleteItem(id: string) { await rpcOrThrow('delete_item', { p_id: id }, ['inventory', 'activity']); },
-  async addStockMovement(input: { itemId: string; type: StockMovementType; quantity: number; unitCost: number; reference: string; note: string }): Promise<Result> {
+  async addStockMovement(input: { itemId: string; type: StockMovementType; quantity: number; unitCost: number; reference: string; note: string; overdraw?: boolean; key?: string }): Promise<Result> {
     const r = await rpc('add_stock_movement', { p: input }, ['inventory', 'notifications', 'activity']);
     if (r.ok) db.runAutomations();
     return r.ok ? { ok: true } : r;
@@ -1405,7 +1410,7 @@ export const db = {
     }
     // السجلات الطبية (التشخيص/الأشعة/المتابعات/ملفات الأشعة والتحاليل): أي تغيير من جهاز تاني ← الشاشة بتتحدّث من غير إعادة تحميل
     const orthoLive: Record<string, OrthoKind> = { ortho_consultations: 'consultations', ortho_imaging: 'imaging', ortho_follow_ups: 'follow_ups', patient_files: 'files',
-      ortho_nursing: 'nursing', ortho_injections: 'injections', ortho_fractures: 'fractures', ortho_surgeries: 'surgeries' };
+      ortho_nursing: 'nursing', ortho_injections: 'injections', ortho_fractures: 'fractures', ortho_surgeries: 'surgeries', ortho_surgery_stages: 'surgery_stages' };
     const orthoTimers: Record<string, ReturnType<typeof setTimeout>> = {};
     for (const [table, kind] of Object.entries(orthoLive)) {
       ch.on('postgres_changes', { event: '*', schema: 'public', table }, () => {
@@ -1413,6 +1418,11 @@ export const db = {
         orthoTimers[kind] = setTimeout(() => void ortho.reload(kind), 350);
       });
     }
+    // تغيير حجز بيغيّر المتابعة المربوطة بيه على الخادم (هجرة 933)
+    ch.on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, () => {
+      clearTimeout(orthoTimers.follow_ups);
+      orthoTimers.follow_ups = setTimeout(() => void ortho.reload('follow_ups'), 350);
+    });
     ch.subscribe();
     rtChannel = ch;
   },

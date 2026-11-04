@@ -33,15 +33,20 @@ interface AuthState {
   logout: (opts?: { keepOffline?: boolean }) => void;
   /** التطبيق شغّال من لقطة محفوظة بدون اتصال (الدخول الأصلي اتحقق منه قبل كده) */
   offlineSession: boolean;
+  /** دخل بجوجل ولسه ماكمّلش الاسم والموبايل والنوع — مالوش أي صفحة غير شاشة الإكمال */
+  pendingProfile: PendingProfile | null;
+  refreshSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
 
-type Session = { employee: Employee } | { patient: PatientSession } | 'network' | null;
+export interface PendingProfile { email: string | null; googleName: string }
+type Session = { employee: Employee } | { patient: PatientSession } | { pending: PendingProfile } | 'network' | null;
 
 async function applyCloudSession(): Promise<Session> {
   try {
     const me = await api.me();
+    if (me.kind === 'pending_profile') return { pending: { email: me.email ?? null, googleName: me.googleName ?? '' } };
     if (me.kind === 'staff') {
       const employee = mapEmployee(me.employee);
       setMyExtraPerms(employee.extraPerms);
@@ -78,6 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [patient, setPatient] = useState<PatientSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [offlineSession, setOfflineSession] = useState(false);
+  const [pendingProfile, setPendingProfile] = useState<PendingProfile | null>(null);
   const signingOut = useRef(false);
 
   // فتح التطبيق بدون اتصال: بيحتاج جلسة محفوظة من دخول سابق ناجح + لقطة لنفس المستخدم + في حدود المدة المسموحة (offline/session.ts)
@@ -98,9 +104,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch { return false; }
   };
 
-  const accept = async (s: Session): Promise<'staff' | 'patient' | null> => {
+  const accept = async (s: Session): Promise<'staff' | 'patient' | 'pending' | null> => {
     if (s === 'network') return (await restoreOffline()) ? 'staff' : null;
     if (!s) return null;
+    if ('pending' in s) { setUser(null); setPatient(null); setPendingProfile(s.pending); return 'pending'; }
+    setPendingProfile(null);
     if ('employee' in s) {
       const blocked = leaveMessage(s.employee.id);
       if (blocked) { signingOut.current = true; await supabase.auth.signOut(); db.clear(); await offline.wipeAll(); signingOut.current = false; throw new Error(blocked); }
@@ -141,7 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT' && !signingOut.current) {
         setMyExtraPerms(undefined); setMyPermOverride(null); db.setActor(null); db.clear(); offline.stop();
-        setUser(null); setPatient(null); setOfflineSession(false);
+        setUser(null); setPatient(null); setPendingProfile(null); setOfflineSession(false);
       }
     });
     return () => sub.subscription.unsubscribe();
@@ -173,7 +181,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!data.session) continue;
       try {
         const k = await accept(await applyCloudSession());
-        if (k) return { ok: true, kind: k };
+        if (k && k !== 'pending') return { ok: true, kind: k };
       } catch (e) { return { ok: false, error: (e as Error).message }; }
       await supabase.auth.signOut();
       return { ok: false, error: 'هذا الحساب غير مفعّل.' };
@@ -193,10 +201,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // الدخول بدون إنترنت بعد الخروج مش ممكن: signOut بيمسح جلسة Supabase المحفوظة.
     void opts;
     offline.stop();
-    setUser(null); setPatient(null); setOfflineSession(false);
+    setUser(null); setPatient(null); setPendingProfile(null); setOfflineSession(false);
   };
 
-  return <AuthContext.Provider value={{ user, patient, loading, login, logout, offlineSession }}>{children}</AuthContext.Provider>;
+  /** بعد ما مريض جوجل يكمّل بياناته: نقرا الحساب من الخادم تاني */
+  const refreshSession = async () => { await accept(await applyCloudSession()); };
+
+  return <AuthContext.Provider value={{ user, patient, loading, login, logout, offlineSession, pendingProfile, refreshSession }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

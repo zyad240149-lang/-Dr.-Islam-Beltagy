@@ -6,7 +6,7 @@ import { useDbVersion, useLoading } from '../hooks/useDb';
 import { Button, EmptyState, Input, Modal, Select, Skeleton, StatusBadge } from '../components/ui';
 import { ConfirmDialog, FilterBar, IconAction, RowActions, useCan } from '../components/common';
 import { useToast } from '../hooks/useToast';
-import { fmtDateTime, money } from '../utils/format';
+import { fmtDateTime, money, todayYmd } from '../utils/format';
 import type { InventoryItem, StockMovementType } from '../types';
 
 const MOVE_LABEL: Record<StockMovementType, string> = { purchase: 'شراء / توريد', issue: 'صرف', adjust_in: 'تسوية بالزيادة', adjust_out: 'تسوية بالنقص' };
@@ -24,6 +24,7 @@ export default function Inventory() {
   const [moving, setMoving] = useState<InventoryItem | null>(null);
   const [history, setHistory] = useState<InventoryItem | null>(null);
   const [deleting, setDeleting] = useState<InventoryItem | null>(null);
+  const [reporting, setReporting] = useState(false);
   const all = db.inventory();
   const term = q.trim();
   const items = all
@@ -37,7 +38,10 @@ export default function Inventory() {
     <div className="page">
       <div className="page-head">
         <div><h1>المخزون</h1><p>{all.length} صنف{lowCount > 0 ? ` — ${lowCount} وصل للحد الأدنى` : ''} · قيمة المخزون بسعر التكلفة {money(value)}</p></div>
-        {can('inventory', 'create') && <Button icon="plus" onClick={() => setEditing('new')}>إضافة صنف</Button>}
+        <div className="row-actions">
+          <Button variant="outline" icon="list" onClick={() => setReporting(true)}>تقرير المخزون</Button>
+          {can('inventory', 'create') && <Button icon="plus" onClick={() => setEditing('new')}>إضافة صنف</Button>}
+        </div>
       </div>
 
       <div className="card" style={{ marginBottom: 14 }}>
@@ -84,8 +88,9 @@ export default function Inventory() {
       {editing && <ItemModal item={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />}
       {moving && <MoveModal item={moving} onClose={() => setMoving(null)} />}
       {history && <HistoryModal item={history} onClose={() => setHistory(null)} />}
+      {reporting && <ReportModal onClose={() => setReporting(false)} />}
       {deleting && (
-        <ConfirmDialog title="حذف صنف" message={<>حذف «{deleting.name}» وسجل حركاته؟ لو الصنف مستخدم ومش عايز تمسح تاريخه، خليه «متوقف» بدل الحذف.</>}
+        <ConfirmDialog title="حذف صنف" message={<>حذف «{deleting.name}»؟ الصنف اللي ليه حركات صرف أو توريد مش هيتمسح عشان السجل يفضل، وخليه «متوقف» بدل الحذف.</>}
           onClose={() => setDeleting(null)}
           onConfirm={async () => { try { await db.deleteItem(deleting.id); toast.success('تم حذف الصنف.'); setDeleting(null); } catch (e) { toast.error((e as Error).message); } }} />
       )}
@@ -96,7 +101,7 @@ export default function Inventory() {
 function ItemModal({ item, onClose }: { item: InventoryItem | null; onClose: () => void }) {
   const toast = useToast();
   const [f, setF] = useState(() => ({
-    name: item?.name ?? '', category: item?.category ?? '', unit: item?.unit ?? 'قطعة', quantity: '0',
+    sku: item?.sku ?? '', name: item?.name ?? '', category: item?.category ?? '', unit: item?.unit ?? 'قطعة', quantity: '0',
     minQuantity: String(item?.minQuantity ?? 0), costPrice: String(item?.costPrice ?? 0), salePrice: String(item?.salePrice ?? 0),
     supplier: item?.supplier ?? '', active: item?.active ?? true,
   }));
@@ -108,7 +113,7 @@ function ItemModal({ item, onClose }: { item: InventoryItem | null; onClose: () 
     setBusy(true);
     const r = await db.saveItem({
       ...(item ? { id: item.id } : { quantity: num(f.quantity) }),
-      name: f.name.trim(), category: f.category.trim(), unit: f.unit.trim() || 'قطعة',
+      sku: f.sku.trim(), name: f.name.trim(), category: f.category.trim(), unit: f.unit.trim() || 'قطعة',
       minQuantity: num(f.minQuantity), costPrice: num(f.costPrice), salePrice: num(f.salePrice), supplier: f.supplier.trim(), active: f.active,
     });
     setBusy(false);
@@ -121,6 +126,7 @@ function ItemModal({ item, onClose }: { item: InventoryItem | null; onClose: () 
       footer={<><Button variant="outline" onClick={onClose} disabled={busy}>إلغاء</Button><Button icon="check" onClick={() => void save()} loading={busy}>حفظ</Button></>}>
       <div className="grid-form">
         <Input id="it-name" label="اسم الصنف *" value={f.name} onChange={(e) => set('name', e.target.value)} />
+        <Input id="it-sku" label="كود الصنف" dir="ltr" placeholder="يتولد تلقائي لو فاضي" value={f.sku} onChange={(e) => set('sku', e.target.value)} />
         <Input id="it-cat" label="الفئة" placeholder="مستلزمات / جبس / أدوات" value={f.category} onChange={(e) => set('category', e.target.value)} />
         <Input id="it-unit" label="الوحدة" value={f.unit} onChange={(e) => set('unit', e.target.value)} />
         {!item && <Input id="it-qty" label="الكمية الحالية" inputMode="decimal" value={f.quantity} onChange={(e) => set('quantity', e.target.value)} />}
@@ -143,14 +149,18 @@ function MoveModal({ item, onClose }: { item: InventoryItem; onClose: () => void
   const [reference, setReference] = useState('');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
+  const [overdraw, setOverdraw] = useState(false);
+  const [moveKey] = useState(() => crypto.randomUUID()); // الضغط مرتين على «تسجيل» مابيخصمش مرتين
+  const canOverdraw = useCan()('inv_overdraw', 'view');
   const n = Number(qty.replace(/[^\d.]/g, '')) || 0;
   const out = !IN_TYPES.includes(type);
   const after = item.quantity + (out ? -n : n);
   const save = async () => {
     if (n <= 0) { toast.error('اكتب كمية أكبر من صفر.'); return; }
-    if (out && n > item.quantity) { toast.error(`المتاح ${item.quantity} ${item.unit} بس.`); return; }
+    if (out && n > item.quantity && !overdraw) { toast.error(`المتاح ${item.quantity} ${item.unit} بس.`); return; }
+    if (out && !reference.trim() && !note.trim()) { toast.error('اكتب سبب الصرف.'); return; }
     setBusy(true);
-    const r = await db.addStockMovement({ itemId: item.id, type, quantity: n, unitCost: Number(cost) || 0, reference: reference.trim(), note: note.trim() });
+    const r = await db.addStockMovement({ itemId: item.id, type, quantity: n, unitCost: Number(cost) || 0, reference: reference.trim(), note: note.trim(), overdraw: out && n > item.quantity && overdraw, key: moveKey });
     setBusy(false);
     if (!r.ok) { toast.error(r.error); return; }
     toast.success('تم تسجيل الحركة.');
@@ -167,7 +177,40 @@ function MoveModal({ item, onClose }: { item: InventoryItem; onClose: () => void
         <Input id="mv-ref" label={out ? 'صرف لمين / السبب' : 'رقم فاتورة الشراء / المورّد'} value={reference} onChange={(e) => setReference(e.target.value)} />
         <Input id="mv-note" label="ملاحظة" value={note} onChange={(e) => setNote(e.target.value)} />
       </div>
+      {out && n > item.quantity && canOverdraw && (
+        <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}><input type="checkbox" checked={overdraw} onChange={(e) => setOverdraw(e.target.checked)} />صرف أكبر من المتاح (الرصيد هيبقى بالسالب)</label>
+      )}
       {n > 0 && <p className={after < 0 ? 'alert alert-danger' : 'muted-sm'} style={{ marginBottom: 0 }}>بعد الحركة: <strong className="num">{after}</strong> {item.unit}</p>}
+    </Modal>
+  );
+}
+
+function ReportModal({ onClose }: { onClose: () => void }) {
+  const toast = useToast();
+  const [from, setFrom] = useState(() => todayYmd().slice(0, 8) + '01');
+  const [to, setTo] = useState(todayYmd);
+  const [busy, setBusy] = useState(false);
+  const [data, setData] = useState<Awaited<ReturnType<typeof db.inventoryReport>> | null>(null);
+  const load = async () => {
+    setBusy(true);
+    try { setData(await db.inventoryReport(from, to)); } catch (e) { toast.error((e as Error).message); } finally { setBusy(false); }
+  };
+  return (
+    <Modal wide title="تقرير المخزون" onClose={onClose} footer={<Button variant="outline" onClick={onClose}>إغلاق</Button>}>
+      <FilterBar>
+        <Input id="rp-from" label="من" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+        <Input id="rp-to" label="إلى" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+        <Button loading={busy} onClick={() => void load()}>عرض</Button>
+      </FilterBar>
+      {data && (
+        <>
+          <p>قيمة الأصناف المفعّلة في آخر الفترة: <strong className="num">{money(data.totalValue)}</strong></p>
+          <div className="table-wrap"><table className="table">
+            <thead><tr><th>الكود</th><th>الصنف</th><th>أول الفترة</th><th>وارد</th><th>منصرف</th><th>آخر الفترة</th><th>القيمة</th></tr></thead>
+            <tbody>{data.rows.map((r) => <tr key={r.id}><td className="num" dir="ltr">{r.sku}</td><td>{r.name}{r.low && <> <StatusBadge label="وصل للحد الأدنى" tone="warn" /></>}</td><td className="num">{r.opening}</td><td className="num">{r.in}</td><td className="num">{r.out}</td><td className="num">{r.closing} {r.unit}</td><td className="num">{money(r.value)}</td></tr>)}</tbody>
+          </table></div>
+        </>
+      )}
     </Modal>
   );
 }
@@ -180,13 +223,14 @@ function HistoryModal({ item, onClose }: { item: InventoryItem; onClose: () => v
       {moves.length === 0 ? <EmptyState icon="list" title="مفيش حركات للصنف ده" /> : (
         <div className="table-wrap">
           <table className="table">
-            <thead><tr><th>التاريخ</th><th>النوع</th><th>الكمية</th><th>سعر الوحدة</th><th>المرجع</th><th>بواسطة</th><th>ملاحظة</th></tr></thead>
+            <thead><tr><th>التاريخ</th><th>النوع</th><th>الكمية</th><th>الرصيد بعدها</th><th>سعر الوحدة</th><th>المرجع</th><th>بواسطة</th><th>ملاحظة</th></tr></thead>
             <tbody>
               {moves.map((m) => (
                 <tr key={m.id}>
                   <td className="num">{fmtDateTime(m.date)}</td>
                   <td>{MOVE_LABEL[m.type]}</td>
                   <td className="num" style={{ color: IN_TYPES.includes(m.type) ? 'var(--ok)' : 'var(--danger)' }}>{IN_TYPES.includes(m.type) ? '+' : '−'}{m.quantity} {item.unit}</td>
+                  <td className="num">{m.balanceAfter ?? '—'}</td>
                   <td className="num">{m.unitCost ? money(m.unitCost) : '—'}</td>
                   <td>{m.reference || '—'}</td>
                   <td>{m.employeeId ? db.employees().find((e) => e.id === m.employeeId)?.name ?? '—' : '—'}</td>

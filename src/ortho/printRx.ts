@@ -34,9 +34,9 @@ export const RX_CSS = `
   .rxp .pt b { color: #1b2a54; }
   .rxp .dx { margin: 6px 0 10px; font-size: 12.5px; }
   .rxp .rx { font-size: 26px; font-weight: 700; color: #1b2a54; font-family: Georgia, "Times New Roman", serif; margin: 4px 0; direction: ltr; text-align: left; }
-  .rxp ol { margin: 0; padding: 0 18px 0 0; }
-  .rxp ol li { margin-bottom: 8px; }
-  .rxp ul { margin: 0; padding: 0 18px 0 0; }
+  .rxp .li { display: flex; gap: 6px; margin-bottom: 8px; }
+  .rxp .li > .n { flex: none; min-width: 16px; font-weight: 700; }
+  .rxp .li > .b { flex: 1; min-width: 0; }
   .rxp .med { direction: ltr; text-align: left; font-weight: 700; font-size: 14px; }
   .rxp .sig { color: #334155; }
   .rxp h3 { font-size: 13.5px; margin: 12px 0 4px; color: #1b2a54; border-bottom: 1px solid #e2e8f0; padding-bottom: 2px; }
@@ -60,9 +60,9 @@ export function rxPageHtml(c: Omit<Consultation, 'id' | 'patientId'>, p?: RxPati
   <div>السن: <b>${esc(ageOf(p?.birthDate ?? '') || '—')}</b></div>
 </div>
 ${c.diagnosis.trim() ? `<div class="dx">التشخيص: <b>${esc(c.diagnosis)}</b>${c.icd10 ? ` <span class="ltr">(${esc(c.icd10)})</span>` : ''} — ${esc(c.region)}${c.side !== 'na' ? ' ' + esc(SIDE[c.side]) : ''}</div>` : ''}
-${meds.length ? `<div class="rx">R/</div><ol>${meds.map((m) => `<li><div class="med">${esc(m.name)}</div><div class="sig">${esc([m.dose, m.frequency, m.duration && 'لمدة ' + m.duration].filter(Boolean).join(' — '))}${m.notes ? ` <i>(${esc(m.notes)})</i>` : ''}</div></li>`).join('')}</ol>` : ''}
+${meds.length ? `<div class="rx">R/</div><div>${meds.map((m, i) => `<div class="li"><span class="n">${i + 1}.</span><div class="b"><div class="med">${esc(m.name)}</div><div class="sig">${esc([m.dose, m.frequency, m.duration && 'لمدة ' + m.duration].filter(Boolean).join(' — '))}${m.notes ? ` <i>(${esc(m.notes)})</i>` : ''}</div></div></div>`).join('')}</div>` : ''}
 ${labs.length ? `<h3>التحاليل المطلوبة</h3><div class="ltr">${labs.map(esc).join(' • ')}</div>` : ''}
-${imgs.length ? `<h3>الأشعة المطلوبة</h3><ul>${imgs.map((r) => `<li>${esc(IMAGING_KIND[r.kind])} — ${esc(r.region)}${r.view ? ` <span class="ltr">(${esc(r.view)})</span>` : ''}</li>`).join('')}</ul>` : ''}
+${imgs.length ? `<h3>الأشعة المطلوبة</h3><div>${imgs.map((r) => `<div class="li"><span class="n">•</span><div class="b">${esc(IMAGING_KIND[r.kind])} — ${esc(r.region)}${r.view ? ` <span class="ltr">(${esc(r.view)})</span>` : ''}</div></div>`).join('')}</div>` : ''}
 ${c.plan.trim() ? `<h3>تعليمات</h3><div>${esc(c.plan).replace(/\n/g, '<br>')}</div>` : ''}
 ${c.followUp ? `<div class="fu">ميعاد المتابعة: ${esc(fmtDate(c.followUp))}</div>` : ''}
 <footer><span>${PLACES.map((pl) => `${esc(pl.name)} — ${esc(pl.address)} (${esc(pl.days)} ${esc(pl.hours)}) <span dir="ltr">${pl.phones.map(esc).join(' • ')}</span>`).join('<br>')}</span></footer>

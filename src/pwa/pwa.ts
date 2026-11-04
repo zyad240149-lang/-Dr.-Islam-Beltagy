@@ -60,8 +60,7 @@ export function installMethod(s: PwaState = state): InstallMethod {
   if (s.canInstall) return 'native';                 // Chrome/Edge (ويندوز/ماك/أندرويد): نافذة التثبيت الرسمية
   if (isIOS) return 'ios';                           // iPhone/iPad: مفيش prompt برمجي — تعليمات المشاركة ← إضافة للشاشة الرئيسية
   if (isMacSafari) return 'mac-safari';              // Safari على ماك (Sonoma+): File ← Add to Dock
-  if (isAndroid) return 'manual';                    // أندرويد بمتصفح ما أطلقش الحدث: قائمة المتصفح ← تثبيت / إضافة للشاشة الرئيسية
-  return 'none';                                     // متصفح مكتبي مش بيدعم التثبيت (Firefox مثلًا) أو الشروط لسه مش مستوفاة
+  return 'manual';                                   // المتصفح ما أطلقش الحدث (لسه أو مش بيدعمه): تعليمات من قائمة المتصفح، والزر يفضل ظاهر
 }
 
 export async function promptInstall(): Promise<'accepted' | 'dismissed' | 'unavailable'> {

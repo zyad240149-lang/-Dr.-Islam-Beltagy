@@ -91,6 +91,22 @@ async function hashIp(req: Request): Promise<string> {
   return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+function isGoogleUser(u: { app_metadata?: Record<string, unknown>; identities?: { provider: string }[] }) {
+  const providers = u.app_metadata?.providers;
+  return (Array.isArray(providers) && providers.includes("google")) || !!u.identities?.some((i) => i.provider === "google");
+}
+
+/** مستخدم جوجل صالح لسه مالوش ملف مريض ولا حساب موظف (الموظف الموقوف أو في إجازة ماينفعش يعدّي من هنا) */
+async function pendingGoogleUser(req: Request) {
+  const token = (req.headers.get("Authorization") ?? "").replace("Bearer ", "");
+  if (!token) return null;
+  const { data, error } = await admin.auth.getUser(token);
+  if (error || !data.user || !isGoogleUser(data.user)) return null;
+  const { data: staff } = await admin.from("employees").select("id").eq("auth_user_id", data.user.id).maybeSingle();
+  const { data: customer } = await admin.from("customers").select("id").eq("auth_user_id", data.user.id).maybeSingle();
+  return staff || customer ? null : data.user;
+}
+
 async function getCaller(req: Request) {
   const authHeader = req.headers.get("Authorization") ?? "";
   const token = authHeader.replace("Bearer ", "");
@@ -143,6 +159,7 @@ Deno.serve(async (req) => {
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ error: "البريد الإلكتروني غير صحيح" }, 400);
     if (password.length < 6) return json({ error: "كلمة المرور لازم ما تقل عن 6 خانات" }, 400);
     if (b.confirm !== undefined && b.confirm !== password) return json({ error: "كلمتا المرور غير متطابقتين" }, 400);
+    if (b.gender !== "male" && b.gender !== "female") return json({ error: "اختار النوع: ذكر أو أنثى" }, 400);
     // حد عام (10 حسابات في الدقيقة للموقع كله) + حد لكل جهاز/شبكة (5 حسابات في الساعة) — ضد إغراق النظام بحسابات وهمية
     const { count } = await admin.from("customers").select("id", { count: "exact", head: true }).gte("member_since", new Date(Date.now() - 60_000).toISOString());
     if ((count ?? 0) >= 10) return json({ error: "محاولات كثيرة، حاول بعد قليل" }, 429);
@@ -157,7 +174,7 @@ Deno.serve(async (req) => {
     // بريد الدخول الداخلي: c + أرقام E.164 (الحسابات القديمة بصيغ تانية بيدخلوا عادي لأن الدخول بيجرب كل الصيغ)
     const { data: au, error: authErr } = await admin.auth.admin.createUser({ email: "c" + e164Digits(phone) + "@clinic.local", password, email_confirm: true });
     if (authErr || !au.user) return json({ error: authErr?.message ?? "تعذّر إنشاء الحساب" }, 400);
-    const { data: reg, error: regErr } = await admin.rpc("register_customer", { p_auth_user: au.user.id, p_name: name, p_phone: phone, p_email: email, p_national_id: nationalId });
+    const { data: reg, error: regErr } = await admin.rpc("register_customer", { p_auth_user: au.user.id, p_name: name, p_phone: phone, p_email: email, p_national_id: nationalId, p_gender: b.gender });
     if (regErr) { await admin.auth.admin.deleteUser(au.user.id); return json({ error: regErr.message }, 400); }
     await admin.from("register_ip_log").insert({ ip_hash: ipHash });
     return json({ ok: true, ...reg }, 201);
@@ -165,7 +182,12 @@ Deno.serve(async (req) => {
 
   if (table === "me") {
     const caller = await getCaller(req);
-    if (!caller) return json({ error: "غير مصرح — سجّل الدخول أولًا" }, 401);
+    if (!caller) {
+      // دخل بجوجل ولسه ماكمّلش بياناته: مالوش أي وصول لحد ما يكمّل الاسم والموبايل والنوع
+      const pending = await pendingGoogleUser(req);
+      if (pending) return json({ kind: "pending_profile", email: pending.email ?? null, googleName: String(pending.user_metadata?.full_name ?? pending.user_metadata?.name ?? "") });
+      return json({ error: "غير مصرح — سجّل الدخول أولًا" }, 401);
+    }
     if (caller.kind === "staff") {
       const { data: perms } = await admin.from("role_permissions").select("area, ops").eq("role", caller.employee.role);
       return json({ kind: "staff", employee: caller.employee, permissions: perms ?? [] });
@@ -184,11 +206,16 @@ Deno.serve(async (req) => {
 
     const { data: existing } = await admin.from("customers").select("*").eq("auth_user_id", uid).maybeSingle();
     if (existing) return json({ ok: true, customer: existing });
+    // حساب مسجّل فعلًا بجوجل بس: أي حساب تاني ما يقدرش يعمل لنفسه ملف مريض من هنا
+    if (!isGoogleUser(authData.user)) return json({ error: "غير مصرح" }, 403);
+    const { data: staffRow } = await admin.from("employees").select("id").eq("auth_user_id", uid).maybeSingle();
+    if (staffRow) return json({ error: "غير مصرح" }, 403);
 
     const b = await req.json().catch(() => ({}));
     const ph = checkPhone(b.phone, b.country);
     if ("error" in ph) return json({ error: ph.error }, 400);
     const phone = ph.e164;
+    if (b.gender !== "male" && b.gender !== "female") return json({ error: "اختار النوع: ذكر أو أنثى" }, 400);
     // الاسم اللي المريض كتبه (ثلاثي)؛ اسم جوجل يتقبل لوحده بس لو هو نفسه ثلاثي — والتحقق النهائي في register_customer
     const googleName = String(authData.user.user_metadata?.full_name ?? authData.user.user_metadata?.name ?? "").trim().replace(/\s+/g, " ");
     const name = String(b.name ?? "").trim().replace(/\s+/g, " ") || googleName;
@@ -201,7 +228,7 @@ Deno.serve(async (req) => {
     const blocked = await linkCheck(phone, nationalId);
     if (blocked) return blocked;
 
-    const { data: reg, error: regErr } = await admin.rpc("register_customer", { p_auth_user: uid, p_name: name, p_phone: phone, p_email: email, p_national_id: nationalId });
+    const { data: reg, error: regErr } = await admin.rpc("register_customer", { p_auth_user: uid, p_name: name, p_phone: phone, p_email: email, p_national_id: nationalId, p_gender: b.gender });
     if (regErr) return json({ error: regErr.message }, 400);
     return json({ ok: true, ...reg }, 201);
   }

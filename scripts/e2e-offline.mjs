@@ -277,7 +277,7 @@ try {
   section('8) تسجيل الخروج بيسيب النسخة المتشفّرة لنفس الموظف (الدخول الجاي سريع)');
   page = await openApp(false);
   await page.goto(BASE + '/');
-  await page.locator('.logout-btn').first().click();
+  await page.locator('button.logout-btn').first().click();
   await page.getByRole('button', { name: /تسجيل الخروج|تأكيد/ }).last().click({ timeout: 3000 }).catch(() => {});
   await page.waitForURL(/login/, { timeout: 20000 }).catch(() => {});
   const kept = await idb(page);
@@ -297,7 +297,7 @@ try {
 } finally {
   await closeApp().catch(() => {});
   await stopServer().catch(() => {});
-  rmSync(profile, { recursive: true, force: true });
+  try { rmSync(profile, { recursive: true, force: true }); } catch { /* ملف مقفول مؤقتًا في ويندوز — لازم مايوقفش تنظيف قاعدة البيانات */ }
   section('تنظيف بيانات الاختبار');
   try {
     if (made.consult) await sql(`delete from ortho_consultations where id = '${made.consult}'`);

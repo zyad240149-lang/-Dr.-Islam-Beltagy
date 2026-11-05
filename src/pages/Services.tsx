@@ -72,7 +72,6 @@ function ServicesCatalog() {
               <h3 className="svc-card__name">{s.name}</h3>
               <p className="svc-card__desc" title={s.description}>{s.description || '—'}</p>
               <div className="svc-card__meta">
-                <span><Icon name="clock" size={14} /> <span className="num">{durLabel(s.durationMin)}</span></span>
                 <span title={doctorsText(s)}><Icon name="stethoscope" size={14} /> {doctorsText(s)}</span>
               </div>
               <div className="svc-card__foot">
@@ -182,18 +181,13 @@ function ServiceDoctorsModal({ service, onClose }: { service: Service; onClose: 
   );
 }
 
-// مدة الزيارة: اختيارات جاهزة (بتحدد طول الموعد في الجدول وأوقات الحجز المتاحة في الإدارة والموقع وبوابة المريض)
-const DURATIONS = [15, 20, 30, 45, 60, 75, 90, 120, 150, 180];
-const durLabel = (m: number) => (m === 60 ? 'ساعة' : m === 120 ? 'ساعتين' : m === 90 ? 'ساعة ونص' : m === 180 ? '3 ساعات' : m > 60 && m % 60 === 0 ? `${m / 60} ساعات` : `${m} دقيقة`);
 
 function ServiceModal({ service, categories, onClose }: { service?: Service; categories: string[]; onClose: () => void }) {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
-  const [customDur, setCustomDur] = useState(false);
-  const [f, setF] = useState<Omit<Service, 'id'>>(service ?? { name: '', category: categories[0] ?? '', description: '', price: 0, durationMin: 45, therapistIds: [], active: true, showOnSite: false /* خدمة جديدة: إدارة فقط لحد ما تتفعّل للحجز الإلكتروني */ });
+  const [f, setF] = useState<Omit<Service, 'id'>>(service ?? { name: '', category: categories[0] ?? '', description: '', price: 0, durationMin: 15, therapistIds: [], active: true, showOnSite: false /* خدمة جديدة: إدارة فقط لحد ما تتفعّل للحجز الإلكتروني */ });
   const submit = async () => {
     if (!f.name.trim() || !f.category.trim()) { toast.error('اسم الخدمة والتصنيف مطلوبان.'); return; }
-    if (!(f.durationMin >= 5 && f.durationMin <= 480)) { toast.error('مدة الزيارة لازم تكون بين 5 دقائق و8 ساعات.'); return; }
     setBusy(true);
     const { therapistIds: _keep, ...rest } = f; // ربط الأطباء بيتغيّر من زرار «تخصيص لدكتور» بس — ما نبعتوش هنا عشان ما يتمسحش
     const r = await db.saveService({ ...rest, name: f.name.trim(), category: f.category.trim(), id: service?.id } as Parameters<typeof db.saveService>[0]);
@@ -209,12 +203,6 @@ function ServiceModal({ service, categories, onClose }: { service?: Service; cat
         <Input id="svm-cat" label="التصنيف *" list="svm-cats" value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })} />
         <datalist id="svm-cats">{categories.map((c) => <option key={c} value={c} />)}</datalist>
         <Input id="svm-price" label="السعر (ج.م)" type="number" min={0} value={f.price} onChange={(e) => setF({ ...f, price: Number(e.target.value) })} />
-        <div>
-          <Select id="svm-dur" label="مدة الزيارة" value={DURATIONS.includes(f.durationMin) && !customDur ? String(f.durationMin) : 'custom'}
-            onChange={(e) => { if (e.target.value === 'custom') setCustomDur(true); else { setCustomDur(false); setF({ ...f, durationMin: Number(e.target.value) }); } }}
-            options={[...DURATIONS.map((m) => ({ value: String(m), label: durLabel(m) })), { value: 'custom', label: 'مدة أخرى (اكتبها بالدقائق)' }]} />
-          {(customDur || !DURATIONS.includes(f.durationMin)) && <Input id="svm-dur-c" label="المدة بالدقائق" type="number" min={5} max={480} step={5} value={f.durationMin} onChange={(e) => setF({ ...f, durationMin: Number(e.target.value) })} />}
-        </div>
         <Select id="svm-active" label="الحالة" value={f.active ? 'on' : 'off'} onChange={(e) => setF({ ...f, active: e.target.value === 'on' })} options={[{ value: 'on', label: 'مفعّلة — تظهر في الحجز' }, { value: 'off', label: 'موقوفة — لا تظهر في الحجز' }]} />
         <Select id="svm-site" label="الظهور في الموقع" value={f.showOnSite ? 'on' : 'off'} onChange={(e) => setF({ ...f, showOnSite: e.target.value === 'on' })} options={[{ value: 'on', label: 'تظهر في الموقع وبوابة المريض وفي الإدارة' }, { value: 'off', label: 'في الإدارة فقط' }]} />
       </div>

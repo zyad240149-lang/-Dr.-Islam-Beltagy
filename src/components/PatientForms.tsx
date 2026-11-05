@@ -539,7 +539,7 @@ export function PlanModal({ patientId, plan, presetServiceId, presetDiagnosis, o
           </label>
           {withDates && (<>
             <div className="row-between" style={{ marginBottom: 8 }}>
-              <span className="muted" style={{ fontSize: 12.5 }}>مقترحة حسب دوام الدكتور — كل زيارة 30 دقيقة، والزيارة التانية في نفس اليوم بموافقة المدير عند الحضور.</span>
+              <span className="muted" style={{ fontSize: 12.5 }}>مقترحة حسب دوام الدكتور — كل زيارة 15 دقيقة، والزيارة التانية في نفس اليوم بموافقة المدير عند الحضور.</span>
               <Button type="button" size="sm" variant="outline" icon="refresh" onClick={suggestDraft}>اقتراح المواعيد تلقائيًا</Button>
             </div>
             <SessionRowsEditor rows={draftRows} serviceId={f.serviceId} startNo={1} issues={draftIssues}

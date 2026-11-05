@@ -54,7 +54,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
   // لو الحجز من خانة دكتور معيّن: الخدمات اللي يقدّمها هالدكتور بس (تخصيص الخدمة لدكتور)
   const services = db.services().filter((x) => !presetTherapistId || therapistId !== presetTherapistId || x.therapistIds.includes(presetTherapistId));
   const service = serviceId ? db.service(serviceId) : undefined;
-  const duration = service?.durationMin ?? 40;
+  const duration = service?.durationMin ?? 15;
   const qualifiedTherapists = serviceId ? db.therapistsForService(serviceId) : [];
 
   // أوقات الدكتور المختار بس (ساعات المركز + إجازته + حجوزاته) — مفيش أوقات قبل اختيار الدكتور
@@ -269,7 +269,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
       {step === 1 && presetServiceId && service && (
         <div className="choice selected" style={{ pointerEvents: 'none' }}>
           <span className="choice__ic"><Icon name="spark" size={18} /></span>
-          <span style={{ flex: 1, minWidth: 0 }}><strong>{service.name}</strong><span>محددة تلقائيًا من صفحة الخدمات · {service.durationMin} دقيقة</span></span>
+          <span style={{ flex: 1, minWidth: 0 }}><strong>{service.name}</strong><span>محددة تلقائيًا من صفحة الخدمات</span></span>
           <span className="choice__price num">{money(service.price)}</span>
         </div>
       )}
@@ -279,7 +279,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
             <button key={s.id} type="button" className={`choice ${serviceId === s.id ? 'selected' : ''}`}
               onClick={() => { setServiceId(s.id); if (!(presetTime && time === presetTime)) setTime(''); }}>
               <span className="choice__ic"><Icon name="spark" size={18} /></span>
-              <span style={{ flex: 1, minWidth: 0 }}><strong>{s.name}</strong><span>{s.description} · {s.durationMin} دقيقة</span></span>
+              <span style={{ flex: 1, minWidth: 0 }}><strong>{s.name}</strong><span>{s.description}</span></span>
               <span className="choice__price num">{money(s.price)}</span>
             </button>
           ))}
@@ -373,7 +373,6 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
           <div><dt>الدكتور</dt><dd>{db.therapist(therapistId)?.name}</dd></div>
           <div><dt>التاريخ</dt><dd>{date && fmtDate(date)}</dd></div>
           <div><dt>الوقت</dt><dd className="num">{time && fmtTime(time)}</dd></div>
-          <div><dt>مدة الزيارة</dt><dd>{duration} دقيقة</dd></div>
           <div><dt>الجنسية</dt><dd>{(patient ? patient.nationality : np.nationality) === 'non_saudi' ? 'أجنبي' : 'مصري'}</dd></div>
           <div><dt>السعر</dt><dd className="num">{pricedPlan ? 'مشمول في سعر الخطة العلاجية' : money(shownPrice)}</dd></div>
           <div><dt>الباقة</dt><dd>{activePkg ? `${activePkg.name} (متبقٍ ${activePkg.totalSessions - activePkg.usedSessions})` : pricedPlan ? 'بدون باقة' : 'بدون باقة — ستصدر فاتورة'}</dd></div>

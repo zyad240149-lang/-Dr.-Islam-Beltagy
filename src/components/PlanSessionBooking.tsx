@@ -2,7 +2,7 @@
 //  1) «إنشاء خطة علاج جديدة» (PlanModal): مسودة صفوف (اختيارية) بتتحجز بعد حفظ الخطة مباشرة (bookDraftSessions).
 //  2) «مراجعة فاتورة الخطة العلاجية» + تفاصيل/تعديل الخطة (PlanSessionBooking): المحجوز فعلًا + حجز الباقي.
 // الاتنين بيقروا ويكتبوا نفس المواعيد الحقيقية (appointments.plan_id) عبر book_plan_session (هجرة 165):
-// الدكتور إجباري، دوام الدكتور (check_slot)، كل زيارة 30 دقيقة (الزيارة التانية في اليوم بموافقة المدير عند الحضور)، ومايزيدش عن عدد زيارات الخطة.
+// الدكتور إجباري، دوام الدكتور (check_slot)، كل زيارة 15 دقيقة (الزيارة التانية في اليوم بموافقة المدير عند الحضور)، ومايزيدش عن عدد زيارات الخطة.
 // الخطة دايمًا ليها فاتورة (مسودة لحد ما الاستقبال يراجعها) فمواعيدها مابتطلعش فواتير منفصلة.
 import { useMemo, useState } from 'react';
 import { db } from '../data/db';
@@ -18,8 +18,8 @@ export type SessionRow = { date: string; time: string; therapistId: string };
 export const emptyRow = (therapistId = ''): SessionRow => ({ date: '', time: '', therapistId });
 const filled = (r: SessionRow) => !!(r.therapistId && r.date && r.time);
 const ACTIVE = (a: Appointment) => a.status !== 'cancelled' && a.status !== 'no_show';
-// كل زيارة خطة/باقة 30 دقيقة (نفس durationMin اللي بيبعته الخادم في book_plan_session)
-export const PLAN_SESSION_MIN = 30;
+// كل زيارة خطة/باقة 15 دقيقة (نفس durationMin اللي بيبعته الخادم في book_plan_session)
+export const PLAN_SESSION_MIN = 15;
 const toMin = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
 
 
@@ -189,7 +189,7 @@ export default function PlanSessionBooking({ plan, canBook, ensurePriced }: { pl
         : plan.status !== 'active' ? <p className="muted">الخطة غير نشطة — ما يمكن حجز زيارات عليها.</p>
         : !priced ? <div className="alert alert-warn"><div>حدد سعر الخطة واضغط «حفظ التعديل» أولًا، وبعدها احجز مواعيد الزيارات (حتى لا تصدر لكل زيارة فاتورة منفصلة).</div></div>
         : (<>
-          <p className="muted" style={{ fontSize: 12.5, margin: '0 0 8px' }}>مواعيد مقترحة حسب دوام الدكتور — تقدر تغيّر الدكتور أو التاريخ أو الوقت قبل الحجز. كل زيارة 30 دقيقة، ولو حجزت زيارتين في نفس اليوم الثانية بتحتاج موافقة المدير عند الحضور.</p>
+          <p className="muted" style={{ fontSize: 12.5, margin: '0 0 8px' }}>مواعيد مقترحة حسب دوام الدكتور — تقدر تغيّر الدكتور أو التاريخ أو الوقت قبل الحجز. كل زيارة 15 دقيقة، ولو حجزت زيارتين في نفس اليوم الثانية بتحتاج موافقة المدير عند الحضور.</p>
           <SessionRowsEditor rows={list} onChange={(i, r) => setRows((x) => ({ ...x, [i]: r }))} serviceId={plan.serviceId}
             startNo={booked.length + 1} issues={issues} onBook={book} busyIndex={busy} />
           {remaining > 1 && <Button variant="outline" onClick={bookAll} loading={busy === 'all'} disabled={busy !== null}>حجز كل الزيارات المحددة</Button>}

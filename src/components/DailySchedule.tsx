@@ -113,7 +113,7 @@ export default function DailySchedule({ onOpen, onBook, onlyDoctorId }: { onOpen
                       <span className="tl-card__main">
                         <span className="tl-card__name">{p?.fullName ?? 'مريض'}</span>
                         <span className="tl-card__meta">{db.service(a.serviceId)?.name ?? '—'} · {db.therapist(a.therapistId)?.name ?? 'بدون طبيب'}</span>
-                        <span className="tl-card__meta"><span className="num">{fmtTime(a.time)}</span> · <span className="num">{a.durationMin}</span> دقيقة{a.status !== 'cancelled' && <Countdown date={a.date} time={a.time} />}</span>
+                        <span className="tl-card__meta"><span className="num">{fmtTime(a.time)}</span>{a.status !== 'cancelled' && <Countdown date={a.date} time={a.time} />}</span>
                         <span className="tl-card__actors"><ActorBadges a={a} /></span>
                       </span>
                       <span className={`tl-pill tl-pill--${st.cls}`}>{st.label}</span>

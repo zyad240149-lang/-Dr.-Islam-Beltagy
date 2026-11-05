@@ -275,7 +275,7 @@ export function PatientBook() {
                   <div className="choice-grid choice-grid--compact">
                     {offered.map((s) => (
                       <button key={s.id} type="button" className={`choice ${serviceId === s.id ? 'selected' : ''}`} onClick={() => { setServiceId(s.id); setPriceId(''); setTime(''); }}>
-                        <span style={{ flex: 1, minWidth: 0 }}><strong>{s.name}</strong><span>{s.durationMin} دقيقة</span></span>
+                        <span style={{ flex: 1, minWidth: 0 }}><strong>{s.name}</strong></span>
                         <span className="choice__price num">{money(s.price)}</span>
                       </button>
                     ))}

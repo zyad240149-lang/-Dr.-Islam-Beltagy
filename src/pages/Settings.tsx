@@ -60,12 +60,11 @@ export default function Settings() {
           {tab === 1 && (
             <>
               <div className="grid-form grid-form--3">
-                <Select id="st-step" label="فاصل الأوقات المتاحة" value={String(f.slotStepMin)} disabled={!edit} onChange={(e) => set('slotStepMin', Number(e.target.value))} options={[15, 20, 30, 45, 60].map((n) => ({ value: String(n), label: `${n} دقيقة` }))} />
-                <Input id="st-dur" label="مدة الموعد الافتراضية (دقيقة)" type="number" min={5} max={240} step={5} value={f.defaultAppointmentMin ?? 30} disabled={!edit} onChange={(e) => set('defaultAppointmentMin', Number(e.target.value))} />
+                <Select id="st-step" label="فاصل الأوقات المتاحة" value={String(f.slotStepMin)} disabled={!edit} onChange={(e) => set('slotStepMin', Number(e.target.value))} options={[{ value: '15', label: '15 دقيقة' }]} />
                 <Input id="st-cancel" label="سياسة الإلغاء/التعديل: قبل الموعد بـ (ساعات)" type="number" min={0} max={720} value={f.cancelBeforeHours ?? 24} disabled={!edit} onChange={(e) => set('cancelBeforeHours', Number(e.target.value))} />
               </div>
               <p className="muted" style={{ fontSize: 12.5 }}>أيام وساعات عمل المركز ومواعيد كل موظف تُضبط من قسم «مواعيد العمل».</p>
-              {saveBtn(['slotStepMin', 'defaultAppointmentMin', 'cancelBeforeHours'])}
+              {saveBtn(['slotStepMin', 'cancelBeforeHours'])}
             </>
           )}
           {tab === 2 && (

@@ -151,11 +151,21 @@ export const DX_SHEETS: Record<DxSheetId, DxPart[]> = {
 
 export const dxGroupKey = (prefix: string, part: DxPart, n: number) => `${prefix}.dxs.${part.key}.${n + 1}`;
 export const dxSub = (parent: string, sub: string) => `${parent} — ${sub}`;
+// لسه مفيش تشخيص نهائي: يتكتب مكان الألم «for DD» (طلب د. اسلام). التخزين: `${prefix}.fdx.dd`.
+export const PAIN_FOR_DD: Record<DxSheetId, string[]> = {
+  hipknee: ['Hip pain for DD', 'Thigh pain for DD', 'Knee pain for DD'],
+  ankle: ['Leg pain for DD', 'Ankle pain for DD', 'Foot pain for DD'],
+  neckshoulder: ['Neck pain for DD', 'Shoulder pain for DD'],
+  hand: ['Elbow pain for DD', 'Wrist pain for DD', 'Hand pain for DD'],
+  lumbar: ['Low back pain for DD', 'Sacral pain for DD'],
+};
 export const FDX = ['primary', '1', '2', '3', '4'] as const;
 
 /** المختار في شيت التشخيص كنص — التشخيص الأساسي الأول، ثم الإضافي، ثم بنود الأقسام (والفرعي جنب البند) و«Others» */
 export function dxSummary(prefix: string, id: DxSheetId, has: (g: string, i: string) => boolean, tx: (k: string) => string): string {
   const out: string[] = [];
+  const dd = PAIN_FOR_DD[id].filter((x) => has(`${prefix}.fdx.dd`, x));
+  if (dd.length) out.push(dd.join(', '));
   const primary = tx(`${prefix}.fdx.primary`);
   if (primary) out.push(`Primary: ${primary}`);
   const extra = FDX.slice(1).map((n) => tx(`${prefix}.fdx.${n}`)).filter(Boolean);

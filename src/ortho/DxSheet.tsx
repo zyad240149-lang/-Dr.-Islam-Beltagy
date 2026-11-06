@@ -2,7 +2,7 @@
 // والتشخيص النهائي (الأساسي + 4 إضافي + ملاحظات). البنود والتخزين في dxCatalog.ts.
 import { Fragment } from 'react';
 import { Ck, Txt, type Api } from './ExamSheet';
-import { DX_SHEETS, FDX, dxGroupKey, dxSub, type DxSheetId } from './dxCatalog';
+import { DX_SHEETS, FDX, PAIN_FOR_DD, dxGroupKey, dxSub, type DxSheetId } from './dxCatalog';
 
 export function DxSheet({ a, prefix, id }: { a: Api; prefix: string; id: DxSheetId }) {
   const parts = DX_SHEETS[id];
@@ -39,6 +39,8 @@ export function DxSheet({ a, prefix, id }: { a: Api; prefix: string; id: DxSheet
         <section className="dxg dxg--final">
           <h4 className="dxg__h">Final Diagnosis</h4>
           <div className="dxg__b">
+            <div className="sh-lbl">No final diagnosis yet:</div>
+            <div className="dxs__add">{PAIN_FOR_DD[id].map((x) => <Ck key={x} on={a.has(`${prefix}.fdx.dd`, x)} onToggle={() => a.toggle(`${prefix}.fdx.dd`, x)}>{x}</Ck>)}</div>
             <Txt a={a} k={`${prefix}.fdx.primary`} label="1. Primary Diagnosis:" />
             <div className="sh-lbl">2. Additional Diagnosis (es):</div>
             <div className="dxs__add">{FDX.slice(1).map((n) => <Txt key={n} a={a} k={`${prefix}.fdx.${n}`} label={`${n}.`} />)}</div>

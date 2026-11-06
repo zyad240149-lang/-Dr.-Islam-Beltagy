@@ -164,6 +164,9 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
   const ok = !!c.patientId || (unlinked && isTripleName(pendingInfo.name));
   const pseudo = unlinked ? ({ fullName: pendingInfo.name, phone: pendingInfo.phone ?? '', fileNo: '' } as unknown as NonNullable<ReturnType<typeof db.patient>>) : null;
   const patientOf = () => (c.patientId ? db.patient(c.patientId) : pseudo);
+  // تشخيص فاضي: مفيش أي بيانات طبية (اسم المريض وبياناته الأساسية مابيتحسبوش) — مايتحفظش «مكتمل»
+  const nothingEntered = !(sum.complaint || sum.diagnosis || sum.examination || sum.history || sum.plan || initial?.complaint?.trim() || initial?.diagnosis?.trim() || initial?.examination?.trim() || initial?.history?.trim()
+    || c.plan.trim() || c.medications.some((m) => m.name.trim()) || c.labs.length || c.imagingRequests.some((x) => x.region.trim()) || c.attachments.length);
   const missing = [
     !nurseStarted(sheet) && c.painScore === '' && 'الشيت العام',
     !doctorStarted(sheet) && 'كشف الطبيب',
@@ -194,6 +197,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
   function save(thenPrint: boolean, complete?: boolean) {
     if (savingRef.current) return;
     if (complete === undefined && missing.length) { setAsk({ thenPrint }); return; }
+    if (complete === true && nothingEntered) { toast.error('التشخيص فاضي — اكتب بياناته الأول.'); return; }
     const done = complete ?? true;
     const meds = c.medications.filter((m) => m.name.trim());
     const reqs = c.imagingRequests.filter((r) => r.region.trim());
@@ -420,10 +424,10 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
         <Modal title="فيه حاجات لسه ناقصة" onClose={() => setAsk(null)} footer={<>
           <Button variant="outline" onClick={() => setAsk(null)}>رجوع للكشف</Button>
           <Button variant="outline" icon="refresh" onClick={() => { const t = ask.thenPrint; setAsk(null); save(t, false); }}>حفظ — استكمال بعدين</Button>
-          <Button icon="check" onClick={() => { const t = ask.thenPrint; setAsk(null); save(t, true); }}>التشخيص اكتمل</Button>
+          <Button icon="check" disabled={nothingEntered} title={nothingEntered ? 'التشخيص فاضي — اكتب بياناته الأول' : ''} onClick={() => { const t = ask.thenPrint; setAsk(null); save(t, true); }}>التشخيص اكتمل</Button>
         </>}>
           <p style={{ marginTop: 0 }}>لسه ما اتملاش: <b>{missing.join('، ')}</b>.</p>
-          <p className="muted" style={{ marginBottom: 0 }}>«حفظ — استكمال بعدين» بيحفظه ويفضل ظاهر بزرار «استكمال» لحد ما يخلص. «التشخيص اكتمل» بيحفظه تشخيص نهائي كده.</p>
+          <p className="muted" style={{ marginBottom: 0 }}>«حفظ — استكمال بعدين» بيحفظه ويفضل ظاهر بزرار «استكمال» لحد ما يخلص. {nothingEntered ? 'التشخيص فاضي، فمايتحفظش كتشخيص مكتمل.' : '«التشخيص اكتمل» بيحفظه تشخيص نهائي كده.'}</p>
         </Modal>
       )}
       {/* خريطة الجسم من خانة التشخيص (10): الحالة بتتضاف في «Others» + الكود والمنطقة والجهة */}

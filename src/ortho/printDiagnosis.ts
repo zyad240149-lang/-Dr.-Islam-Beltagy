@@ -7,7 +7,7 @@ import { fmtDate } from '../utils/format';
 import { SIDE, type Consultation, type ExamSheet } from './data';
 import { SHEET_LISTS as L, bmiOf, normSheet, painLabel, sheetHasContent } from './ExamSheet';
 import { RX_CSS, rxPageHtml } from './printRx';
-import { DX_SHEETS, FDX, dxGroupKey, dxSub, type DxSheetId } from './dxCatalog';
+import { DX_SHEETS, FDX, PAIN_FOR_DD, dxGroupKey, dxSub, type DxSheetId } from './dxCatalog';
 import { TREATMENT, activeSheets, regionSheet, treatmentFilled, type Field, type RegionSheetDef } from './regionSheets';
 import { openPrintWindow, printHtml } from '../utils/printDoc';
 import { US_SHEETS, usFilled, usImage } from './ultrasoundSheets';
@@ -56,7 +56,7 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
       }).join('');
       return compact && !groups ? '' : (DX_SHEETS[id].length > 1 ? `<div class="dxpart">${esc(part.title)}</div>` : '') + `<div class="dxgrid">${groups}</div>`;
     }).join('');
-    const fin = line('Primary Diagnosis:', v(`${prefix}.fdx.primary`)) + FDX.slice(1).map((n) => line(`Additional ${n}:`, v(`${prefix}.fdx.${n}`))).join('') + line('Notes:', v(`${prefix}.fdx.notes`));
+    const fin = PAIN_FOR_DD[id].map((x) => (compact && !has(`${prefix}.fdx.dd`, x) ? '' : ck(has(`${prefix}.fdx.dd`, x), x))).join('') + line('Primary Diagnosis:', v(`${prefix}.fdx.primary`)) + FDX.slice(1).map((n) => line(`Additional ${n}:`, v(`${prefix}.fdx.${n}`))).join('') + line('Notes:', v(`${prefix}.fdx.notes`));
     return parts + (compact && !fin ? '' : `<div class="dxg dxfinal"><h4>Final Diagnosis</h4>${fin}</div>`);
   };
   const box = (n: number, title: string, body: string, cls = '') => (compact && !body.trim() ? '' : `<section class="box ${cls}"><h3><span>${n}</span>${title}</h3><div class="bd">${body}</div></section>`);

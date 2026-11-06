@@ -84,7 +84,7 @@ function ApptBadge({ a }: { a: Appointment }) {
   return <span className={`badge badge--${st.tone}`}>{st.label}</span>;
 }
 
-const emptyDraft = (patientId: string, doctorId: string): FuDraft => ({ patientId, doctorId, date: addDays(todayYmd(), 7), time: '', reason: '', notes: '' });
+const emptyDraft = (patientId: string, doctorId: string): FuDraft => ({ patientId, doctorId, date: todayYmd(), time: '', reason: '', notes: '' });
 
 // ---------- نافذة موعد متابعة (جديد / تعديل + تمت / إلغاء / تحويل لحجز / تسجيل حضور) ----------
 // الطبيب الأول ← أيام الأسبوعين الجايين (شغال/إجازة/مقفول) ← أوقات دوام الطبيب في اليوم ده (فاضي/محجوز/فيه متابعة/فات)،

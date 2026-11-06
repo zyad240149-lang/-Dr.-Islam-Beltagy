@@ -13,7 +13,7 @@ import { Button, EmptyState, Modal } from '../components/ui';
 import { db } from '../data/db';
 import { useDbVersion } from '../hooks/useDb';
 import { APPT_STATUS, fmtDate, fmtTime, todayYmd, whatsappNumber } from '../utils/format';
-import { normalizeSearch, patientMatches } from '../utils/phoneUtils';
+import { namesTypoClose, normalizeSearch, patientMatches } from '../utils/phoneUtils';
 import { ExerciseSendModal } from './ExerciseSend';
 import { WhatsappLink } from '../components/WhatsappLink';
 import { isTripleName } from './ExamSheet';
@@ -110,7 +110,7 @@ export default function Diagnosis() {
   const selected = patientId ? db.patient(patientId) : undefined;
   // تشخيصات من غير ملف مريض: بانتظار ملف الاستقبال أو محتاجة مراجعة وربط (الأحدث أولًا)
   const unlinked = consults.filter(isUnlinked).sort((a, b) => b.date.localeCompare(a.date));
-  const sameName = (name: string) => { const n = normalizeSearch(name); return n ? db.patients().filter((p) => normalizeSearch(p.fullName) === n) : []; };
+  const sameName = (name: string) => db.patients().filter((p) => namesTypoClose(p.fullName, name));
   const [regQ, setRegQ] = useState(''); // بحث عن مريض متسجل بالفعل (اسم/موبايل/رقم ملف) — محتاج نت
   const regHits = newFile && online && regQ.trim().length >= 2 ? db.patients().filter((p) => patientMatches(p, regQ)).slice(0, 8) : [];
   const nameHits = newFile && newFile.name.trim().length >= 2 ? db.patients().filter((p) => patientMatches(p, newFile.name)).slice(0, 6) : [];
@@ -472,7 +472,7 @@ export default function Diagnosis() {
             <p style={{ marginTop: 0 }}>التشخيص باسم <b>{pp?.name}</b>{pp?.phone && <> · <bdi dir="ltr" className="num">{pp.phone}</bdi></>}{pp?.age && <> · السن <span className="num">{pp.age}</span></>} — {fmtDate(linking.c.date)}</p>
             {cands.length > 0 && (
               <div className="dx-hits">
-                <p className="muted" style={{ margin: '0 0 6px' }}>ملفات بنفس الاسم:</p>
+                <p className="muted" style={{ margin: '0 0 6px' }}>ملفات بنفس الاسم أو قريبة منه:</p>
                 {cands.map((p) => (
                   <button type="button" key={p.id} className={`dx-hits__row ${linking.patientId === p.id ? 'is-on' : ''}`} onClick={() => setLinking({ ...linking, patientId: p.id })}>
                     <b>{p.fullName}</b> <small>ملف <span className="num">{patientFile(p.id)}</span>{p.phone && <> · <bdi dir="ltr" className="num">{p.phone}</bdi></>}</small>

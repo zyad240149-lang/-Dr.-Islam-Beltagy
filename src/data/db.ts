@@ -679,7 +679,7 @@ export const db = {
     const g = guests.find((x) => phoneMatches(x.phone, input.phone));
     if (g && !net.isOnline()) throw new DbError(OFFLINE_MSG); // تحويل متصل لمريض حقيقي يحتاج الخادم
     if (g) {
-      const { data: up, error: ue } = await supabase.from('patients').update({ ...map.patientRow(input as Partial<Patient>), is_guest: false }).eq('id', g.id).select().single();
+      const { data: up, error: ue } = await supabase.from('patients').update({ ...map.patientRow(input as Partial<Patient>), is_guest: false, registered_at: new Date().toISOString() }).eq('id', g.id).select().single();
       if (ue) throw new DbError(cleanMsg(ue.message));
       guests = guests.filter((x) => x.id !== g.id);
       const pr = map.patient(up);
@@ -710,7 +710,7 @@ export const db = {
     const guest = guests.find((x) => x.id === id);
     if (guest && !net.isOnline()) throw new DbError(OFFLINE_MSG);
     if (net.isOnline() && !offline.queue.hasPendingFor(id)) {
-      const { data, error } = await supabase.from('patients').update({ ...map.patientRow(patch), ...(guest ? { is_guest: false } : {}) }).eq('id', id).select().single();
+      const { data, error } = await supabase.from('patients').update({ ...map.patientRow(patch), ...(guest ? { is_guest: false, registered_at: new Date().toISOString() } : {}) }).eq('id', id).select().single();
       if (!error) {
         if (guest) { guests = guests.filter((x) => x.id !== id); load().patients.push(map.patient(data)); }
         const i = load().patients.findIndex((x) => x.id === id);

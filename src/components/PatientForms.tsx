@@ -125,12 +125,13 @@ const joinName = (f: { firstName?: string; fatherName?: string; familyName?: str
 function identityErrors(f: { firstName?: string; fatherName?: string; familyName?: string }) {
   const e: Record<string, string> = {};
   // الاسم بالعربي (هجرة 162 — الخادم بيعتبر الملف «غير مكتمل» لو الاسم مش عربي)
-  if (!f.firstName?.trim()) e.firstName = 'أدخل الاسم.'; else if (!isArabicName(f.firstName)) e.firstName = 'اكتب الاسم بالعربي.';
-  if (!f.fatherName?.trim()) e.fatherName = 'أدخل اسم الأب.'; else if (!isArabicName(f.fatherName)) e.fatherName = 'اكتب اسم الأب بالعربي.';
-  if (!f.familyName?.trim()) e.familyName = 'أدخل اسم العائلة.'; else if (!isArabicName(f.familyName)) e.familyName = 'اكتب اسم العائلة بالعربي.';
+  if (!f.firstName?.trim()) e.firstName = 'أدخل الاسم.';
+  else if (!f.fatherName?.trim() || !f.familyName?.trim()) e.firstName = 'اكتب الاسم ثلاثي (الاسم + الأب + العائلة).';
+  else if (![f.firstName, f.fatherName, f.familyName].every((x) => isArabicName(x ?? ''))) e.firstName = 'اكتب الاسم بالعربي.';
   return e;
 }
 function IdentityFields({ idp, f, set, errors }: { idp: string; f: { firstName?: string; fatherName?: string; familyName?: string; nationality?: string }; set: (k: 'firstName' | 'fatherName' | 'familyName' | 'nationality', v: string) => void; errors: Record<string, string> }) {
+  const [name, setName] = useState(() => joinName(f)); // اللي مكتوب زي ما هو (المسافات أثناء الكتابة) — الأجزاء بتتقسم منه
   return (
     <>
       <div className="field" style={{ gridColumn: '1 / -1' }}>
@@ -140,9 +141,10 @@ function IdentityFields({ idp, f, set, errors }: { idp: string; f: { firstName?:
           <button type="button" className={`seg__btn ${f.nationality === 'non_saudi' ? 'active' : ''}`} onClick={() => set('nationality', 'non_saudi')}>أجنبي</button>
         </div>
       </div>
-      <Input id={`${idp}-first`} label="الاسم *" value={f.firstName ?? ''} onChange={(e) => set('firstName', e.target.value)} error={errors.firstName} />
-      <Input id={`${idp}-father`} label="اسم الأب *" value={f.fatherName ?? ''} onChange={(e) => set('fatherName', e.target.value)} error={errors.fatherName} />
-      <Input id={`${idp}-family`} label="العائلة *" value={f.familyName ?? ''} onChange={(e) => set('familyName', e.target.value)} error={errors.familyName} />
+      <div style={{ gridColumn: '1 / -1' }}>
+        <Input id={`${idp}-name`} label="الاسم الثلاثي *" value={name} error={errors.firstName}
+          onChange={(e) => { const v = e.target.value; setName(v); const p = splitName(v); set('firstName', p.firstName); set('fatherName', p.fatherName); set('familyName', p.familyName); }} />
+      </div>
     </>
   );
 }

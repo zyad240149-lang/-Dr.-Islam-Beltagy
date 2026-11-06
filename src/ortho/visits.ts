@@ -4,7 +4,7 @@ import { db } from '../data/db';
 import { isIncomplete, ortho, type Consultation } from './data';
 import type { Appointment, Patient } from '../types';
 import { todayYmd } from '../utils/format';
-import { normalizeSearch, phoneMatches } from '../utils/phoneUtils';
+import { namesTypoClose, phoneMatches } from '../utils/phoneUtils';
 
 // تاريخ لحظة معيّنة بتوقيت العيادة — نفس توقيت todayYmd
 const ymdInClinicTz = (ms: number) => new Date(ms).toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' });
@@ -13,13 +13,15 @@ export const ATTENDED = new Set(['arrived', 'in_progress', 'completed']);
 export type VisitState = 'waiting' | 'incomplete' | 'done';
 export interface VisitDx { a: Appointment; consult?: Consultation; state: VisitState }
 
-/** تشخيص اتعمل بالاسم من غير ملف (غالبًا والنت فاصل) لنفس مريض الزيارة: نفس اليوم ونفس الاسم، والموبايل مايختلفش لو الاتنين مكتوبين */
+/** تشخيص اتعمل بالاسم من غير ملف (غالبًا والنت فاصل) لنفس مريض الزيارة: نفس اليوم، واسم قريب والموبايل مايختلفش، أو اسم مختلف بنفس الموبايل */
 function unlinkedMatchesVisit(c: Consultation, a: Appointment): boolean {
   if (c.patientId || c.date !== a.date || !c.pendingPatient?.name) return false;
   const p = db.patient(a.patientId);
-  if (!p || normalizeSearch(c.pendingPatient.name) !== normalizeSearch(p.fullName)) return false;
+  if (!p) return false;
   const phone = c.pendingPatient.phone?.trim();
-  return !phone || !p.phone || phoneMatches(p.phone, phone);
+  // الاسم قريب (غلطة كتابة صغيرة) ← يكمل طالما الموبايل مش مختلف؛ الاسم مختلف ← الموبايل لازم يطابق
+  if (namesTypoClose(c.pendingPatient.name, p.fullName)) return !phone || !p.phone || phoneMatches(p.phone, phone);
+  return !!phone && !!p.phone && phone.replace(/\D/g, '').length >= 9 && phoneMatches(p.phone, phone);
 }
 
 /** الزيارة تستنى تشخيص: حضور كشف أو استشارة بس — زيارات المتابعة والخدمات التانية مالهاش مكان في القايمة */

@@ -234,6 +234,29 @@ export function normalizeSearch(text: string | null | undefined): string {
     .replace(/\s+/g, ' ').trim();
 }
 
+// كلمتين نفس الكلمة أو بينهم غلطة كتابة: حرف ناقص/زايد/مختلف أو حرفين متبدلين (نفس word_typo_close على الخادم — هجرة 950)
+function wordTypoClose(a: string, b: string): boolean {
+  if (a === b) return true;
+  if (Math.min(a.length, b.length) < 3 || Math.abs(a.length - b.length) > 1) return false;
+  let i = 0;
+  while (i < Math.min(a.length, b.length) && a[i] === b[i]) i++;
+  let ra = a.slice(i), rb = b.slice(i);
+  while (ra && rb && ra[ra.length - 1] === rb[rb.length - 1]) { ra = ra.slice(0, -1); rb = rb.slice(0, -1); }
+  return Math.max(ra.length, rb.length) <= 1 || (ra.length === 2 && rb.length === 2 && ra[0] === rb[1] && ra[1] === rb[0]);
+}
+// اسمين لنفس الشخص مع غلطة كتابة صغيرة: نفس عدد الكلمات، غلطة في كل كلمة بالكتير، وفي كلمتين بالكتير (نفس names_typo_close)
+export function namesTypoClose(a: string | null | undefined, b: string | null | undefined): boolean {
+  const wa = normalizeSearch(a).split(' ').filter(Boolean), wb = normalizeSearch(b).split(' ').filter(Boolean);
+  if (!wa.length || wa.length !== wb.length) return false;
+  let diff = 0;
+  for (let i = 0; i < wa.length; i++) {
+    if (wa[i] === wb[i]) continue;
+    if (!wordTypoClose(wa[i], wb[i])) return false;
+    diff++;
+  }
+  return diff <= 2;
+}
+
 // نص بيطابق البحث لو كل كلمة في البحث موجودة فيه (بأي ترتيب، وأي جزء من الكلمة) — «محمد العتيبي» بيلاقي «محمد بن سعد العتيبي»
 export function textMatches(text: string | null | undefined, query: string): boolean {
   const q = normalizeSearch(query);

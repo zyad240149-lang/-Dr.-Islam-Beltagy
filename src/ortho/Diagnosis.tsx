@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { isIncomplete, isUnlinked, ortho, useOrthoVersion, type Consultation, type Nursing } from './data';
-import { LoadState, PageHead, PatientSelect, SearchBox, confirmDelete, patientFile, patientName, useClinicalCan, useRun } from './kit';
+import { LoadState, PageHead, SearchBox, confirmDelete, patientFile, patientName, useClinicalCan, useRun } from './kit';
 import { ConsultModal, DraftCard, LinkBadge, clearConsultDraft, listConsultDrafts } from './Consultations';
 import { DiagnosisTab } from './DiagnosisTab';
 import { newFilesToday, todaysFollowUps, todaysVisits } from './visits';
@@ -13,7 +13,7 @@ import { Button, EmptyState, Modal } from '../components/ui';
 import { db } from '../data/db';
 import { useDbVersion } from '../hooks/useDb';
 import { APPT_STATUS, fmtDate, fmtTime, todayYmd, whatsappNumber } from '../utils/format';
-import { namesTypoClose, normalizeSearch, patientMatches } from '../utils/phoneUtils';
+import { normalizeSearch, patientMatches } from '../utils/phoneUtils';
 import { ExerciseSendModal } from './ExerciseSend';
 import { WhatsappLink } from '../components/WhatsappLink';
 import { isTripleName } from './ExamSheet';
@@ -40,7 +40,6 @@ export default function Diagnosis() {
   const [newFile, setNewFile] = useState<{ name: string; phone: string } | null>(null);
   const [pendingOpen, setPendingOpen] = useState<{ name: string; phone: string } | null>(null);
   const [unlinkedEdit, setUnlinkedEdit] = useState<Consultation | null>(null);
-  const [linking, setLinking] = useState<{ c: Consultation; patientId: string } | null>(null);
   const { run, busy } = useRun();
   const { online } = useOfflineState();
   const pick = (id: string) => setParams(id ? { patient: id } : view !== 'waiting' ? { tab: view } : {}, { replace: true });
@@ -110,7 +109,6 @@ export default function Diagnosis() {
   const selected = patientId ? db.patient(patientId) : undefined;
   // تشخيصات من غير ملف مريض: بانتظار ملف الاستقبال أو محتاجة مراجعة وربط (الأحدث أولًا)
   const unlinked = consults.filter(isUnlinked).sort((a, b) => b.date.localeCompare(a.date));
-  const sameName = (name: string) => db.patients().filter((p) => namesTypoClose(p.fullName, name));
   const [regQ, setRegQ] = useState(''); // بحث عن مريض متسجل بالفعل (اسم/موبايل/رقم ملف) — محتاج نت
   const regHits = newFile && online && regQ.trim().length >= 2 ? db.patients().filter((p) => patientMatches(p, regQ)).slice(0, 8) : [];
   const nameHits = newFile && newFile.name.trim().length >= 2 ? db.patients().filter((p) => patientMatches(p, newFile.name)).slice(0, 6) : [];
@@ -174,8 +172,6 @@ export default function Diagnosis() {
                     <div className="dx-queue__act">
                       {whatsappNumber(pp) && <WhatsappLink phone={whatsappNumber(pp)} button />}
                       {perm.edit && <Button size="sm" variant="outline" icon="edit" onClick={() => setUnlinkedEdit(c)}>فتح</Button>}
-                      {perm.edit && !local && <Button size="sm" icon="user" disabled={!online} title={online ? '' : 'محتاج اتصال بالإنترنت'}
-                        onClick={() => { const s1 = sameName(pp?.name ?? ''); setLinking({ c, patientId: s1.length === 1 ? s1[0].id : '' }); }}>ربط بملف مريض</Button>}
                     </div>
                   </div>
                 );
@@ -189,14 +185,14 @@ export default function Diagnosis() {
         <>
           <section className="card" style={{ marginBottom: 16 }}>
             <div className="card__head">
-              <h2>حضور النهارده <span className="muted dx-date">{fmtDate(todayYmd())}</span></h2>
+              <h2>حضور النهارده والملفات الجديدة <span className="muted dx-date">{fmtDate(todayYmd())}</span></h2>
               {doneToday > 0 && <span className="badge badge--ok">اتشخص النهارده <span className="num">{doneToday}</span></span>}
             </div>
             <div className="card__body">
               <LoadState kind="consultations">
-                {pending.length === 0
+                {pending.length + newFiles.length === 0
                   ? (visits.length === 0
-                    ? <EmptyState icon="calendarPlus" title="ما فيه مرضى حضروا كشف أو استشارة النهارده" text="أول ما الاستقبال يعمل حضور كشف أو استشارة لمريض، هيظهر هنا عشان يتشخّص." />
+                    ? <EmptyState icon="calendarPlus" title="ما فيه مرضى حضروا أو سجلوا النهارده" text="أول ما مريض يسجل أو الاستقبال يعمل له حضور كشف أو استشارة، هيظهر هنا عشان يتشخّص." />
                     : <EmptyState icon="checkCircle" title="كل المرضى اللي حضروا النهارده اتشخصوا ✓" text="تشخيصاتهم في «المرضى اللي اتشخصوا»." />)
                   : (
                     <div className="dx-queue">
@@ -227,17 +223,7 @@ export default function Diagnosis() {
                           </div>
                         );
                       })}
-                    </div>
-                  )}
-              </LoadState>
-            </div>
-          </section>
-          {newFiles.length > 0 && (
-            <section className="card" style={{ marginBottom: 16 }}>
-              <div className="card__head"><h2>ملفات اتفتحت النهارده <span className="badge badge--warn num">{newFiles.length}</span></h2></div>
-              <div className="card__body">
-                <div className="dx-queue">
-                  {newFiles.map((p) => {
+                      {newFiles.map((p) => {
                     const local = drafts.find((d) => d.patientId === p.id);
                     return (
                       <div className="dx-queue__row" key={p.id}>
@@ -256,10 +242,11 @@ export default function Diagnosis() {
                       </div>
                     );
                   })}
-                </div>
-              </div>
-            </section>
-          )}
+                    </div>
+                  )}
+              </LoadState>
+            </div>
+          </section>
           {perm.add && otherDrafts.length + otherIncomplete.length > 0 && (
             <section className="card" style={{ marginBottom: 16 }}>
               <div className="card__head"><h2>تشخيصات لم تكتمل ({otherDrafts.length + otherIncomplete.length})</h2></div>
@@ -461,32 +448,6 @@ export default function Diagnosis() {
           </p>
         </Modal>
       )}
-      {linking && (() => {
-        const pp = linking.c.pendingPatient;
-        const cands = sameName(pp?.name ?? '');
-        return (
-          <Modal title="ربط التشخيص بملف المريض" onClose={() => setLinking(null)} footer={<>
-            <Button variant="outline" onClick={() => setLinking(null)}>إلغاء</Button>
-            <Button icon="check" loading={busy} disabled={!linking.patientId} onClick={() => run(() => ortho.link(linking.c.id, linking.patientId), 'اتربط التشخيص بملف المريض', () => setLinking(null))}>ربط</Button>
-          </>}>
-            <p style={{ marginTop: 0 }}>التشخيص باسم <b>{pp?.name}</b>{pp?.phone && <> · <bdi dir="ltr" className="num">{pp.phone}</bdi></>}{pp?.age && <> · السن <span className="num">{pp.age}</span></>} — {fmtDate(linking.c.date)}</p>
-            {cands.length > 0 && (
-              <div className="dx-hits">
-                <p className="muted" style={{ margin: '0 0 6px' }}>ملفات بنفس الاسم أو قريبة منه:</p>
-                {cands.map((p) => (
-                  <button type="button" key={p.id} className={`dx-hits__row ${linking.patientId === p.id ? 'is-on' : ''}`} onClick={() => setLinking({ ...linking, patientId: p.id })}>
-                    <b>{p.fullName}</b> <small>ملف <span className="num">{patientFile(p.id)}</span>{p.phone && <> · <bdi dir="ltr" className="num">{p.phone}</bdi></>}</small>
-                  </button>
-                ))}
-              </div>
-            )}
-            <div className="field" style={{ marginBottom: 0 }}>
-              <label>أو ابحث عن ملف المريض</label>
-              <PatientSelect value={linking.patientId} onChange={(v) => setLinking({ ...linking, patientId: v })} />
-            </div>
-          </Modal>
-        );
-      })()}
       {pendingOpen && <ConsultModal pending={pendingOpen} onClose={() => setPendingOpen(null)} />}
       {unlinkedEdit && <ConsultModal initial={unlinkedEdit} onClose={() => setUnlinkedEdit(null)} />}
       {sheet && <NursingModal patientId={sheet.patientId} appointmentId={sheet.appointmentId} initial={sheet.initial} onClose={() => setSheet(null)} />}

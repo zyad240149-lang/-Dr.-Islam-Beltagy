@@ -104,7 +104,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
     const basics = (d: Draft) => ({ ...d, sheet: withPatientBasics(normSheet(d.sheet), d.patientId ? db.patient(d.patientId) : null) });
     // الزيارة: تاريخ الكشف = تاريخ الزيارة
     const withVisit = (d: Draft, id?: string | null) => { const a = id ? db.appointment(id) : openVisitFor(d.patientId); return a ? { ...d, appointmentId: a.id, date: a.date } : { ...d, appointmentId: d.appointmentId ?? null }; };
-    if (initial) return basics(withSheet({ ...emptyConsult(initial.patientId), ...initial }));
+    if (initial) return basics(withSheet({ ...emptyConsult(initial.patientId), ...initial, pendingFollowUps: (initial.pendingPatient?.followUps ?? []) as FuDraft[] }));
     if (pending && !patientId) {
       const txt: Record<string, string> = { 'n.name': pending.name.trim().replace(/\s+/g, ' '), ...(pending.phone?.trim() ? { 'n.phone': pending.phone.trim() } : {}) };
       return { ...emptyConsult(''), sheet: { ...emptySheet(), txt, on: ['n.visit|زيارة جديدة'] } };
@@ -202,7 +202,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
     const text = { complaint: sum.complaint || (initial?.complaint ?? ''), history: sum.history || (initial?.history ?? ''), examination: sum.examination || (initial?.examination ?? ''), diagnosis: sum.diagnosis || (initial?.diagnosis ?? '') };
     const sheetOut = { ...sheet, meds: sheet.meds.filter((m) => m.name.trim()) };
     const payload = { ...c, ...text, sheet: sheetOut, complete: done, medications: meds, imagingRequests: reqs, painScore: c.painScore === '' ? null : c.painScore, followUp: c.followUp || null,
-      ...(c.patientId ? {} : { pendingPatient: pendingFromSheet(sheetOut) }) } as unknown as Draft;
+      ...(c.patientId ? {} : { pendingPatient: { ...pendingFromSheet(sheetOut), followUps: c.pendingFollowUps ?? [] } }) } as unknown as Draft;
     // تابة الطباعة بتتفتح دلوقتي (وقت الضغطة) وإلا المتصفح يحجبها بعد انتظار الحفظ — ولو الحفظ فشل بتتقفل
     const printWin = thenPrint ? openPrintWindow() : null;
     let printed = false;
@@ -404,7 +404,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
         {/* مواعيد المتابعة: أكتر من موعد للمريض، مربوطة بالتشخيص ده (بتتحفظ مع حفظ الكشف) */}
         {tab === 'fu' && <>
           <Section icon="calendar" title="تحديد موعد متابعة">
-            <FollowUpStep patientId={c.patientId} consultationId={initial?.id} pending={c.pendingFollowUps ?? []} onPending={(p) => set('pendingFollowUps', p)}
+            <FollowUpStep patientId={c.patientId} patientLabel={pendingInfo.name} consultationId={initial?.id} pending={c.pendingFollowUps ?? []} onPending={(p) => set('pendingFollowUps', p)}
               doctorHint={visitAppt?.therapistId} />
           </Section>
           <div className="sh-next">

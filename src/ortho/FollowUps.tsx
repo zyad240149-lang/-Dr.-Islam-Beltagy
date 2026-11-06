@@ -123,8 +123,8 @@ function DoctorDayPlan({ doctorId, date, exceptId }: { doctorId: string; date: s
   );
 }
 
-export function FollowUpModal({ patientId, consultationId, initial, doctorHint, presetDate, onDraft, onSaved, onClose }: {
-  patientId: string; consultationId?: string | null; initial?: FollowUp | FuDraft; doctorHint?: string | null; presetDate?: string; onDraft?: (d: FuDraft) => void; onSaved?: (id: string) => void; onClose: () => void;
+export function FollowUpModal({ patientId, patientLabel, consultationId, initial, doctorHint, presetDate, onDraft, onSaved, onClose }: {
+  patientId: string; patientLabel?: string; consultationId?: string | null; initial?: FollowUp | FuDraft; doctorHint?: string | null; presetDate?: string; onDraft?: (d: FuDraft) => void; onSaved?: (id: string) => void; onClose: () => void;
 }) {
   useDbVersion();
   useOrthoVersion();
@@ -258,8 +258,10 @@ export function FollowUpModal({ patientId, consultationId, initial, doctorHint, 
       {canSave && <Button icon="check" loading={busy} onClick={() => { if (!f.time && !linked && !window.confirm('مااخترتش ساعة — المتابعة مش هتظهر في المواعيد لحد ما تحدد الساعة. تحفظها كده؟')) return; save(); }}>{onDraft && !saved ? 'إضافة للتشخيص' : 'حفظ'}</Button>}
     </>}>
       <div className="fu-who">
+        {patientId ? <>
         <Link to={`/patients/${patientId}`} onClick={onClose} className="ortho-cell-strong">{patientName(patientId)}</Link>
         <span className="badge badge--brand">ملف <span className="num">{patientFile(patientId)}</span></span>
+        </> : <><b className="ortho-cell-strong">{patientLabel || '—'}</b> <span className="badge badge--warn">هيتربط بالملف تلقائي</span></>}
         {saved && <FuBadge f={saved} />}
         {appt && <span className="badge badge--info">حجز <span className="num">{appt.no}</span></span>}
         {appt && <ApptBadge a={appt} />}
@@ -435,16 +437,15 @@ export function FollowUpsModal({ patientId, onClose }: { patientId: string; onCl
 
 const unlinkedFromStep = new Map<string, Set<string>>();
 /** خطوة «تحديد موعد متابعة» جوّه التشخيص: الموعد بيتحفظ فورًا، ولو التشخيص لسه جديد بيترتبط بيه عند حفظه */
-export function FollowUpStep({ patientId, consultationId, pending, onPending, doctorHint }: {
-  patientId: string; consultationId?: string; pending: FuDraft[]; onPending: (p: FuDraft[]) => void; doctorHint?: string | null;
+export function FollowUpStep({ patientId, patientLabel, consultationId, pending, onPending, doctorHint }: {
+  patientId: string; patientLabel?: string; consultationId?: string; pending: FuDraft[]; onPending: (p: FuDraft[]) => void; doctorHint?: string | null;
 }) {
   useOrthoVersion();
   const perm = useFuCan();
   const [edit, setEdit] = useState<FollowUp | FuDraft | 'new' | null>(null);
-  if (!patientId) return <p className="muted">مواعيد المتابعة بتتفتح بعد ما التشخيص يتربط بملف المريض.</p>;
-  const mine = consultationId ? ortho.list('follow_ups', patientId).filter((f) => f.consultationId === consultationId).sort(byWhen) : [];
+  const mine = patientId && consultationId ? ortho.list('follow_ups', patientId).filter((f) => f.consultationId === consultationId).sort(byWhen) : [];
   const t = todayYmd();
-  const others = ortho.list('follow_ups', patientId).filter((f) => f.consultationId !== consultationId && f.status === 'scheduled' && f.date >= t).sort(byWhen);
+  const others = !patientId ? [] : ortho.list('follow_ups', patientId).filter((f) => f.consultationId !== consultationId && f.status === 'scheduled' && f.date >= t).sort(byWhen);
   return (
     <div>
       <p className="muted-sm" style={{ marginTop: 0 }}>حدد ميعاد أو أكتر لمتابعة المريض — الموعد بيتحفظ أول ما تدوس «حفظ» من غير حفظ التشخيص، واللي ليه ساعة بيظهر في «المواعيد».</p>
@@ -466,8 +467,8 @@ export function FollowUpStep({ patientId, consultationId, pending, onPending, do
       {perm.add && <Button icon="plus" onClick={() => setEdit('new')} style={{ marginTop: 10 }}>إضافة موعد متابعة</Button>}
       {others.length > 0 && <><div className="section-title" style={{ marginTop: 14 }}>متابعات قادمة تانية للمريض</div><FollowUpList items={others} onOpen={setEdit} /></>}
       {edit && (
-        <FollowUpModal patientId={patientId} consultationId={consultationId} doctorHint={doctorHint} initial={edit === 'new' ? undefined : edit}
-          onDraft={edit !== 'new' && !('id' in edit) ? (d) => onPending(pending.map((x) => (x === edit ? { ...d, key: edit.key } : x))) : undefined}
+        <FollowUpModal patientId={patientId} patientLabel={patientLabel} consultationId={consultationId} doctorHint={doctorHint} initial={edit === 'new' ? undefined : edit}
+          onDraft={edit === 'new' ? (patientId ? undefined : (d) => onPending([...pending, d])) : !('id' in edit) ? (d) => onPending(pending.map((x) => (x === edit ? { ...d, key: edit.key } : x))) : undefined}
           onSaved={consultationId ? undefined : (id) => unlinkedFromStep.set(patientId, (unlinkedFromStep.get(patientId) ?? new Set<string>()).add(id))}
           onClose={() => setEdit(null)} />
       )}

@@ -37,7 +37,7 @@ export interface Consultation {
   linkNote?: string;
   linkMethod?: 'auto' | 'manual' | '';
 }
-export interface PendingPatient { name: string; phone?: string; age?: string; gender?: 'male' | 'female' | '' }
+export interface PendingPatient { name: string; phone?: string; age?: string; gender?: 'male' | 'female' | ''; followUps?: unknown[] /* مواعيد متابعة بتتسجل على الخادم لما التشخيص يتربط (هجرة 952) */ }
 /** التشخيص لسه مش مربوط بملف مريض */
 export const isUnlinked = (c: { patientId?: string | null }) => !c.patientId;
 // اختيارات الشيت: on = خانات متعلّمة («المجموعة|البند»)، txt = خانات كتابة، meds = الأدوية الحالية، pain = أماكن الألم على خريطة الجسم («knee:right»)

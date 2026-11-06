@@ -2,8 +2,12 @@
 // (حضر / قيد الزيارة / مكتمل) وعلى تشخيص الزيارة نفسها، مش على وجود حجز. التشخيص بيتربط بالزيارة بـ appointment_id (هجرة 918).
 import { db } from '../data/db';
 import { isIncomplete, ortho, type Consultation } from './data';
-import type { Appointment } from '../types';
+import type { Appointment, Patient } from '../types';
+import { todayYmd } from '../utils/format';
 import { normalizeSearch, phoneMatches } from '../utils/phoneUtils';
+
+// تاريخ لحظة معيّنة بتوقيت العيادة — نفس توقيت todayYmd
+const ymdInClinicTz = (ms: number) => new Date(ms).toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' });
 
 export const ATTENDED = new Set(['arrived', 'in_progress', 'completed']);
 export type VisitState = 'waiting' | 'incomplete' | 'done';
@@ -44,6 +48,15 @@ export function todaysVisits(): VisitDx[] {
     if (!cur || order.indexOf(state) < order.indexOf(cur.state)) byPatient.set(a.patientId, { a, consult, state });
   }
   return [...byPatient.values()];
+}
+
+/** ملفات اتفتحت النهارده ولسه أصحابها ما اتشخصوش — بتظهر في «بانتظار التشخيص» حتى لو الاستقبال ما عملش حضور (الأحدث أولًا) */
+export function newFilesToday(): Patient[] {
+  const consults = ortho.list('consultations');
+  const t = todayYmd();
+  return db.patients()
+    .filter((p) => p.registeredAt && ymdInClinicTz(p.registeredAt) === t && !consults.some((c) => c.patientId === p.id))
+    .sort((a, b) => b.registeredAt - a.registeredAt);
 }
 
 /** زيارة النهارده المفتوحة للمريض (اتعمله حضور ولسه مالهاش تشخيص) — التشخيص الجديد بيتربط بيها */

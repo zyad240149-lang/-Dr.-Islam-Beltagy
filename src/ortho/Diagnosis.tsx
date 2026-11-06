@@ -7,7 +7,7 @@ import { isIncomplete, isUnlinked, ortho, useOrthoVersion, type Consultation, ty
 import { LoadState, PageHead, PatientSelect, SearchBox, confirmDelete, patientFile, patientName, useClinicalCan, useRun } from './kit';
 import { ConsultModal, DraftCard, LinkBadge, clearConsultDraft, listConsultDrafts } from './Consultations';
 import { DiagnosisTab } from './DiagnosisTab';
-import { todaysFollowUps, todaysVisits } from './visits';
+import { newFilesToday, todaysFollowUps, todaysVisits } from './visits';
 import { NursingModal, printNursing } from './Nursing';
 import { Button, EmptyState, Modal } from '../components/ui';
 import { db } from '../data/db';
@@ -76,7 +76,9 @@ export default function Diagnosis() {
   const sheetOf = (appointmentId: string) => nursing.find((n) => n.appointmentId === appointmentId);
   const followLeft = followUps.filter((a) => !sheetOf(a.id)).length;
   const shownInQueue = new Set(pending.map((x) => x.a.patientId));
-  const otherDrafts = drafts.filter((d) => !shownInQueue.has(d.patientId));
+  const newFiles = newFilesToday().filter((p) => !shownInQueue.has(p.id));
+  const shownNewFiles = new Set(newFiles.map((p) => p.id));
+  const otherDrafts = drafts.filter((d) => !shownInQueue.has(d.patientId) && !shownNewFiles.has(d.patientId));
   const otherIncomplete = incomplete.filter((c) => !pending.some((x) => x.consult?.id === c.id));
 
   // ---------- المرضى اللي اتشخصوا: مريض واحد لكل صف، آخر تشخيص أولًا ----------
@@ -141,7 +143,7 @@ export default function Diagnosis() {
       {!patientId && (
         <div className="seg seg--3 dx-views" role="tablist" aria-label="أقسام التشخيص">
           <button type="button" role="tab" aria-selected={view === 'waiting'} className={`seg__btn ${view === 'waiting' ? 'active' : ''}`} onClick={() => setView('waiting')}>
-            مرضى بانتظار التشخيص {pending.length > 0 && <span className="badge badge--warn num">{pending.length}</span>}
+            مرضى بانتظار التشخيص {pending.length + newFiles.length > 0 && <span className="badge badge--warn num">{pending.length + newFiles.length}</span>}
           </button>
           <button type="button" role="tab" aria-selected={view === 'follow'} className={`seg__btn ${view === 'follow' ? 'active' : ''}`} onClick={() => setView('follow')}>
             متابعة المرضى {followLeft > 0 && <span className="badge badge--warn num">{followLeft}</span>}
@@ -230,6 +232,34 @@ export default function Diagnosis() {
               </LoadState>
             </div>
           </section>
+          {newFiles.length > 0 && (
+            <section className="card" style={{ marginBottom: 16 }}>
+              <div className="card__head"><h2>ملفات اتفتحت النهارده <span className="badge badge--warn num">{newFiles.length}</span></h2></div>
+              <div className="card__body">
+                <div className="dx-queue">
+                  {newFiles.map((p) => {
+                    const local = drafts.find((d) => d.patientId === p.id);
+                    return (
+                      <div className="dx-queue__row" key={p.id}>
+                        <span className="dx-queue__time num">{fmtDate(todayYmd())}</span>
+                        <div className="dx-queue__who">
+                          <b>{p.fullName}</b>
+                          <small>{p.phone && <><bdi dir="ltr" className="num">{p.phone}</bdi> · </>}ملف <span className="num">{p.fileNo}</span></small>
+                        </div>
+                        <span className="badge badge--warn">{local ? 'لم يكتمل' : 'ملف جديد'}</span>
+                        <div className="dx-queue__act">
+                          {whatsappNumber(p) && <WhatsappLink phone={whatsappNumber(p)} patientId={p.id} button />}
+                          {!perm.add ? null
+                            : local ? <Button size="sm" icon="refresh" onClick={() => resumeDraft(p.id, true)}>استكمال</Button>
+                            : <Button size="sm" icon="stethoscope" onClick={() => startNew(p.id, null)}>تشخيص</Button>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+          )}
           {perm.add && otherDrafts.length + otherIncomplete.length > 0 && (
             <section className="card" style={{ marginBottom: 16 }}>
               <div className="card__head"><h2>تشخيصات لم تكتمل ({otherDrafts.length + otherIncomplete.length})</h2></div>

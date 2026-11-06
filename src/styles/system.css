@@ -201,7 +201,8 @@ button.logout-btn:hover .icon { color: var(--danger); }
 /* ============ الأزرار ============ */
 .btn {
   height: 40px; padding: 0 16px; gap: 8px; border-radius: 9px; font-size: 14.5px; font-weight: 600;
-  box-shadow: 0 1px 2px rgba(17, 26, 51, .10);
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(17, 26, 51, .16), inset 0 1px 0 rgba(255, 255, 255, .10);
   transition: background-color var(--dur) var(--ease-out), border-color var(--dur) var(--ease-out), color var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out);
 }
 .btn .icon { width: 16px; height: 16px; }
@@ -217,6 +218,12 @@ button.logout-btn:hover .icon { color: var(--danger); }
 .btn--danger:hover { background: #a92f26; border-color: #a92f26; }
 .btn--success { background: var(--ok); border-color: var(--ok); }
 .btn--success:hover { background: #0e6a4c; border-color: #0e6a4c; }
+.btn:hover:not(:disabled) { box-shadow: 0 2px 6px rgba(17, 26, 51, .18), inset 0 1px 0 rgba(255, 255, 255, .10); }
+.btn--ghost:hover:not(:disabled) { box-shadow: none; }
+.btn--outline:hover:not(:disabled) { box-shadow: 0 1px 3px rgba(17, 26, 51, .10); }
+.btn:active:not(:disabled) { box-shadow: none; }
+.btn:disabled { opacity: 1; background: var(--line); border-color: var(--line); color: var(--muted); box-shadow: none; cursor: not-allowed; }
+.btn--ghost:disabled { background: transparent; border-color: transparent; }
 .btn:active:not(:disabled), .icon-btn:active, .svc-tab:active, .seg__btn:active { transform: translateY(1px); }
 
 .icon-btn { width: 38px; height: 38px; border-radius: 9px; color: var(--muted); }
@@ -317,43 +324,46 @@ select.input { background-position: left 12px center; }
 
 /* ============ شاشة الدخول ============ */
 .app-login--split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); place-items: stretch; padding: 0; background: var(--surface); }
-.al-main { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; }
-.app-login--split .app-login__card { max-width: 380px; padding: 0; border: 0; box-shadow: none; background: none; }
-.app-login--split .app-login__title { font-size: 24px; text-align: start; margin: 0 0 4px; }
-.al-lead { font-size: 14.5px; color: var(--muted); margin-bottom: 22px; }
-.al-tools { display: flex; justify-content: flex-end; margin-bottom: 18px; }
-.al-back { display: inline-flex; margin-top: 22px; font-size: 14px; color: var(--muted); }
+.al-main { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 24px; min-width: 0; }
+.app-login--split .app-login__card { width: 100%; max-width: 420px; padding: 0; border: 0; box-shadow: none; background: none; }
+.app-login--split .app-login__title { font-size: 26px; line-height: 1.35; color: var(--ink); text-align: start; margin: 0 0 4px; }
+.app-login--split .btn[type="submit"], .al-google .btn { height: 46px; font-size: 15px; }
+.al-lead { font-size: 14.5px; color: var(--muted); margin-bottom: 24px; }
+.al-tools { display: flex; justify-content: flex-end; margin-bottom: 20px; }
+.al-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 14px; align-items: start; }
+.al-or { display: flex; align-items: center; gap: 12px; margin: 16px 0; font-size: 13px; color: var(--muted); }
+.al-or::before, .al-or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.al-g-mark { flex: none; }
+.al-switch { text-align: center; margin-top: 18px; font-size: 14.5px; color: var(--muted); }
+.al-switch a { font-weight: 700; color: var(--brand); text-decoration: underline; text-decoration-color: var(--brand-100); text-underline-offset: 4px; transition: text-decoration-color var(--dur) var(--ease-out); }
+.al-switch a:hover { text-decoration-color: var(--brand); }
+.al-back { display: inline-flex; margin-top: 18px; padding: 6px 8px; font-size: 14px; color: var(--muted); border-radius: var(--r-sm); }
 .al-back:hover { color: var(--brand); }
+.al-back:focus-visible, .al-switch a:focus-visible { outline: 2px solid var(--brand-600); outline-offset: 2px; }
 .al-logo-sm { display: none; }
 .al-aside {
-  position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: 32px;
-  padding: 44px 48px; background: var(--brand); color: #fff; overflow: hidden;
+  position: sticky; top: 0; height: 100vh; height: 100dvh; display: flex; flex-direction: column; justify-content: space-between; gap: 32px;
+  padding: 44px 56px; background: var(--brand); color: #fff; overflow: hidden;
 }
-/* خطوط شبكية خفيفة — إحساس ورق أشعة/مخطط طبي بدل الدواير الزخرفية */
-.al-aside::before {
-  content: ""; position: absolute; inset: 0; pointer-events: none;
-  background-image: linear-gradient(rgba(255, 255, 255, .05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, .05) 1px, transparent 1px);
-  background-size: 32px 32px;
-}
-.al-aside > * { position: relative; }
 .al-aside__brand { display: flex; align-items: center; gap: 14px; }
 .al-aside__logo { width: 64px; height: 64px; border-radius: 14px; background: #fff; padding: 6px; object-fit: contain; flex: none; }
 .al-aside__brand strong { display: block; font-size: 19px; line-height: 1.35; }
 .al-aside__brand span { display: block; font-size: 14px; color: rgba(255, 255, 255, .78); }
-.al-aside h2 { color: #fff; font-size: 28px; line-height: 1.45; max-width: 420px; }
-.al-aside p { color: rgba(255, 255, 255, .8); font-size: 15px; max-width: 420px; margin-top: 10px; }
-.al-aside__list { display: flex; flex-direction: column; gap: 10px; margin-top: 22px; }
-.al-aside__list li { display: flex; align-items: center; gap: 10px; font-size: 15px; color: rgba(255, 255, 255, .92); }
-.al-aside__list .icon { color: #9fb4e8; flex: none; }
-.al-aside__foot { font-size: 13.5px; color: rgba(255, 255, 255, .6); }
+.al-aside h2 { color: #fff; font-size: 34px; line-height: 1.35; max-width: 440px; }
+.al-aside p { color: rgba(255, 255, 255, .8); font-size: 15.5px; max-width: 440px; margin-top: 12px; }
+.al-aside__list { display: flex; flex-direction: column; margin-top: 28px; max-width: 440px; border-top: 1px solid rgba(255, 255, 255, .16); }
+.al-aside__list li { display: flex; align-items: center; gap: 12px; padding: 14px 0; font-size: 15px; color: rgba(255, 255, 255, .94); border-bottom: 1px solid rgba(255, 255, 255, .16); }
+.al-aside__list .icon { color: #b9c8ee; flex: none; }
+.al-aside__foot { font-size: 13.5px; color: rgba(255, 255, 255, .68); }
 @media (max-width: 900px) {
-  .app-login--split { grid-template-columns: minmax(0, 1fr); background: var(--bg); }
+  .app-login--split { grid-template-columns: minmax(0, 1fr); }
   .al-aside { display: none; }
   .al-logo-sm { display: block; }
-  .app-login--split .app-login__card { padding: 24px 20px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--shadow-xs); }
+  .al-main { justify-content: flex-start; padding: 20px 16px 24px; }
   .app-login--split .app-login__title { text-align: center; }
   .al-lead { text-align: center; }
 }
+@media (max-width: 480px) { .al-grid { grid-template-columns: minmax(0, 1fr); } }
 
 /* ============ التجاوب ============ */
 @media (max-width: 1000px) {
@@ -443,3 +453,14 @@ select.input { background-position: left 12px center; }
 @media (min-width: 861px) {
   .pr-bulk:not(.pr-bulk--staff) .pr-bulk__head, .pr-bulk:not(.pr-bulk--staff) .pr-bulk__row { grid-template-columns: minmax(170px, 1.4fr) minmax(120px, 1fr) minmax(140px, 1fr) minmax(110px, .8fr) minmax(100px, .7fr); }
 }
+
+/* زرار إظهار كلمة المرور: مساحة ضغط كاملة والأيقونة جوّه الخانة */
+.control .toggle-pass { left: 5px; right: auto; width: 34px; height: 34px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--r-sm); }
+.control .toggle-pass:hover { background: var(--surface-2); }
+.control .toggle-pass:focus-visible { outline: 2px solid var(--brand-600); outline-offset: 0; }
+.control .toggle-pass .icon { position: static; transform: none; flex: none; }
+.control:has(.toggle-pass) .input { padding-left: 44px; }
+
+/* شاشة إكمال بيانات جوجل: اللوجو ظاهر لأن مفيش لوح جانبي */
+.app-login:not(.app-login--split) .al-logo-sm { display: block; }
+.app-login:not(.app-login--split) .al-lead { text-align: center; }

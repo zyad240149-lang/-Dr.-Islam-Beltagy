@@ -1,6 +1,7 @@
 // إنشاء حساب مريض جديد من موقع العيادة — الحساب بيتربط بملف المريض تلقائيًا
 // لو العيادة فاتحة له ملف قبل كده بنفس الموبايل: لازم يكتب الرقم القومي (أو الجواز) المسجّل في الملف عشان يتربط بيه (هجرة 905)
 import { useState } from 'react';
+import { LangSwitch } from '../i18n/LangSwitch';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../services/auth';
 import { api } from '../lib/api';
@@ -24,9 +25,20 @@ export function GoogleButton() {
     if (error) { setBusy(false); setErr('تعذّر فتح تسجيل جوجل — حاول تاني.'); }
   };
   return (
-    <div style={{ marginTop: 10 }}>
+    <div className="al-google">
+      <div className="al-or">أو</div>
       {err && <div className="alert alert-danger" style={{ marginBottom: 8 }} role="alert">{err}</div>}
-      <Button type="button" variant="outline" block loading={busy} onClick={go}>المتابعة بحساب Google</Button>
+      <Button type="button" variant="outline" block loading={busy} onClick={go}>
+        {!busy && (
+          <svg className="al-g-mark" width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#EA4335" d="M24 9.5c3.5 0 6.7 1.2 9.2 3.6l6.9-6.9C35.9 2.4 30.5 0 24 0 14.6 0 6.5 5.4 2.6 13.2l8 6.2C12.5 13.6 17.8 9.5 24 9.5z" />
+            <path fill="#4285F4" d="M46.9 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.9c-.6 3-2.2 5.5-4.7 7.2l7.7 6c4.5-4.2 7-10.3 7-17.7z" />
+            <path fill="#FBBC05" d="M10.6 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-8-6.2C.9 16.5 0 20.1 0 24s.9 7.5 2.6 10.8l8-6.2z" />
+            <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.7-6c-2.2 1.4-4.9 2.3-8.2 2.3-6.2 0-11.5-4.2-13.4-9.8l-8 6.2C6.5 42.6 14.6 48 24 48z" />
+          </svg>
+        )}
+        المتابعة بحساب Google
+      </Button>
     </div>
   );
 }
@@ -39,7 +51,6 @@ export function AuthBrand() {
   );
 }
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // أرقام عربية ← إنجليزي، ومن غير مسافات/شُرَط (نفس norm_id على الخادم)
 const normId = (s: string) => s.replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d))).replace(/[\s-]/g, '').toUpperCase();
 
@@ -52,7 +63,6 @@ export default function SignUp() {
   const [phone, setPhone] = useState('');
   const [phoneErr, setPhoneErr] = useState<PhoneErrorCode | null>('required');
   const [gender, setGender] = useState('');
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [nationalId, setNationalId] = useState('');
@@ -67,7 +77,6 @@ export default function SignUp() {
   const errors = {
     name: !clean ? 'اكتب اسمك الثلاثي.' : nameWords(clean) < 3 ? 'الاسم لازم يكون ثلاثي (الاسم واسم الأب واسم الجد).' : !isArabicName(clean) ? 'اكتب الاسم بحروف عربية.' : '',
     gender: gender ? '' : 'اختار النوع.',
-    email: email.trim() && !EMAIL_RE.test(email.trim()) ? 'البريد الإلكتروني غير صحيح.' : '',
     password: password.length < 6 ? 'كلمة المرور 6 خانات على الأقل.' : '',
     confirm: confirm !== password ? 'كلمتا المرور غير متطابقتين.' : '',
     nationalId: !askId ? '' : !nid ? 'اكتب الرقم القومي المسجّل في ملفك.' : !NID_RE.test(nid) && !PASSPORT_RE.test(nid) ? 'الرقم القومي 14 رقم (أو رقم جواز السفر لغير المصريين).' : '',
@@ -76,11 +85,11 @@ export default function SignUp() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setTried(true); setErr('');
-    const first = errors.name || (phoneErr && phoneErrorMessage(phoneErr)) || errors.gender || errors.email || errors.password || errors.confirm || errors.nationalId;
+    const first = errors.name || (phoneErr && phoneErrorMessage(phoneErr)) || errors.gender || errors.password || errors.confirm || errors.nationalId;
     if (first) { setErr(first); return; }
     setBusy(true);
     try {
-      await api.post('register', { name: clean, phone, gender, email: email.trim(), password, confirm, nationalId: askId ? nid : '' });
+      await api.post('register', { name: clean, phone, gender, password, confirm, nationalId: askId ? nid : '' });
     } catch (x) {
       setBusy(false);
       const code = (x as { code?: string }).code;
@@ -108,6 +117,7 @@ export default function SignUp() {
     <div className="app-login app-login--split">
       <div className="al-main">
         <form className="card app-login__card" onSubmit={submit} noValidate>
+          <div className="al-tools"><LangSwitch /></div>
           <div className="al-logo-sm"><AuthBrand /></div>
           <h1 className="app-login__title">إنشاء حساب جديد</h1>
           <p className="al-lead">احجز مواعيدك وتابع ملفك وفواتيرك من موبايلك</p>
@@ -124,20 +134,23 @@ export default function SignUp() {
           </div>
         )}
         <Input id="su-name" label="الاسم الثلاثي بالعربي" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} error={tried ? errors.name : ''} placeholder="مثال: محمد أحمد علي" />
+        <div className="al-grid">
         <PhoneInput id="su-phone" label="رقم الموبايل" value={phone} showError={tried} onChange={onPhone} />
         <Select id="su-gender" label="النوع" value={gender} onChange={(e) => setGender(e.target.value)} error={tried ? errors.gender : ''}
           options={[{ value: '', label: 'اختار النوع' }, { value: 'male', label: 'ذكر' }, { value: 'female', label: 'أنثى' }]} />
+        </div>
         {askId && (
           <Input id="su-nid" label="الرقم القومي المسجّل في ملفك" dir="ltr" inputMode="text" autoComplete="off" value={nationalId}
             onChange={(e) => setNationalId(e.target.value)} error={tried ? errors.nationalId : ''}
             hint="لغير المصريين: رقم جواز السفر. ده بيأكد إن الملف ملفك قبل ما نربطه بالحساب." />
         )}
-        <Input id="su-email" label="البريد الإلكتروني (اختياري)" type="email" dir="ltr" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} error={tried ? errors.email : ''} />
+        <div className="al-grid">
         <PasswordInput id="su-pass" label="كلمة المرور" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} error={tried ? errors.password : ''} />
         <PasswordInput id="su-confirm" label="تأكيد كلمة المرور" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} error={tried ? errors.confirm : ''} />
+        </div>
         <Button type="submit" block loading={busy} disabled={link === 'contact_clinic' || link === 'locked'}>إنشاء الحساب</Button>
         <GoogleButton />
-        <p style={{ textAlign: 'center', marginTop: 14, fontSize: 14.5 }}>عندك حساب بالفعل؟ <Link to="/login" style={{ fontWeight: 700, color: 'var(--brand-700)' }}>سجّل الدخول</Link></p>
+        <p className="al-switch">عندك حساب بالفعل؟ <Link to="/login">سجّل الدخول</Link></p>
         </form>
         <a href="/" className="al-back">الرجوع لموقع العيادة</a>
       </div>

@@ -46,7 +46,7 @@ export default function AppLogin() {
           <PasswordInput id="al-pass" label="كلمة المرور" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
           <Button type="submit" block loading={busy}>دخول</Button>
           <GoogleButton />
-          <p style={{ textAlign: 'center', marginTop: 16, fontSize: 14.5 }}>مريض جديد؟ <Link to="/signup" style={{ fontWeight: 700, color: 'var(--brand)' }}>أنشئ حسابك</Link></p>
+          <p className="al-switch">مريض جديد؟ <Link to="/signup">أنشئ حسابك</Link></p>
         </form>
         <div style={{ textAlign: 'center', marginTop: 12 }}><InstallButton className="btn btn--outline" /></div>
         <a href="/" className="al-back">الرجوع لموقع العيادة</a>
@@ -57,12 +57,12 @@ export default function AppLogin() {
           <div><strong>{DOCTOR.short}</strong><span>{DOCTOR.title}</span></div>
         </div>
         <div>
-          <h2>نظام إدارة العيادة</h2>
-          <p>المواعيد وملفات المرضى والأشعة والفواتير في مكان واحد.</p>
+          <h2>عيادتك في مكان واحد</h2>
+          <p>المواعيد والملف الطبي والمتابعة والفواتير، للمرضى وفريق العيادة.</p>
           <ul className="al-aside__list">
-            <li><Icon name="calendar" size={18} />جدول المواعيد اليومي لكل طبيب</li>
+            <li><Icon name="calendar" size={18} />المواعيد والحجز</li>
             <li><Icon name="bone" size={18} />متابعة الكسور والجبس والعمليات</li>
-            <li><Icon name="receipt" size={18} />الفواتير والمدفوعات والتقارير</li>
+            <li><Icon name="receipt" size={18} />الفواتير والمدفوعات</li>
           </ul>
         </div>
         <div className="al-aside__foot">{DOCTOR.address}</div>

@@ -108,7 +108,7 @@ export default function DailySchedule({ onOpen, onBook, onlyDoctorId }: { onOpen
                     <button type="button" key={a.id} className={`tl-card tl-card--${st.cls}`} onClick={() => onOpen(a)} title="تفاصيل الموعد">
                       <span className="avatar">{initials(p?.fullName ?? '؟')}</span>
                       <span className="tl-card__main">
-                        <span className="tl-card__name">{p?.fullName ?? 'مريض'}</span>
+                        <span className="tl-card__name">{db.queueNo(a) !== null && <span className="q-no num" title="رقم الدور في اليوم">{db.queueNo(a)}</span>}{p?.fullName ?? 'مريض'}</span>
                         <span className="tl-card__meta">{db.service(a.serviceId)?.name ?? '—'} · {db.therapist(a.therapistId)?.name ?? 'بدون طبيب'}</span>
                         <span className="tl-card__meta"><span className="num">{fmtTime(a.time)}</span>{a.status !== 'cancelled' && <Countdown date={a.date} time={a.time} />}</span>
                         <span className="tl-card__actors"><ActorBadges a={a} /></span>

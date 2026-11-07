@@ -858,6 +858,14 @@ export const db = {
     return load().appointments.filter((a) => a.patientId === patientId).sort((a, b) => (a.date + a.time < b.date + b.time ? 1 : -1));
   },
   appointmentsForDate(date: string) { return load().appointments.filter((a) => a.date === date).sort((a, b) => (a.time < b.time ? -1 : 1)); },
+  /** رقم دور المريض في اليوم عند نفس الدكتور — بترتيب ساعة الموعد (والأقدم حجزًا لو نفس الساعة)، من غير الملغي. null للملغي */
+  queueNo(a: Appointment): number | null {
+    if (a.status === 'cancelled') return null;
+    const day = load().appointments.filter((x) => x.date === a.date && x.therapistId === a.therapistId && x.status !== 'cancelled')
+      .sort((x, y) => x.time.localeCompare(y.time) || (x.createdAt ?? 0) - (y.createdAt ?? 0) || x.id.localeCompare(y.id));
+    const i = day.findIndex((x) => x.id === a.id);
+    return i >= 0 ? i + 1 : null;
+  },
   appointmentsInRange(from: string, to: string) { return load().appointments.filter((a) => a.date >= from && a.date <= to); },
   todayAppointments() { return this.appointmentsForDate(today()); },
 

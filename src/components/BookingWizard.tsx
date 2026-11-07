@@ -224,12 +224,12 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
           ) : (
             <>
               <div className="svc-tabs" style={{ marginBottom: 14 }}>
-                <button type="button" className={`svc-tab ${mode === 'search' ? 'active' : ''}`} onClick={() => setMode('search')}>بحث عن مريض</button>
-                <button type="button" className={`svc-tab ${mode === 'call' ? 'active' : ''}`} onClick={() => setMode('call')}>حجز عن طريق مكالمة</button>
+                <button type="button" className={`svc-tab ${mode === 'search' ? 'active' : ''}`} onClick={() => setMode('search')}>مريض موجود</button>
+                <button type="button" className={`svc-tab ${mode === 'call' ? 'active' : ''}`} onClick={() => setMode('call')}>مريض جديد (حجز مكالمة)</button>
               </div>
               {mode === 'search' ? (
                 <>
-                  <Input label="ابحث عن المريض" icon="search" placeholder="الاسم / رقم الجوال / رقم الملف" value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} />
+                  <Input label="ابحث عن المريض الموجود" icon="search" placeholder="الاسم / رقم الجوال / رقم الملف" value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} />
                   {queryResults.length > 0 && (
                     <div className="choice-grid">
                       {queryResults.map((x) => (
@@ -241,7 +241,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
                     </div>
                   )}
                   {patientQuery.trim() && queryResults.length === 0 && (
-                    <p className="muted" style={{ marginBottom: 12 }}>ما فيه نتائج — لو المريض جديد اختر «حجز عن طريق مكالمة» وأدخل اسمه وجواله.</p>
+                    <p className="muted" style={{ marginBottom: 12 }}>ما فيه نتائج — لو المريض جديد اختار «مريض جديد (حجز مكالمة)» واكتب اسمه وجواله.</p>
                   )}
                 </>
               ) : (

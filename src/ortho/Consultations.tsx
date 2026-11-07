@@ -23,6 +23,7 @@ import { DiagnosisOutput } from './DiagnosisOutput';
 import { InjectionList, InjectionModal } from './Injections';
 import { PatientMedicalFiles } from './PatientMedicalFiles';
 import { RxEditor } from './Rx';
+import type { RxData } from './data';
 import { FollowUpStep, FollowUpsOfConsult, savePendingFollowUps, useFuCan, type FuDraft } from './FollowUps';
 import type { DxPart } from './printDiagnosis';
 import { db } from '../data/db';
@@ -196,6 +197,43 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
     onClose();
   }
 
+  // طلبات الأشعة/التحاليل اللي اتسجلت «مطلوبة» قبل كده (من الكشف المفتوح أو من «حفظ الروشتة») — عشان ماتتسجلش مرتين
+  const registered = useRef({ reqs: new Set((initial?.imagingRequests ?? []).map(reqKey)), labs: new Set(initial?.labs ?? []) });
+  async function registerRequests(patientId: string, date: string, reqs: ImagingRequest[], labs: string[]) {
+    for (const r of reqs.filter((x) => !registered.current.reqs.has(reqKey(x)))) {
+      await ortho.save('imaging', { patientId, kind: r.kind, region: r.view ? `${r.region} — ${r.view}` : r.region, requestedAt: date, status: 'requested', finding: '', attachments: [] });
+      registered.current.reqs.add(reqKey(r));
+    }
+    for (const l of labs.filter((x) => !registered.current.labs.has(x))) {
+      await ortho.save('imaging', { patientId, kind: 'lab', region: l, requestedAt: date, status: 'requested', finding: '', attachments: [] });
+      registered.current.labs.add(l);
+    }
+  }
+  const [rxOpen, setRxOpen] = useState(false);
+  const [rxSaving, setRxSaving] = useState(false);
+  /** «حفظ الروشتة»: بيحفظ الكشف بالروشتة (الأدوية + الأشعة/السونار + التحاليل المطلوبة) في ملف المريض من غير ما يقفل الكشف.
+   *  أول حفظ لكشف جديد بيدّيله رقمه، فـ«حفظ الكشف» بعد كده بيعدّل نفس السجل (مفيش كشف مكرر) */
+  async function saveRx(rx: Pick<Draft, 'medications' | 'labs' | 'imagingRequests' | 'plan'>): Promise<boolean> {
+    if (!ok) { toast.error(unlinked ? 'اكتب اسم المريض الثلاثي في خانة 1 الأول.' : 'اختار المريض الأول.'); return false; }
+    if (savingRef.current) return false;
+    savingRef.current = true; setRxSaving(true);
+    try {
+      const meds = rx.medications.filter((m) => m.name.trim());
+      const reqs = rx.imagingRequests.filter((r) => r.region.trim());
+      const text = { complaint: sum.complaint || (initial?.complaint ?? ''), history: sum.history || (initial?.history ?? ''), examination: sum.examination || (initial?.examination ?? ''), diagnosis: sum.diagnosis || (initial?.diagnosis ?? '') };
+      const sheetOut = { ...sheet, meds: sheet.meds.filter((m) => m.name.trim()) };
+      const payload = { ...c, ...rx, ...text, sheet: sheetOut, medications: meds, imagingRequests: reqs, complete: c.id ? (c.complete ?? false) : false,
+        painScore: c.painScore === '' ? null : c.painScore, followUp: c.followUp || null,
+        ...(c.patientId ? {} : { pendingPatient: { ...pendingFromSheet(sheetOut), followUps: c.pendingFollowUps ?? [] } }), pendingFollowUps: undefined } as unknown as Draft;
+      const id = await ortho.save('consultations', payload);
+      setC((x) => ({ ...x, ...rx, medications: meds, imagingRequests: reqs, id, complete: payload.complete }));
+      if (c.patientId) await registerRequests(c.patientId, c.date, reqs, rx.labs);
+      toast.success(c.patientId ? 'اتحفظت الروشتة في ملف المريض' : 'اتحفظت الروشتة — هتتربط بملف المريض تلقائي');
+      return true;
+    } catch (e) { toast.error((e as Error).message); return false; }
+    finally { savingRef.current = false; setRxSaving(false); }
+  }
+
   function save(thenPrint: boolean, complete?: boolean) {
     if (savingRef.current) return;
     if (complete === undefined && missing.length) { setAsk({ thenPrint }); return; }
@@ -223,16 +261,8 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
       }
       // من غير ملف مريض: طلبات الأشعة والتحاليل بيسجلها الخادم في ملف المريض لما التشخيص يتربط
       if (!c.patientId) return;
-      // طلبات الأشعة الجديدة بتتسجل في «الأشعة والتحاليل» كـ «مطلوبة» عشان تتابع وصولها وقراءتها
-      const before = new Set((initial?.imagingRequests ?? []).map(reqKey));
-      for (const r of reqs.filter((x) => !before.has(reqKey(x)))) {
-        await ortho.save('imaging', { patientId: c.patientId, kind: r.kind, region: r.view ? `${r.region} — ${r.view}` : r.region, requestedAt: c.date, status: 'requested', finding: '', attachments: [] });
-      }
-      // التحاليل الجديدة كمان بتتسجل «مطلوبة» في نفس المكان (قسم «تحاليل مطلوبة») عشان ترفع نتيجتها لما توصل
-      const beforeLabs = new Set(initial?.labs ?? []);
-      for (const l of c.labs.filter((x) => !beforeLabs.has(x))) {
-        await ortho.save('imaging', { patientId: c.patientId, kind: 'lab', region: l, requestedAt: c.date, status: 'requested', finding: '', attachments: [] });
-      }
+      // طلبات الأشعة والتحاليل الجديدة بتتسجل «مطلوبة» في «الأشعة والتحاليل» عشان تتابع وصولها ونتيجتها (مرة واحدة بس)
+      await registerRequests(c.patientId, c.date, reqs, c.labs);
       if (initial) {
         const now = new Set(c.attachments.map((a) => a.path));
         initial.attachments.filter((a) => !now.has(a.path)).forEach((a) => void ortho.removeAttachment(a.path));
@@ -384,17 +414,34 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
 
           <section className="plan-part">
             <h3 className="plan-part__h"><span className="plan-part__n num">2</span>التحاليل</h3>
-            <PatientMedicalFiles patientId={c.patientId} excludeConsultId={initial?.id} categories={['lab']} title="ملفات التحاليل" icon="doc" uploadCategory="lab" />
+            {(() => {
+              const waiting = c.patientId ? ortho.list('imaging', c.patientId).filter((m) => m.kind === 'lab' && m.status !== 'reviewed') : [];
+              return waiting.length > 0 && (
+                <div className="cx-labgrp" style={{ marginBottom: 8 }}>
+                  <span className="cx-labgrp__t">تحاليل مطلوبة — ارفع نتيجتها هنا لما توصل</span>
+                  <div className="cx-chips">{waiting.map((m) => <span key={m.id} className="cx-chip" dir="ltr">{m.region} <Tone s={IMAGING_STATUS[m.status]} /></span>)}</div>
+                </div>
+              );
+            })()}
+            <PatientMedicalFiles patientId={c.patientId} excludeConsultId={initial?.id} categories={['lab']} title="ملفات ونتائج التحاليل" icon="doc" uploadCategory="lab" />
           </section>
 
           <section className="plan-part">
-            <h3 className="plan-part__h"><span className="plan-part__n num">3</span>الأدوية والروشتة
-              <span style={{ flex: 1 }} />
-              <Button size="sm" variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => setOut(['rx'])}>طباعة / إرسال الروشتة</Button>
-            </h3>
-            <RxEditor rxOnly patientId={c.patientId} region={c.region}
-              value={{ medications: c.medications, labs: c.labs, imagingRequests: c.imagingRequests, attachments: c.attachments, plan: c.plan }}
-              onChange={(f) => setC((x) => { const r = f({ medications: x.medications, labs: x.labs, imagingRequests: x.imagingRequests, attachments: x.attachments, plan: x.plan }); return { ...x, medications: r.medications, labs: r.labs, imagingRequests: r.imagingRequests, plan: r.plan }; })} />
+            <h3 className="plan-part__h"><span className="plan-part__n num">3</span>الأدوية والروشتة</h3>
+            {(() => {
+              const meds = c.medications.filter((m) => m.name.trim()), reqs = c.imagingRequests.filter((r) => r.region.trim());
+              return meds.length || reqs.length || c.labs.length ? (
+                <dl className="dl rx-sum">
+                  {meds.length > 0 && <div><dt>الأدوية</dt><dd dir="ltr" style={{ textAlign: 'start' }}>{meds.map((m) => [m.name, m.dose, m.frequency, m.duration].filter(Boolean).join(' ')).join(' • ')}</dd></div>}
+                  {reqs.length > 0 && <div><dt>أشعة / سونار مطلوبة</dt><dd>{reqs.map((r) => `${IMAGING_KIND[r.kind]} — ${r.region}${r.view ? ` (${r.view})` : ''}`).join('، ')}</dd></div>}
+                  {c.labs.length > 0 && <div><dt>تحاليل مطلوبة</dt><dd dir="ltr" style={{ textAlign: 'start' }}>{c.labs.join(' • ')}</dd></div>}
+                </dl>
+              ) : <p className="cx-empty">لسه مفيش روشتة — اضغط «فتح الروشتة» واكتب الأدوية والأشعة/السونار والتحاليل المطلوبة في صفحة واحدة.</p>;
+            })()}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+              <Button icon="receipt" onClick={() => setRxOpen(true)}>فتح الروشتة</Button>
+              <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => setOut(['rx'])}>طباعة الروشتة</Button>
+            </div>
           </section>
 
           <div dir="rtl" className="sh-treat"><RegionSheetForm def={TREATMENT} sheet={sheet} onChange={changeSheet} side={c.side} onSide={(v) => set('side', v)}
@@ -423,6 +470,11 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
             <Button icon="chevronLeft" onClick={() => goTab('plan')}>التالي: الخطة العلاجية</Button>
           </div>
         </>}
+        {rxOpen && <RxPage patientId={c.patientId} region={c.region} busy={rxSaving}
+          initial={{ medications: c.medications, labs: c.labs, imagingRequests: c.imagingRequests, attachments: c.attachments, plan: c.plan }}
+          onClose={() => setRxOpen(false)}
+          onSave={(rx) => saveRx(rx)}
+          onPrint={async (rx) => { if (await saveRx(rx)) { setRxOpen(false); setOut(['rx']); } }} />}
         {inj && <InjectionModal patientId={c.patientId} appointmentId={c.appointmentId ?? null} initial={inj === 'new' ? undefined : inj} onClose={() => setInj(null)} />}
       </div>
       {out && <DiagnosisOutput initial={out} patient={patientOf()} visitNo={visitNo} onClose={() => setOut(null)}
@@ -454,6 +506,24 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
 }
 
 // صور الأشعة المرفقة: روابط موقّعة مؤقتة (الـ bucket خاص)
+/** «فتح الروشتة»: صفحة واحدة للروشتة كلها — الأدوية، والأشعة/السونار المطلوبة، والتحاليل المطلوبة — وجواها «حفظ الروشتة» و«طباعة الروشتة» */
+function RxPage({ patientId, region, initial, busy, onClose, onSave, onPrint }: {
+  patientId: string; region: string; initial: RxData; busy: boolean; onClose: () => void;
+  onSave: (rx: Pick<RxData, 'medications' | 'labs' | 'imagingRequests' | 'plan'>) => Promise<boolean>; onPrint: (rx: Pick<RxData, 'medications' | 'labs' | 'imagingRequests' | 'plan'>) => void;
+}) {
+  const [rx, setRx] = useState<RxData>(initial);
+  const pick = () => ({ medications: rx.medications, labs: rx.labs, imagingRequests: rx.imagingRequests, plan: rx.plan });
+  return (
+    <Modal xl title="الروشتة — الأدوية والأشعة والتحاليل المطلوبة" onClose={onClose} footer={<>
+      <Button variant="outline" onClick={onClose} disabled={busy}>إغلاق</Button>
+      <Button variant="outline" icon="print" loading={busy} onClick={() => onPrint(pick())}>طباعة الروشتة</Button>
+      <Button icon="check" loading={busy} onClick={async () => { if (await onSave(pick())) onClose(); }}>حفظ الروشتة</Button>
+    </>}>
+      <RxEditor rxOnly patientId={patientId} region={region} value={rx} onChange={(f) => setRx((x) => f(x))} />
+    </Modal>
+  );
+}
+
 export function AttachmentThumbs({ items, onRemove }: { items: Attachment[]; onRemove?: (path: string) => void }) {
   const [urls, setUrls] = useState<Record<string, string | null>>({});
   const key = items.map((a) => a.path).join('|');

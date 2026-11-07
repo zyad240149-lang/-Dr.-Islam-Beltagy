@@ -8,7 +8,7 @@ import { SIDE, type Consultation, type ExamSheet } from './data';
 import { SHEET_LISTS as L, bmiOf, bmiClass, bmiText, normSheet, painLabel, sheetHasContent } from './ExamSheet';
 import { RX_CSS, rxPageHtml } from './printRx';
 import { DX_SHEETS, FDX, PAIN_FOR_DD, dxGroupKey, dxSub, type DxSheetId } from './dxCatalog';
-import { TREATMENT, activeSheets, regionSheet, sheetFilled, treatmentFilled, type Field, type RegionSheetDef } from './regionSheets';
+import { TREATMENT, boxNeedsNotes, boxNotesKey, activeSheets, regionSheet, sheetFilled, treatmentFilled, type Field, type RegionSheetDef } from './regionSheets';
 import { openPrintWindow, printHtml } from '../utils/printDoc';
 import { US_SHEETS, usFilled, usImage } from './ultrasoundSheets';
 
@@ -114,13 +114,13 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
         + line('Relieving factors:', v('x.reliev')) + lbl('Previous treatment:', wrap('row', cks('x.prev', L.X_PREV))) + line('Other:', v('x.prev.other'))),
       box(3, '⚠ Red Flags', cks('x.rf', L.X_RF) + line('Others:', v('x.rf.other')), 'red'),
       box(4, 'Dermatomes (Sensation Map)', table('<th>Root</th><th>Key area</th><th>Rt.</th><th>Lt.</th>', derm.map(([r, area, color]) => `<tr><td><i class="sw" style="background:${color}"></i>${r}</td><td>${esc(area)}</td><td>${has('x.derm', `${r} Rt`) ? '✓' : ''}</td><td>${has('x.derm', `${r} Lt`) ? '✓' : ''}</td></tr>`))
-        + (compact && !derm.length ? '' : '<div class="note">✓ = reduced / lost sensation</div>')),
+        + (compact && !derm.length ? '' : '<div class="note">✓ = reduced / lost sensation</div>') + line('ملاحظات', v('x.bn.derm'))),
       box(5, 'Palpation', two(lbl('Hip', cks('x.palp.hip', L.X_PALP_HIP)) + line('Other:', v('x.palp.hip.other')), lbl('Knee', cks('x.palp.knee', L.X_PALP_KNEE)) + line('Other:', v('x.palp.knee.other')))),
       box(6, 'Range of Motion', table('<th>Hip Motion</th><th>Normal</th><th>Rt.</th><th>Lt.</th>', L.X_ROM_HIP.filter(([m]) => filled(`x.rom.hip.${m}`)).map(([m, n]) => `<tr><td>${m}</td><td>${n}</td>${rtLt(`x.rom.hip.${m}`)}</tr>`))
         + table('<th>Knee Motion</th><th>Normal</th><th>Rt.</th><th>Lt.</th>', L.X_ROM_KNEE.filter(([m]) => filled(`x.rom.knee.${m}`)).map(([m, n]) => `<tr><td>${m}</td><td>${n}</td>${rtLt(`x.rom.knee.${m}`)}</tr>`))
         + row('Patellar mobility:', cks('x.patmob', L.X_PATMOB)) + wrap('row', cks('x.sprom', L.X_SPROM)) + line('Other:', v('x.sprom.other'))),
       box(7, 'Neurological Examination', table('<th>Motor Power (MRC)</th><th>Rt.</th><th>Lt.</th>', L.X_MRC.filter(([r]) => filled(`x.mrc.${r}`)).map(([r, m]) => `<tr><td>${r} (${m})</td>${rtLt(`x.mrc.${r}`, '/5')}</tr>`))
-        + table('<th>Reflexes</th><th>Rt.</th><th>Lt.</th>', L.X_REFLEX.filter(([n]) => filled(`x.refl.${n}`)).map(([n, root]) => `<tr><td>${n} (${root})</td>${rtLt(`x.refl.${n}`)}</tr>`))),
+        + table('<th>Reflexes</th><th>Rt.</th><th>Lt.</th>', L.X_REFLEX.filter(([n]) => filled(`x.refl.${n}`)).map(([n, root]) => `<tr><td>${n} (${root})</td>${rtLt(`x.refl.${n}`)}</tr>`)) + line('ملاحظات', v('x.bn.neuro'))),
       box(8, 'Special Tests (+ve)', two(lbl('Hip', cks('x.st.hip', L.X_ST_HIP)) + line('Other:', v('x.st.hip.other')), lbl('Knee', cks('x.st.knee', L.X_ST_KNEE)) + line('Other:', v('x.st.knee.other')))),
       box(9, 'Imaging / Investigations', imgs.map((m) => `<div class="row">${ck(has('x.img', m), m + ':')}<span class="fill">${v(`x.img.${m}`)}</span></div>`).join('')
         + line('Previous imaging:', v('x.img.prev')) + line('Others:', v('x.img.other'))),
@@ -158,7 +158,7 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
       }
     };
     const img = usImage(def); // تقرير سونار: رسومات التشريح فوق الخانات زي الورقة
-    return page('ltr', head(def.title, ''), drBar, (img ? [`<section class="box span2 usimg"><img src="${location.origin}${img}" alt=""></section>`] : []).concat(def.boxes.map((b, i) => box(i + 1, b.title, b.f.map(rf).join('') + (b.role === 'plan' && c.followUp ? line('Next visit:', dmy(c.followUp)) : ''), [b.tone, b.wide && 'span2'].filter(Boolean).join(' ')))));
+    return page('ltr', head(def.title, ''), drBar, (img ? [`<section class="box span2 usimg"><img src="${location.origin}${img}" alt=""></section>`] : []).concat(def.boxes.map((b, i) => box(i + 1, b.title, b.f.map(rf).join('') + (boxNeedsNotes(b) ? line('ملاحظات', v(K(boxNotesKey(b)))) : '') + (b.role === 'plan' && c.followUp ? line('Next visit:', dmy(c.followUp)) : ''), [b.tone, b.wide && 'span2'].filter(Boolean).join(' ')))));
   };
   // شيت الطبيب = الشيتات النشطة (من مكان الألم + اللي اتكتب فيه)؛ كشف قديم من غير أي منطقة ← الورك والركبة زي الأول
   const ids = activeSheets(s);

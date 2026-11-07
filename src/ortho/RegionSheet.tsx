@@ -6,7 +6,7 @@ import { Icon } from '../utils/icons';
 import { Box, Checks, Ck, MRC_OPTS, Pick, REFLEX_OPTS, Row, SelCell, Txt, painLabel, sheetApi } from './ExamSheet';
 import type { ExamSheet, Side } from './data';
 import { DxSheet } from './DxSheet';
-import { SHEET_ORDER, SHEET_TAB, type Field, type RegionSheetDef, type SheetId } from './regionSheets';
+import { SHEET_ORDER, SHEET_TAB, boxNeedsNotes, boxNotesKey, type Field, type RegionSheetDef, type SheetId } from './regionSheets';
 
 const SIDES: [Side, string][] = [['right', 'Right'], ['left', 'Left'], ['both', 'Bilateral']];
 
@@ -107,7 +107,8 @@ export function RegionSheetForm({ def, sheet, onChange, side, onSide, icd10, onI
     <div className="sh" dir="ltr">
       <div className="sh-grid sh-grid--3">
         {def.boxes.map((b, i) => (
-          <Box key={i} n={i + 1} tone={b.tone} wide={b.wide} title={b.tone === 'red' ? <><Icon name="alert" size={15} /> {b.title.replace('⚠ ', '')}</> : b.title}>{b.f.map(field)}</Box>
+          <Box key={i} n={i + 1} tone={b.tone} wide={b.wide} title={b.tone === 'red' ? <><Icon name="alert" size={15} /> {b.title.replace('⚠ ', '')}</> : b.title}>{b.f.map(field)}
+            {boxNeedsNotes(b) && <><div className="sh-lbl">ملاحظات</div><textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt(k(boxNotesKey(b)))} onChange={(e) => a.set(k(boxNotesKey(b)), e.target.value)} /></>}</Box>
         ))}
       </div>
     </div>
@@ -115,11 +116,11 @@ export function RegionSheetForm({ def, sheet, onChange, side, onSide, icd10, onI
 }
 
 /** كل شيتات كشف الطبيب ظاهرة دايمًا كتابات — اللي من مكان الألم أو اتكتب فيه عليه علامة ●، و✕ جنبه بيمسح اللي اتكتب فيه */
-export function SheetSwitch({ active, onPick, onRemove }: { active: SheetId[]; onPick: (id: SheetId) => void; onRemove: (id: SheetId) => void }) {
+export function SheetSwitch({ active, onPick, onRemove, ids = SHEET_ORDER, label = 'شيت الكشف:' }: { active: SheetId[]; onPick: (id: SheetId) => void; onRemove: (id: SheetId) => void; ids?: SheetId[]; label?: string }) {
   return (
-    <div className="sh-regions" role="group" aria-label="شيت الكشف">
-      <span className="sh-regions__l">شيت الكشف:</span>
-      {SHEET_ORDER.map((id) => { const on = active.includes(id); return (
+    <div className="sh-regions" role="group" aria-label={label}>
+      <span className="sh-regions__l">{label}</span>
+      {ids.map((id) => { const on = active.includes(id); return (
         <span key={id} className={`sh-region${on ? ' is-on' : ''}`}>
           {/* «شيت الكشف:» مكتوبة قبل الأزرار — فكلمة «كشف» مابتتكررش في كل زرار */}
           <button type="button" aria-pressed={on} className="sh-region__pick" onClick={() => onPick(id)}>{SHEET_TAB[id].replace(/^كشف /, '')}</button>

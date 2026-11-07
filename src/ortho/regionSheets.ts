@@ -40,6 +40,8 @@ const imaging = (mods: string[]): BoxDef => ({ title: 'Imaging / Investigations'
 const plan = (items: string[]): BoxDef => ({ title: 'Plan', role: 'plan', f: [{ t: 'checks', g: 'plan', items }, { t: 'text', k: 'plan.fu', label: 'Follow up after:' }, { t: 'text', k: 'plan.other', label: 'Others:' }] });
 const notes = (title = 'Notes'): BoxDef => ({ title, role: 'notes', f: [{ t: 'notes', k: 'notes' }] });
 const STD_PLAN = ['Medication', 'Physiotherapy', 'Activity modification', 'Injection / Intervention', 'Brace / Support', 'Surgery (if indicated)'];
+// Pain VAS اختياري من 1 لـ 10 (الضغط تاني على نفس الرقم بيلغيه)
+const VAS_PICK: Field = { t: 'pick', g: 'vas', items: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'], label: 'Pain VAS (اختياري 1–10):' };
 const SENS_NOTE = 'Tick the side with reduced / lost sensation.';
 
 export const REGION_SHEETS: RegionSheetDef[] = [
@@ -267,7 +269,7 @@ export const REGION_SHEETS: RegionSheetDef[] = [
       { title: '2. تقييم الجبس والطرف', role: 'exam', f: [
         ...['Cast integrity', 'Cast tightness', 'Skin condition', 'Swelling', 'Distal circulation', 'Sensation', 'Finger / Toe movement', 'Pain assessment']
           .map((r): Field => ({ t: 'pick', g: `ev.${r}`, items: ['Normal', 'Abnormal'], label: `${r}:` })),
-        { t: 'text', k: 'vas', label: 'Pain VAS (/10):' }, { t: 'text', k: 'cap', label: 'Capillary refill:' }, { t: 'text', k: 'ev.notes', label: 'ملاحظات:', stack: true },
+        VAS_PICK, { t: 'text', k: 'cap', label: 'Capillary refill:' }, { t: 'text', k: 'ev.notes', label: 'ملاحظات:', stack: true },
       ] },
       { title: '3. الأشعة والالتئام', role: 'exam', f: [
         { t: 'pick', g: 'xray', items: ['Not done', 'Done'], label: 'X-ray:' },
@@ -298,7 +300,7 @@ export const REGION_SHEETS: RegionSheetDef[] = [
         { t: 'pick', g: 'suture', items: ['Not indicated', 'Done', 'Planned'], label: 'Suture removal:' }, { t: 'text', k: 'suture.on', label: 'Planned on:' },
       ] },
       { title: '3. تقييم الطرف والوظيفة', role: 'exam', f: [
-        { t: 'text', k: 'vas', label: 'Pain VAS (/10):' },
+        VAS_PICK,
         { t: 'pick', g: 'swell', items: ['None', 'Mild', 'Moderate', 'Severe'], label: 'Swelling:' },
         { t: 'text', k: 'rom', label: 'ROM:' }, { t: 'text', k: 'nv', label: 'Neurovascular status:' }, { t: 'text', k: 'power', label: 'Muscle power:' },
         { t: 'pick', g: 'wb', items: ['NWB', 'TTWB', 'PWB', 'WBAT', 'FWB'], label: 'Weight bearing:' },
@@ -377,6 +379,10 @@ export const TREATMENT: RegionSheetDef = {
   ] }] }],
 };
 export const treatmentFilled = (s: ExamSheet) => s.on.some((o) => o.startsWith('tp.')) || Object.entries(s.txt).some(([k, v]) => k.startsWith('tp.') && v.trim());
+// أي مربع كله اختيارات (مفيش فيه خانة كتابة) بيتضافله «ملاحظات» في آخره (طلب ٨/١١) — المفتاح ثابت من عنوان المربع
+const writable = (f: Field): boolean => f.t === 'text' || f.t === 'notes' || f.t === 'imaging' || f.t === 'dxsheet' || (f.t === 'cols' && f.cols.some((c) => c.f.some(writable)));
+export const boxNeedsNotes = (b: BoxDef) => !b.f.some(writable);
+export const boxNotesKey = (b: BoxDef) => 'bn.' + b.title.replace(/[^A-Za-z0-9؀-ۿ]+/g, '_').replace(/^_|_$/g, '');
 export const regionSheet = (id: SheetId) => REGION_SHEETS.find((d) => d.id === id);
 
 // كل شيت بالترتيب اللي بيظهر بيه + اسمه في تبويب الطبيب

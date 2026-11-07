@@ -595,6 +595,8 @@ export function DoctorSheet({ sheet, onChange, side, onSide, icd10, onIcd10, onO
             </tbody>
           </table>
           <p className="sh-note">Tick the side with reduced / lost sensation.</p>
+          <div className="sh-lbl">ملاحظات</div>
+          <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt('x.bn.derm')} onChange={(e) => a.set('x.bn.derm', e.target.value)} />
         </Box>
 
         <Box n={5} title="Palpation">
@@ -636,6 +638,8 @@ export function DoctorSheet({ sheet, onChange, side, onSide, icd10, onIcd10, onO
               ))}
             </tbody>
           </table>
+          <div className="sh-lbl">ملاحظات</div>
+          <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt('x.bn.neuro')} onChange={(e) => a.set('x.bn.neuro', e.target.value)} />
         </Box>
 
         <Box n={8} title="Special Tests">

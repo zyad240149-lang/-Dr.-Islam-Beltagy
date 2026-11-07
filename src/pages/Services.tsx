@@ -90,7 +90,7 @@ function ServicesCatalog() {
 
       {assigning && <ServiceDoctorsModal service={assigning} onClose={() => setAssigning(null)} />}
       {bookServiceId && <BookingWizard presetServiceId={bookServiceId} onClose={() => setBookServiceId(null)} />}
-      {editing && <ServiceModal service={editing === 'new' ? undefined : editing} categories={categories} onClose={() => setEditing(null)} />}
+      {editing && <ServiceModal service={editing === 'new' ? undefined : editing} categories={categories} defaultCategory={cat} onClose={() => setEditing(null)} />}
       {deleting && <ConfirmDialog title="حذف الخدمة" onClose={() => setDeleting(null)}
         message={`سيتم حذف خدمة «${deleting.name}» الحين. المواعيد والفواتير القديمة تحتفظ باسمها.`}
         onConfirm={async () => { const r = await db.deleteService(deleting.id); if (r.ok) toast.success('تم حذف الخدمة.'); else toast.error(r.error); }} />}
@@ -182,10 +182,11 @@ function ServiceDoctorsModal({ service, onClose }: { service: Service; onClose: 
 }
 
 
-function ServiceModal({ service, categories, onClose }: { service?: Service; categories: string[]; onClose: () => void }) {
+// خدمة جديدة: التصنيف = التبويب المختار برّه (لو «الكل» ← أول تصنيف)
+function ServiceModal({ service, categories, defaultCategory, onClose }: { service?: Service; categories: string[]; defaultCategory?: string; onClose: () => void }) {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
-  const [f, setF] = useState<Omit<Service, 'id'>>(service ?? { name: '', category: categories[0] ?? '', description: '', price: 0, durationMin: 15, therapistIds: [], active: true, showOnSite: false /* خدمة جديدة: إدارة فقط لحد ما تتفعّل للحجز الإلكتروني */ });
+  const [f, setF] = useState<Omit<Service, 'id'>>(service ?? { name: '', category: defaultCategory || categories[0] || '', description: '', price: 0, durationMin: 15, therapistIds: [], active: true, showOnSite: false /* خدمة جديدة: إدارة فقط لحد ما تتفعّل للحجز الإلكتروني */ });
   const submit = async () => {
     if (!f.name.trim() || !f.category.trim()) { toast.error('اسم الخدمة والتصنيف مطلوبان.'); return; }
     setBusy(true);

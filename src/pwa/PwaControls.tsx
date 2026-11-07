@@ -41,8 +41,10 @@ function InstallHelp({ method, onClose }: { method: ReturnType<typeof installMet
 // تحديث يدوي: نمسح كاش الـ Service Worker ونحمّل آخر نسخة من السيرفر
 export async function hardRefresh() {
   try {
+    // بنشيل الـ Service Worker القديم خالص (مش بس update) ونمسح كل الكاش — عشان أي جهاز علقت عنده نسخة قديمة ياخد آخر نسخة من السيرفر.
+    // بيانات المرضى في IndexedDB مابتتلمسش؛ والـ SW بيتسجّل تاني لوحده بعد التحميل.
     const regs = (await navigator.serviceWorker?.getRegistrations?.()) ?? [];
-    await Promise.all(regs.map((r) => r.update().catch(() => undefined)));
+    await Promise.all(regs.map((r) => r.unregister().catch(() => false)));
     if ('caches' in window) await Promise.all((await caches.keys()).map((k) => caches.delete(k)));
   } catch { /* نكمّل بإعادة التحميل */ }
   location.reload();
@@ -139,7 +141,7 @@ export function PwaUpdateBanner() {
     <div className="pwa-update no-print" role="status">
       <Icon name="refresh" size={17} />
       <span style={{ flex: 1 }}><b>فيه تحديث جديد للنظام</b> — اضغط «تحديث» عشان تاخد آخر نسخة.</span>
-      <Button size="sm" variant="outline" icon="refresh" onClick={() => (updateReady ? applyUpdate() : location.reload())}>تحديث</Button>
+      <Button size="sm" variant="outline" icon="refresh" onClick={() => void hardRefresh()}>تحديث</Button>
     </div>
   );
 }

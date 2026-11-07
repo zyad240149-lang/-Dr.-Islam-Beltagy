@@ -121,6 +121,8 @@ export class OfflineQueue {
       // نمشي على نسخة؛ العمليات اللي بتتضاف أثناء التشغيل بتتاخد في الجولة اللي بعدها
       const skipped = new Set<string>();
       for (const op of this.ops.slice()) {
+        // سجلات علقت بسبب عمود ربط فاضي ('' بدل null) من نسخة قديمة — المنفّذ بيصلحها دلوقتي، فترجع تتبعت لوحدها
+        if (op.status === 'failed' && /invalid input syntax for type uuid: ""/.test(op.lastError ?? '')) { op.status = 'pending'; op.nextAttemptAt = 0; await this.save(op); }
         if (op.status === 'failed' || op.status === 'conflict') { skipped.add(op.entityId); continue; }
         if (!opts.force && op.nextAttemptAt > this.now()) { skipped.add(op.entityId); summary.retry++; continue; }
         // عملية معتمدة على إنشاء لسه ما خلصش (أو فشل/تعارض) تستنى

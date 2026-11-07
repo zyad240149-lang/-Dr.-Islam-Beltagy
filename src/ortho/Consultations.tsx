@@ -99,6 +99,22 @@ type Tab = typeof TABS[number][0];
 // appointmentId = الزيارة اللي التشخيص الجديد بيتربط بيها (من «بانتظار التشخيص»)؛ من غيرها بيتربط بزيارة النهارده المفتوحة للمريض لو فيه
 // pending = «فتح ملف تشخيص جديد» بالاسم الثلاثي (المريض مش ظاهر في القايمة — غالبًا من غير إنترنت): التشخيص بيتحفظ من غير ملف،
 // والخادم بيربطه بملف الاستقبال بعد المزامنة (هجرة 924)
+// تطبيع الاسم العربي للمقارنة (همزات/تاء مربوطة/ياء/تشكيل/مسافات)
+const normName = (n: string) => n.replace(/[ً-ْـ]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').trim().replace(/\s+/g, ' ');
+const phoneKey = (p?: string) => (p ?? '').replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/\D/g, '').slice(-10);
+function matchPatient(name: string, phone?: string) {
+  const all = [...db.patients(), ...db.guests()];
+  const n = normName(name);
+  if (isTripleName(n)) {
+    const byName = all.filter((p) => normName(p.fullName ?? '') === n);
+    if (byName.length === 1) return byName[0];
+    if (byName.length > 1) { const ph = phoneKey(phone); const both = ph.length >= 9 ? byName.filter((p) => phoneKey(p.phone) === ph) : []; return both.length === 1 ? both[0] : undefined; }
+  }
+  const ph = phoneKey(phone);
+  if (ph.length >= 9) { const byPhone = all.filter((p) => phoneKey(p.phone) === ph); if (byPhone.length === 1) return byPhone[0]; }
+  return undefined;
+}
+
 export function ConsultModal({ initial, resume, patientId = '', appointmentId, pending, onClose }: { initial?: Consultation; resume?: boolean; patientId?: string; appointmentId?: string | null; pending?: { name: string; phone?: string }; onClose: () => void }) {
   const { run, busy } = useRun();
   const toast = useToast();
@@ -164,6 +180,13 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
     return () => window.clearInterval(t);
   }, [initial?.id, c.patientId]);
   const pendingInfo = pendingFromSheet(sheet);
+  // ربط فوري على الجهاز: لو فيه ملف مريض واحد بس بنفس الاسم الثلاثي (أو نفس الموبايل) بيتربط على طول — من غير ما نستنى الخادم
+  const autoMatch = unlinked && !c.patientId ? matchPatient(pendingInfo.name, pendingInfo.phone) : undefined;
+  useEffect(() => {
+    if (!autoMatch) return;
+    setC((x) => (x.patientId ? x : { ...x, patientId: autoMatch.id, appointmentId: x.appointmentId ?? openVisitFor(autoMatch.id)?.id ?? null }));
+    toast.success(`اتربط الكشف بملف المريض ${autoMatch.fullName}`);
+  }, [autoMatch?.id]);
   const ok = !!c.patientId || (unlinked && isTripleName(pendingInfo.name));
   const pseudo = unlinked ? ({ fullName: pendingInfo.name, phone: pendingInfo.phone ?? '', fileNo: '' } as unknown as NonNullable<ReturnType<typeof db.patient>>) : null;
   const patientOf = () => (c.patientId ? db.patient(c.patientId) : pseudo);
@@ -292,9 +315,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
     </>}>
       <div className="cx" ref={bodyRef}>
         <div className="grid-form grid-form--4">
-          {unlinked && initial ? (
-            <Field label="المريض"><div className="input dx-unlinked__who" title={initial.linkNote || ''}><b>{pendingInfo.name || '—'}</b> <span className="badge badge--warn">غير مربوط بملف</span></div></Field>
-          ) : (
+          {(
             <Field label={unlinked ? 'المريض (لو ظهر في القايمة اختاره)' : 'المريض'}><PatientSelect value={c.patientId} onChange={(v) => setC((x) => {
               const a = initial ? undefined : openVisitFor(v); // مريض تاني ← زيارته هو
               return { ...x, patientId: v, appointmentId: initial ? x.appointmentId : a?.id ?? null, ...(a ? { date: a.date } : {}), sheet: v || !pending ? resetPatientBasics(normSheet(x.sheet), v ? db.patient(v) : null) : x.sheet };
@@ -307,10 +328,10 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           <Field label="ميعاد المتابعة"><input type="date" className="input" value={c.followUp} min={c.date} onChange={(e) => set('followUp', e.target.value)} /></Field>
         </div>
 
-        {unlinked && (
+        {unlinked && !c.patientId && (
           <div className="sh-visitlink dx-unlinked">
             <Icon name="user" size={15} />
-            <span>ملف تشخيص جديد باسم <b>{pendingInfo.name || '—'}</b> — من غير ملف مريض. بعد المزامنة بيتربط تلقائي بملف الاستقبال لو الاسم الثلاثي وباقي البيانات (الموبايل/السن/النوع في خانة 1) مطابقين؛ لو فيه شك بيظهر «يحتاج مراجعة وربط».</span>
+            <span>ملف تشخيص جديد باسم <b>{pendingInfo.name || '—'}</b> — من غير ملف مريض. بعد المزامنة بيتربط تلقائي بملف الاستقبال لو الاسم الثلاثي أو الموبايل مطابقين — أو اختار المريض من خانة «المريض» فوق ويتربط على طول.</span>
           </div>
         )}
         {visitAppt && (

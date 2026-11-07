@@ -57,7 +57,9 @@ export async function executeOp(op: OfflineOp): Promise<ExecResult> {
         return guardedUpdate('patients', op.entityId, op, op.payload.row as Record<string, unknown>, 'ملف المريض');
       }
       case 'assessment.save': {
-        const row = op.payload.row as Record<string, unknown>;
+        const row = { ...(op.payload.row as Record<string, unknown>) };
+        // عمود ربط (…_id) فاضي = null — سجلات اتحفظت بنسخة قديمة كانت بتبعت '' والخادم بيرفضها (uuid)
+        for (const k of Object.keys(row)) if (k.endsWith('_id') && row[k] === '') row[k] = null;
         if (op.payload.isNew) {
           const { error, status } = await supabase.from('initial_assessments').insert({ ...row, id: op.entityId, therapist_id: null });
           if (error && !(error.code === '23505' && /pkey|\(id\)/.test(`${error.message} ${error.details ?? ''}`))) return classify(error, status) ?? { type: 'failed', error: clean(error.message ?? '') };

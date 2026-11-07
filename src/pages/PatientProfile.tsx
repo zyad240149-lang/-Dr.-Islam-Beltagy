@@ -13,7 +13,7 @@ import { Button, EmptyState, StatusBadge } from '../components/ui';
 import { ConfirmDialog, IconAction, RowActions, useCan } from '../components/common';
 import { AssessmentModal, EditPatientModal, PlanModal, PlanScheduleList, SellPackageModal } from '../components/PatientForms';
 import { DiagnosisCode } from '../components/DiagnosisPicker';
-import { BodyRecordsTab, PatientFilesTab } from '../components/PatientExtras';
+import { PatientFilesTab } from '../components/PatientExtras';
 import { DetailsButton, useDetails } from '../components/DetailsHost';
 import { ActorBadges } from '../components/AppointmentActor';
 import { useInstallmentRequests } from '../components/PackagePayment';
@@ -26,6 +26,7 @@ import PhysioTab from '../components/PhysioTab';
 import { OrthoPatientTab } from '../ortho/PatientTabs';
 import { PatientFollowUps } from '../ortho/FollowUps';
 import { DiagnosisTab } from '../ortho/DiagnosisTab';
+import { ortho, useOrthoVersion } from '../ortho/data';
 import { Icon } from '../utils/icons';
 import {
   APPT_STATUS, APPT_TYPE_LABEL, INVOICE_STATUS, PACKAGE_STATUS, PAYMENT_METHOD_LABEL, PLAN_STATUS, REFERRAL_SOURCE_LABEL,
@@ -41,9 +42,18 @@ const TABS = ['بيانات المريض', 'المواعيد', 'الزيارات
 const TAB_ORDER = [0, 12, 8, 19, 1, 6, 7];
 const TAB_LABEL: Record<number, string> = { 8: 'ملفات الأشعة والتحاليل' };
 // كل البيانات الطبية جوّه «التشخيص» (صف تحت التبويب) — التشخيصات أولًا. المواعيد والفواتير وسجل المريض تبويبات لوحدها فوق
-const DX_SUB: [number, string][] = [[12, 'التشخيصات'], [13, 'الأشعة'], [17, 'التحاليل'], [18, 'الحقن'], [14, 'الكسور والجبس'], [15, 'العمليات الجراحية'], [16, 'متابعة التمريض'], [9, 'سجل الجسم']];
+const DX_SUB: [number, string][] = [[12, 'التشخيصات'], [13, 'الأشعة'], [17, 'التحاليل'], [18, 'الحقن'], [14, 'الكسور والجبس'], [15, 'العمليات الجراحية'], [16, 'متابعة التمريض']];
 const IN_DX = new Set(DX_SUB.map(([i]) => i));
 const PHYSIO_TAB = 10;
+
+/** تشخيص المريض = تشخيص آخر كشف ليه (الكشف بيتحفظ بالتشخيص؛ حقل التشخيص في ملف المريض كان بيفضل فاضي) — ولو مفيش كشف: اللي متسجّل في الملف */
+function latestDiagnosis(patientId: string): { text: string; icd10: string; date: string } | null {
+  const withDx = ortho.list('consultations', patientId)
+    .filter((c) => (c.diagnosis ?? '').trim())
+    .sort((a, b) => b.date.localeCompare(a.date) || String((b as { createdAt?: string }).createdAt ?? '').localeCompare(String((a as { createdAt?: string }).createdAt ?? '')));
+  const c = withDx[0];
+  return c ? { text: c.diagnosis.trim(), icd10: c.icd10 ?? '', date: c.date } : null;
+}
 
 type Confirm = { title: string; message: string; label?: string; run: () => Promise<void> } | null;
 
@@ -53,6 +63,7 @@ export default function PatientProfile() {
   const toast = useToast();
   const can = useCan();
   useDbVersion();
+  useOrthoVersion();
   const [tab, setTab] = useState(0);
   const [booking, setBooking] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -122,6 +133,18 @@ export default function PatientProfile() {
                 onClick={() => { navigator.clipboard.writeText(patient.fileNo).then(() => toast.success('تم نسخ رقم الملف'), () => toast.error('تعذّر النسخ')); }}>
                 <Icon name="copy" size={15} /> نسخ رقم الملف
               </button> · {patient.genderUnknown ? 'الجنس غير محدد' : patient.gender === 'male' ? 'رجل' : 'امرأة'}{age(patient.birthDate) !== null ? ` · ${age(patient.birthDate)} سنة` : ''} · جوال <span className="num" dir="ltr">{patient.phone}</span><WhatsappLink phone={whatsappNumber(patient)} patientId={patient.id} label />{patient.phone && <button type="button" className="btn btn--outline btn--sm" style={{ marginInline: 8, display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 600 }} onClick={() => navigator.clipboard.writeText(patient.phone).then(() => toast.success('تم نسخ رقم الجوال'), () => toast.error('تعذّر النسخ'))}><Icon name="copy" size={15} /> نسخ الجوال</button>}</p>
+            {(() => {
+              const dx = latestDiagnosis(patient.id);
+              const text = dx?.text || patient.diagnosis;
+              return (
+                <p className="pp-dx">
+                  <b>التشخيص:</b> <span dir="auto" className="pp-dx__t">{text || 'لسه مفيش تشخيص'}</span>
+                  {dx?.icd10 && <span className="badge badge--muted num" dir="ltr">{dx.icd10}</span>}
+                  {dx && <span className="muted-sm"> — آخر كشف {fmtDate(dx.date)}</span>}
+                  <button type="button" className="link-more" style={{ border: 0, background: 'none', cursor: 'pointer', marginInlineStart: 8 }} onClick={() => setTab(12)}>كل التشخيصات</button>
+                </p>
+              );
+            })()}
             {activePlan && activeStats && <p className="muted" style={{ fontSize: 13 }}>الخطة الحالية: {activePlan.diagnosis} — مكتملة {activeStats.completed} من {activeStats.total}، متبقية {activeStats.remaining}</p>}
             <div style={{ marginTop: 6 }}>
               {account === 'loading' ? null
@@ -172,7 +195,9 @@ export default function PatientProfile() {
               <div><dt>جهة اتصال الطوارئ</dt><dd>{patient.emergencyContactName || '—'}</dd></div>
               <div><dt>جوال الطوارئ</dt><dd className="num">{patient.emergencyContactPhone || '—'}</dd></div>
               <div><dt>الشكوى الرئيسية</dt><dd>{patient.mainComplaint || '—'}</dd></div>
-              <div><dt>التشخيص</dt><dd>{patient.diagnosis || '—'} <DiagnosisCode dref={patient.diagnosisRef} /></dd></div>
+              {(() => { const dx = latestDiagnosis(patient.id); return (
+                <div><dt>التشخيص{dx ? ` (آخر كشف ${fmtDate(dx.date)})` : ''}</dt><dd dir="auto" style={{ whiteSpace: 'pre-line' }}>{dx?.text || patient.diagnosis || '—'} {!dx && <DiagnosisCode dref={patient.diagnosisRef} />}</dd></div>
+              ); })()}
               <div><dt>تاريخ التسجيل</dt><dd>{fmtDate(tsToYmd(patient.registeredAt))}</dd></div>
               <div style={{ gridColumn: '1/-1' }}><dt>التاريخ المرضي</dt><dd>{patient.medicalHistory || '—'}</dd></div>
               <div style={{ gridColumn: '1/-1' }}><dt>ملاحظات</dt><dd>{patient.notes || '—'}</dd></div>
@@ -183,7 +208,6 @@ export default function PatientProfile() {
 
           {tab === 8 && <PatientFilesTab patientId={id} />}
           {tab === 19 && <PatientFollowUps patientId={id} />}
-          {tab === 9 && <BodyRecordsTab patientId={id} />}
           {tab === 11 && <ExamsTab patientId={id} />}
           {tab === 12 && <DiagnosisTab patientId={id} />}
           {tab === 13 && <OrthoPatientTab kind="imaging" patientId={id} />}

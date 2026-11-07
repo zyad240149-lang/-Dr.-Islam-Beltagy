@@ -64,7 +64,7 @@ export default function WorkHours() {
   return (
     <div className="page">
       <div className="page-head">
-        <div><h1>مواعيد العمل</h1><p>أيام وساعات عمل المركز. يُحدَّد دوام كل موظف من نافذة إضافة/تعديل الموظف. ما يُقبل الحجز في يوم مغلق أو خارج ساعاته.</p></div>
+        <div><h1>مواعيد العمل</h1><p>أيام وساعات عمل المركز (للعرض فقط). الحجز بيتحدد بمواعيد عمل كل دكتور من نافذة إضافة/تعديل الموظف.</p></div>
       </div>
 
       <section className="card" style={{ marginBottom: 18 }}>

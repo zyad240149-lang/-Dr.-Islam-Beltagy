@@ -26,18 +26,15 @@ export function branchForDate(hours: WorkHours[], dateYmd: string): { id: string
 
 const toMin = (t: string) => +t.slice(0, 2) * 60 + +t.slice(3, 5);
 const toHm = (n: number) => `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`;
-// الأوقات المتاحة للاختيار: اليوم كله (كل 15 دقيقة) — بالـ ص/م مكتوبة صريحة، والأوقات برّه ساعات المركز العامة
-// بتتعلّم بس («خارج ساعات المركز») من غير ما تتمنع، عشان أي دكتور/فرع يقدر يختار الوقت اللي يناسبه فعلًا
+// الأوقات المتاحة للاختيار: اليوم كله (كل 15 دقيقة) — بالـ ص/م مكتوبة صريحة.
+// الحجز بمواعيد الدكتور بس (هجرة 954)، فمفيش علامة «خارج ساعات المركز»
 // (خانة الوقت الأصلية على الموبايل كانت بتخلّي 5 العصر تتسجّل 05:00 الصبح بالغلط)
 function timeOptions(extra: string[]) {
-  const open = db.center().weekSchedule.filter((d) => d.open);
-  const lo = open.length ? Math.min(...open.map((d) => toMin(d.from))) : 8 * 60;
-  const hi = open.length ? Math.max(...open.map((d) => toMin(d.to))) : 22 * 60;
   const list: string[] = [];
   for (let t = 0; t <= 23 * 60 + 45; t += 15) list.push(toHm(t));
   for (const x of extra) if (x && !list.includes(x)) list.push(x);
   list.sort();
-  return list.map((t) => ({ value: t, label: t < toHm(lo) || t > toHm(hi) ? `${fmtTime(t)} (خارج ساعات المركز)` : fmtTime(t) }));
+  return list.map((t) => ({ value: t, label: fmtTime(t) }));
 }
 // ملخص مقروء: «السبت، الاثنين: 5:00 م – 9:00 م — العيادة»
 export function hoursSummary(h: WorkHours[]) {

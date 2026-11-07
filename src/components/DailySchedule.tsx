@@ -31,7 +31,6 @@ export default function DailySchedule({ onOpen, onBook, onlyDoctorId }: { onOpen
   const [doctorPick, setDoctor] = useState('');
   const doctor = onlyDoctorId || doctorPick;
   const center = db.center();
-  const day = center.weekSchedule.find((d) => d.day === dayKeyOf(date));
   // مدة الخانة = مدة الموعد الافتراضية من الإعدادات (ولو مش متحددة: خطوة الحجز)
   const step = Math.max(5, center.defaultAppointmentMin || center.slotStepMin || 30);
 
@@ -46,19 +45,17 @@ export default function DailySchedule({ onOpen, onBook, onlyDoctorId }: { onOpen
     return { appts, cols };
   }, [date, db.appointments().length, db.appointments(), db.allTherapists(), center]);
 
-  if (!day || !day.open) {
-    return (
-      <Shell date={date} setDate={setDate}>
-        <EmptyState icon="calendar" title="المركز مغلق في هاليوم" text="حسب «مواعيد العمل» في الإعدادات — اختر يوم ثاني." />
-      </Shell>
-    );
+  const cols = data.cols.filter((c) => !doctor || c.id === doctor);
+  // ساعات اليوم = من أبدر دوام لآخر دوام بين الدكاترة المعروضين (الحجز بمواعيد الدكتور بس — هجرة 954)،
+  // والمواعيد المحجوزة برّه الدوام بتوسّع اليوم عشان ماتختفيش
+  let open = 24 * 60, close = 0;
+  for (const c of cols) if (c.wh) { open = Math.min(open, toMin(c.wh.from)); close = Math.max(close, toMin(c.wh.to)); }
+  for (const a of data.appts) if (a.status !== 'cancelled' && cols.some((c) => c.id === (a.therapistId && data.cols.some((x) => x.id === a.therapistId) ? a.therapistId : NO_DOCTOR))) {
+    open = Math.min(open, Math.floor(toMin(a.time) / step) * step); close = Math.max(close, toMin(a.time) + a.durationMin);
   }
-  const open = toMin(day.from), close = toMin(day.to);
   const times: string[] = [];
   for (let t = open; t + step <= close; t += step) times.push(toHm(t));
-  const cols = data.cols.filter((c) => !doctor || c.id === doctor);
-  if (times.length === 0) return <Shell date={date} setDate={setDate}><EmptyState icon="clock" title="ساعات العمل غير مضبوطة" text="راجع «مواعيد العمل» في الإعدادات." /></Shell>;
-  if (cols.length === 0) {
+  if (cols.length === 0 || times.length === 0) {
     return <Shell date={date} setDate={setDate}><EmptyState icon="users" title="ما فيه أطباء يعملون في هاليوم" text="راجع أيام وساعات عمل الأطباء من «الموظفون ← المعالجون»." /></Shell>;
   }
 
@@ -84,7 +81,7 @@ export default function DailySchedule({ onOpen, onBook, onlyDoctorId }: { onOpen
           {data.cols.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
       )}
-      summary={<>من <span className="num">{fmtTime(day.from)}</span> إلى <span className="num">{fmtTime(day.to)}</span> · خانة كل <span className="num">{step}</span> دقيقة · <span className="num">{active.length}</span> موعد</>}>
+      summary={<>من <span className="num">{fmtTime(toHm(open))}</span> إلى <span className="num">{fmtTime(toHm(close))}</span> · خانة كل <span className="num">{step}</span> دقيقة · <span className="num">{active.length}</span> موعد</>}>
       {/* Timeline رأسي (نفس شكل «معاد»): الوقت + نقطة وخط، وكارت لكل حجز، والخانات الفاضية «متاح» مع الأطباء المتاحين */}
       <div className="tl">
         {/* الوقت اللي فات مايظهرش — إلا لو فيه موعد محجوز فيه */}

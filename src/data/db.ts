@@ -211,12 +211,11 @@ export const DOCTOR_DAY_LABEL: Record<Exclude<DoctorDayStatus, 'ok'>, string> = 
 const dayKey = (ymd: string): 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' =>
   (['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const)[new Date(ymd + 'T00:00:00').getDay()];
 const daySchedule = (ymd: string) => load().center.weekSchedule.find((d) => d.day === dayKey(ymd));
-// نسخة طبق الأصل من doctor_day_window() على الخادم (هجرة 157) — أي تغيير هنا لازم يتغيّر هناك
+// نسخة طبق الأصل من doctor_day_window() على الخادم (هجرة 954) — أي تغيير هنا لازم يتغيّر هناك
+// الحجز بمواعيد الدكتور بس: ساعات المركز وأيام قفله مابقتش بتحدّه (centerFrom/To = مواعيد الدكتور)
 function doctorDayWindow(therapistId: string, ymd: string): DoctorDayWindow {
   const t = load().therapists.find((x) => x.id === therapistId);
   if (!t || !t.active) return { status: 'no_doctor' };
-  const cd = daySchedule(ymd);
-  if (!cd || !cd.open) return { status: 'closed' };
   if (blocks.holidays.some((h) => h.date === ymd && (!h.branchId || h.branchId === t.branchId))) return { status: 'holiday' };
   if (t.onLeave.some((l) => ymd >= l.from && ymd <= l.to) || blocks.requests.some((r) => r.therapistId === therapistId && r.type === 'leave' && ymd >= r.from && ymd <= r.to)) return { status: 'leave' };
   if (!t.workHours?.length) return { status: 'no_hours' };
@@ -225,12 +224,11 @@ function doctorDayWindow(therapistId: string, ymd: string): DoctorDayWindow {
   const bl: Array<{ from: number; to: number }> = [];
   if (wh.breakFrom && wh.breakTo && hmMin(wh.breakTo) > hmMin(wh.breakFrom)) bl.push({ from: hmMin(wh.breakFrom), to: hmMin(wh.breakTo) });
   for (const r of blocks.requests) if (r.therapistId === therapistId && r.type === 'permission' && ymd >= r.from && ymd <= r.to && hmMin(r.toTime) > hmMin(r.fromTime)) bl.push({ from: hmMin(r.fromTime), to: hmMin(r.toTime) });
-  return { status: 'ok', centerFrom: cd.from, centerTo: cd.to, doctorFrom: wh.from, doctorTo: wh.to, blocks: bl };
+  return { status: 'ok', centerFrom: wh.from, centerTo: wh.to, doctorFrom: wh.from, doctorTo: wh.to, blocks: bl };
 }
 // null = الوقت يصلح للدكتور ده؛ وإلا السبب (زي doctor_window_reason على الخادم)
 function windowReason(w: DoctorDayWindow, t: number, dur: number): 'center' | 'doctor' | 'blocked' | null {
   if (w.status !== 'ok') return 'doctor';
-  if (t < hmMin(w.centerFrom!) || t > hmMin(w.centerTo!)) return 'center';
   if (t < hmMin(w.doctorFrom!) || t + dur > hmMin(w.doctorTo!)) return 'doctor';
   if (w.blocks!.some((b) => t < b.to && b.from < t + dur)) return 'blocked';
   return null;

@@ -87,15 +87,19 @@ export default function ScheduleGrid({ mode, date, doctorId, scopedDoctorId, mat
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, date, activeDoctor, therapists.length, db.appointments(), db.allTherapists(), center]);
 
-  // ساعات الجدول: أوسع فترة بين الأيام المعروضة
+  // ساعات الجدول: أوسع فترة بين دوام الدكاترة المعروضين (الحجز بمواعيد الدكتور بس — هجرة 954)،
+  // والمواعيد المحجوزة برّه الدوام بتوسّع الجدول عشان ماتختفيش
   const range = (() => {
     let lo = 24 * 60, hi = 0;
-    for (const c of cols) { const d = center.weekSchedule.find((x) => x.day === dayKeyOf(c.date)); if (d?.open) { lo = Math.min(lo, toMin(d.from)); hi = Math.max(hi, toMin(d.to)); } }
+    for (const c of cols) {
+      if (c.win.status === 'ok') { lo = Math.min(lo, toMin(c.win.doctorFrom!)); hi = Math.max(hi, toMin(c.win.doctorTo!)); }
+      for (const a of db.appointmentsForDate(c.date)) if (a.therapistId === c.therapistId && a.status !== 'cancelled') { lo = Math.min(lo, toMin(a.time)); hi = Math.max(hi, toMin(a.time)); }
+    }
     return hi > lo ? { lo, hi } : null;
   })();
 
   if (!therapists.length) return <EmptyState icon="users" title="ما فيه أطباء" text="أضف طبيبًا من «الموظفون» حتى يظهر جدول المواعيد." />;
-  if (!range) return <EmptyState icon="calendar" title="المركز مغلق" text={mode === 'day' ? 'المركز مغلق في هاليوم حسب «مواعيد العمل» — اختر يوم ثاني.' : 'المركز مغلق طول هذا الأسبوع حسب «مواعيد العمل».'} />;
+  if (!range) return <EmptyState icon="calendar" title="مفيش دوام" text={mode === 'day' ? 'مفيش دكتور شغال في اليوم ده حسب مواعيد الدكاترة — اختر يوم تاني.' : 'الدكتور مش شغال طول الأسبوع ده حسب مواعيد عمله.'} />;
 
   // اللي فات مش بيظهر: النهارده الجدول بيبدأ من أول خانة بعد الوقت الحالي بتوقيت القاهرة
   let lo = range.lo;
@@ -115,8 +119,8 @@ export default function ScheduleGrid({ mode, date, doctorId, scopedDoctorId, mat
 
   const apptsOf = (c: Col) => db.appointmentsForDate(c.date).filter((a) => a.therapistId === c.therapistId && a.status !== 'cancelled');
   const isPastSlot = (d: string, t: number) => d < today || (d === today && t <= nowMin);
-  const openDay = (d: string) => center.weekSchedule.find((x) => x.day === dayKeyOf(d));
-  const inHours = (d: string, t: number) => { const w = openDay(d); return !!w?.open && t >= toMin(w.from) && t <= toMin(w.to); };
+  // خانة «مقفول» = برّه دوام الدكتور في اليوم ده
+  const inHours = (c: Col, t: number) => c.win.status === 'ok' && t >= toMin(c.win.doctorFrom!) && t < toMin(c.win.doctorTo!);
 
   // إحصائيات اليوم
   let freeCount = 0, apptCount = 0;
@@ -128,7 +132,7 @@ export default function ScheduleGrid({ mode, date, doctorId, scopedDoctorId, mat
       const covered = list.some((a) => toMin(a.time) < t + step && toMin(a.time) + a.durationMin > t);
       // خارج دوام الدكتور نفسه (أو يوم إجازته/مش من أيام عمله) = «غير متاح» — نفس قواعد الحجز على الخادم
       const offDoctor = c.win.status !== 'ok' || !!db.doctorTimeIssue(c.therapistId, c.date, toHm(t), step);
-      const state: 'free' | 'busy' | 'past' | 'off' | 'closed' = !inHours(c.date, t) ? 'closed' : covered ? 'busy' : offDoctor ? 'off' : isPastSlot(c.date, t) ? 'past' : 'free';
+      const state: 'free' | 'busy' | 'past' | 'off' | 'closed' = !inHours(c, t) ? 'closed' : covered ? 'busy' : offDoctor ? 'off' : isPastSlot(c.date, t) ? 'past' : 'free';
       if (state === 'free') freeCount++;
       return { t, state };
     });

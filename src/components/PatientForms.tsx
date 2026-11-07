@@ -80,7 +80,6 @@ export function EditPatientModal({ patient, onClose }: { patient: Patient; onClo
     if (ecPhoneErr) { setErr('جوال الطوارئ: ' + phoneErrorMessage(ecPhoneErr)); return; }
     const ce = contactError(contactErrs); if (ce) { setErr(ce); return; }
     const phone = f.phone;
-    if (f.email && !EMAIL_RE.test(f.email.trim())) { setErr('البريد الإلكتروني غير صحيح.'); return; }
     setBusy(true);
     // الجنس مش متسجّل (ملف قديم) وماتختارش: مايتكتبش «رجل» افتراضيًا
     const { gender: g0, genderUnknown: _gu, nationalityUnconfirmed: _nu, ...rest } = f;
@@ -105,39 +104,12 @@ export function EditPatientModal({ patient, onClose }: { patient: Patient; onClo
           <IdentityFields idp="ep" f={f} set={(k, v) => setF((x) => ({ ...x, [k]: v }))} errors={idErrs} />
           <PhoneInput id="ep-phone" label="رقم الجوال" value={f.phone} showError={tried} onChange={(v, e) => { set('phone', v); setPhoneErr(e); }} />
           <ContactFields idp="ep" value={contact} onChange={setContact} onErrors={setContactErrs} showError={tried} />
-          <Input id="ep-email" label="البريد الإلكتروني" dir="ltr" value={f.email ?? ''} onChange={(e) => set('email', e.target.value)} />
           <Select id="ep-gender" label="النوع" value={f.gender} onChange={(e) => set('gender', e.target.value as Patient['gender'])} options={[...(!f.gender ? [{ value: '', label: '— غير محدد —' }] : []), { value: 'male', label: 'رجل' }, { value: 'female', label: 'امرأة' }]} />
-          <Input id="ep-birth" label="تاريخ الميلاد" type="date" value={f.birthDate} max={todayYmd()} onChange={(e) => set('birthDate', e.target.value)} />
-          <JobActivity f={f} set={set} />
-          <Select id="ep-doctor" label="الطبيب المسؤول" value={f.doctorId ?? ''} onChange={(e) => set('doctorId', e.target.value || null)} options={[{ value: '', label: 'غير محدد' }, ...db.allTherapists().filter((t) => t.active || t.id === f.doctorId).map((t) => ({ value: t.id, label: t.name }))]} />
           <Select id="ep-source" label="كيف عرف عن المركز" value={f.referralSource} onChange={(e) => set('referralSource', e.target.value as ReferralSource)} options={Object.entries(REFERRAL_SOURCE_LABEL).map(([value, label]) => ({ value, label }))} />
         </div>
       </div>
-      <div className="form-section">
-        <div className="form-section-title">العنوان</div>
-        <div className="grid-form">
-          <Input id="ep-city" label="المدينة" value={f.city ?? ''} onChange={(e) => set('city', e.target.value)} />
-          <Input id="ep-district" label="الحي" value={f.district ?? ''} onChange={(e) => set('district', e.target.value)} />
-          <Input id="ep-street" label="الشارع" value={f.street ?? ''} onChange={(e) => set('street', e.target.value)} />
-          <Input id="ep-address" label="العنوان (تفاصيل)" value={f.address} onChange={(e) => set('address', e.target.value)} />
-        </div>
-      </div>
-      <div className="form-section">
-        <div className="form-section-title">جهة اتصال الطوارئ</div>
-        <div className="grid-form">
-          <Input id="ep-ecname" label="جهة اتصال الطوارئ" value={f.emergencyContactName} onChange={(e) => set('emergencyContactName', e.target.value)} />
-          <PhoneInput id="ep-ecphone" label="جوال الطوارئ" required={false} value={f.emergencyContactPhone} showError={tried} onChange={(v, e) => { set('emergencyContactPhone', v); setEcPhoneErr(e); }} />
-        </div>
-      </div>
-      <div className="form-section">
-        <div className="form-section-title">الحالة الطبية</div>
-        <div className="grid-form">
-          <Input id="ep-complaint" label="الشكوى الرئيسية" value={f.mainComplaint} onChange={(e) => set('mainComplaint', e.target.value)} />
-          <DiagnosisField id="ep-diag" label="التشخيص" value={f.diagnosis} dref={f.diagnosisRef} onChange={(text, dref) => setF((x) => ({ ...x, diagnosis: text, diagnosisRef: dref }))} />
-        </div>
-        <TextArea id="ep-history" label="التاريخ المرضي" value={f.medicalHistory} onChange={(v) => set('medicalHistory', v)} />
-        <TextArea id="ep-notes" label="ملاحظات" value={f.notes} onChange={(v) => set('notes', v)} />
-      </div>
+      {/* الوظيفة والنشاط والطبيب المسؤول والعنوان والطوارئ والحالة الطبية اتشالوا من التعديل (طلب الدكتور ٨/١١) —
+          قيمهم المتسجلة بتفضل زي ما هي في الملف (النموذج بيحفظ نفس القيم من غير ما يلمسها) */}
     </Modal>
   );
 }

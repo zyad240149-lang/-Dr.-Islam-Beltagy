@@ -1077,7 +1077,7 @@ textarea.input { height: auto; padding-block: 10px; resize: vertical; line-heigh
 .dxs__final .sh-notes { min-height: 90px; }
 .sh-dxmap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin-top: 4px; }
 .sh-notes { height: auto; min-height: 150px; flex: 1; padding: 8px; border: 1px solid var(--line); border-radius: 8px; resize: vertical; line-height: 1.6; }
-.sh-visit { display: grid; grid-template-columns: minmax(0, .9fr) minmax(230px, 260px) minmax(0, 1.4fr); gap: 18px; }
+.sh-visit { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.4fr); gap: 18px; }
 .sh-map { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
 .sh-map .bm-figure { margin: 0; }
 .sh-map .cx-chips { margin-top: 0; justify-content: center; }

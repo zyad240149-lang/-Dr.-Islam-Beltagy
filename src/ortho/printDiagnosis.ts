@@ -96,7 +96,7 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
       box(3, 'التاريخ المرضي المعروف', wrap('cols2', cks('n.hx', L.N_HX)) + row('التدخين', cks('n.smoke', L.YES_NO)) + line('أخرى', v('n.hx.other'))),
       box(4, 'الأدوية الحالية والحساسية', table('<th>اسم الدواء</th><th>الجرعة</th><th>عدد المرات</th>', (meds.length || compact ? meds : [{ name: '', dose: '', freq: '' }]).map((m) => `<tr><td>${esc(m.name)}</td><td>${esc(m.dose)}</td><td>${esc(m.freq)}</td></tr>`))
         + lbl('الحساسية', cks('n.allergy', L.N_ALLERGY)) + line('مواد أخرى', v('n.allergy.other')) + line('التفاصيل', v('n.allergy.details'))),
-      box(5, 'سبب الزيارة الحالية ومكان الألم وتفاصيل المشكلة', visitCols.length ? `<div class="g3" style="grid-template-columns:repeat(${visitCols.length},minmax(0,1fr))">${visitCols.map((x) => `<div>${x}</div>`).join('')}</div>` : '', 'wide'),
+      box(5, 'سبب الزيارة الحالية وتفاصيل المشكلة', visitCols.length ? `<div class="g3" style="grid-template-columns:repeat(${visitCols.length},minmax(0,1fr))">${visitCols.map((x) => `<div>${x}</div>`).join('')}</div>` : '', 'wide'),
     ]);
 
   // ---------- صفحة 2: Hip & Knee ----------

@@ -461,7 +461,7 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
           <Txt a={a} k="n.allergy.details" label="التفاصيل" />
         </Box>
 
-        <Box n={5} wide title="سبب الزيارة الحالية ومكان الألم وتفاصيل المشكلة">
+        <Box n={5} wide title="سبب الزيارة الحالية وتفاصيل المشكلة">
           <div className="sh-visit">
             <div>
               <div className="sh-lbl">الشكوى</div>
@@ -469,19 +469,6 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
               <Txt a={a} k="n.cc.other" label="أخرى" />
               <div className="sh-lbl">شكوى المريض (كتابةً)</div>
               <textarea className="sh-in sh-in--area" dir="auto" rows={3} aria-label="شكوى المريض كتابةً" placeholder="اكتب شكوى المريض بكلامه…" value={a.txt('n.cc.text')} onChange={(e) => a.set('n.cc.text', e.target.value)} />
-            </div>
-
-            <div className="sh-map">
-              <div className="sh-lbl">مكان الألم <small>(اختار المنطقة والجهة — ممكن أكتر من مكان)</small></div>
-              <BodyFigure key={view} view={view} compact selected={null} hovered={hovered} marked={new Set(sheet.pain)} onSelect={togglePain} onHover={setHovered} />
-              <div className="dx-hint">{hovered ? regionById(hovered)?.name : sheet.pain.length ? `${sheet.pain.length} ${sheet.pain.length > 1 ? 'أماكن' : 'مكان'}` : 'مفيش مكان متحدد'}</div>
-              {sheet.pain.length > 0 && (
-                <div className="cx-chips">
-                  {sheet.pain.map((k) => (
-                    <button key={k} type="button" className="cx-chip is-on" aria-label={`إلغاء ${painLabel(k)}`} onClick={() => onChange((x) => ({ ...x, pain: x.pain.filter((p) => p !== k) }))}>{painLabel(k)} ✕</button>
-                  ))}
-                </div>
-              )}
             </div>
 
             <div>

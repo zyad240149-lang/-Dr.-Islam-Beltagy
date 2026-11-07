@@ -1,27 +1,48 @@
 // «الأشعة والتحاليل الخاصة بالمريض» جوّه التشخيص: كل اللي الاستقبال رفعه في ملف المريض (patient_files) بيتعرض تلقائي في كل تشخيص.
 // الملفات مش بتتنسخ جوّه التشخيص — بتتقري من ملف المريض كل مرة، فمفيش تكرار ومابتختفيش بعد الحفظ أو مع تشخيص جديد.
 // «جديدة» = اترفعت بعد آخر تشخيص اتحفظ للمريض (غير التشخيص المفتوح)؛ الباقي «سابقة».
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Button } from '../components/ui';
+import { useToast } from '../hooks/useToast';
 import { db } from '../data/db';
 import { Icon } from '../utils/icons';
-import { fmtDate, fmtDateTime } from '../utils/format';
+import { fmtDate, fmtDateTime, todayYmd } from '../utils/format';
 import { FilePreviewModal } from '../components/DetailsHost';
 import { FILE_CATEGORY, downloadFile, fileTitle } from '../components/PatientExtras';
 import { ortho } from './data';
 import { usePatientFiles } from './files';
 import type { PatientFile, PatientFileCategory } from '../types';
 
-/** categories: يعرض تصنيفات معيّنة بس (أشعة عند الأشعة، سونار عند السونار، تحاليل عند التحاليل). hideEmpty: مايظهرش لو مفيش ملفات */
-export function PatientMedicalFiles({ patientId, excludeConsultId, categories, title = 'الأشعة والتحاليل الخاصة بالمريض', icon = 'doc', hideEmpty }: {
-  patientId: string; excludeConsultId?: string; categories?: PatientFileCategory[]; title?: string; icon?: string; hideEmpty?: boolean;
+/** categories: يعرض تصنيفات معيّنة بس (أشعة/سونار عند السونار، تحاليل عند التحاليل). hideEmpty: مايظهرش لو مفيش ملفات.
+ *  uploadCategory: زرار رفع للطبيب — الملف بيترفع في ملف المريض نفسه (نفس مكان رفع السكرتيرة) فبيظهر هنا وفي ملف المريض من غير تكرار */
+export function PatientMedicalFiles({ patientId, excludeConsultId, categories, title = 'الأشعة والتحاليل الخاصة بالمريض', icon = 'doc', hideEmpty, uploadCategory }: {
+  patientId: string; excludeConsultId?: string; categories?: PatientFileCategory[]; title?: string; icon?: string; hideEmpty?: boolean; uploadCategory?: PatientFileCategory;
 }) {
+  const toast = useToast();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const upload = async (list: FileList | null) => {
+    const all = Array.from(list ?? []);
+    if (!all.length || !uploadCategory) return;
+    setUploading(true);
+    let ok = 0, queued = 0; const failed: string[] = [];
+    for (const file of all) {
+      const r = await db.uploadPatientFile(patientId, file, '', {}, { category: uploadCategory, title: '', fileDate: todayYmd() });
+      if (r.ok) { ok++; if (r.queued) queued++; } else failed.push(`${file.name}: ${r.error}`);
+    }
+    setUploading(false);
+    if (inputRef.current) inputRef.current.value = '';
+    if (failed.length) toast.error(failed.join(' — '));
+    if (queued) toast.info('مفيش إنترنت — الملف اتحفظ على الجهاز وهيترفع لوحده لما الاتصال يرجع.');
+    if (ok - queued > 0) toast.success(ok - queued > 1 ? `تم رفع ${ok - queued} ملفات في ملف المريض.` : 'تم رفع الملف في ملف المريض.');
+  };
   const live = usePatientFiles(patientId);
   // ملفات الفواتير (invoices/) مش ملفات طبية
   const files: PatientFile[] | null = live.loading ? null : live.files.filter((f) => !f.filePath.includes('/invoices/') && (!categories || categories.includes(f.category)));
   const err = !!live.error && !live.files.length;
   const [preview, setPreview] = useState<PatientFile | null>(null);
   const [open, setOpen] = useState(true);
-  if (!patientId) return null;
+  if (!patientId) return uploadCategory ? <p className="cx-empty">الملفات والرفع بيظهروا بعد ما الكشف يتربط بملف المريض.</p> : null;
 
   const lastConsult = ortho.list('consultations', patientId)
     .filter((c) => c.id !== excludeConsultId)
@@ -43,6 +64,13 @@ export function PatientMedicalFiles({ patientId, excludeConsultId, categories, t
         {fresh.length > 0 && <span className="badge badge--warn">{fresh.length} جديد</span>}
         <Icon name={open ? 'chevron' : 'chevronLeft'} size={15} />
       </button>
+      {open && uploadCategory && (
+        <div className="pmf__up">
+          <Button size="sm" variant="outline" icon="upload" loading={uploading} onClick={() => inputRef.current?.click()}>رفع {FILE_CATEGORY[uploadCategory]}</Button>
+          <input ref={inputRef} type="file" hidden multiple accept="image/png,image/jpeg,image/webp,application/pdf" onChange={(e) => void upload(e.target.files)} />
+          <span className="muted-sm">بيترفع في ملف المريض — وأي ملف السكرتيرة ترفعه بتصنيف «{FILE_CATEGORY[uploadCategory]}» بيظهر هنا لوحده.</span>
+        </div>
+      )}
       {open && (err ? <p className="cx-empty">تعذّر تحميل الملفات — اتأكد من الاتصال بالإنترنت.</p>
         : files === null ? <p className="cx-empty">جاري التحميل…</p>
         : total === 0 ? <p className="cx-empty">مفيش {what} مرفوعة في ملف المريض. الاستقبال يقدر يرفعها من ملف المريض ← «ملفات الأشعة والتحاليل» (يختار التصنيف «{categories?.length === 1 ? FILE_CATEGORY[categories[0]] : 'أشعة'}»).</p>

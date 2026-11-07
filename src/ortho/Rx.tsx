@@ -38,7 +38,8 @@ function Section({ icon, title, children, aside }: { icon: string; title: string
   );
 }
 
-export function RxEditor({ value: c, onChange, patientId, region = '', onUploading }: { value: RxData; onChange: (f: (r: RxData) => RxData) => void; patientId: string; region?: string; onUploading?: (v: boolean) => void }) {
+/** rxOnly: جوّه الخطة العلاجية في الكشف — الروشتة بس (الأدوية + أشعة/سونار وتحاليل مطلوبة)؛ رفع الملفات في قسمي السونار والتحاليل */
+export function RxEditor({ value: c, onChange, patientId, region = '', onUploading, rxOnly }: { value: RxData; onChange: (f: (r: RxData) => RxData) => void; patientId: string; region?: string; onUploading?: (v: boolean) => void; rxOnly?: boolean }) {
   const toast = useToast();
   const [uploading, setUp] = useState(false);
   const [labQ, setLabQ] = useState('');
@@ -81,11 +82,11 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
   }
 
   const customLabs = c.labs.filter((l) => !LAB_GROUPS.some((g) => g.items.includes(l)));
-  return <div className="cx">
-    <Section icon="scan" title="الأشعة" aside={<>
-      <Button size="sm" variant="outline" icon="plus" onClick={() => set('imagingRequests', [...c.imagingRequests, { kind: 'xray', region, view: 'AP & Lateral' }])}>طلب أشعة</Button>
-      <Button size="sm" variant="outline" icon="camera" loading={uploading} disabled={!patientId} onClick={() => fileRef.current?.click()}>رفع صورة أشعة</Button>
-      <input ref={fileRef} type="file" hidden multiple accept="image/png,image/jpeg,image/webp,application/pdf" onChange={(e) => void upload(e.target.files)} />
+  const imagingSec = (
+    <Section key="img" icon="scan" title={rxOnly ? 'أشعة / سونار مطلوبة' : 'الأشعة'} aside={<>
+      <Button size="sm" variant="outline" icon="plus" onClick={() => set('imagingRequests', [...c.imagingRequests, { kind: 'xray', region, view: 'AP & Lateral' }])}>{rxOnly ? 'طلب أشعة / سونار' : 'طلب أشعة'}</Button>
+      {!rxOnly && <Button size="sm" variant="outline" icon="camera" loading={uploading} disabled={!patientId} onClick={() => fileRef.current?.click()}>رفع صورة أشعة</Button>}
+      {!rxOnly && <input ref={fileRef} type="file" hidden multiple accept="image/png,image/jpeg,image/webp,application/pdf" onChange={(e) => void upload(e.target.files)} />}
     </>}>
       {c.imagingRequests.length > 0 && (
         <div className="cx-rows">
@@ -100,12 +101,15 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
           <datalist id="cx-views">{XRAY_VIEWS.map((v) => <option key={v} value={v} />)}</datalist>
         </div>
       )}
-      {c.attachments.length > 0
-        ? <AttachmentThumbs items={c.attachments} onRemove={(path) => set('attachments', c.attachments.filter((a) => a.path !== path))} />
-        : c.imagingRequests.length === 0 && <p className="cx-empty">اطلب أشعة للمريض أو ارفع صورة الأشعة اللي معاه (صورة أو PDF، لحد 10 ميجا).</p>}
+      {rxOnly
+        ? c.imagingRequests.length === 0 && <p className="cx-empty">لو المريض محتاج أشعة أو سونار، اضغط «طلب أشعة / سونار» — بتتكتب في الروشتة.</p>
+        : c.attachments.length > 0
+          ? <AttachmentThumbs items={c.attachments} onRemove={(path) => set('attachments', c.attachments.filter((a) => a.path !== path))} />
+          : c.imagingRequests.length === 0 && <p className="cx-empty">اطلب أشعة للمريض أو ارفع صورة الأشعة اللي معاه (صورة أو PDF، لحد 10 ميجا).</p>}
     </Section>
-
-    <Section icon="receipt" title="العلاج — الروشتة" aside={<Button size="sm" variant="outline" icon="plus" onClick={() => set('medications', [...c.medications, emptyMed()])}>إضافة دواء</Button>}>
+  );
+  const medsSec = (
+    <Section key="meds" icon="receipt" title={rxOnly ? 'الأدوية' : 'العلاج — الروشتة'} aside={<Button size="sm" variant="outline" icon="plus" onClick={() => set('medications', [...c.medications, emptyMed()])}>إضافة دواء</Button>}>
       {/* اختيار من قسم «الأدوية»: ضغطة بتضيف الدواء بجرعته وتكراره ومدته، وضغطة تانية بتشيله */}
       <input className="input cx-medq" dir="auto" placeholder="ابحث في قايمة الأدوية…" value={medQ} onChange={(e) => setMedQ(e.target.value)} />
       {[...medGroups].map(([g, meds]) => (
@@ -134,8 +138,9 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
         )}
       <datalist id="cx-meds">{medCatalog().map((p) => <option key={p.name} value={p.name}>{p.group}</option>)}</datalist>
     </Section>
-
-    <Section icon="list" title={`التحاليل${c.labs.length ? ` (${c.labs.length})` : ''}`} aside={<>
+  );
+  const labsSec = (
+    <Section key="labs" icon="list" title={`${rxOnly ? 'تحاليل مطلوبة' : 'التحاليل'}${c.labs.length ? ` (${c.labs.length})` : ''}`} aside={rxOnly ? undefined : <>
       <Button size="sm" variant="outline" icon="upload" loading={uploading} disabled={!patientId} onClick={() => labFileRef.current?.click()}>رفع تحاليل</Button>
       <input ref={labFileRef} type="file" hidden multiple accept="image/png,image/jpeg,image/webp,application/pdf" onChange={(e) => void upload(e.target.files)} />
     </>}>
@@ -157,9 +162,12 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
       </div>
       {customLabs.length > 0 && <div className="cx-chips">{customLabs.map((l) => <button key={l} type="button" className="cx-chip is-on" onClick={() => toggleLab(l)}>{l} ✕</button>)}</div>}
     </Section>
-
-    <Section icon="doc" title="التعليمات وملاحظات الطبيب">
+  );
+  const notesSec = (
+    <Section key="notes" icon="doc" title="التعليمات وملاحظات الطبيب">
       <textarea className="input" rows={3} placeholder="مثال: راحة وتجنب طلوع السلم، كمادات تلج 15 دقيقة 3 مرات يوميًا، زيارات علاج طبيعي، رباط ضاغط…" value={c.plan} onChange={(e) => set('plan', e.target.value)} />
     </Section>
-  </div>;
+  );
+  // الروشتة في الكشف: الأدوية الأول، وبعدها المطلوب من أشعة/سونار وتحاليل
+  return <div className="cx">{rxOnly ? [medsSec, imagingSec, labsSec, notesSec] : [imagingSec, medsSec, labsSec, notesSec]}</div>;
 }

@@ -1839,3 +1839,7 @@ button.wa-link { border: 0; cursor: pointer; font-family: inherit; }
 .rg-pick__btns { display: inline-flex; gap: 4px; }
 .rg-pick__btn { min-width: 46px; padding: 3px 8px; font-size: 12.5px; border-radius: 8px; border: 1px solid var(--border, #d1d5db); background: transparent; color: inherit; cursor: pointer; }
 .rg-pick__btn.is-selected { background: var(--brand, #2563eb); border-color: var(--brand, #2563eb); color: #fff; }
+.pmf__up { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 6px 0 10px; }
+.plan-part { margin-bottom: 14px; border: 1px solid var(--border, #e5e7eb); border-radius: 12px; padding: 12px; }
+.plan-part__h { margin: 0 0 10px; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+.plan-part__n { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--brand, #2563eb); color: #fff; font-size: 13px; }

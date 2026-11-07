@@ -5,7 +5,7 @@ import { DOCTOR } from '../landing/content';
 import { fileNoText } from '../utils/phoneUtils';
 import { fmtDate } from '../utils/format';
 import { SIDE, type Consultation, type ExamSheet } from './data';
-import { SHEET_LISTS as L, bmiText, normSheet, painLabel, sheetHasContent } from './ExamSheet';
+import { SHEET_LISTS as L, bmiOf, bmiClass, bmiText, normSheet, painLabel, sheetHasContent } from './ExamSheet';
 import { RX_CSS, rxPageHtml } from './printRx';
 import { DX_SHEETS, FDX, PAIN_FOR_DD, dxGroupKey, dxSub, type DxSheetId } from './dxCatalog';
 import { TREATMENT, activeSheets, regionSheet, treatmentFilled, type Field, type RegionSheetDef } from './regionSheets';
@@ -92,7 +92,7 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
         + lbl('الوظيفة', wrap('row', cks('n.job', L.N_JOB))) + lbl('النشاط البدني', wrap('row', cks('n.activity', L.N_ACTIVITY)))),
       box(2, 'العلامات الحيوية والقياسات', line('ضغط الدم', v('n.bp.sys') || v('n.bp.dia') ? `<bdi>${v('n.bp.sys')} / ${v('n.bp.dia')} mmHg</bdi>` : '') + line('النبض', v('n.pulse') && `${v('n.pulse')} / دقيقة`)
         + line('درجة الحرارة', v('n.temp') && `${v('n.temp')} °C`) + line('معدل التنفس', v('n.rr') && `${v('n.rr')} / دقيقة`) + line('الوزن', v('n.wt') && `${v('n.wt')} كجم`)
-        + line('الطول', v('n.ht') && `${v('n.ht')} سم`) + line('مؤشر كتلة الجسم (BMI)', bmiText(s))),
+        + line('الطول', v('n.ht') && `${v('n.ht')} سم`) + line('مؤشر كتلة الجسم (BMI)', bmiText(s) && `<bdi>${bmiText(s)}</bdi> · ${bmiClass(bmiOf(s))?.ar ?? ''}`)),
       box(3, 'التاريخ المرضي المعروف', wrap('cols2', cks('n.hx', L.N_HX)) + row('التدخين', cks('n.smoke', L.YES_NO)) + line('أخرى', v('n.hx.other'))),
       box(4, 'الأدوية الحالية والحساسية', table('<th>اسم الدواء</th><th>الجرعة</th><th>عدد المرات</th>', (meds.length || compact ? meds : [{ name: '', dose: '', freq: '' }]).map((m) => `<tr><td>${esc(m.name)}</td><td>${esc(m.dose)}</td><td>${esc(m.freq)}</td></tr>`))
         + lbl('الحساسية', cks('n.allergy', L.N_ALLERGY)) + line('مواد أخرى', v('n.allergy.other')) + line('التفاصيل', v('n.allergy.details'))),

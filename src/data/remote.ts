@@ -32,6 +32,7 @@ export const map = {
     diagnosisRef: ref(r.diagnosis_condition_id, r.diagnosis_side),
     email: r.email ?? '', city: r.city ?? '', district: r.district ?? '', street: r.street ?? '', doctorId: r.doctor_id ?? null, signupMethod: r.signup_method ?? null, nationality: r.nationality ?? 'saudi', nationalityUnconfirmed: !!r.nationality_unconfirmed || !r.nationality, firstName: r.first_name ?? '', fatherName: r.father_name ?? '', familyName: r.family_name ?? '',
     phone2: r.phone2 ?? '', whatsappMode: r.whatsapp_mode ?? 'phone', whatsappPhone: r.whatsapp_phone ?? '',
+    occupation: r.occupation ?? [], activity: r.activity ?? [],
   }),
   patientRow: (p: Partial<Patient>) => {
     const o: Record<string, unknown> = {};
@@ -40,7 +41,7 @@ export const map = {
       notes: 'notes', emergencyContactName: 'emergency_contact_name', emergencyContactPhone: 'emergency_contact_phone', active: 'active',
       mainComplaint: 'main_complaint', diagnosis: 'diagnosis', medicalHistory: 'medical_history', email: 'email', city: 'city', district: 'district', street: 'street',
       nationality: 'nationality', firstName: 'first_name', fatherName: 'father_name', familyName: 'family_name', nationalityUnconfirmed: 'nationality_unconfirmed',
-      phone2: 'phone2', whatsappMode: 'whatsapp_mode', whatsappPhone: 'whatsapp_phone',
+      phone2: 'phone2', whatsappMode: 'whatsapp_mode', whatsappPhone: 'whatsapp_phone', occupation: 'occupation', activity: 'activity',
     };
     for (const [k, col] of Object.entries(m)) if (k in p) o[col] = (p as any)[k];
     if ('birthDate' in p) o.birth_date = p.birthDate || null;

@@ -161,6 +161,8 @@ export default function PatientProfile() {
               {patient.nationalId && <div><dt>{patient.nationality === 'non_saudi' ? 'رقم جواز السفر' : 'الرقم القومي'}</dt><dd className="num">{patient.nationalId}</dd></div>}
               <div><dt>تاريخ الميلاد</dt><dd>{patient.birthDate ? fmtDate(patient.birthDate) : '—'}</dd></div>
               <div><dt>الجنس</dt><dd>{patient.genderUnknown ? 'الجنس غير محدد' : patient.gender === 'male' ? 'رجل' : 'امرأة'}</dd></div>
+              <div><dt>الوظيفة</dt><dd>{patient.occupation?.length ? patient.occupation.join('، ') : '—'}</dd></div>
+              <div><dt>النشاط البدني</dt><dd>{patient.activity?.length ? patient.activity.join('، ') : '—'}</dd></div>
               <div><dt>كيف عرف عن المركز</dt><dd>{REFERRAL_SOURCE_LABEL[patient.referralSource] ?? '—'}</dd></div>
               <div><dt>طريقة التسجيل</dt><dd>{patient.signupMethod === 'google' ? <span className="badge badge--info">مسجّل بحساب Google</span> : patient.signupMethod === 'phone' ? 'رقم الجوال وكلمة المرور' : 'أُضيف من المركز'}</dd></div>
               <div><dt>البريد الإلكتروني</dt><dd>{patient.email || '—'}</dd></div>

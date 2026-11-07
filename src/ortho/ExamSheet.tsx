@@ -80,7 +80,7 @@ export function normSheet(s: unknown): ExamSheet {
 }
 // خانة 1 (البيانات الأساسية) و«زيارة جديدة / متابعة» بيتملوا تلقائي من ملف المريض أول ما الكشف يتفتح — مش محتوى
 const BASIC_KEYS = ['n.name', 'n.age', 'n.phone', 'n.address'];
-const isAutoOn = (o: string) => o.startsWith('n.visit|') || o.startsWith('n.gender|');
+const isAutoOn = (o: string) => o.startsWith('n.visit|') || o.startsWith('n.gender|') || o.startsWith('n.job|') || o.startsWith('n.activity|');
 export const sheetHasContent = (s: ExamSheet) =>
   s.on.some((o) => !isAutoOn(o)) || s.pain.length > 0 || s.meds.some((m) => m.name.trim())
   || Object.entries(s.txt).some(([k, v]) => !BASIC_KEYS.includes(k) && v.trim());
@@ -115,15 +115,22 @@ export function bmiOf(s: ExamSheet) {
 }
 // تصنيف الـBMI للكبار — «التقسيم السريع للاستخدام في العيادة» اللي بعته الدكتور (٦/١١)
 export type BmiTone = 'info' | 'ok' | 'warn' | 'danger';
-export function bmiClass(bmi: string): { label: string; tone: BmiTone } | null {
+export type BmiClass = { label: string; tone: BmiTone; ar: string; detail: string; ortho?: string };
+// جدول WHO للبالغين (١٨+) — الحد الأدنى لكل فئة
+export const BMI_BANDS: { min: number; label: string; tone: BmiTone; ar: string; detail: string; ortho?: string }[] = [
+  { min: 0, label: 'Underweight', tone: 'danger', ar: 'نحافة شديدة', detail: 'Severe thinness (<16)', ortho: 'راجع التغذية وكثافة العظام (هشاشة) — خطر أعلى لكسور الهشاشة وتأخر التئام الجروح' },
+  { min: 16, label: 'Underweight', tone: 'info', ar: 'نحافة متوسطة', detail: 'Moderate thinness (16–16.9)', ortho: 'راجع التغذية وكثافة العظام — خطر كسور الهشاشة' },
+  { min: 17, label: 'Underweight', tone: 'info', ar: 'نحافة بسيطة', detail: 'Mild thinness (17–18.4)' },
+  { min: 18.5, label: 'Normal', tone: 'ok', ar: 'وزن طبيعي', detail: 'Normal (18.5–24.9)' },
+  { min: 25, label: 'Overweight', tone: 'warn', ar: 'زيادة وزن', detail: 'Overweight (25–29.9)', ortho: 'زيادة الحمل على الركبة والفخذ — إنقاص الوزن جزء من علاج الخشونة' },
+  { min: 30, label: 'Obesity I', tone: 'danger', ar: 'سمنة درجة أولى', detail: 'Obesity class I (30–34.9)', ortho: 'خطر أعلى لخشونة الركبة — يُنصح ببرنامج إنقاص وزن قبل أي جراحة اختيارية' },
+  { min: 35, label: 'Obesity II', tone: 'danger', ar: 'سمنة درجة ثانية', detail: 'Obesity class II (35–39.9)', ortho: 'مضاعفات أعلى في تغيير المفاصل (TKA/THA): عدوى، جلطات، مشاكل الجرح — تحسين الوزن قبل الجراحة' },
+  { min: 40, label: 'Obesity III', tone: 'danger', ar: 'سمنة مفرطة درجة ثالثة', detail: 'Obesity class III (≥40)', ortho: 'خطر مرتفع جدًا لمضاعفات TKA/THA — كثير من المراكز تؤجل الجراحة الاختيارية حتى BMI < 40' },
+];
+export function bmiClass(bmi: string): BmiClass | null {
   const b = parseFloat(bmi);
   if (!(b > 0)) return null;
-  if (b < 18.5) return { label: 'Underweight', tone: 'info' };
-  if (b < 25) return { label: 'Normal', tone: 'ok' };
-  if (b < 30) return { label: 'Overweight', tone: 'warn' };
-  if (b < 35) return { label: 'Obesity I', tone: 'danger' };
-  if (b < 40) return { label: 'Obesity II', tone: 'danger' };
-  return { label: 'Obesity III', tone: 'danger' };
+  return [...BMI_BANDS].reverse().find((x) => b >= x.min)!;
 }
 /** «25.7 — Overweight» */
 export const bmiText = (s: ExamSheet) => { const b = bmiOf(s), c = bmiClass(b); return b ? (c ? `${b} — ${c.label}` : b) : ''; };
@@ -149,13 +156,16 @@ export function withPatientBasics(s: ExamSheet, p?: Patient | null): ExamSheet {
   const fill = (k: string, v: string) => { if (!(k in txt)) txt[k] = v; };
   fill('n.name', p.fullName ?? ''); fill('n.age', ageOf(p.birthDate)); fill('n.phone', p.phone ?? ''); fill('n.address', p.address ?? '');
   const g = p.genderUnknown ? '' : p.gender === 'male' ? 'ذكر' : p.gender === 'female' ? 'أنثى' : '';
-  const on = g && !s.on.some((o) => o.startsWith('n.gender|')) ? [...s.on, key('n.gender', g)] : s.on;
+  let on = g && !s.on.some((o) => o.startsWith('n.gender|')) ? [...s.on, key('n.gender', g)] : s.on;
+  // الوظيفة والنشاط من ملف المريض (لو لسه ما اتختارش حاجة منهم في الشيت)
+  for (const [grp, vals] of [['n.job', p.occupation], ['n.activity', p.activity]] as const)
+    if (vals?.length && !on.some((o) => o.startsWith(grp + '|'))) on = [...on, ...vals.map((v) => key(grp, v))];
   return { ...s, txt, on };
 }
 /** مريض تاني اتختار في الكشف: خانة 1 بتتملى من ملفه هو */
 export function resetPatientBasics(s: ExamSheet, p?: Patient | null): ExamSheet {
   const txt = Object.fromEntries(Object.entries(s.txt).filter(([k]) => !BASIC_KEYS.includes(k)));
-  return withPatientBasics({ ...s, txt, on: s.on.filter((o) => !o.startsWith('n.gender|')) }, p);
+  return withPatientBasics({ ...s, txt, on: s.on.filter((o) => !o.startsWith('n.gender|') && !o.startsWith('n.job|') && !o.startsWith('n.activity|')) }, p);
 }
 
 // اللي اتعدّل في خانة 1 ← ملف المريض (بيتبعت بعد حفظ الكشف). السن بيتحوّل لتاريخ ميلاد (نفس اليوم والشهر لو متسجلين).
@@ -169,6 +179,10 @@ export function sheetPatientPatch(s: ExamSheet, p: Patient, since?: ExamSheet): 
   if (changed('n.address') && 'n.address' in s.txt && tx(s, 'n.address') !== (p.address ?? '').trim()) patch.address = tx(s, 'n.address');
   const g = genderOf(s);
   if ((!since || genderOf(since) !== g) && g && (g !== p.gender || p.genderUnknown)) patch.gender = g;
+  for (const [grp, items, field] of [['n.job', N_JOB, 'occupation'], ['n.activity', N_ACTIVITY, 'activity']] as const) {
+    const now = picked(s, grp, items), was = since ? picked(since, grp, items) : null;
+    if ((was ? was.join('|') !== now.join('|') : now.length > 0) && now.join('|') !== (p[field] ?? []).join('|')) patch[field] = now;
+  }
   let badPhone = false;
   const phone = tx(s, 'n.phone');
   if (changed('n.phone') && phone && phone !== p.phone) {
@@ -220,7 +234,7 @@ export function sheetSummary(s: ExamSheet, side: Side = 'na') {
   const prev = join([...picked(s, 'x.prev', X_PREV), tx(s, 'x.prev.other')]);
   const rf = join([...picked(s, 'x.rf', X_RF), tx(s, 'x.rf.other')]);
   const female = has(s, 'n.gender', 'أنثى');
-  const job = picked(s, 'n.job', N_JOB)[0], activity = join(picked(s, 'n.activity', N_ACTIVITY), '، ');
+  const job = join(picked(s, 'n.job', N_JOB), '، '), activity = join(picked(s, 'n.activity', N_ACTIVITY), '، ');
   const miss = female ? picked(s, 'n.miss', N_MISS)[0] : '', preg = female ? picked(s, 'n.preg', N_PREG)[0] : '';
   const history = join([
     job && `الوظيفة: ${job}`,
@@ -359,7 +373,7 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
           {female && <Row label="الحالة"><Pick a={a} g="n.miss" items={N_MISS} /></Row>}
           {female && <Row label="حمل أو رضاعة"><Pick a={a} g="n.preg" items={N_PREG} /></Row>}
           <div className="sh-lbl">الوظيفة</div>
-          <div className="sh-inline"><Pick a={a} g="n.job" items={N_JOB} /></div>
+          <div className="sh-inline"><Checks a={a} g="n.job" items={N_JOB} /></div>
           <div className="sh-lbl">النشاط البدني</div>
           <div className="sh-inline"><Checks a={a} g="n.activity" items={N_ACTIVITY} /></div>
         </Box>
@@ -376,6 +390,22 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
           <Txt a={a} k="n.wt" label="الوزن" unit="كجم" num />
           <Txt a={a} k="n.ht" label="الطول" unit="سم" num />
           <div className="sh-line"><span className="sh-line__l">مؤشر كتلة الجسم (BMI)</span><output className={`sh-bmi num${bmiCls ? ` sh-bmi--${bmiCls.tone}` : ''}`}>{bmi || '—'}{bmiCls && <small className="sh-bmi__c">{bmiCls.label}</small>}</output></div>
+          {bmiCls && (() => {
+            const age = parseFloat(a.txt('n.age'));
+            const child = age > 0 && age < 18;
+            const pct = Math.min(100, Math.max(0, ((parseFloat(bmi) - 14) / (45 - 14)) * 100));
+            return (
+              <div className="sh-bmi-info">
+                {child
+                  ? <div className="sh-bmi-info__warn">⚠ المريض أقل من ١٨ سنة — التصنيف ده للبالغين؛ استخدم BMI-for-age percentiles حسب السن والنوع</div>
+                  : <>
+                      <div className="sh-bmi-scale" aria-hidden><i style={{ insetInlineStart: `${pct}%` }} /></div>
+                      <div className="sh-bmi-info__t"><b>{bmiCls.ar}</b> · <span dir="ltr">{bmiCls.detail}</span></div>
+                      {bmiCls.ortho && <div className="sh-bmi-info__o">🦴 {bmiCls.ortho}</div>}
+                    </>}
+              </div>
+            );
+          })()}
         </Box>
 
         <Box n={3} title="التاريخ المرضي المعروف">

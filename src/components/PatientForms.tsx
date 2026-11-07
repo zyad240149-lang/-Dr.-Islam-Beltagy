@@ -14,6 +14,7 @@ import { LinkedFiles } from './DetailsHost';
 import { PhysioInlineSections, newPhysioInline, savePhysioInline, validatePhysioInline, type PhysioInline } from './PhysioTab';
 import { useAuth } from '../services/auth';
 import { TextPick } from './TextPick';
+import { SHEET_LISTS } from '../ortho/ExamSheet';
 import PlanSessionBooking, { SessionRowsEditor, bookDraftSessions, defaultPlanDoctor, emptyRow, sessionRowIssues, suggestSessionRows, type SessionRow } from './PlanSessionBooking';
 import { EMAIL_RE, REFERRAL_SOURCE_LABEL, WEEKDAY_LABEL, addDaysYmd, fmtDate, fmtTime, money, planScheduleError, planScheduleFor, planTotalSessions, sessionsLabel, todayYmd, wordCount } from '../utils/format';
 import type { InitialAssessment, Patient, PlanStatus, ReferralSource, TreatmentPlan } from '../types';
@@ -36,6 +37,27 @@ const PAIN_ONSET_OPTS = opt(['مفاجئ (Sudden)', 'تدريجي (Gradual)', '�
 const COMPLAINT_OPTS = opt(['ألم (Pain)', 'تيبّس (Stiffness)', 'ضعف عضلي (Weakness)', 'تنميل/وخز (Numbness / Tingling)', 'تورّم (Swelling)', 'محدودية الحركة (Limited Movement)',
   'صعوبة في المشي (Difficulty Walking)', 'مشاكل توازن (Balance Problems)', 'شد عضلي (Muscle Spasm)', 'صداع (Headache)', 'مشكلة في القوام (Posture Problem)',
   'إصابة رياضية (Sports Injury)', 'تأهيل بعد عملية (Post-operative Rehabilitation)', 'تأهيل عصبي (Neurological Rehabilitation)']);
+
+// الوظيفة والنشاط البدني (أكتر من اختيار) — نفس قوائم خانة 1 في الكشف
+function MultiChips({ label, items, value, onChange }: { label: string; items: string[]; value: string[]; onChange: (v: string[]) => void }) {
+  return (
+    <div className="field" style={{ gridColumn: '1 / -1' }}>
+      <label>{label}</label>
+      <div className="seg" style={{ flexWrap: 'wrap' }}>
+        {items.map((x) => {
+          const on = value.includes(x);
+          return <button key={x} type="button" aria-pressed={on} className={`seg__btn ${on ? 'active' : ''}`} onClick={() => onChange(on ? value.filter((v) => v !== x) : [...value, x])}>{x}</button>;
+        })}
+      </div>
+    </div>
+  );
+}
+const JobActivity = ({ f, set }: { f: { occupation?: string[]; activity?: string[] }; set: (k: 'occupation' | 'activity', v: string[]) => void }) => (
+  <>
+    <MultiChips label="الوظيفة" items={SHEET_LISTS.N_JOB} value={f.occupation ?? []} onChange={(v) => set('occupation', v)} />
+    <MultiChips label="النشاط البدني" items={SHEET_LISTS.N_ACTIVITY} value={f.activity ?? []} onChange={(v) => set('activity', v)} />
+  </>
+);
 
 export function EditPatientModal({ patient, onClose }: { patient: Patient; onClose: () => void }) {
   const toast = useToast();
@@ -85,6 +107,7 @@ export function EditPatientModal({ patient, onClose }: { patient: Patient; onClo
           <Input id="ep-email" label="البريد الإلكتروني" dir="ltr" value={f.email ?? ''} onChange={(e) => set('email', e.target.value)} />
           <Select id="ep-gender" label="النوع" value={f.gender} onChange={(e) => set('gender', e.target.value as Patient['gender'])} options={[...(!f.gender ? [{ value: '', label: '— غير محدد —' }] : []), { value: 'male', label: 'رجل' }, { value: 'female', label: 'امرأة' }]} />
           <Input id="ep-birth" label="تاريخ الميلاد" type="date" value={f.birthDate} max={todayYmd()} onChange={(e) => set('birthDate', e.target.value)} />
+          <JobActivity f={f} set={set} />
           <Select id="ep-doctor" label="الطبيب المسؤول" value={f.doctorId ?? ''} onChange={(e) => set('doctorId', e.target.value || null)} options={[{ value: '', label: 'غير محدد' }, ...db.allTherapists().filter((t) => t.active || t.id === f.doctorId).map((t) => ({ value: t.id, label: t.name }))]} />
           <Select id="ep-source" label="كيف عرف عن المركز" value={f.referralSource} onChange={(e) => set('referralSource', e.target.value as ReferralSource)} options={Object.entries(REFERRAL_SOURCE_LABEL).map(([value, label]) => ({ value, label }))} />
         </div>
@@ -152,7 +175,7 @@ function IdentityFields({ idp, f, set, errors }: { idp: string; f: { firstName?:
 export function NewPatientModal({ onClose, onCreated }: { onClose: () => void; onCreated: (id: string) => void }) {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
-  const [f, setF] = useState({ nationality: 'saudi' as 'saudi' | 'non_saudi', firstName: '', fatherName: '', familyName: '', fullName: '', phone: '', email: '', gender: 'male' as 'male' | 'female', birthDate: '', nationalId: '', city: '', district: '', street: '', address: '', notes: '', doctorId: '', referralSource: 'google' as ReferralSource });
+  const [f, setF] = useState({ nationality: 'saudi' as 'saudi' | 'non_saudi', firstName: '', fatherName: '', familyName: '', fullName: '', phone: '', email: '', gender: 'male' as 'male' | 'female', birthDate: '', nationalId: '', city: '', district: '', street: '', address: '', notes: '', doctorId: '', referralSource: 'google' as ReferralSource, occupation: [] as string[], activity: [] as string[] });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [phoneErr, setPhoneErr] = useState<PhoneErrorCode | null>('required');
   const [contact, setContact] = useState(() => contactOf(null));
@@ -200,6 +223,7 @@ export function NewPatientModal({ onClose, onCreated }: { onClose: () => void; o
           <Select id="np-gender" label="الجنس" value={f.gender} onChange={(e) => set('gender', e.target.value as 'male' | 'female')} options={[{ value: 'male', label: 'رجل' }, { value: 'female', label: 'امرأة' }]} />
           <ContactFields idp="np" value={contact} onChange={setContact} onErrors={setContactErrs} showError={tried} />
           {errors.contact && <div className="alert alert-danger" style={{ gridColumn: '1 / -1' }}>{errors.contact}</div>}
+          <JobActivity f={f} set={set} />
         </div>
       </div>
       <div className="form-section">

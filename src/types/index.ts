@@ -64,6 +64,8 @@ export interface Patient {
   nationality?: 'saudi' | 'non_saudi';
   nationalityUnconfirmed?: boolean;
   genderUnknown?: boolean; // الجنس مش متسجّل (مرضى الملف القديم) — gender بيفضل 'male' كقيمة افتراضية للحسابات بس // جنسية اتحطت افتراضيًا وقت الاستيراد — لازم تتراجع
+  occupation?: string[]; // الوظيفة (أكتر من اختيار — هجرة 953)
+  activity?: string[]; // النشاط البدني
   firstName?: string; fatherName?: string; familyName?: string; // الاسم مقسّم — fullName = الأجزاء مع بعض // طريقة تسجيله في الموقع (null = اتضاف من الإدارة)
 }
 

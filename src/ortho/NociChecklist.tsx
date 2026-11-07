@@ -26,13 +26,16 @@ export function nociSummary(s: ExamSheet): string {
   return `Nociplastic pain checklist: ${n}/10 — ${verdict(n)} (${NP_ITEMS.filter((i) => s.on.includes(`np|${i}`)).join('; ')})`;
 }
 
+/** مقفول افتراضيًا (بقى جوّه «طبيعة الألم» في الشيت العام — ٨/١١): بيتفتح بالزرار، وكشف قديم اتعلّم فيه بيفضل مفتوح */
+export const nociOpen = (s: ExamSheet) => !s.on.includes('np|closed') && (s.on.includes('np|open') || count(s) > 0);
+const setOpen = (open: boolean) => (x: ExamSheet): ExamSheet => ({ ...x, on: [...x.on.filter((o) => o !== 'np|closed' && o !== 'np|open'), open ? 'np|open' : 'np|closed'] });
+
 export function NociChecklist({ sheet, onChange }: { sheet: ExamSheet; onChange: (f: (s: ExamSheet) => ExamSheet) => void }) {
   const a = sheetApi(sheet, onChange);
-  if (a.has('np', 'closed')) {
+  if (!nociOpen(sheet)) {
     return (
       <div className="ra-add" dir="rtl">
-        <button type="button" className="btn btn--outline btn--sm" onClick={() => a.toggle('np', 'closed')}><Icon name="plus" size={14} /> فتح Nociplastic Pain Checklist</button>
-        <span className="muted-sm">مقفول — اللي اتعلّم فيه محفوظ</span>
+        <button type="button" className="btn btn--outline btn--sm" onClick={() => onChange(setOpen(true))}><Icon name="plus" size={14} /> فتح تقييم الألم النوسيبلاستيك (Nociplastic Pain Checklist)</button>
       </div>
     );
   }
@@ -41,7 +44,7 @@ export function NociChecklist({ sheet, onChange }: { sheet: ExamSheet; onChange:
     <section className="np">
       <header className="ra-head" dir="rtl">
         <h3>تقييم الألم النوسيبلاستيك <span dir="ltr">(Nociplastic Pain Checklist)</span></h3>
-        <button type="button" className="ra-head__x" onClick={() => a.toggle('np', 'closed')}>إغلاق</button>
+        <button type="button" className="ra-head__x" onClick={() => onChange(setOpen(false))}>إغلاق</button>
       </header>
       <div className="np-body" dir="ltr">
         <h4 className="np-title">NOCIPLASTIC PAIN <span>CHECKLIST</span></h4>

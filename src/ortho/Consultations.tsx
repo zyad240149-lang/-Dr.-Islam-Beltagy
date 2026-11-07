@@ -12,7 +12,6 @@ import { openVisitFor } from './visits';
 import { SHEET_ORDER, SHEET_TAB, TREATMENT, activeSheets, regionSheet, removeSheet, sheetFilled, type SheetId } from './regionSheets';
 import { US_SHEETS, usFilled, usImage } from './ultrasoundSheets';
 import { VoiceDictation } from '../components/VoiceDictation';
-import { NociChecklist } from './NociChecklist';
 import { RegionSheetForm, SheetSwitch } from './RegionSheet';
 import { useToast } from '../hooks/useToast';
 import { IMAGING_KIND, IMAGING_STATUS, REGIONS, SIDE, isIncomplete, isUnlinked, ortho, useOrthoVersion, type Attachment, type Consultation, type Injection, type ImagingKind, type ImagingRequest, type Medication, type Side } from './data';
@@ -401,7 +400,6 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
             {!examActive.length && <p className="sh-pickfirst">اختار المنطقة اللي هتكشف عليها من فوق (أو حدد مكان الألم في الشيت العام) — شيتها هيتفتح هنا. لو اخترت منطقتين، الشيتين بيتفتحوا مع بعض.</p>}
             {examActive.map(renderSheet)}
             {/* اختياري: تقييم الروماتويد ACR/EULAR 2010 — مش جزء إجباري من الكشف */}
-            <NociChecklist sheet={sheet} onChange={changeSheet} />
           </>
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('nurse')}>رجوع: الشيت العام</Button>

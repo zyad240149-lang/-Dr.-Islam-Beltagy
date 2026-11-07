@@ -15,7 +15,7 @@ import { DOCTOR_PREFIXES, REGION_SHEETS, TREATMENT, regionSummary, sheetFilled, 
 import { DxSheet } from './DxSheet';
 import { raCalc, raSummary } from './raScore';
 import { RaAssessment } from './RaAssessment';
-import { nociSummary } from './NociChecklist';
+import { NociChecklist, nociOpen, nociSummary } from './NociChecklist';
 import { dxSummary } from './dxCatalog';
 import { medCatalog } from './clinicalLists';
 
@@ -90,7 +90,7 @@ export const sheetHasContent = (s: ExamSheet) =>
   || Object.entries(s.txt).some(([k, v]) => !BASIC_KEYS.includes(k) && v.trim());
 /** فيه حاجة اتكتبت في الشيت العام (غير اللي اتملى تلقائي من ملف المريض) */
 export const nurseStarted = (s: ExamSheet) =>
-  s.on.some((o) => (o.startsWith('n.') || o.startsWith('tr.') || o.startsWith('ra.')) && !isAutoOn(o)) || s.pain.length > 0 || s.meds.some((m) => m.name.trim())
+  s.on.some((o) => (o.startsWith('n.') || o.startsWith('tr.') || o.startsWith('ra.') || (o.startsWith('np|') && o !== 'np|closed' && o !== 'np|open')) && !isAutoOn(o)) || s.pain.length > 0 || s.meds.some((m) => m.name.trim())
   || Object.entries(s.txt).some(([k, v]) => (k.startsWith('n.') || k.startsWith('tr.') || k.startsWith('ra.')) && !BASIC_KEYS.includes(k) && v.trim());
 /** شيت التروما جوّه الشيت العام: بيظهر لما فيه إصابة حديثة أو اتكتب فيه قبل كده */
 export const traumaShown = (s: ExamSheet) => has(s, 'n.injury', 'نعم') || sheetFilled(s, 'trauma');
@@ -564,7 +564,7 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
         </Box>
 
         {GEN_BOXES.map((b, i) => (
-          <Box key={b.id} n={6 + i} wide={b.wide || (b.id === 'ms' && raOpen)} tone={b.id === 'rf' ? 'red' : undefined} title={b.title}>
+          <Box key={b.id} n={6 + i} wide={b.wide || (b.id === 'ms' && raOpen) || (b.id === 'nature' && nociOpen(sheet))} tone={b.id === 'rf' ? 'red' : undefined} title={b.title}>
             {b.f.map((f) => ('g' in f ? (
               <div key={f.g}>
                 {f.label && <div className="sh-lbl">{f.label}</div>}
@@ -574,6 +574,8 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
             ) : <Txt key={f.k} a={a} k={f.k} label={f.label} stack={f.stack} />))}
             {/* تقييم الروماتويد ACR/EULAR 2010 جوّه «التيبس الصباحي» — فتح وقفل */}
             {b.id === 'ms' && <RaAssessment sheet={sheet} onChange={onChange} />}
+            {/* Nociplastic Pain Checklist جوّه «طبيعة الألم» — فتح وقفل */}
+            {b.id === 'nature' && <NociChecklist sheet={sheet} onChange={onChange} />}
             {b.id !== 'sum' && <><div className="sh-lbl">ملاحظات</div>
             <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt(`n.bn.${b.id}`)} onChange={(e) => a.set(`n.bn.${b.id}`, e.target.value)} /></>}
           </Box>

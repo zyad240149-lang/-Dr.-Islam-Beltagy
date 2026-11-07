@@ -6,6 +6,12 @@ import { ConfirmDialog, useCan } from '../components/common';
 import { AREA_LABEL, OP_DESC, OP_LABEL, ROLE_DESC, ROLE_ICON, ROLE_LABEL } from '../services/permissions';
 import { AREAS, OPS, ROLES } from '../services/defaultPermissions';
 import { AREA_GROUPS, AREA_HELP } from '../services/permissionHelp';
+
+// أقسام مش موجودة في نظام العيادة (من نظام العلاج الطبيعي القديم أو اتشالت) — مابتظهرش في صفحة الصلاحيات
+const HIDDEN = new Set<Area>(['sessions', 'plans', 'therapists', 'packages', 'pkg_checkin', 'physio', 'installments', 'discounts', 'loyalty', 'products', 'bodymap',
+  'accounting.access', 'accounting.expenses.create', 'accounting.expenses.approve', 'accounting.purchases.manage', 'accounting.payroll.view', 'accounting.payroll.manage', 'accounting.journals.create', 'accounting.journals.post', 'accounting.reports.view', 'accounting.settings.manage', 'accounting.periods.close']);
+const shown = (a: Area) => a !== 'roles' && a !== 'payroll' && !HIDDEN.has(a);
+const GROUPS = AREA_GROUPS.map((g) => ({ ...g, areas: g.areas.filter((a) => shown(a) && AREAS.includes(a)) })).filter((g) => g.areas.length > 0);
 import { useToast } from '../hooks/useToast';
 import { Icon } from '../utils/icons';
 import type { Area, Op, PermissionMatrix, Role } from '../types';
@@ -112,10 +118,10 @@ export default function Roles() {
           {role === 'system_admin' && <div className="alert alert-info" style={{ marginBottom: 12 }}>المدير العام يملك كل الصلاحيات دائمًا ولا يمكن تقييده، حتى ما يُقفل النظام.</div>}
           <div className="table-wrap"><table className="table perm-table">
             <thead><tr><th>القسم</th>{OPS.map((o) => <th key={o}>{OP_LABEL[o]}</th>)}<th>الكل</th></tr></thead>
-            <tbody>{AREA_GROUPS.map((g) => (
+            <tbody>{GROUPS.map((g) => (
               <Fragment key={g.title}>
                 <tr className="perm-group"><td colSpan={OPS.length + 2}><strong>{g.title}</strong> <span className="muted" style={{ fontSize: 12.5 }}>— {g.hint}</span></td></tr>
-                {g.areas.filter((a) => a !== 'roles' && a !== 'payroll' && AREAS.includes(a)).map((a) => {
+                {g.areas.map((a) => {
                   const h = AREA_HELP[a]; const single = !!h.ops && Object.keys(h.ops).length === 1;
                   return (
                     <tr key={a}>
@@ -148,7 +154,7 @@ export default function Roles() {
         <div className="card__body">
           <div className="table-wrap"><table className="table perm-table">
             <thead><tr><th>القسم</th>{ROLES.map((r) => <th key={r}>{ROLE_LABEL[r]}</th>)}</tr></thead>
-            <tbody>{AREAS.filter((a) => a !== 'roles' && a !== 'payroll').map((a) => (
+            <tbody>{AREAS.filter(shown).map((a) => (
               <tr key={a}><td style={{ fontWeight: 600 }}>{AREA_LABEL[a]}</td>{ROLES.map((r) => {
                 const ops = draft[r]?.[a] ?? [];
                 return <td key={r} style={{ fontSize: 12 }}>{ops.length === 0 ? <span className="muted">—</span> : ops.length === 4 ? 'كامل' : ops.map((o) => OP_LABEL[o]).join('، ')}</td>;

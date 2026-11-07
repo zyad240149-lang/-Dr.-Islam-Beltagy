@@ -22,6 +22,11 @@ import { medCatalog } from './clinicalLists';
 const N_VISIT = ['زيارة جديدة', 'متابعة'];
 const N_GENDER = ['ذكر', 'أنثى'];
 const N_MARITAL = ['أعزب', 'متزوج', 'مطلق', 'أرمل'];
+// طلبات الدكتور (٦/١١): الوظيفة + النشاط في البيانات الأساسية، و«آنسة / مدام» و«حمل / رضاعة» للستات
+const N_JOB = ['ست بيت', 'أعمال مكتبية', 'أعمال يدوية', 'لا يعمل', 'طفل'];
+const N_ACTIVITY = ['بيمارس رياضة بشكل احترافي', 'بيمارس رياضة أحيانًا', 'مجهود كبير مؤخرًا'];
+const N_MISS = ['آنسة', 'مدام'];
+const N_PREG = ['لا يوجد', 'حمل', 'رضاعة'];
 const N_HX_NONE = 'لا توجد أمراض معروفة';
 const N_HX = [N_HX_NONE, 'ضغط الدم', 'السكر', 'أمراض القلب', 'أمراض الغدة الدرقية', 'أمراض الصدر / التنفسي', 'أمراض الكلى', 'أمراض المعدة / القولون', 'هشاشة العظام', 'أمراض روماتيزمية', 'أورام'];
 const YES_NO = ['نعم', 'لا'];
@@ -56,7 +61,7 @@ const X_IMG = ['X-ray', 'MRI', 'CT', 'Ultrasound'];
 const X_PLAN = ['Medication', 'Physiotherapy', 'Activity modification', 'Injection / Intervention', 'Brace / Support', 'Surgery (if indicated)'];
 // نفس البنود لطباعة التشخيص (printDiagnosis) عشان الورقة المطبوعة تفضل مطابقة للشاشة
 export const SHEET_LISTS = {
-  N_VISIT, N_GENDER, N_MARITAL, N_HX, YES_NO, N_ALLERGY, N_CC, N_SINCE,
+  N_VISIT, N_GENDER, N_MARITAL, N_JOB, N_ACTIVITY, N_MISS, N_PREG, N_HX, YES_NO, N_ALLERGY, N_CC, N_SINCE,
   X_CC, X_DUR, X_SIDE, X_ONSET, X_COURSE, X_PREV, X_RF, X_DERM, X_PALP_HIP, X_PALP_KNEE, X_ROM_HIP, X_ROM_KNEE,
   X_PATMOB, X_SPROM, X_MRC, X_REFLEX, X_ST_HIP, X_ST_KNEE, X_IMG, X_PLAN,
 };
@@ -108,6 +113,20 @@ export function bmiOf(s: ExamSheet) {
   const w = parseFloat(tx(s, 'n.wt')), h = parseFloat(tx(s, 'n.ht')) / 100;
   return w > 0 && h > 0.5 && h < 2.6 ? (w / (h * h)).toFixed(1) : '';
 }
+// تصنيف الـBMI للكبار — «التقسيم السريع للاستخدام في العيادة» اللي بعته الدكتور (٦/١١)
+export type BmiTone = 'info' | 'ok' | 'warn' | 'danger';
+export function bmiClass(bmi: string): { label: string; tone: BmiTone } | null {
+  const b = parseFloat(bmi);
+  if (!(b > 0)) return null;
+  if (b < 18.5) return { label: 'Underweight', tone: 'info' };
+  if (b < 25) return { label: 'Normal', tone: 'ok' };
+  if (b < 30) return { label: 'Overweight', tone: 'warn' };
+  if (b < 35) return { label: 'Obesity I', tone: 'danger' };
+  if (b < 40) return { label: 'Obesity II', tone: 'danger' };
+  return { label: 'Obesity III', tone: 'danger' };
+}
+/** «25.7 — Overweight» */
+export const bmiText = (s: ExamSheet) => { const b = bmiOf(s), c = bmiClass(b); return b ? (c ? `${b} — ${c.label}` : b) : ''; };
 export const painLabel = (k: string) => {
   const [id, sd] = k.split(':');
   const r = regionById(id);
@@ -200,7 +219,14 @@ export function sheetSummary(s: ExamSheet, side: Side = 'na') {
   const onset = picked(s, 'x.onset', X_ONSET)[0], course = picked(s, 'x.course', X_COURSE)[0];
   const prev = join([...picked(s, 'x.prev', X_PREV), tx(s, 'x.prev.other')]);
   const rf = join([...picked(s, 'x.rf', X_RF), tx(s, 'x.rf.other')]);
+  const female = has(s, 'n.gender', 'أنثى');
+  const job = picked(s, 'n.job', N_JOB)[0], activity = join(picked(s, 'n.activity', N_ACTIVITY), '، ');
+  const miss = female ? picked(s, 'n.miss', N_MISS)[0] : '', preg = female ? picked(s, 'n.preg', N_PREG)[0] : '';
   const history = join([
+    job && `الوظيفة: ${job}`,
+    activity && `النشاط: ${activity}`,
+    miss && `الحالة: ${miss}`,
+    preg && preg !== 'لا يوجد' && `⚠ ${preg}`,
     tx(s, 'n.onset') && `بداية المشكلة: ${tx(s, 'n.onset')}`,
     pain && `مكان الألم: ${pain}`,
     since && `منذ: ${since}`,
@@ -218,7 +244,7 @@ export function sheetSummary(s: ExamSheet, side: Side = 'na') {
   ], '\n');
 
   const bp = join([tx(s, 'n.bp.sys'), tx(s, 'n.bp.dia')], '/');
-  const bmi = bmiOf(s);
+  const bmi = bmiText(s);
   const vitals = join([
     bp && `BP ${bp} mmHg`, tx(s, 'n.pulse') && `Pulse ${tx(s, 'n.pulse')}/min`, tx(s, 'n.temp') && `Temp ${tx(s, 'n.temp')}°C`,
     tx(s, 'n.rr') && `RR ${tx(s, 'n.rr')}/min`, tx(s, 'n.wt') && `Wt ${tx(s, 'n.wt')} kg`, tx(s, 'n.ht') && `Ht ${tx(s, 'n.ht')} cm`, bmi && `BMI ${bmi}`,
@@ -302,6 +328,8 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
   const [view, setView] = useState<BodyView>('front');
   const [hovered, setHovered] = useState<string | null>(null);
   const bmi = bmiOf(sheet);
+  const bmiCls = bmiClass(bmi);
+  const female = a.has('n.gender', 'أنثى');
   const togglePain = (id: string, side: PinSide) => {
     const k = side ? `${id}:${side}` : id;
     if (!sheet.pain.length) onFirstPain(id, side);
@@ -328,6 +356,12 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
           <Txt a={a} k="n.name" label="الاسم" />
           <Txt a={a} k="n.age" label="السن" unit="سنة" num />
           <Row label="النوع"><Pick a={a} g="n.gender" items={N_GENDER} /></Row>
+          {female && <Row label="الحالة"><Pick a={a} g="n.miss" items={N_MISS} /></Row>}
+          {female && <Row label="حمل أو رضاعة"><Pick a={a} g="n.preg" items={N_PREG} /></Row>}
+          <div className="sh-lbl">الوظيفة</div>
+          <div className="sh-inline"><Pick a={a} g="n.job" items={N_JOB} /></div>
+          <div className="sh-lbl">النشاط البدني</div>
+          <div className="sh-inline"><Checks a={a} g="n.activity" items={N_ACTIVITY} /></div>
         </Box>
 
         <Box n={2} title="العلامات الحيوية والقياسات">
@@ -341,7 +375,7 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
           <Txt a={a} k="n.rr" label="معدل التنفس" unit="/ دقيقة" num />
           <Txt a={a} k="n.wt" label="الوزن" unit="كجم" num />
           <Txt a={a} k="n.ht" label="الطول" unit="سم" num />
-          <div className="sh-line"><span className="sh-line__l">مؤشر كتلة الجسم (BMI)</span><output className="sh-bmi num">{bmi || '—'}</output></div>
+          <div className="sh-line"><span className="sh-line__l">مؤشر كتلة الجسم (BMI)</span><output className={`sh-bmi num${bmiCls ? ` sh-bmi--${bmiCls.tone}` : ''}`}>{bmi || '—'}{bmiCls && <small className="sh-bmi__c">{bmiCls.label}</small>}</output></div>
         </Box>
 
         <Box n={3} title="التاريخ المرضي المعروف">

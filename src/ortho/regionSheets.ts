@@ -6,7 +6,7 @@
 import type { ExamSheet, Side } from './data';
 import { dxSummary, type DxSheetId } from './dxCatalog';
 
-export type SheetId = 'hipknee' | 'ankle' | 'neckshoulder' | 'hand' | 'lumbar' | 'peds' | 'cast' | 'postop';
+export type SheetId = 'hipknee' | 'ankle' | 'neckshoulder' | 'hand' | 'lumbar' | 'peds' | 'trauma' | 'cast' | 'postop';
 type Row3 = [label: string, sub: string, color?: string];
 export type Field =
   | { t: 'checks'; g: string; items: string[]; label?: string; none?: string; cols?: boolean }
@@ -189,6 +189,76 @@ export const REGION_SHEETS: RegionSheetDef[] = [
       notes('Notes / Diagrams'),
     ],
   },
+  // شيت التروما (Orthopedic Trauma Assessment Sheet) — نفس الصورة اللي بعتها الدكتور (٧/١١): بيتضاف من «+ منطقة تانية…»
+  {
+    id: 'trauma', prefix: 'tr', tab: 'شيت التروما', title: 'ORTHOPEDIC TRAUMA ASSESSMENT SHEET',
+    boxes: [
+      { title: 'History of Trauma', role: 'hx', f: [
+        { t: 'checks', g: 'mech', label: 'Mechanism of Injury:', items: ['Road Traffic Accident (RTA)', 'Fall from height', 'Fall on same level', 'Direct trauma', 'Sports injury', 'Twisting injury'] },
+        { t: 'text', k: 'mech.other', label: 'Other:' },
+        { t: 'text', k: 'site', label: 'Site of injury:' }, { t: 'side' },
+        { t: 'text', k: 'since', label: 'Time since injury:' }, { t: 'text', k: 'prev', label: 'Previous treatment:' },
+        { t: 'pick', g: 'open', items: ['Yes', 'No'], label: 'Open injury:' },
+      ] },
+      { title: 'Primary Assessment – ATLS', role: 'exam', f: [
+        { t: 'pick', g: 'a', items: ['Patent', 'Compromised'], label: 'A — Airway:' },
+        { t: 'pick', g: 'b', items: ['Normal', 'Abnormal'], label: 'B — Breathing:' },
+        { t: 'pick', g: 'c', items: ['Stable', 'Unstable'], label: 'C — Circulation:' },
+        { t: 'text', k: 'gcs', label: 'D — Disability (GCS /15):' },
+        { t: 'pick', g: 'e', items: ['Completed'], label: 'E — Exposure:' },
+      ] },
+      { title: 'Vital Signs', role: 'exam', f: [
+        { t: 'text', k: 'bp', label: 'BP:' }, { t: 'text', k: 'pulse', label: 'Pulse:' }, { t: 'text', k: 'rr', label: 'RR:' },
+        { t: 'text', k: 'temp', label: 'Temp:' }, { t: 'text', k: 'spo2', label: 'SpO₂:' },
+      ] },
+      { title: 'Orthopedic Examination', role: 'exam', wide: true, f: [{ t: 'cols', cols: [
+        { title: 'Inspection', f: [
+          ...['Swelling', 'Deformity', 'Bruising / Ecchymosis', 'Open wound'].map((r): Field => ({ t: 'pick', g: `insp.${r}`, items: ['Yes', 'No'], label: `${r}:` })),
+          { t: 'text', k: 'skin', label: 'Skin condition:' }, { t: 'text', k: 'pos', label: 'Abnormal position / Rotation:' },
+        ] },
+        { title: 'Palpation', f: [
+          { t: 'text', k: 'tender', label: 'Tenderness:' },
+          { t: 'pick', g: 'crep', items: ['Yes', 'No'], label: 'Crepitus:' },
+          { t: 'pick', g: 'mob', items: ['Yes', 'No'], label: 'Abnormal mobility:' },
+          { t: 'pick', g: 'comp', items: ['Normal', 'Increased'], label: 'Compartment tension:' },
+        ] },
+        { title: 'Range of Motion', f: [{ t: 'text', k: 'rom.active', label: 'Active ROM:' }, { t: 'text', k: 'rom.passive', label: 'Passive ROM:' }] },
+      ] }] },
+      { title: 'Neurovascular Assessment', role: 'exam', f: [{ t: 'cols', cols: [
+        { title: 'Vascular', f: [
+          { t: 'pick', g: 'pulses', items: ['Present', 'Absent'], label: 'Distal pulses:' },
+          { t: 'text', k: 'cap', label: 'Capillary refill (seconds):' },
+          { t: 'pick', g: 'stemp', items: ['Warm', 'Cold'], label: 'Skin temperature:' },
+          { t: 'pick', g: 'perf', items: ['Normal', 'Impaired'], label: 'Distal perfusion:' },
+        ] },
+        { title: 'Neurological', f: [
+          { t: 'text', k: 'motor', label: 'Motor function:' }, { t: 'text', k: 'sens', label: 'Sensation:' },
+          { t: 'text', k: 'nerve', label: 'Peripheral nerve examination:' },
+        ] },
+      ] }] },
+      { title: 'Associated Injuries', role: 'exam', f: [
+        { t: 'checks', g: 'assoc', cols: true, items: ['Head injury', 'Cervical spine injury', 'Chest injury', 'Abdominal injury', 'Pelvic injury', 'Other limb injury'] },
+        { t: 'text', k: 'assoc.details', label: 'Details:' },
+      ] },
+      { title: 'Imaging', role: 'exam', f: [{ t: 'checks', g: 'img', items: ['X-ray AP', 'X-ray Lateral', 'CT', 'MRI', 'Ultrasound'] }] },
+      { title: 'Radiological Findings', role: 'exam', f: [
+        { t: 'text', k: 'rad.bone', label: 'Bone / Joint:' }, { t: 'text', k: 'rad.type', label: 'Fracture type:' },
+        { t: 'text', k: 'rad.disp', label: 'Displacement:' }, { t: 'text', k: 'rad.ang', label: 'Angulation / Rotation:' },
+        { t: 'text', k: 'rad.joint', label: 'Joint involvement:' },
+      ] },
+      { title: 'Diagnosis', role: 'dx', f: [{ t: 'text', k: 'dx', label: 'Diagnosis:', stack: true }] },
+      { title: 'Management Plan', role: 'plan', f: [
+        { t: 'checks', g: 'plan', cols: true, items: ['Analgesia', 'Wound care', 'Tetanus prophylaxis', 'IV Antibiotics (if indicated)', 'Splint / Back slab', 'Reduction', 'Cast', 'Surgery', 'Admission', 'Referral'] },
+        { t: 'text', k: 'immob', label: 'Immobilization:' }, { t: 'text', k: 'fu', label: 'Follow-up:' },
+      ] },
+      { title: 'Important Documentation', role: 'exam', f: [
+        { t: 'text', k: 'nv.before', label: 'Neurovascular status BEFORE intervention:', stack: true },
+        { t: 'text', k: 'nv.after', label: 'Neurovascular status AFTER intervention:', stack: true },
+        { t: 'pick', g: 'consent', items: ['Yes', 'No'], label: 'Consent:' },
+        { t: 'text', k: 'redflags', label: 'Red flags / Complications:', stack: true },
+      ] },
+    ],
+  },
   // متابعة الجبس وما بعد العمليات — مش مناطق جسم: بتتضاف من «+ منطقة تانية…»
   {
     id: 'cast', prefix: 'cf', tab: 'متابعة الجبس', title: 'CAST FOLLOW-UP',
@@ -314,9 +384,10 @@ export const treatmentFilled = (s: ExamSheet) => s.on.some((o) => o.startsWith('
 export const regionSheet = (id: SheetId) => REGION_SHEETS.find((d) => d.id === id);
 
 // كل شيت بالترتيب اللي بيظهر بيه + اسمه في تبويب الطبيب
-export const SHEET_ORDER: SheetId[] = ['hipknee', 'ankle', 'neckshoulder', 'hand', 'lumbar', 'peds', 'cast', 'postop'];
-// اسم الشيت قدام الطبيب: «كشف …»
-export const SHEET_TAB: Record<SheetId, string> = { hipknee: 'كشف الورك والركبة', ...Object.fromEntries(REGION_SHEETS.map((d) => [d.id, d.id === 'cast' || d.id === 'postop' || d.id === 'peds' ? d.tab : `كشف ${d.tab}`])) } as Record<SheetId, string>;
+export const SHEET_ORDER: SheetId[] = ['hipknee', 'ankle', 'neckshoulder', 'hand', 'lumbar', 'peds', 'trauma', 'cast', 'postop'];
+// اسم الشيت قدام الطبيب: «كشف …» (ما عدا الشيتات اللي مش مناطق جسم)
+const NOT_REGION: SheetId[] = ['cast', 'postop', 'peds', 'trauma'];
+export const SHEET_TAB: Record<SheetId, string> = { hipknee: 'كشف الورك والركبة', ...Object.fromEntries(REGION_SHEETS.map((d) => [d.id, NOT_REGION.includes(d.id as SheetId) ? d.tab : `كشف ${d.tab}`])) } as Record<SheetId, string>;
 const PREFIX: Record<SheetId, string> = { hipknee: 'x', ...Object.fromEntries(REGION_SHEETS.map((d) => [d.id, d.prefix])) } as Record<SheetId, string>;
 export const DOCTOR_PREFIXES = [...Object.values(PREFIX), 'ra'];
 

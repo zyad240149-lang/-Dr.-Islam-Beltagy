@@ -14,7 +14,7 @@ import { US_SHEETS, usFilled, usImage } from './ultrasoundSheets';
 import { VoiceDictation } from '../components/VoiceDictation';
 import { RaAssessment } from './RaAssessment';
 import { NociChecklist } from './NociChecklist';
-import { DoctorPainMap, RegionSheetForm, SheetSwitch } from './RegionSheet';
+import { RegionSheetForm, SheetSwitch } from './RegionSheet';
 import { useToast } from '../hooks/useToast';
 import { IMAGING_KIND, IMAGING_STATUS, REGIONS, SIDE, isIncomplete, isUnlinked, ortho, useOrthoVersion, type Attachment, type Consultation, type Injection, type ImagingKind, type ImagingRequest, type Medication, type Side } from './data';
 import { printRx } from './printRx';
@@ -334,10 +334,9 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
         </>}
 
         {tab === 'doctor' && <>
-          <DoctorPainMap sheet={sheet} onChange={changeSheet} />
           <>
             <SheetSwitch active={active} onPick={pickSheet} onRemove={dropSheet} />
-            {!active.length && <p className="sh-pickfirst">اختار المنطقة اللي هتكشف عليها من فوق (أو حدد مكان الألم) — شيتها هيتفتح هنا. لو اخترت منطقتين، الشيتين بيتفتحوا مع بعض.</p>}
+            {!active.length && <p className="sh-pickfirst">اختار المنطقة اللي هتكشف عليها من فوق (أو حدد مكان الألم في الشيت العام) — شيتها هيتفتح هنا. لو اخترت منطقتين، الشيتين بيتفتحوا مع بعض.</p>}
             {active.map((id) => (
               <section key={id} className="sh-stack" data-sheet={id}>
                 {active.length > 1 && <h3 className="sh-stack__h">{SHEET_TAB[id]}<button type="button" className="sh-stack__x" onClick={() => dropSheet(id)}>إلغاء المنطقة</button></h3>}

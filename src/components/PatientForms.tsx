@@ -15,6 +15,7 @@ import { PhysioInlineSections, newPhysioInline, savePhysioInline, validatePhysio
 import { useAuth } from '../services/auth';
 import { TextPick } from './TextPick';
 import { SHEET_LISTS } from '../ortho/ExamSheet';
+import { PlanFollowUps } from '../ortho/FollowUps';
 import PlanSessionBooking, { SessionRowsEditor, bookDraftSessions, defaultPlanDoctor, emptyRow, sessionRowIssues, suggestSessionRows, type SessionRow } from './PlanSessionBooking';
 import { EMAIL_RE, REFERRAL_SOURCE_LABEL, WEEKDAY_LABEL, addDaysYmd, fmtDate, fmtTime, money, planScheduleError, planScheduleFor, planTotalSessions, sessionsLabel, todayYmd, wordCount } from '../utils/format';
 import type { InitialAssessment, Patient, PlanStatus, ReferralSource, TreatmentPlan } from '../types';
@@ -628,6 +629,13 @@ export function PlanModal({ patientId, plan, presetServiceId, presetDiagnosis, o
         </div>
         {!plan && <div className="alert alert-info" style={{ marginTop: 14 }}>سيتم ربط مواعيد المريض القادمة غير المرتبطة بخطة بهذه الخطة تلقائيًا، ولن تصدر فواتير منفصلة لمواعيد الخطة.</div>}
       </div>
+      {pid && (
+        <div className="form-section">
+          <div className="form-section-title">موعد المتابعة</div>
+          <PlanFollowUps patientId={pid} doctorHint={patient?.doctorId}
+            endDate={(f.sessionDates?.length ? [...f.sessionDates].sort().reverse()[0] : undefined) ?? (f.startDate ? addDaysYmd(f.startDate, Math.max(1, f.durationWeeks) * 7) : undefined)} />
+        </div>
+      )}
       </>)}
     </Modal>
   );

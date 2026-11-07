@@ -406,6 +406,22 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
               </div>
             );
           })()}
+          <details className="sh-bmi-ref">
+            <summary>جدول تصنيف BMI للبالغين (WHO)</summary>
+            <table>
+              <thead><tr><th>BMI (kg/m²)</th><th>التصنيف</th><th>للعيادة</th></tr></thead>
+              <tbody>
+                {BMI_BANDS.map((b, i) => {
+                  const next = BMI_BANDS[i + 1]?.min;
+                  const range = i === 0 ? 'أقل من 16' : next ? `${b.min} – ${(next - 0.1).toFixed(1)}` : `${b.min} أو أكثر`;
+                  const cur = bmiCls && bmiCls.detail === b.detail;
+                  return <tr key={b.detail} className={cur ? `is-cur sh-bmi--${b.tone}` : undefined}><td className="num" dir="ltr">{range}</td><td>{b.ar} <span dir="ltr" className="muted-sm">({b.detail.replace(/ \(.*\)$/, '')})</span></td><td dir="ltr">{b.label}</td></tr>;
+                })}
+              </tbody>
+            </table>
+            <div className="sh-bmi-ref__f">المعادلة: <span dir="ltr">BMI = الوزن (kg) ÷ الطول² (m)</span> — مثال: <span dir="ltr">90 ÷ 1.75² = 29.4</span> ← Overweight</div>
+            <div className="sh-bmi-ref__f">الحدود دي للبالغين (١٨ سنة فأكثر)؛ الأطفال والمراهقين بـ BMI-for-age percentiles حسب السن والنوع. في مرضى العظام بيتقرا الرقم مع مخاطر خشونة الركبة ومضاعفات تغيير المفاصل (TKA/THA)، مش لوحده.</div>
+          </details>
         </Box>
 
         <Box n={3} title="التاريخ المرضي المعروف">

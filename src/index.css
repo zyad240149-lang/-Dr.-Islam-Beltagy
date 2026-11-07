@@ -1825,3 +1825,9 @@ button.wa-link { border: 0; cursor: pointer; font-family: inherit; }
 .sh-bmi-scale i { position: absolute; top: -4px; width: 4px; height: 16px; border-radius: 2px; background: var(--text, #111); transform: translateX(-50%); }
 .sh-bmi-info__o { padding: 6px 8px; border-radius: 8px; background: var(--warn-bg); color: var(--warn); }
 .sh-bmi-info__warn { padding: 6px 8px; border-radius: 8px; background: var(--info-bg); color: var(--info); }
+.sh-bmi-ref { margin-top: 8px; font-size: 12.5px; }
+.sh-bmi-ref summary { cursor: pointer; color: var(--brand, inherit); font-weight: 600; }
+.sh-bmi-ref table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+.sh-bmi-ref th, .sh-bmi-ref td { padding: 4px 6px; border-bottom: 1px solid var(--border, #e5e5e5); text-align: start; }
+.sh-bmi-ref tr.is-cur td { font-weight: 700; }
+.sh-bmi-ref__f { margin-top: 6px; color: var(--muted, inherit); }

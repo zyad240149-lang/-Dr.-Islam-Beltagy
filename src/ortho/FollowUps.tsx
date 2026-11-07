@@ -476,6 +476,26 @@ export function FollowUpStep({ patientId, patientLabel, consultationId, pending,
   );
 }
 
+/** «موعد المتابعة» جوّه خطة العلاج: الموعد بيتحفظ فورًا في المتابعات (واللي ليه ساعة بيتحجز في «المواعيد»).
+ *  التاريخ المقترح = نهاية الخطة، والسبب «متابعة بعد خطة العلاج». */
+export function PlanFollowUps({ patientId, endDate, doctorHint }: { patientId: string; endDate?: string; doctorHint?: string | null }) {
+  useOrthoVersion();
+  const perm = useFuCan();
+  const doc = useDefaultDoctor(patientId, doctorHint);
+  const [edit, setEdit] = useState<FollowUp | FuDraft | null>(null);
+  const t = todayYmd();
+  const upcoming = ortho.list('follow_ups', patientId).filter((f) => f.status === 'scheduled' && f.date >= t).sort(byWhen);
+  const date = endDate && endDate >= t ? endDate : t;
+  return (
+    <div>
+      <p className="muted-sm" style={{ marginTop: 0 }}>حدد ميعاد متابعة للمريض بعد الخطة أو أثناءها — بيتحفظ أول ما تدوس «حفظ» في نافذة الموعد، واللي ليه ساعة وطبيب بيظهر في «المواعيد».</p>
+      {upcoming.length > 0 ? <FollowUpList items={upcoming} onOpen={setEdit} /> : <div className="muted-sm">مفيش متابعات قادمة للمريض.</div>}
+      {perm.add && <Button icon="plus" style={{ marginTop: 10 }} onClick={() => setEdit({ ...emptyDraft(patientId, doc), date, reason: 'متابعة بعد خطة العلاج' })}>تحديد موعد متابعة</Button>}
+      {edit && <FollowUpModal patientId={patientId} doctorHint={doctorHint} initial={edit} onClose={() => setEdit(null)} />}
+    </div>
+  );
+}
+
 /** بعد حفظ التشخيص: المتابعات الجديدة بتتسجل مربوطة بيه */
 export async function savePendingFollowUps(patientId: string, consultationId: string, pending: FuDraft[], canBook = true): Promise<string[]> {
   const problems: string[] = [];

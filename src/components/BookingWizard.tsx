@@ -43,6 +43,8 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
   const [notes, setNotes] = useState('');
   const [payAmount, setPayAmount] = useState('');
   const [payMethod, setPayMethod] = useState<PaymentMethod>('cash');
+  // «المريض موجود» (في العيادة دلوقتي): الموعد بيتحجز النهارده على أقرب وقت فاضي، وحضوره بيتأكد على طول بعد الحجز
+  const [walkIn, setWalkIn] = useState(false);
   const [result, setResult] = useState<{ id: string; no: string; date: string; time: string; therapist: string } | null>(null);
 
   const center = db.center();
@@ -83,8 +85,13 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
     return out;
   })();
   useEffect(() => {
+    if (step === 3 && walkIn && date !== todayYmd()) { setDate(todayYmd()); setTime(''); return; }
     if (step === 3 && !date && quickDays.length) setDate(quickDays[0].date);
-  }, [step, date, quickDays.length ? quickDays[0].date : '']);
+  }, [step, date, walkIn, quickDays.length ? quickDays[0].date : '']);
+  // المريض موجود: أقرب وقت فاضي النهارده بيتختار لوحده (وتقدر تغيّره)
+  useEffect(() => {
+    if (walkIn && step === 3 && date === todayYmd() && !time && slots.length) setTime(slots[0]);
+  }, [walkIn, step, date, time, slots.length ? slots[0] : '']);
   // وقت جاي من «جدول المواعيد اليومي»: لو بقى مش متاح للخدمة المختارة يتمسح (ويختار وقت تاني)
   // ⚠️ مش أثناء الحجز ولا بعده: الموعد اللي لسه اتسجّل بيشغل نفس الخانة، فكانت بتطلع «مش مناسبة» غلط بعد ما الحجز ينجح
   const presetSlotGone = !!(presetTime && time === presetTime && serviceId && date && therapistId && !busy && !result && !slots.includes(time));
@@ -150,6 +157,11 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
       if (!pr.ok) toast.error(`تم حجز الموعد، لكن تعذّر تسجيل الدفعة: ${pr.error}`);
       else toast.success('تم تسجيل الدفعة على فاتورة الموعد.');
     }
+    // المريض موجود: تأكيد الحضور على طول (نفس «تأكيد» في تفاصيل الموعد)
+    if (walkIn) {
+      try { await db.setAppointmentStatus(r.appointment.id, 'arrived', undefined, therapistId); toast.success('تم تأكيد حضور المريض'); }
+      catch (e) { toast.error(`تم حجز الموعد، بس تأكيد الحضور ما اتعملش: ${(e as Error).message} — أكّده من تفاصيل الموعد.`); }
+    }
     setBusy(false);
     toast.success('تم حجز الموعد بنجاح');
     setResult({ id: r.appointment.id, no: r.appointment.no, date: r.appointment.date, time: r.appointment.time, therapist: db.therapist(therapistId)?.name ?? '' });
@@ -194,7 +206,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
       <span style={{ flex: 1 }} />
       {step < 4
         ? <Button onClick={() => (canNext ? next() : toast.error(blockedMsg))} aria-disabled={!canNext} style={canNext ? undefined : { opacity: 0.55 }}>التالي</Button>
-        : <Button icon="check" onClick={confirm} loading={busy}>حجز الموعد</Button>}
+        : <Button icon="check" onClick={confirm} loading={busy}>{walkIn ? 'حجز وتأكيد الحضور' : 'حجز الموعد'}</Button>}
     </>
   );
 
@@ -219,14 +231,31 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
             <div className="choice selected" style={{ marginBottom: 12 }}>
               <span className="choice__ic"><Icon name="user" size={18} /></span>
               <span style={{ flex: 1 }}><strong>{patient.fullName}</strong><span> {patient.fileNo} · <span className="num">{patient.phone}</span></span></span>
-              {!presetPatientId && <button type="button" className="link-more" style={{ border: 0, background: 'none', cursor: 'pointer' }} onClick={() => { setPatientId(''); setPatientQuery(''); setNp((x) => ({ ...x, fullName: '', phone: '' })); }}>تغيير</button>}
+              {!presetPatientId && <button type="button" className="link-more" style={{ border: 0, background: 'none', cursor: 'pointer' }} onClick={() => { setPatientId(''); setPatientQuery(''); setWalkIn(false); setNp((x) => ({ ...x, fullName: '', phone: '' })); }}>تغيير</button>}
             </div>
-          ) : (
+          ) : null}
+          {patientId && patient && !lockedPreset && (
+            <div className="choice-grid" style={{ marginBottom: 12 }}>
+              <button type="button" className={`choice ${!walkIn ? 'selected' : ''}`} onClick={() => { setWalkIn(false); next(); }}>
+                <span className="choice__ic"><Icon name="calendar" size={18} /></span>
+                <span><strong>حجز موعد</strong><span> اختار اليوم والوقت</span></span>
+              </button>
+              <button type="button" className={`choice ${walkIn ? 'selected' : ''}`} onClick={() => { setWalkIn(true); next(); }}>
+                <span className="choice__ic"><Icon name="checkCircle" size={18} /></span>
+                <span><strong>المريض موجود</strong><span> النهارده على أقرب وقت — وحضوره يتأكد على طول</span></span>
+              </button>
+            </div>
+          )}
+          {patientId && patient ? null : (
             <>
-              {/* البحث الأول: تختار المريض الموجود من النتايج، أو «حجز كمريض جديد» لو مش موجود */}
+              {/* اختيارين: «بحث عن مريض» (مريض موجود) أو «حجز عن طريق مكالمة» (اسم + جوال) */}
+              <div className="svc-tabs" style={{ marginBottom: 14 }}>
+                <button type="button" className={`svc-tab ${mode === 'search' ? 'active' : ''}`} onClick={() => setMode('search')}>بحث عن مريض</button>
+                <button type="button" className={`svc-tab ${mode === 'call' ? 'active' : ''}`} onClick={() => setMode('call')}>حجز عن طريق مكالمة</button>
+              </div>
               {mode === 'search' ? (
                 <>
-                  <Input label="ابحث عن المريض الموجود" icon="search" placeholder="الاسم / رقم الجوال / رقم الملف" value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} />
+                  <Input label="ابحث عن المريض" icon="search" placeholder="الاسم / رقم الجوال / رقم الملف" value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} />
                   {queryResults.length > 0 && (
                     <div className="choice-grid">
                       {queryResults.map((x) => (
@@ -248,15 +277,14 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
                         const digits = q.replace(/\D/g, '');
                         setNp((x) => (digits.length >= 9 && digits.length >= q.replace(/\s/g, '').length - 1 ? { ...x, phone: q } : { ...x, fullName: q }));
                         setMode('call');
-                      }}>{queryResults.length ? 'مش في القايمة؟ حجز كمريض جديد' : 'حجز كمريض جديد'}</Button>
+                      }}>{queryResults.length ? 'مش في القايمة؟ حجز عن طريق مكالمة' : 'حجز عن طريق مكالمة'}</Button>
                     </div>
                   )}
                 </>
               ) : (
                 <>
                   <div className="alert alert-info" style={{ marginBottom: 14 }}>
-                    <Icon name="phone" size={17} /><div style={{ flex: 1 }}><strong>حجز مريض جديد (مكالمة)</strong> — اكتب اسمه وجواله لإتمام الحجز.</div>
-                    <button type="button" className="link-more" style={{ border: 0, background: 'none', cursor: 'pointer' }} onClick={() => setMode('search')}>رجوع للبحث</button>
+                    <Icon name="phone" size={17} /><div style={{ flex: 1 }}><strong>حجز موعد عن طريق مكالمة</strong> — اكتب اسم المريض وجواله لإتمام الحجز.</div>
                   </div>
                   <div className="grid-form">
                     <Input label="اسم المريض" placeholder="اسم المريض" value={np.fullName} onChange={(e) => setNp({ ...np, fullName: e.target.value })} />
@@ -393,6 +421,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
           <div><dt>الدكتور</dt><dd>{db.therapist(therapistId)?.name}</dd></div>
           <div><dt>التاريخ</dt><dd>{date && fmtDate(date)}</dd></div>
           <div><dt>الوقت</dt><dd className="num">{time && fmtTime(time)}</dd></div>
+          {walkIn && <div><dt>الحضور</dt><dd><span className="badge badge--ok">المريض موجود — هيتأكد حضوره على طول</span></dd></div>}
           <div><dt>الجنسية</dt><dd>{(patient ? patient.nationality : np.nationality) === 'non_saudi' ? 'أجنبي' : 'مصري'}</dd></div>
           <div><dt>السعر</dt><dd className="num">{pricedPlan ? 'مشمول في سعر الخطة العلاجية' : money(shownPrice)}</dd></div>
           <div><dt>الباقة</dt><dd>{activePkg ? `${activePkg.name} (متبقٍ ${activePkg.totalSessions - activePkg.usedSessions})` : pricedPlan ? 'بدون باقة' : 'بدون باقة — ستصدر فاتورة'}</dd></div>

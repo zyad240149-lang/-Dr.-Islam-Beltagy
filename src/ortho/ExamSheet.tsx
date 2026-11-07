@@ -112,8 +112,12 @@ function pickIn(x: ExamSheet, g: string, item: string): ExamSheet {
   return { ...x, on: x.on.includes(k) ? rest : [...rest, k] };
 }
 
+/** رقم من خانة مكتوبة: أرقام عربي (٩٢) أو إنجليزي، والفاصلة العشرية «٫» أو «,» أو «.» */
+const numOf = (v: string) => parseFloat(toLatinDigits(v).replace(/[٫,،]/g, '.').replace(/[^\d.]/g, ''));
+// بيتحسب على الجهاز نفسه من الوزن والطول (من غير نت). الطول بالسنتيمتر (170) أو بالمتر (1.70)
 export function bmiOf(s: ExamSheet) {
-  const w = parseFloat(tx(s, 'n.wt')), h = parseFloat(tx(s, 'n.ht')) / 100;
+  const w = numOf(tx(s, 'n.wt')), raw = numOf(tx(s, 'n.ht'));
+  const h = raw > 0 && raw < 3 ? raw : raw / 100;
   return w > 0 && h > 0.5 && h < 2.6 ? (w / (h * h)).toFixed(1) : '';
 }
 // تصنيف الـBMI للكبار — «التقسيم السريع للاستخدام في العيادة» اللي بعته الدكتور (٦/١١)
@@ -400,7 +404,7 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
           <Txt a={a} k="n.ht" label="الطول" unit="سم" num />
           <div className="sh-line"><span className="sh-line__l">مؤشر كتلة الجسم (BMI)</span><output className={`sh-bmi num${bmiCls ? ` sh-bmi--${bmiCls.tone}` : ''}`}>{bmi || '—'}{bmiCls && <small className="sh-bmi__c">{bmiCls.label}</small>}</output></div>
           {bmiCls && (() => {
-            const age = parseFloat(a.txt('n.age'));
+            const age = numOf(a.txt('n.age'));
             const child = age > 0 && age < 18;
             const pct = Math.min(100, Math.max(0, ((parseFloat(bmi) - 14) / (45 - 14)) * 100));
             return (

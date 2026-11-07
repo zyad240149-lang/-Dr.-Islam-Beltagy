@@ -440,7 +440,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
             })()}
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
               <Button icon="receipt" onClick={() => setRxOpen(true)}>فتح الروشتة</Button>
-              <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => setOut(['rx'])}>طباعة الروشتة</Button>
+              <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => printRx(c, patientOf())}>طباعة الروشتة</Button>
             </div>
           </section>
 
@@ -474,7 +474,11 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           initial={{ medications: c.medications, labs: c.labs, imagingRequests: c.imagingRequests, attachments: c.attachments, plan: c.plan }}
           onClose={() => setRxOpen(false)}
           onSave={(rx) => saveRx(rx)}
-          onPrint={async (rx) => { if (await saveRx(rx)) { setRxOpen(false); setOut(['rx']); } }} />}
+          onPrint={async (rx) => {
+            // التابة بتتفتح وقت الضغطة (وإلا المتصفح يحجبها)، والروشتة بتتطبع لوحدها بعد الحفظ
+            const win = openPrintWindow();
+            if (await saveRx(rx)) { setRxOpen(false); printRx({ ...c, ...rx }, patientOf(), win); } else win?.close();
+          }} />}
         {inj && <InjectionModal patientId={c.patientId} appointmentId={c.appointmentId ?? null} initial={inj === 'new' ? undefined : inj} onClose={() => setInj(null)} />}
       </div>
       {out && <DiagnosisOutput initial={out} patient={patientOf()} visitNo={visitNo} onClose={() => setOut(null)}

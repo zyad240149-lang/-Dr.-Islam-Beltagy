@@ -1855,3 +1855,18 @@ button.wa-link { border: 0; cursor: pointer; font-family: inherit; }
 .dx-as-written { white-space: pre-line; }
 
 .sh-notes { width: 100%; min-height: 64px; resize: vertical; border: 1px solid var(--border, #d7deea); border-radius: 8px; padding: 6px 8px; font: inherit; }
+
+/* طلب أشعة / طلب تحاليل في تاب «الأشعة والتحاليل» (٨/١١) */
+.rq-forms { display: grid; gap: 12px; }
+.rq-card { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface); }
+.rq-card__h { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--brand-700); color: #fff; }
+.rq-card__h span { margin-inline-start: auto; opacity: .85; font-size: 13px; }
+.rq-card__b { padding: 10px 12px; }
+.rq-card__f { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 12px; border-top: 1px solid var(--line-2); background: var(--surface-2, #f8fafc); }
+.rq-grid { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.rq-labs { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; }
+.rq-grp { border: 1px solid var(--line-2); border-radius: 10px; padding: 6px 8px; }
+.rq-grp--sp { border-color: #6cb33f; background: rgba(108, 179, 63, .06); }
+.rq-grp__t { display: flex; flex-direction: column; margin-bottom: 4px; }
+.rq-grp__t b { font-size: 13px; color: var(--brand-700); }
+.rq-grp__t span { font-size: 12px; color: var(--muted, #6b7280); }

@@ -16,7 +16,9 @@ import { RegionSheetForm, SheetSwitch } from './RegionSheet';
 import { useToast } from '../hooks/useToast';
 import { IMAGING_KIND, IMAGING_STATUS, REGIONS, SIDE, isIncomplete, isUnlinked, ortho, useOrthoVersion, type Attachment, type Consultation, type Injection, type ImagingKind, type ImagingRequest, type Medication, type Side } from './data';
 import { printRx } from './printRx';
-import { openPrintWindow } from '../utils/printDoc';
+import { openPrintWindow, printHtml } from '../utils/printDoc';
+import { RequestForms } from './RequestForms';
+import { applyRequestForms, labOthers, requestHtml, saveRequestImage } from './requestData';
 import { DiagnosisOutput } from './DiagnosisOutput';
 import { InjectionList, InjectionModal } from './Injections';
 import { PatientMedicalFiles } from './PatientMedicalFiles';
@@ -249,6 +251,13 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
   const [rxSaving, setRxSaving] = useState(false);
   /** «حفظ الروشتة»: بيحفظ الكشف بالروشتة (الأدوية + الأشعة/السونار + التحاليل المطلوبة) في ملف المريض من غير ما يقفل الكشف.
    *  أول حفظ لكشف جديد بيدّيله رقمه، فـ«حفظ الكشف» بعد كده بيعدّل نفس السجل (مفيش كشف مكرر) */
+  // ورقتي طلب الأشعة والتحاليل ← طلبات الكشف (imagingRequests / labs) وبعدها حفظ زي الروشتة
+  const reqOthers = useRef(labOthers(normSheet(c.sheet)));
+  async function saveReq(): Promise<boolean> {
+    const next = applyRequestForms(c, sheet, reqOthers.current);
+    reqOthers.current = labOthers(sheet);
+    return saveRx({ medications: c.medications, labs: next.labs, imagingRequests: next.imagingRequests, plan: c.plan });
+  }
   async function saveRx(rx: Pick<Draft, 'medications' | 'labs' | 'imagingRequests' | 'plan'>): Promise<boolean> {
     if (!ok) { toast.error(unlinked ? 'اكتب اسم المريض الثلاثي في خانة 1 الأول.' : 'اختار المريض الأول.'); return false; }
     if (savingRef.current) return false;
@@ -455,26 +464,19 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
 
         {/* الأشعة والتحاليل: قسم لوحده قبل الحقن (طلب الدكتور ٨/١١) */}
         {tab === 'files' && <>
-          {/* الأشعة/السونار والتحاليل المطلوبة: اختيار + حفظ + طباعة ورقة طلب لوحدها (نفس اللي بيظهر في الروشتة) */}
+          {/* طلب أشعة وطلب تحاليل (ورق الدكتور): اختيار + حفظ + طباعة + حفظ كصورة — أسماء المطلوب بالإنجليزي */}
           <section className="plan-part">
             <h3 className="plan-part__h"><span className="plan-part__n num">1</span>الأشعة والتحاليل المطلوبة</h3>
-            <RxEditor rxOnly requestsOnly patientId={c.patientId} region={c.region} value={c as unknown as RxData}
-              onChange={(f) => setC((x) => ({ ...x, ...f(x as unknown as RxData) }))} />
-            {(() => {
-              const reqs = c.imagingRequests.filter((r) => r.region.trim());
-              const none = !reqs.length && !c.labs.length;
-              return (
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
-                  <Button variant="outline" icon="check" loading={rxSaving} disabled={none || (!c.patientId && !unlinked)} onClick={() => void saveRx(c)}>حفظ الطلبات</Button>
-                  <Button icon="print" loading={rxSaving} disabled={none || (!c.patientId && !unlinked)} onClick={async () => {
-                    const win = openPrintWindow();
-                    if (await saveRx(c)) printRx({ ...c, medications: [], plan: '', followUp: '' }, patientOf(), win, 'طلب أشعة وتحاليل');
-                    else win?.close();
-                  }}>طباعة الأشعة والتحاليل المطلوبة</Button>
-                  {none && <span className="muted-sm" style={{ alignSelf: 'center' }}>اختار الأشعة أو التحاليل المطلوبة الأول</span>}
-                </div>
-              );
-            })()}
+            <RequestForms sheet={sheet} onChange={changeSheet} busy={rxSaving} disabled={!c.patientId && !unlinked}
+              onSave={() => void saveReq()}
+              onPrint={async (kind) => {
+                const win = openPrintWindow();
+                if (await saveReq()) void printHtml(requestHtml(kind, sheet, patientOf(), c.date), win); else win?.close();
+              }}
+              onImage={async (kind) => {
+                if (!(await saveReq())) return;
+                try { await saveRequestImage(kind, sheet, patientOf(), c.date); } catch (e) { toast.error((e as Error).message); }
+              }} />
           </section>
 
           <section className="plan-part">

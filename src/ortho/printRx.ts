@@ -44,12 +44,12 @@ export const RX_CSS = `
   .rxp .pt span { color: #64748b; }
   .rxp .pt b { color: #1b2a54; }
   .rxp .dx { margin: 4px 0 6px; padding: 6px 10px; border-inline-start: 4px solid #1b2a54; background: #f3f5fa; border-radius: 6px; font-size: 12.5px; white-space: pre-line; }
-  .rxp .rx { font-size: 30px; font-weight: 700; color: #c2410c; font-family: Georgia, "Times New Roman", serif; margin: 6px 0 2px; direction: ltr; text-align: left; }
+  .rxp .rx { font-size: 30px; font-weight: 700; color: #c2410c; font-family: Georgia, "Times New Roman", serif; margin: 6px 0 2px; direction: ltr; text-align: right; }
   .rxp .li { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; border-bottom: 1px dashed #e2e8f0; }
   .rxp .li:last-child { border-bottom: 0; }
   .rxp .li > .n { flex: none; width: 22px; height: 22px; border-radius: 50%; background: #1b2a54; color: #fff; font-size: 11.5px; font-weight: 700; display: grid; place-items: center; }
   .rxp .li > .b { flex: 1; min-width: 0; }
-  .rxp .med { direction: ltr; text-align: left; font-weight: 700; font-size: 14.5px; color: #10182f; }
+  .rxp .med { direction: ltr; text-align: right; unicode-bidi: isolate; font-weight: 700; font-size: 14.5px; color: #10182f; }
   .rxp .sig { color: #334155; font-size: 12.5px; }
   .rxp .sig i { color: #64748b; }
   .rxp .box { margin-top: 10px; border-radius: 10px; padding: 7px 10px; border: 1px solid; }
@@ -85,7 +85,6 @@ export function rxPageHtml(c: Omit<Consultation, 'id' | 'patientId'>, p?: RxPati
   <div><span>رقم الملف:</span> <b>${esc(fileNoText(p?.fileNo) || '—')}</b></div>
   <div><span>التاريخ:</span> <b>${esc(fmtDate(c.date))}</b></div>
 </div>
-${c.diagnosis.trim() ? `<div class="dx">التشخيص: <b>${esc(c.diagnosis)}</b>${c.icd10 ? ` <span class="ltr">(${esc(c.icd10)})</span>` : ''}${c.region ? ` — ${esc(c.region)}${c.side !== 'na' ? ' ' + esc(SIDE[c.side]) : ''}` : ''}</div>` : ''}
 ${meds.length ? `<div class="rx">R/</div><div>${meds.map((m, i) => `<div class="li"><span class="n">${i + 1}</span><div class="b"><div class="med">${esc(m.name)}</div><div class="sig">${esc([m.dose, m.frequency, m.duration && 'لمدة ' + m.duration].filter(Boolean).join(' — '))}${m.notes ? ` <i>(${esc(m.notes)})</i>` : ''}</div></div></div>`).join('')}</div>` : ''}
 ${imgs.length ? `<div class="box img"><h3>الأشعة / السونار المطلوبة</h3>${imgs.map((r) => `<div>• ${esc(IMAGING_KIND[r.kind])} — ${esc(r.region)}${r.view ? ` <span class="ltr">(${esc(r.view)})</span>` : ''}</div>`).join('')}</div>` : ''}
 ${labs.length ? `<div class="box lab"><h3>التحاليل المطلوبة</h3><div class="chips ltr">${labs.map((l) => `<span>${esc(l)}</span>`).join('')}</div></div>` : ''}

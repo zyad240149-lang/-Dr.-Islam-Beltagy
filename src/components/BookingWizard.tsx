@@ -234,16 +234,16 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
               {!presetPatientId && <button type="button" className="link-more" style={{ border: 0, background: 'none', cursor: 'pointer' }} onClick={() => { setPatientId(''); setPatientQuery(''); setWalkIn(false); setNp((x) => ({ ...x, fullName: '', phone: '' })); }}>تغيير</button>}
             </div>
           ) : null}
-          {patientId && patient && !lockedPreset && (
+          {patientId && patient && (
             <div className="choice-grid" style={{ marginBottom: 12 }}>
               <button type="button" className={`choice ${!walkIn ? 'selected' : ''}`} onClick={() => { setWalkIn(false); next(); }}>
                 <span className="choice__ic"><Icon name="calendar" size={18} /></span>
                 <span><strong>حجز موعد</strong><span> اختار اليوم والوقت</span></span>
               </button>
-              <button type="button" className={`choice ${walkIn ? 'selected' : ''}`} onClick={() => { setWalkIn(true); next(); }}>
+              {(!lockedPreset || date === todayYmd()) && <button type="button" className={`choice ${walkIn ? 'selected' : ''}`} onClick={() => { setWalkIn(true); next(); }}>
                 <span className="choice__ic"><Icon name="checkCircle" size={18} /></span>
-                <span><strong>المريض موجود</strong><span> النهارده على أقرب وقت — وحضوره يتأكد على طول</span></span>
-              </button>
+                <span><strong>المريض موجود</strong><span>{lockedPreset ? ` النهارده ${fmtTime(time)} — وحضوره يتأكد على طول` : ' النهارده على أقرب وقت — وحضوره يتأكد على طول'}</span></span>
+              </button>}
             </div>
           )}
           {patientId && patient ? null : (

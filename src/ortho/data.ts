@@ -254,6 +254,9 @@ export const ortho = {
     if (kind === 'consultations' && !row.patient_id) { if (item.id) delete row.patient_id; else row.patient_id = null; }
     if (kind === 'follow_ups') for (const k of ['consultation_id', 'doctor_id', 'time', 'appointment_id', 'kind']) if (k in row && !row[k]) row[k] = null;
     if (kind === 'surgery_payment_stages' && 'due_date' in row && !row.due_date) row.due_date = null;
+    // أي عمود ربط (…_id) فاضي = null: الصفوف اللي اتقرت من الخادم بتحوّل null لـ '' (fromRow)، وإرجاعها '' للخادم كان بيرفض الحفظ
+    // («invalid input syntax for type uuid: ""») — زي كشف مالوش موعد (appointment_id) لما يتحفظ تاني أو من «حفظ/طباعة الروشتة»
+    for (const k of Object.keys(row)) if (k.endsWith('_id') && row[k] === '') row[k] = null;
     // بدون إنترنت (أو السجل نفسه لسه مستني مزامنة): بيتحفظ على الجهاز ويتبعت لوحده لما الاتصال يرجع
     if (!net.isOnline() || (item.id && offline.queue.hasPendingFor(item.id))) return saveOffline(kind, item.id, row);
     const table = supabase.from(tableOf(kind));

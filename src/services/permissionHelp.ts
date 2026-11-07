@@ -5,7 +5,7 @@ import type { Area, Op } from '../types';
 export interface AreaHelp { desc: string; ops?: Partial<Record<Op, string>> }
 
 export const AREA_GROUPS: { title: string; hint: string; areas: Area[] }[] = [
-  { title: 'المرضى والمواعيد', hint: 'ملفات المرضى والحجز والمواعيد والزيارات', areas: ['dashboard', 'patients', 'online_accounts', 'booking', 'appointments', 'sessions', 'plans', 'bodymap', 'pkg_checkin', 'physio', 'attendance'] },
+  { title: 'المرضى والمواعيد', hint: 'ملفات المرضى والحجز والمواعيد والزيارات', areas: ['dashboard', 'patients', 'online_accounts', 'booking', 'appointments', 'sessions', 'plans', 'pkg_checkin', 'physio', 'attendance'] },
   { title: 'المالية', hint: 'الفواتير والمدفوعات والباقات والأرقام المالية', areas: ['invoices', 'payments', 'installments', 'packages', 'discounts', 'loyalty', 'products', 'financial'] },
   { title: 'أزرار حساسة (صلاحية واحدة لكل زر — «اطلاع» = مسموح)', hint: 'تتحكم في زر معيّن حتى لو كان للدور صلاحية القسم', areas: ['inv_approve', 'inv_price', 'inv_cancel', 'appt_confirm', 'appt_cancel'] },
   { title: 'فلاتر صفحة المرضى (صلاحية واحدة لكل فلتر — «اطلاع» = الفلتر يظهر)', hint: 'تتحكم في ظهور كل فلتر في صفحة المرضى على حدة — ويبقى البحث نفسه ظاهرًا دائمًا', areas: ['pt_f_gender', 'pt_f_source', 'pt_f_doctor', 'pt_f_status', 'pt_f_sort'] },

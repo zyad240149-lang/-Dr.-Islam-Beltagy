@@ -141,14 +141,10 @@ export function DoctorPainMap({ sheet, onChange }: { sheet: ExamSheet; onChange:
   };
   return (
     <details className="sh-docmap" open={startOpen}>
-      <summary><Icon name="body" size={16} /> مكان الألم على جسم الإنسان: {sheet.pain.length ? sheet.pain.map(painLabel).join('، ') : 'لسه ما اتحددش'}</summary>
+      <summary><Icon name="body" size={16} /> مكان الألم: {sheet.pain.length ? sheet.pain.map(painLabel).join('، ') : 'لسه ما اتحددش'}</summary>
       <div className="sh-docmap__body">
-        <div className="seg">
-          <button type="button" className={`seg__btn ${view === 'front' ? 'active' : ''}`} onClick={() => setView('front')}>أمامي</button>
-          <button type="button" className={`seg__btn ${view === 'back' ? 'active' : ''}`} onClick={() => setView('back')}>خلفي</button>
-        </div>
         <BodyFigure key={view} view={view} compact selected={null} hovered={hovered} marked={new Set(sheet.pain)} onSelect={toggle} onHover={setHovered} />
-        <div className="dx-hint">{hovered ? regionById(hovered)?.name : 'اضغط على المكان — ممكن أكتر من مكان'}</div>
+        <div className="dx-hint">{hovered ? regionById(hovered)?.name : 'اختار المنطقة والجهة — ممكن أكتر من مكان'}</div>
       </div>
     </details>
   );

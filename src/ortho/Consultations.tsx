@@ -148,7 +148,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
     finally { setUsUploading(false); if (usFileRef.current) usFileRef.current.value = ''; }
   }
   const dropSheet = (id: SheetId) => {
-    if (sheetFilled(sheet, id) && !window.confirm(`إلغاء منطقة «${SHEET_TAB[id]}»؟ اللي اتكتب في شيتها هيتمسح، ومكان الألم ده هيتشال من جسم الإنسان.`)) return;
+    if (sheetFilled(sheet, id) && !window.confirm(`إلغاء منطقة «${SHEET_TAB[id]}»؟ اللي اتكتب في شيتها هيتمسح، ومكان الألم ده هيتشال.`)) return;
     changeSheet((x) => removeSheet(x, id));
   };
   // اختيار منطقة = شيتها يتفتح؛ منطقتين أو أكتر ← الشيتات تتفتح مع بعض تحت بعض. الضغط على منطقة مفتوحة بينزل لشيتها
@@ -337,7 +337,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           <DoctorPainMap sheet={sheet} onChange={changeSheet} />
           <>
             <SheetSwitch active={active} onPick={pickSheet} onRemove={dropSheet} />
-            {!active.length && <p className="sh-pickfirst">اختار المنطقة اللي هتكشف عليها من فوق (أو علّم مكان الألم على جسم الإنسان) — شيتها هيتفتح هنا. لو اخترت منطقتين، الشيتين بيتفتحوا مع بعض.</p>}
+            {!active.length && <p className="sh-pickfirst">اختار المنطقة اللي هتكشف عليها من فوق (أو حدد مكان الألم) — شيتها هيتفتح هنا. لو اخترت منطقتين، الشيتين بيتفتحوا مع بعض.</p>}
             {active.map((id) => (
               <section key={id} className="sh-stack" data-sheet={id}>
                 {active.length > 1 && <h3 className="sh-stack__h">{SHEET_TAB[id]}<button type="button" className="sh-stack__x" onClick={() => dropSheet(id)}>إلغاء المنطقة</button></h3>}

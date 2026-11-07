@@ -82,7 +82,7 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
   const visitCols = [
     lbl('الشكوى', cks('n.cc', L.N_CC)) + line('أخرى', v('n.cc.other')),
     lbl('مكان الألم', pain) + lbl('شدة الألم حاليًا (من 10)', vas),
-    lbl('منذ متى؟', cks('n.since', L.N_SINCE)) + line('بداية المشكلة / كيفية حدوثها', v('n.onset')) + row('هل توجد إصابة حديثة؟', cks('n.injury', L.YES_NO))
+    lbl('منذ متى؟', cks('n.since', L.N_SINCE)) + lbl('النوبات', cks('n.episode', L.N_EPISODE)) + (v('n.ep.count') || v('n.ep.dur') || L.N_EP_FREQ.some((i) => has('n.ep.freq', i)) ? lbl('معدل تكرر النوبات', cks('n.ep.freq', L.N_EP_FREQ)) + line('عدد النوبات', v('n.ep.count')) + line('مدة النوبة', v('n.ep.dur')) : '') + line('بداية المشكلة / كيفية حدوثها', v('n.onset')) + row('هل توجد إصابة حديثة؟', cks('n.injury', L.YES_NO))
       + line('إذا نعم، ما هي؟', v('n.injury.what')) + line('ماذا تم عمله حتى الآن؟', v('n.done')),
   ].filter((x) => !compact || x);
   const nurse = page('rtl', head('الشيت العام', 'يملأ بواسطة التمريض قبل دخول المريض'),

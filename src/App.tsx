@@ -21,7 +21,6 @@ const Appointments = lazy(() => import('./pages/Appointments'));
 const Sessions = lazy(() => import('./pages/Sessions'));
 const Services = lazy(() => import('./pages/Services'));
 const Staff = lazy(() => import('./pages/Staff'));
-const BodyMap = lazy(() => import('./pages/BodyMap'));
 const Requests = lazy(() => import('./pages/Requests'));
 const Support = lazy(() => import('./pages/Support'));
 const Campaigns = lazy(() => import('./pages/Campaigns'));
@@ -92,7 +91,6 @@ const ROUTES: { path: string; area: Area; anyOf?: Area[]; el: JSX.Element }[] = 
   { path: '/patients/:id', area: 'patients', el: <PatientProfile /> },
   { path: '/booking', area: 'booking', el: <Booking /> },
   { path: '/appointments', area: 'appointments', el: <Appointments /> },
-  { path: '/body-map', area: 'bodymap', el: <BodyMap /> },
   { path: '/sessions', area: 'sessions', el: <Sessions /> },
   { path: '/services', area: 'services', el: <Services /> },
   { path: '/diagnosis', area: 'patients', el: <Diagnosis /> },

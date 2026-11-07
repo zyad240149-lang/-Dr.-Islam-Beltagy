@@ -28,7 +28,6 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     { to: '/patients', label: 'المرضى', icon: 'users', area: 'patients' },
     { to: '/booking', label: 'حجز موعد', icon: 'calendarPlus', area: 'booking' },
     { to: '/appointments', label: 'المواعيد', icon: 'calendar', area: 'appointments' },
-    { to: '/body-map', label: 'جسم الإنسان', icon: 'body', area: 'bodymap' },
     { to: '/services', label: 'الخدمات', icon: 'spark', area: 'services' },
   ] },
   { title: 'العظام والكسور', items: [

@@ -75,16 +75,12 @@ export function DiagnosisPicker({ onPick, onClose }: { onPick: (text: string, re
   const choose = (r: BodyRegion, c: Condition) => (r.sided ? setPending({ region: r, c }) : finish(r, c, null));
 
   return (
-    <Modal title="اختيار التشخيص من خريطة الجسم" wide onClose={onClose} footer={<Button variant="outline" onClick={onClose}>إغلاق</Button>}>
+    <Modal title="اختيار التشخيص حسب المنطقة" wide onClose={onClose} footer={<Button variant="outline" onClick={onClose}>إغلاق</Button>}>
       <div className="dx-layout">
         <div className="dx-body">
-          <div className="seg" style={{ marginBottom: 8 }}>
-            <button type="button" className={`seg__btn ${view === 'front' ? 'active' : ''}`} onClick={() => setView('front')}>أمامي</button>
-            <button type="button" className={`seg__btn ${view === 'back' ? 'active' : ''}`} onClick={() => setView('back')}>خلفي</button>
-          </div>
           <BodyFigure key={view} view={view} compact selected={pending?.region.id ?? selected} hovered={hovered} highlighted={highlighted}
             onSelect={(id) => { setSelected(id); setQ(''); setPending(null); }} onHover={setHovered} />
-          <div className="dx-hint">{hovered ? regionById(hovered)?.name : region ? region.name : 'اضغط على منطقة الألم'}</div>
+          <div className="dx-hint">{hovered ? regionById(hovered)?.name : region ? region.name : 'اختار منطقة الألم'}</div>
         </div>
 
         <div className="dx-list">

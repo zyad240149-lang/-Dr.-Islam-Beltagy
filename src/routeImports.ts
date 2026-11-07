@@ -6,7 +6,6 @@ export const ROUTE_IMPORTS: Record<string, () => Promise<unknown>> = {
   '/patients': () => import('./pages/Patients'),
   '/booking': () => import('./pages/Booking'),
   '/appointments': () => import('./pages/Appointments'),
-  '/body-map': () => import('./pages/BodyMap'),
   '/services': () => import('./pages/Services'),
   '/employees': () => import('./pages/Staff'),
   '/attendance': () => import('./pages/Attendance'),

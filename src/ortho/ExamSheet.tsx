@@ -33,6 +33,9 @@ const YES_NO = ['نعم', 'لا'];
 const N_ALLERGY_NONE = 'لا توجد حساسية معروفة';
 const N_ALLERGY = [N_ALLERGY_NONE, 'أدوية', 'أغذية'];
 const N_CC = ['ألم', 'تورم', 'ضعف', 'تنميل / تيبّس', 'صعوبة في الحركة', 'إصابة حديثة', 'متابعة بعد علاج', 'متابعة عملية'];
+// النوبات ومعدل تكررها (طلب الدكتور ٧/١١)
+const N_EPISODE = ['ألم مستمر', 'على شكل نوبات'];
+const N_EP_FREQ = ['يوميًا', 'عدة مرات في الأسبوع', 'أسبوعيًا', 'شهريًا', 'نادرًا'];
 const N_SINCE = ['أقل من أسبوع', 'من أسبوع إلى 6 أسابيع', 'من 6 أسابيع إلى 3 أشهر', 'أكثر من 3 أشهر'];
 
 const X_CC = ['Hip pain', 'Knee pain', 'Groin pain', 'Thigh pain', 'Buttock pain', 'Stiffness', 'Swelling', 'Giving way / Instability', 'Clicking / Locking', 'Difficulty walking', 'Difficulty sitting / squatting', 'Follow-up'];
@@ -61,7 +64,7 @@ const X_IMG = ['X-ray', 'MRI', 'CT', 'Ultrasound'];
 const X_PLAN = ['Medication', 'Physiotherapy', 'Activity modification', 'Injection / Intervention', 'Brace / Support', 'Surgery (if indicated)'];
 // نفس البنود لطباعة التشخيص (printDiagnosis) عشان الورقة المطبوعة تفضل مطابقة للشاشة
 export const SHEET_LISTS = {
-  N_VISIT, N_GENDER, N_MARITAL, N_JOB, N_ACTIVITY, N_MISS, N_PREG, N_HX, YES_NO, N_ALLERGY, N_CC, N_SINCE,
+  N_VISIT, N_GENDER, N_MARITAL, N_JOB, N_ACTIVITY, N_MISS, N_PREG, N_HX, YES_NO, N_ALLERGY, N_CC, N_SINCE, N_EPISODE, N_EP_FREQ,
   X_CC, X_DUR, X_SIDE, X_ONSET, X_COURSE, X_PREV, X_RF, X_DERM, X_PALP_HIP, X_PALP_KNEE, X_ROM_HIP, X_ROM_KNEE,
   X_PATMOB, X_SPROM, X_MRC, X_REFLEX, X_ST_HIP, X_ST_KNEE, X_IMG, X_PLAN,
 };
@@ -244,6 +247,12 @@ export function sheetSummary(s: ExamSheet, side: Side = 'na') {
     tx(s, 'n.onset') && `بداية المشكلة: ${tx(s, 'n.onset')}`,
     pain && `مكان الألم: ${pain}`,
     since && `منذ: ${since}`,
+    (() => {
+      const ep = picked(s, 'n.episode', N_EPISODE)[0];
+      if (!ep) return '';
+      if (ep !== 'على شكل نوبات') return `طبيعة الألم: ${ep}`;
+      return `نوبات: ${join([picked(s, 'n.ep.freq', N_EP_FREQ)[0], tx(s, 'n.ep.count') && `${tx(s, 'n.ep.count')} نوبة`, tx(s, 'n.ep.dur') && `مدة النوبة ${tx(s, 'n.ep.dur')}`], ' — ')}`;
+    })(),
     injury && `إصابة حديثة: ${join([injury, tx(s, 'n.injury.what')], ' — ')}`,
     tx(s, 'n.done') && `ما تم حتى الآن: ${tx(s, 'n.done')}`,
     sec('الأمراض المزمنة', [...picked(s, 'n.hx', N_HX), tx(s, 'n.hx.other')]),
@@ -463,11 +472,7 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
             </div>
 
             <div className="sh-map">
-              <div className="sh-lbl">مكان الألم <small>(اضغط على الجسم — ممكن أكتر من مكان)</small></div>
-              <div className="seg">
-                <button type="button" className={`seg__btn ${view === 'front' ? 'active' : ''}`} onClick={() => setView('front')}>أمامي</button>
-                <button type="button" className={`seg__btn ${view === 'back' ? 'active' : ''}`} onClick={() => setView('back')}>خلفي</button>
-              </div>
+              <div className="sh-lbl">مكان الألم <small>(اختار المنطقة والجهة — ممكن أكتر من مكان)</small></div>
               <BodyFigure key={view} view={view} compact selected={null} hovered={hovered} marked={new Set(sheet.pain)} onSelect={togglePain} onHover={setHovered} />
               <div className="dx-hint">{hovered ? regionById(hovered)?.name : sheet.pain.length ? `${sheet.pain.length} ${sheet.pain.length > 1 ? 'أماكن' : 'مكان'}` : 'مفيش مكان متحدد'}</div>
               {sheet.pain.length > 0 && (
@@ -490,6 +495,14 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
               <div className="sh-scale"><span>لا يوجد ألم</span><span>ألم متوسط</span><span>ألم شديد</span></div>
               <div className="sh-lbl">منذ متى؟</div>
               <div className="sh-inline"><Pick a={a} g="n.since" items={N_SINCE} /></div>
+              <div className="sh-lbl">النوبات</div>
+              <div className="sh-inline"><Pick a={a} g="n.episode" items={N_EPISODE} /></div>
+              {a.has('n.episode', 'على شكل نوبات') && <>
+                <div className="sh-lbl">معدل تكرر النوبات</div>
+                <div className="sh-inline"><Pick a={a} g="n.ep.freq" items={N_EP_FREQ} /></div>
+                <Txt a={a} k="n.ep.count" label="عدد النوبات" unit="في الفترة دي" num />
+                <Txt a={a} k="n.ep.dur" label="مدة النوبة" placeholder="مثلاً: ساعتين" />
+              </>}
               <Txt a={a} k="n.onset" label="بداية المشكلة / كيفية حدوثها" stack />
               <Row label="هل توجد إصابة حديثة؟"><Pick a={a} g="n.injury" items={YES_NO} /></Row>
               {a.has('n.injury', 'نعم') && <Txt a={a} k="n.injury.what" label="إذا نعم، ما هي؟" stack />}

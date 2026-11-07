@@ -4,9 +4,7 @@ export type BodyView = 'front' | 'back';
 
 export const regionById = (id: string) => BODY_REGIONS.find((r) => r.id === id);
 
-// صورة الهيكل العظمي (public/anatomy — مقصوصة من لوحة التشريح 390×745) ونقط الاختيار عليها بالبكسل.
-// المنظر الأمامي: شمال الصورة = يمين المريض. الخلفي: شمال الصورة = شمال المريض.
-const W = 390, H = 745;
+// ترتيب المناطق (من الراس للرجل) — كان مواقع النقط على صورة الهيكل العظمي
 type Spot = [region: string, x: number, y: number];
 const SPOTS: Record<BodyView, Spot[]> = {
   front: [
@@ -29,36 +27,40 @@ const SPOTS: Record<BodyView, Spot[]> = {
 
 // جهة النقطة من مكانها على الصورة (أمامي: شمال الصورة = يمين المريض) — للمناطق اللي ليها جهتين بس
 export type PinSide = 'right' | 'left' | null;
-const pinSide = (view: BodyView, x: number): 'right' | 'left' => ((x < W / 2) === (view === 'front') ? 'right' : 'left');
 
-export function BodyFigure({ view, selected, hovered, highlighted, marked, onSelect, onHover, compact }: {
-  view: BodyView; selected: string | null; hovered: string | null; highlighted?: Set<string>;
-  /** نقط متعلّمة (اختيار متعدد): «knee:right» للمناطق اللي ليها جهتين، أو «lumbar» */
+// صورة جسم الإنسان اتشالت من السيستم (طلب الدكتور ٧/١١): مكان الألم بقى أزرار بأسماء المناطق — نفس البيانات ونفس الاستخدام.
+// المناطق اللي ليها جهتين بتتعرض «يمين» و«شمال». view مابقاش بيفرق (كل المناطق بتتعرض مرة واحدة).
+const ALL_ORDER = [...SPOTS.front, ...SPOTS.back].map((s) => s[0]).filter((id, i, a) => a.indexOf(id) === i);
+export function BodyFigure({ selected, hovered, highlighted, marked, onSelect, onHover }: {
+  view?: BodyView; selected: string | null; hovered: string | null; highlighted?: Set<string>;
+  /** اختيارات متعلّمة (اختيار متعدد): «knee:right» للمناطق اللي ليها جهتين، أو «lumbar» */
   marked?: Set<string>;
   onSelect: (id: string, side: PinSide) => void; onHover: (id: string | null) => void; compact?: boolean;
 }) {
-  const spots = SPOTS[view].filter(([id]) => MAP_REGION_IDS.has(id)); // المناطق اللي ليها شيت كشف بس
-  const order = spots.map((s) => s[0]).filter((id, i, a) => a.indexOf(id) === i);
+  const ids = ALL_ORDER.filter((id) => MAP_REGION_IDS.has(id)); // المناطق اللي ليها شيت كشف بس
   return (
-    <figure className={`bm-figure bm-skel ${compact ? 'bm-figure--compact' : ''}`}>
-      <div className="bm-skel__frame">
-        <img src={`${import.meta.env.BASE_URL}anatomy/${view}.jpg`} alt={view === 'front' ? 'الهيكل العظمي — منظر أمامي' : 'الهيكل العظمي — منظر خلفي'} draggable={false} />
-        {spots.map(([id, x, y], i) => {
-          const r = regionById(id);
-          if (!r) return null;
-          const side = r.sided ? pinSide(view, x) : null;
-          const on = selected === id || !!marked?.has(side ? `${id}:${side}` : id);
-          const state = [on && 'is-selected', hovered === id && 'is-hover', highlighted?.has(id) && 'is-match'].filter(Boolean).join(' ');
-          return (
-            <button key={i} type="button" className={`bm-skel__pin ${state}`} style={{ left: `${(x / W) * 100}%`, top: `${(y / H) * 100}%` }}
-              title={r.name} aria-label={r.name} aria-pressed={marked ? on : undefined} onClick={() => onSelect(id, side)} onMouseEnter={() => onHover(id)} onMouseLeave={() => onHover(null)}
-              onFocus={() => onHover(id)} onBlur={() => onHover(null)}>
-              {order.indexOf(id) + 1}
-            </button>
-          );
-        })}
-      </div>
-      <figcaption>{view === 'front' ? 'منظر أمامي' : 'منظر خلفي'}</figcaption>
-    </figure>
+    <div className="rg-pick" role="group" aria-label="مكان الألم">
+      {ids.map((id) => {
+        const r = regionById(id);
+        if (!r) return null;
+        const sides: PinSide[] = r.sided ? ['right', 'left'] : [null];
+        return (
+          <div key={id} className={`rg-pick__row ${hovered === id ? 'is-hover' : ''} ${highlighted?.has(id) ? 'is-match' : ''}`}>
+            <span className="rg-pick__name">{r.name}</span>
+            <span className="rg-pick__btns">
+              {sides.map((sd) => {
+                const on = selected === id || !!marked?.has(sd ? `${id}:${sd}` : id);
+                return (
+                  <button key={sd ?? 'c'} type="button" className={`rg-pick__btn ${on ? 'is-selected' : ''}`} aria-pressed={on}
+                    onClick={() => onSelect(id, sd)} onMouseEnter={() => onHover(id)} onMouseLeave={() => onHover(null)} onFocus={() => onHover(id)} onBlur={() => onHover(null)}>
+                    {sd === 'right' ? 'يمين' : sd === 'left' ? 'شمال' : 'اختيار'}
+                  </button>
+                );
+              })}
+            </span>
+          </div>
+        );
+      })}
+    </div>
   );
 }

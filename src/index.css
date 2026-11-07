@@ -1176,7 +1176,8 @@ textarea.input { height: auto; padding-block: 10px; resize: vertical; line-heigh
 .pwa-steps .icon { vertical-align: -3px; }
 .pwa-installed { color: var(--ok, #1f8f5f); }
 /* رسالة «فيه تحديث» بتطلع تحت فوق المحتوى (مش جوّه الصفحة) — ما بتزقّش الشريط العلوي ولا الصفحة ساعة التحديث */
-.pwa-update { position: fixed; z-index: 90; inset-inline: 16px; bottom: 16px; margin: 0 auto; max-width: 560px; display: flex; align-items: center; gap: 10px; box-shadow: var(--shadow-lg); }
+.pwa-update { position: fixed; z-index: 90; inset-inline: 16px; bottom: 16px; margin: 0 auto; max-width: 560px; display: flex; align-items: center; gap: 10px; box-shadow: var(--shadow-lg); padding: 12px 14px; border-radius: 12px; background: #1d4ed8; color: #fff; font-size: 14px; }
+.pwa-update .btn { background: #fff; color: #1d4ed8; border-color: #fff; font-weight: 700; }
 @media (max-width: 760px) { .pwa-update { bottom: calc(76px + env(safe-area-inset-bottom)); } }
 /* في وضع التطبيق المثبت على iPhone: مسافة للنوتش */
 @supports (padding: env(safe-area-inset-top)) { @media (display-mode: standalone) { .topbar { padding-top: max(10px, env(safe-area-inset-top)); } } }

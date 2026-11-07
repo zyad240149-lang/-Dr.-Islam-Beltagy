@@ -133,27 +133,13 @@ export function PwaUpdateBanner() {
   const { updateReady } = usePwa();
   const newVersion = useNewVersion();
   const stale = updateReady || newVersion;
-  // التحديث بيوصل لكل الأجهزة لوحده: أول ما يبان إن فيه نسخة جديدة، الصفحة بتتحدّث تلقائيًا في أقرب لحظة آمنة —
-  // ما فيه نافذة مفتوحة ولا خانة بيتكتب فيها، والمستخدم ما لمس الكيبورد/الماوس آخر 20 ثانية (أو رجع للتبويب بعد ما كان مخفي).
-  useEffect(() => {
-    if (!stale) return;
-    let last = Date.now();
-    const touch = () => { last = Date.now(); };
-    const busy = () => !!document.querySelector('.overlay') || (document.activeElement instanceof HTMLElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName));
-    const go = () => { if (busy()) return; if (updateReady) applyUpdate(); else location.reload(); };
-    const t = setInterval(() => { if (Date.now() - last > 20_000) go(); }, 5_000);
-    const vis = () => { if (document.visibilityState === 'visible') go(); };
-    const evs = ['keydown', 'pointerdown', 'input', 'wheel', 'touchstart'];
-    evs.forEach((e) => document.addEventListener(e, touch, { passive: true }));
-    document.addEventListener('visibilitychange', vis);
-    return () => { clearInterval(t); evs.forEach((e) => document.removeEventListener(e, touch)); document.removeEventListener('visibilitychange', vis); };
-  }, [stale, updateReady]);
+  // التحديث بيوصل لكل الأجهزة كشريط أزرق ثابت تحت — بيفضل ظاهر لحد ما المستخدم يدوس «تحديث» (مفيش تحديث تلقائي يقطع شغله)
   if (!stale) return null;
   return (
-    <div className="alert alert-info pwa-update no-print" role="status">
+    <div className="pwa-update no-print" role="status">
       <Icon name="refresh" size={17} />
-      <span style={{ flex: 1 }}>فيه تحديث جديد للنظام — بيتحدّث لوحده بعد ثواني (أو اضغط «تحديث» الحين).</span>
-      <Button size="sm" icon="refresh" onClick={() => (updateReady ? applyUpdate() : location.reload())}>تحديث</Button>
+      <span style={{ flex: 1 }}><b>فيه تحديث جديد للنظام</b> — اضغط «تحديث» عشان تاخد آخر نسخة.</span>
+      <Button size="sm" variant="outline" icon="refresh" onClick={() => (updateReady ? applyUpdate() : location.reload())}>تحديث</Button>
     </div>
   );
 }

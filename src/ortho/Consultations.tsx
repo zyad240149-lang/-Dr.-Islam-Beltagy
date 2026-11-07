@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { net } from '../offline/net';
 import { Link } from 'react-router-dom';
 import { Button, EmptyState, Modal } from '../components/ui';
 import { DiagnosisPicker } from '../components/DiagnosisPicker';
@@ -160,6 +161,19 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
   // كل حاجة اختيارية: الحفظ محتاج المريض بس. لو فيه حاجة ناقصة بنسأل: «استكمال بعدين» (يتحفظ «يحتاج استكمال») ولا «التشخيص اكتمل»
   // من غير ملف: الاسم الثلاثي في خانة 1 هو اللي بيتطابق بيه — لازم يكون مكتوب
   const unlinked = !c.patientId && (!!pending || !!initial);
+  // الخادم بيربط التشخيص بملف الاستقبال تلقائي (أول ما يوصل أو أول ما الملف يتفتح) — الشاشة المفتوحة بتاخد الربط على طول
+  useOrthoVersion();
+  const linkedOnServer = initial?.id && !c.patientId ? ortho.list('consultations').find((x) => x.id === initial.id)?.patientId : undefined;
+  useEffect(() => {
+    if (linkedOnServer) setC((x) => (x.patientId ? x : { ...x, patientId: linkedOnServer }));
+  }, [linkedOnServer]);
+  useEffect(() => {
+    // فتح تشخيص غير مربوط: نجيب آخر نسخة من الخادم (يمكن اترتبط من جهاز تاني أو بعد المزامنة)، وبعدها كل ١٥ ثانية لحد ما يترتبط
+    if (!initial?.id || c.patientId || !net.isOnline()) return;
+    void ortho.reload('consultations');
+    const t = window.setInterval(() => { if (net.isOnline()) void ortho.reload('consultations'); }, 15000);
+    return () => window.clearInterval(t);
+  }, [initial?.id, c.patientId]);
   const pendingInfo = pendingFromSheet(sheet);
   const ok = !!c.patientId || (unlinked && isTripleName(pendingInfo.name));
   const pseudo = unlinked ? ({ fullName: pendingInfo.name, phone: pendingInfo.phone ?? '', fileNo: '' } as unknown as NonNullable<ReturnType<typeof db.patient>>) : null;

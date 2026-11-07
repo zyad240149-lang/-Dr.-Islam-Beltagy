@@ -176,7 +176,7 @@ function IdentityFields({ idp, f, set, errors }: { idp: string; f: { firstName?:
 export function NewPatientModal({ onClose, onCreated }: { onClose: () => void; onCreated: (id: string) => void }) {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
-  const [f, setF] = useState({ nationality: 'saudi' as 'saudi' | 'non_saudi', firstName: '', fatherName: '', familyName: '', fullName: '', phone: '', email: '', gender: 'male' as 'male' | 'female', birthDate: '', nationalId: '', city: '', district: '', street: '', address: '', notes: '', doctorId: '', referralSource: 'google' as ReferralSource, occupation: [] as string[], activity: [] as string[] });
+  const [f, setF] = useState({ nationality: 'saudi' as 'saudi' | 'non_saudi', firstName: '', fatherName: '', familyName: '', fullName: '', phone: '', email: '', gender: 'male' as 'male' | 'female', birthDate: '', nationalId: '', city: '', district: '', street: '', address: '', notes: '', doctorId: '', referralSource: 'google' as ReferralSource });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [phoneErr, setPhoneErr] = useState<PhoneErrorCode | null>('required');
   const [contact, setContact] = useState(() => contactOf(null));
@@ -224,7 +224,6 @@ export function NewPatientModal({ onClose, onCreated }: { onClose: () => void; o
           <Select id="np-gender" label="الجنس" value={f.gender} onChange={(e) => set('gender', e.target.value as 'male' | 'female')} options={[{ value: 'male', label: 'رجل' }, { value: 'female', label: 'امرأة' }]} />
           <ContactFields idp="np" value={contact} onChange={setContact} onErrors={setContactErrs} showError={tried} />
           {errors.contact && <div className="alert alert-danger" style={{ gridColumn: '1 / -1' }}>{errors.contact}</div>}
-          <JobActivity f={f} set={set} />
         </div>
       </div>
       <div className="form-section">

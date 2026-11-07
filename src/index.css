@@ -254,7 +254,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 }
 
 /* ---------- Services ---------- */
-.svc-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 16px; scrollbar-width: thin; }
+.svc-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; } /* بتنزل سطر جديد بدل الاسكرول (٨/١١) */
 .svc-tab { flex: none; display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2, var(--ink)); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; white-space: nowrap; }
 .svc-tab .num { font-size: 14px; padding: 1px 7px; border-radius: 999px; background: var(--line-2); }
 .svc-tab:hover { border-color: var(--brand-700); }

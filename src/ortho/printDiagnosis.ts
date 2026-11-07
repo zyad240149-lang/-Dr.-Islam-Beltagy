@@ -5,7 +5,7 @@ import { DOCTOR } from '../landing/content';
 import { fileNoText } from '../utils/phoneUtils';
 import { fmtDate } from '../utils/format';
 import { SIDE, type Consultation, type ExamSheet } from './data';
-import { SHEET_LISTS as L, bmiOf, bmiClass, bmiText, normSheet, painLabel, sheetHasContent } from './ExamSheet';
+import { GEN_BOXES, SHEET_LISTS as L, bmiOf, bmiClass, bmiText, normSheet, painLabel, sheetHasContent } from './ExamSheet';
 import { RX_CSS, rxPageHtml } from './printRx';
 import { DX_SHEETS, FDX, PAIN_FOR_DD, dxGroupKey, dxSub, type DxSheetId } from './dxCatalog';
 import { TREATMENT, boxNeedsNotes, boxNotesKey, activeSheets, regionSheet, sheetFilled, treatmentFilled, type Field, type RegionSheetDef } from './regionSheets';
@@ -100,6 +100,9 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
       box(4, 'الأدوية الحالية والحساسية', table('<th>اسم الدواء</th><th>الجرعة</th><th>عدد المرات</th>', (meds.length || compact ? meds : [{ name: '', dose: '', freq: '' }]).map((m) => `<tr><td>${esc(m.name)}</td><td>${esc(m.dose)}</td><td>${esc(m.freq)}</td></tr>`))
         + lbl('الحساسية', cks('n.allergy', L.N_ALLERGY)) + line('مواد أخرى', v('n.allergy.other')) + line('التفاصيل', v('n.allergy.details'))),
       box(5, 'سبب الزيارة الحالية وتفاصيل المشكلة', visitCols.length ? `<div class="g3" style="grid-template-columns:repeat(${visitCols.length},minmax(0,1fr))">${visitCols.map((x) => `<div>${x}</div>`).join('')}</div>` : '', 'wide'),
+      // التاريخ المرضي العام لمشاكل العظام والمفاصل (GEN_BOXES)
+      ...GEN_BOXES.map((b, i) => box(6 + i, b.title, b.f.map((f) => ('g' in f ? lbl(f.label ?? '', wrap(f.one ? 'row' : 'cols2', cks(f.g, f.items))) + (f.other ? line('أخرى', v(f.g + '.other')) : '') : line(f.label, v(f.k)))).join('')
+        + (b.id !== 'sum' ? line('ملاحظات', v(`n.bn.${b.id}`)) : ''), [b.wide && 'wide', b.id === 'rf' && 'red'].filter(Boolean).join(' '))),
     ]);
 
   // ---------- صفحة 2: Hip & Knee ----------

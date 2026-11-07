@@ -383,7 +383,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           {/* ٦) شيت التروما جوّه الشيت العام — بيظهر لما «هل توجد إصابة حديثة؟» = نعم */}
           {traumaShown(sheet) && (
             <section className="sh-stack sh-trauma" dir="ltr">
-              <h3 className="sh-stack__h" dir="rtl">٦ تقييم إصابات العظام والكسور (Trauma)</h3>
+              <h3 className="sh-stack__h" dir="rtl">تقييم إصابات العظام والكسور (Trauma)</h3>
               <RegionSheetForm def={regionSheet('trauma')!} sheet={sheet} onChange={changeSheet} side={c.side} onSide={(v) => set('side', v)}
                 icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap('tr.dx.other')} />
             </section>

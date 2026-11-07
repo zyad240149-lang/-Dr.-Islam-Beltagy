@@ -28,7 +28,7 @@ const N_ACTIVITY = ['بيمارس رياضة بشكل احترافي', 'بيما
 const N_MISS = ['آنسة', 'مدام'];
 const N_PREG = ['لا يوجد', 'حمل', 'رضاعة'];
 const N_HX_NONE = 'لا توجد أمراض معروفة';
-const N_HX = [N_HX_NONE, 'ضغط الدم', 'السكر', 'الكوليسترول', 'أمراض القلب', 'أمراض الغدة الدرقية', 'أمراض الصدر / التنفسي', 'أمراض الكلى', 'أمراض المعدة / القولون', 'هشاشة العظام', 'أمراض روماتيزمية', 'أورام'];
+const N_HX = [N_HX_NONE, 'ضغط الدم', 'السكر', 'الكوليسترول', 'أمراض القلب', 'أمراض الغدة الدرقية', 'أمراض الصدر / التنفسي', 'أمراض الكلى', 'أمراض المعدة / القولون', 'هشاشة العظام', 'أمراض روماتيزمية', 'أمراض المناعة الذاتية', 'أورام'];
 const YES_NO = ['نعم', 'لا'];
 const N_ALLERGY_NONE = 'لا توجد حساسية معروفة';
 const N_ALLERGY = [N_ALLERGY_NONE, 'أدوية', 'أغذية'];
@@ -218,6 +218,45 @@ export const isTripleName = (n: string) => n.trim().split(/\s+/).filter(Boolean)
 // ---------- الملخص النصي (اللي بيتحفظ في حقول الكشف) ----------
 const join = (xs: (string | false | undefined)[], sep = ', ') => xs.filter(Boolean).join(sep);
 const sec = (name: string, xs: string[]) => { const t = join(xs); return t ? `${name}: ${t}` : ''; };
+
+// ---------- «التاريخ المرضي العام لمشاكل العظام والمفاصل» (ورقة الدكتور ٨/١١) ----------
+// المربعات اللي مكانتش في الشيت العام بس — الشكوى الرئيسية، ومنذ فترة، ومستمر/نوبات، والتاريخ المرضي، والأدوية الحالية، والملاحظات موجودين قبل كده
+export type GenField = { g: string; items: string[]; label?: string; one?: boolean; other?: boolean } | { k: string; label: string; stack?: boolean };
+export const GEN_BOXES: { id: string; title: string; wide?: boolean; f: GenField[] }[] = [
+  { id: 'loc', title: 'مكان الألم / الأماكن المصابة', f: [
+    { g: 'n.loc', items: ['مكان واحد', 'أكثر من مكان', 'ألم في أماكن متعددة', 'ألم بجسم كله'], one: true },
+    { k: 'n.loc.where', label: 'حدد المكان / الأماكن', stack: true } ] },
+  { id: 'onset', title: 'بداية الألم وسببها', f: [
+    { g: 'n.ons', items: ['فجأة', 'بالتدريج'], label: 'متى بدأ الألم؟', one: true },
+    { g: 'n.cause', items: ['إصابة / حادثة', 'وقعة', 'مجهود زائد أو نشاط جديد', 'رفع أشياء ثقيلة', 'حركة معينة', 'لم أتعرض لسبب واضح'], label: 'هل كان هناك سبب واضح لبدء الألم؟', other: true } ] },
+  { id: 'nature', title: 'طبيعة الألم', f: [
+    { g: 'n.nature', items: ['وجع عادي', 'حرقان', 'كهربا', 'تنميل', 'شد', 'تقل'], label: 'كيف تصف الألم؟', other: true } ] },
+  { id: 'aggr', title: 'ما الذي يزيد الألم؟', f: [
+    { g: 'n.aggr', items: ['الحركة', 'الراحة', 'التحميل / الوقوف لفترة طويلة', 'الجلوس لفترة طويلة', 'الصبح', 'بالليل', 'الشغل / الأنشطة اليومية'], other: true } ] },
+  { id: 'rel', title: 'ما الذي يخفف الألم؟', f: [
+    { g: 'n.rel', items: ['الراحة', 'الأدوية', 'الكمادات (ساخنة / باردة)', 'تغيير الوضعية', 'العلاج الطبيعي', 'لا يوجد ما يخفف الألم'], other: true } ] },
+  { id: 'ms', title: 'التيبس الصباحي', f: [
+    { g: 'n.ms', items: ['نعم', 'لا'], label: 'هل يوجد تيبس بالمفاصل صباحًا؟', one: true },
+    { g: 'n.ms.dur', items: ['أقل من 30 دقيقة', 'من 30 دقيقة إلى ساعة', 'أكثر من ساعة'], label: 'إذا نعم، لمدة قد إيه تقريبًا؟', one: true, other: true } ] },
+  { id: 'swell', title: 'تورم / احمرار / سخونة', f: [
+    { g: 'n.sw', items: ['نعم', 'لا'], label: 'هل يحدث تورم بالمفصل؟', one: true },
+    { g: 'n.red', items: ['نعم', 'لا'], label: 'هل يوجد احمرار؟', one: true },
+    { g: 'n.warm', items: ['نعم', 'لا'], label: 'هل تشعر بسخونة في المفصل؟', one: true },
+    { k: 'n.swell.when', label: 'متى يحدث ذلك؟' } ] },
+  { id: 'sym', title: 'أعراض أخرى مرتبطة', f: [
+    { g: 'n.sym', items: ['حرارة', 'إرهاق شديد', 'نقص وزن بدون سبب', 'مشاكل جلدية (طفح جلدي)', 'مشاكل بالعين (احمرار / ألم)', 'مشاكل بالجهاز الهضمي', 'مشاكل بالجهاز البولي', 'مشاكل تنفسية'], label: 'هل توجد أعراض أخرى مصاحبة؟', other: true } ] },
+  { id: 'adl', title: 'تأثير الألم على الحياة اليومية', f: [
+    { g: 'n.adl', items: ['المشي', 'صعود / نزول السلم', 'الجلوس لفترة طويلة', 'الوقوف لفترة طويلة', 'ارتداء الملابس', 'العمل', 'النوم'], label: 'ما الأنشطة التي أصبحت صعبة بسبب الألم؟', other: true } ] },
+  { id: 'prevtx', title: 'الأدوية والعلاج المستخدم سابقًا', f: [
+    { g: 'n.prevtx', items: ['مسكنات', 'مضادات التهاب', 'ستيرويدات', 'علاج طبيعي', 'حقن'], label: 'هل تستخدم أدوية أو علاجات من قبل؟', other: true } ] },
+  { id: 'rf', title: '⚠ علامات إنذار (أعراض تستدعي الانتباه)', f: [
+    { g: 'n.rf', items: ['إصابة حديثة قوية', 'ألم أثناء الراحة أو بالليل', 'نقص وزن غير مبرر', 'حمى أو اشتباه عدوى', 'ضعف أو تنميل بالأطراف', 'صعوبة في التحكم في البول أو البراز', 'عدم القدرة على التحميل على الطرف', 'تاريخ مرضي لأورام', 'استخدام مثبطات المناعة'], other: true } ] },
+  { id: 'sum', title: 'الخلاصة والتشخيص المبدئي', wide: true, f: [{ k: 'n.summary', label: 'الخلاصة والتشخيص المبدئي', stack: true }] },
+];
+/** نص مربع من GEN_BOXES للملخص */
+export function genBoxText(s: ExamSheet, b: (typeof GEN_BOXES)[number]): string {
+  return b.f.map((f) => ('g' in f ? join([...picked(s, f.g, f.items), f.other ? tx(s, f.g + '.other') : '']) : tx(s, f.k))).filter(Boolean).join(' — ');
+}
 const rtLt = (s: ExamSheet, k: string, unit = '') => {
   const r = tx(s, k + '.rt'), l = tx(s, k + '.lt');
   return join([r && `Rt ${r}${unit}`, l && `Lt ${l}${unit}`], ' / ');
@@ -264,6 +303,7 @@ export function sheetSummary(s: ExamSheet, side: Side = 'na') {
     })(),
     injury && `إصابة حديثة: ${join([injury, tx(s, 'n.injury.what')], ' — ')}`,
     tx(s, 'n.done') && `ما تم حتى الآن: ${tx(s, 'n.done')}`,
+    ...GEN_BOXES.map((b) => { const t = genBoxText(s, b); return t ? `${b.title}: ${t}` : ''; }),
     sec('الأمراض المزمنة', [...picked(s, 'n.hx', N_HX), tx(s, 'n.hx.other')]),
     picked(s, 'n.smoke', YES_NO)[0] && `التدخين: ${picked(s, 'n.smoke', YES_NO)[0]}`,
     meds && `أدوية حالية: ${meds}`,
@@ -520,6 +560,20 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
         <div className="sh-lbl">ملاحظات</div>
           <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt('n.bn.visit')} onChange={(e) => a.set('n.bn.visit', e.target.value)} />
         </Box>
+
+        {GEN_BOXES.map((b, i) => (
+          <Box key={b.id} n={6 + i} wide={b.wide} tone={b.id === 'rf' ? 'red' : undefined} title={b.title}>
+            {b.f.map((f) => ('g' in f ? (
+              <div key={f.g}>
+                {f.label && <div className="sh-lbl">{f.label}</div>}
+                <div className={f.one ? 'sh-inline' : undefined}>{f.one ? <Pick a={a} g={f.g} items={f.items} /> : <Checks a={a} g={f.g} items={f.items} />}</div>
+                {f.other && <Txt a={a} k={f.g + '.other'} label="أخرى" />}
+              </div>
+            ) : <Txt key={f.k} a={a} k={f.k} label={f.label} stack={f.stack} />))}
+            {b.id !== 'sum' && <><div className="sh-lbl">ملاحظات</div>
+            <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt(`n.bn.${b.id}`)} onChange={(e) => a.set(`n.bn.${b.id}`, e.target.value)} /></>}
+          </Box>
+        ))}
       </div>
     </div>
   );

@@ -43,7 +43,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
   const [notes, setNotes] = useState('');
   const [payAmount, setPayAmount] = useState('');
   const [payMethod, setPayMethod] = useState<PaymentMethod>('cash');
-  // «المريض موجود» (في العيادة دلوقتي): الموعد بيتحجز النهارده على أقرب وقت فاضي، وحضوره بيتأكد على طول بعد الحجز
+  // «المريض موجود» (في العيادة دلوقتي): الموعد بيتحجز النهارده في الوقت اللي تختاره، وحضوره بيتأكد على طول بعد الحجز
   const [walkIn, setWalkIn] = useState(false);
   const [result, setResult] = useState<{ id: string; no: string; date: string; time: string; therapist: string } | null>(null);
 
@@ -88,10 +88,6 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
     if (step === 3 && walkIn && date !== todayYmd()) { setDate(todayYmd()); setTime(''); return; }
     if (step === 3 && !date && quickDays.length) setDate(quickDays[0].date);
   }, [step, date, walkIn, quickDays.length ? quickDays[0].date : '']);
-  // المريض موجود: أقرب وقت فاضي النهارده بيتختار لوحده (وتقدر تغيّره)
-  useEffect(() => {
-    if (walkIn && step === 3 && date === todayYmd() && !time && slots.length) setTime(slots[0]);
-  }, [walkIn, step, date, time, slots.length ? slots[0] : '']);
   // وقت جاي من «جدول المواعيد اليومي»: لو بقى مش متاح للخدمة المختارة يتمسح (ويختار وقت تاني)
   // ⚠️ مش أثناء الحجز ولا بعده: الموعد اللي لسه اتسجّل بيشغل نفس الخانة، فكانت بتطلع «مش مناسبة» غلط بعد ما الحجز ينجح
   const presetSlotGone = !!(presetTime && time === presetTime && serviceId && date && therapistId && !busy && !result && !slots.includes(time));
@@ -242,7 +238,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
               </button>
               {(!lockedPreset || date === todayYmd()) && <button type="button" className={`choice ${walkIn ? 'selected' : ''}`} onClick={() => { setWalkIn(true); next(); }}>
                 <span className="choice__ic"><Icon name="checkCircle" size={18} /></span>
-                <span><strong>المريض موجود</strong><span>{lockedPreset ? ` النهارده ${fmtTime(time)} — وحضوره يتأكد على طول` : ' النهارده على أقرب وقت — وحضوره يتأكد على طول'}</span></span>
+                <span><strong>المريض موجود</strong><span>{lockedPreset ? ` النهارده ${fmtTime(time)} — وحضوره يتأكد على طول` : ' النهارده في الوقت اللي تختاره — وحضوره يتأكد على طول'}</span></span>
               </button>}
             </div>
           )}

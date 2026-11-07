@@ -12,6 +12,7 @@ import { empName } from '../data/installments';
 import { fmtTime } from '../utils/format';
 import { DiagnosisOutput } from './DiagnosisOutput';
 import { FollowUpsOfConsult } from './FollowUps';
+import { PatientMedicalFiles } from './PatientMedicalFiles';
 import { diagnosisHtml, hasRx, type DxPart } from './printDiagnosis';
 
 // صفحات الشيت جوّه iframe (ستايلها منفصل عن البرنامج) بتتصغّر على عرض المكان المتاح
@@ -73,6 +74,9 @@ export function DiagnosisTab({ patientId, embedded }: { patientId: string; embed
           }} />
         </div>
       )}
+      {/* الأشعة/السونار والتحاليل المرفوعة للمريض (من السكرتيرة أو من جوّه الكشف) — بتظهر هنا مع التشخيصات */}
+      <PatientMedicalFiles patientId={patientId} categories={['xray']} title="الأشعة / السونار المرفوعة" icon="camera" hideEmpty />
+      <PatientMedicalFiles patientId={patientId} categories={['lab']} title="التحاليل المرفوعة" icon="doc" hideEmpty />
       <LoadState kind="consultations">
         {items.length === 0 ? (!draft && <EmptyState icon="stethoscope" title="لسه مفيش تشخيص للمريض ده" text={embedded ? 'اضغط «تشخيص» فوق عشان تبدأ أول تشخيص.' : undefined} />) : items.map((c, i) => {
           const open = shown[c.id] ?? (embedded || i === 0);

@@ -313,7 +313,6 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           <textarea id="cx-visit-reason" className="input" rows={2} dir="auto" value={c.visitReason ?? ''} onChange={(e) => set('visitReason', e.target.value)}
             placeholder="اكتب شكوى المريض بكلامه — مثلاً: ألم في الركبة اليمين من أسبوعين، تورم بعد المشي…" />
         </div>
-        <PatientMedicalFiles patientId={c.patientId} excludeConsultId={initial?.id} />
 
         <div className="seg seg--5 sh-tabs" role="tablist" aria-label="أجزاء الكشف">
           {TABS.map(([k, l], i) => (
@@ -334,6 +333,9 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
         </>}
 
         {tab === 'doctor' && <>
+          {/* التحاليل اللي الاستقبال رفعتها في ملف المريض */}
+          <PatientMedicalFiles patientId={c.patientId} excludeConsultId={initial?.id} categories={['lab']} title="التحاليل" icon="doc" />
+          <PatientMedicalFiles patientId={c.patientId} excludeConsultId={initial?.id} categories={['other']} title="ملفات أخرى للمريض" hideEmpty />
           <>
             <SheetSwitch active={active} onPick={pickSheet} onRemove={dropSheet} />
             {!active.length && <p className="sh-pickfirst">اختار المنطقة اللي هتكشف عليها من فوق (أو حدد مكان الألم في الشيت العام) — شيتها هيتفتح هنا. لو اخترت منطقتين، الشيتين بيتفتحوا مع بعض.</p>}
@@ -375,6 +377,8 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
 
         {/* تقارير السونار (MSK Ultrasound Report) — المنطقة اللي اتعلّمت أو اتكتب فيها بتتفتح (مفاتيح usw./usk./usa./ush.) */}
         {tab === 'us' && <>
+          {/* صور الأشعة / السونار اللي الاستقبال رفعتها في ملف المريض */}
+          <PatientMedicalFiles patientId={c.patientId} excludeConsultId={initial?.id} categories={['xray']} title="صور الأشعة / السونار (من ملف المريض)" icon="camera" />
           <div className="us-pick">
             {US_SHEETS.map((d) => {
               const on = usActive.includes(d);

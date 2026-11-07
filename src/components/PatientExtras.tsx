@@ -110,7 +110,7 @@ export function BodyRecordsTab({ patientId }: { patientId: string }) {
 // ============ تبويب الملفات والمرفقات ============
 const fmtSize = (n: number) => (n > 1048576 ? (n / 1048576).toFixed(1) + ' م.ب' : Math.max(1, Math.round(n / 1024)) + ' ك.ب');
 
-export const FILE_CATEGORY: Record<PatientFileCategory, string> = { xray: 'أشعة', lab: 'تحاليل', other: 'ملف آخر' };
+export const FILE_CATEGORY: Record<PatientFileCategory, string> = { xray: 'أشعة / سونار', lab: 'تحاليل', other: 'ملف آخر' };
 const CAT_TONE: Record<PatientFileCategory, string> = { xray: 'brand', lab: 'info', other: 'muted' };
 export const fileTitle = (f: PatientFile) => f.title || f.fileName;
 
@@ -164,7 +164,7 @@ export function PatientFilesTab({ patientId }: { patientId: string }) {
             ))}
           </div>
           <div className="grid-form" style={{ alignItems: 'end' }}>
-            <Input id="pf-title" label="اسم / وصف الملف" placeholder={meta.category === 'lab' ? 'مثلاً: صورة دم كاملة' : meta.category === 'xray' ? 'مثلاً: أشعة عادية على الركبة اليمين' : ''} value={meta.title} onChange={(e) => setMeta((m) => ({ ...m, title: e.target.value }))} />
+            <Input id="pf-title" label="اسم / وصف الملف" placeholder={meta.category === 'lab' ? 'مثلاً: صورة دم كاملة' : meta.category === 'xray' ? 'مثلاً: سونار على الكتف الشمال أو أشعة على الركبة اليمين' : ''} value={meta.title} onChange={(e) => setMeta((m) => ({ ...m, title: e.target.value }))} />
             <Input id="pf-date" label="تاريخ الأشعة / التحليل" type="date" max={todayYmd()} value={meta.fileDate} onChange={(e) => setMeta((m) => ({ ...m, fileDate: e.target.value }))} />
             <Input id="pf-note" label="ملاحظات (اختياري)" value={meta.note} onChange={(e) => setMeta((m) => ({ ...m, note: e.target.value }))} />
           </div>

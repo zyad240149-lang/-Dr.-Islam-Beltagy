@@ -38,7 +38,8 @@ export function raCalc(s: ExamSheet): RaResult {
   const scores = RA_DOMAINS.map((d) => { const r = d.rows.find(([c]) => s.on.includes(`${d.g}|${c}`)); return r ? r[1] : null; });
   const total = scores.reduce<number>((a, b) => a + (b ?? 0), 0);
   return {
-    enabled: !s.on.includes('ra|closed'), approved: s.on.includes('ra|approved'), scores, total,
+    // مقفول افتراضيًا (بقى جوّه «التيبس الصباحي» في الشيت العام — ٨/١١): بيتفتح بالزرار، وكشف قديم اتكتب فيه بيفضل مفتوح
+    enabled: !s.on.includes('ra|closed') && (s.on.includes('ra|open') || s.on.some((o) => o.startsWith('ra.')) || Object.entries(s.txt).some(([k, v]) => k.startsWith('ra.') && v.trim())), approved: s.on.includes('ra|approved'), scores, total,
     complete: scores.every((x) => x !== null), classified: total >= 6,
   };
 }

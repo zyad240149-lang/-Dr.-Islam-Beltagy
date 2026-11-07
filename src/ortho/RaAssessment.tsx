@@ -18,8 +18,7 @@ export function RaAssessment({ sheet, onChange }: { sheet: ExamSheet; onChange: 
   if (!r.enabled) {
     return (
       <div className="ra-add" dir="rtl">
-        <button type="button" className="btn btn--outline btn--sm" onClick={() => a.toggle('ra', 'closed')}><Icon name="plus" size={14} /> فتح تقييم التهاب المفاصل الروماتويدي (ACR/EULAR 2010)</button>
-        <span className="muted-sm">مقفول — اللي اتكتب فيه محفوظ</span>
+        <button type="button" className="btn btn--outline btn--sm" onClick={() => onChange((x) => ({ ...x, on: [...x.on.filter((o) => o !== 'ra|closed' && o !== 'ra|open'), 'ra|open'] }))}><Icon name="plus" size={14} /> فتح تقييم التهاب المفاصل الروماتويدي (ACR/EULAR 2010)</button>
       </div>
     );
   }
@@ -51,7 +50,7 @@ export function RaAssessment({ sheet, onChange }: { sheet: ExamSheet; onChange: 
     <section className="ra">
       <header className="ra-head" dir="rtl">
         <h3>تقييم التهاب المفاصل الروماتويدي <span dir="ltr">(ACR/EULAR 2010)</span></h3>
-        <button type="button" className="ra-head__x" onClick={() => a.toggle('ra', 'closed')}>إغلاق</button>
+        <button type="button" className="ra-head__x" onClick={() => onChange((x) => ({ ...x, on: [...x.on.filter((o) => o !== 'ra|closed' && o !== 'ra|open'), 'ra|closed'] }))}>إغلاق</button>
       </header>
       <div className="ra-banner" dir="ltr">
         <span className="ra-banner__ic"><Icon name="bone" size={28} /></span>

@@ -247,6 +247,9 @@ export function sheetSummary(s: ExamSheet, side: Side = 'na') {
     job && `الوظيفة: ${job}`,
     activity && `النشاط: ${activity}`,
     miss && `الحالة: ${miss}`,
+    picked(s, 'n.married', YES_NO)[0] && `متزوج: ${picked(s, 'n.married', YES_NO)[0]}`,
+    tx(s, 'n.son') && `اسم الابن الكبير: ${tx(s, 'n.son')}`,
+    tx(s, 'n.notes') && `ملاحظات: ${tx(s, 'n.notes')}`,
     preg && preg !== 'لا يوجد' && `⚠ ${preg}`,
     tx(s, 'n.onset') && `بداية المشكلة: ${tx(s, 'n.onset')}`,
     pain && `مكان الألم: ${pain}`,
@@ -385,10 +388,15 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
           <Row label="النوع"><Pick a={a} g="n.gender" items={N_GENDER} /></Row>
           {female && <Row label="الحالة"><Pick a={a} g="n.miss" items={N_MISS} /></Row>}
           {female && <Row label="حمل أو رضاعة"><Pick a={a} g="n.preg" items={N_PREG} /></Row>}
+          <Row label="متزوج"><Pick a={a} g="n.married" items={YES_NO} /></Row>
+          <Txt a={a} k="n.son" label="اسم الابن الكبير" />
+          <Txt a={a} k="n.address" label="العنوان" />
           <div className="sh-lbl">الوظيفة</div>
           <div className="sh-inline"><Checks a={a} g="n.job" items={N_JOB} /></div>
           <div className="sh-lbl">النشاط البدني</div>
           <div className="sh-inline"><Checks a={a} g="n.activity" items={N_ACTIVITY} /></div>
+          <div className="sh-lbl">ملاحظات</div>
+          <textarea className="sh-in sh-notes" dir="auto" rows={3} aria-label="ملاحظات" value={a.txt('n.notes')} onChange={(e) => a.set('n.notes', e.target.value)} />
         </Box>
 
         <Box n={2} title="العلامات الحيوية والقياسات">

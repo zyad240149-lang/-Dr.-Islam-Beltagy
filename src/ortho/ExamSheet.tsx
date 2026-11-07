@@ -446,12 +446,16 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
             <div className="sh-bmi-ref__f">المعادلة: <span dir="ltr">BMI = الوزن (kg) ÷ الطول² (m)</span> — مثال: <span dir="ltr">90 ÷ 1.75² = 29.4</span> ← Overweight</div>
             <div className="sh-bmi-ref__f">الحدود دي للبالغين (١٨ سنة فأكثر)؛ الأطفال والمراهقين بـ BMI-for-age percentiles حسب السن والنوع. في مرضى العظام بيتقرا الرقم مع مخاطر خشونة الركبة ومضاعفات تغيير المفاصل (TKA/THA)، مش لوحده.</div>
           </details>
+        <div className="sh-lbl">ملاحظات</div>
+          <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt('n.bn.vitals')} onChange={(e) => a.set('n.bn.vitals', e.target.value)} />
         </Box>
 
         <Box n={3} title="التاريخ المرضي المعروف">
           <div className="sh-cols"><Checks a={a} g="n.hx" items={N_HX} none={N_HX_NONE} /></div>
           <Row label="التدخين"><Pick a={a} g="n.smoke" items={YES_NO} /></Row>
           <Txt a={a} k="n.hx.other" label="أخرى" />
+        <div className="sh-lbl">ملاحظات</div>
+          <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt('n.bn.hx')} onChange={(e) => a.set('n.bn.hx', e.target.value)} />
         </Box>
 
         <Box n={4} title="الأدوية الحالية والحساسية">
@@ -474,6 +478,8 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
           <Checks a={a} g="n.allergy" items={N_ALLERGY} none={N_ALLERGY_NONE} />
           <Txt a={a} k="n.allergy.other" label="مواد أخرى" />
           <Txt a={a} k="n.allergy.details" label="التفاصيل" />
+        <div className="sh-lbl">ملاحظات</div>
+          <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt('n.bn.meds')} onChange={(e) => a.set('n.bn.meds', e.target.value)} />
         </Box>
 
         <Box n={5} wide title="سبب الزيارة الحالية وتفاصيل المشكلة">
@@ -511,6 +517,8 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
               <Txt a={a} k="n.done" label="ماذا تم عمله حتى الآن؟ (علاج / جبس / عملية / زيارات …)" stack />
             </div>
           </div>
+        <div className="sh-lbl">ملاحظات</div>
+          <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt('n.bn.visit')} onChange={(e) => a.set('n.bn.visit', e.target.value)} />
         </Box>
       </div>
     </div>
@@ -561,6 +569,8 @@ export function DoctorSheet({ sheet, onChange, side, onSide, icd10, onIcd10, onO
             <div><Checks a={a} g="x.cc" items={X_CC} /><Txt a={a} k="x.cc.other" label="Other:" /></div>
             <div><div className="sh-lbl">Duration:</div><Pick a={a} g="x.dur" items={X_DUR} /></div>
           </div>
+        <div className="sh-lbl">ملاحظات</div>
+          <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt('x.bn.cc')} onChange={(e) => a.set('x.bn.cc', e.target.value)} />
         </Box>
 
         <Box n={2} title="History of Present Illness">
@@ -572,11 +582,15 @@ export function DoctorSheet({ sheet, onChange, side, onSide, icd10, onIcd10, onO
           <div className="sh-lbl">Previous treatment:</div>
           <div className="sh-inline"><Checks a={a} g="x.prev" items={X_PREV} /></div>
           <Txt a={a} k="x.prev.other" label="Other:" />
+        <div className="sh-lbl">ملاحظات</div>
+          <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt('x.bn.hpi')} onChange={(e) => a.set('x.bn.hpi', e.target.value)} />
         </Box>
 
         <Box n={3} tone="red" title={<><Icon name="alert" size={15} /> Red Flags</>}>
           <Checks a={a} g="x.rf" items={X_RF} />
           <Txt a={a} k="x.rf.other" label="Others:" />
+        <div className="sh-lbl">ملاحظات</div>
+          <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt('x.bn.rf')} onChange={(e) => a.set('x.bn.rf', e.target.value)} />
         </Box>
 
         <Box n={4} title="Dermatomes (Sensation Map)">
@@ -604,6 +618,8 @@ export function DoctorSheet({ sheet, onChange, side, onSide, icd10, onIcd10, onO
             <div><div className="sh-lbl">Hip</div><Checks a={a} g="x.palp.hip" items={X_PALP_HIP} none="No tenderness" /><Txt a={a} k="x.palp.hip.other" label="Other:" /></div>
             <div><div className="sh-lbl">Knee</div><Checks a={a} g="x.palp.knee" items={X_PALP_KNEE} none="No tenderness" /><Txt a={a} k="x.palp.knee.other" label="Other:" /></div>
           </div>
+        <div className="sh-lbl">ملاحظات</div>
+          <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt('x.bn.palp')} onChange={(e) => a.set('x.bn.palp', e.target.value)} />
         </Box>
 
         <Box n={6} title="Range of Motion">
@@ -613,6 +629,8 @@ export function DoctorSheet({ sheet, onChange, side, onSide, icd10, onIcd10, onO
           <Row label="Patellar mobility:"><Pick a={a} g="x.patmob" items={X_PATMOB} /></Row>
           <div className="sh-inline"><Checks a={a} g="x.sprom" items={X_SPROM} /></div>
           <Txt a={a} k="x.sprom.other" label="Other:" />
+        <div className="sh-lbl">ملاحظات</div>
+          <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt('x.bn.rom')} onChange={(e) => a.set('x.bn.rom', e.target.value)} />
         </Box>
 
         <Box n={7} title="Neurological Examination">
@@ -648,6 +666,8 @@ export function DoctorSheet({ sheet, onChange, side, onSide, icd10, onIcd10, onO
             <div><div className="sh-lbl">Hip</div><Checks a={a} g="x.st.hip" items={X_ST_HIP} /><Txt a={a} k="x.st.hip.other" label="Other:" /></div>
             <div><div className="sh-lbl">Knee</div><Checks a={a} g="x.st.knee" items={X_ST_KNEE} /><Txt a={a} k="x.st.knee.other" label="Other:" /></div>
           </div>
+        <div className="sh-lbl">ملاحظات</div>
+          <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt('x.bn.st')} onChange={(e) => a.set('x.bn.st', e.target.value)} />
         </Box>
 
         <Box n={9} title="Imaging / Investigations">
@@ -661,6 +681,8 @@ export function DoctorSheet({ sheet, onChange, side, onSide, icd10, onIcd10, onO
           ))}
           <Txt a={a} k="x.img.prev" label="Previous imaging:" stack />
           <Txt a={a} k="x.img.other" label="Others:" />
+        <div className="sh-lbl">ملاحظات</div>
+          <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt('x.bn.img')} onChange={(e) => a.set('x.bn.img', e.target.value)} />
         </Box>
 
         <Box n={10} title="Diagnosis Sheet" wide>
@@ -669,12 +691,16 @@ export function DoctorSheet({ sheet, onChange, side, onSide, icd10, onIcd10, onO
             <button type="button" className="sh-add" dir="rtl" onClick={onOpenMap}><Icon name="body" size={15} /> اختيار من خريطة الجسم</button>
             <label className="sh-line"><span className="sh-line__l">ICD-10</span><input className="sh-in sh-in--num" dir="ltr" placeholder="M17.1" value={icd10} onChange={(e) => onIcd10(e.target.value.toUpperCase())} /></label>
           </div>
+        <div className="sh-lbl">ملاحظات</div>
+          <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt('x.bn.dx')} onChange={(e) => a.set('x.bn.dx', e.target.value)} />
         </Box>
 
         <Box n={11} title="Plan">
           <Checks a={a} g="x.plan" items={X_PLAN} />
           <Txt a={a} k="x.plan.fu" label="Follow up after:" />
           <Txt a={a} k="x.plan.other" label="Others:" />
+        <div className="sh-lbl">ملاحظات</div>
+          <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt('x.bn.plan')} onChange={(e) => a.set('x.bn.plan', e.target.value)} />
         </Box>
 
         <Box n={12} title="Notes">

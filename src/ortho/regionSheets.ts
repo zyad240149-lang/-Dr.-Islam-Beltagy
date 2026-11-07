@@ -42,6 +42,13 @@ const notes = (title = 'Notes'): BoxDef => ({ title, role: 'notes', f: [{ t: 'no
 const STD_PLAN = ['Medication', 'Physiotherapy', 'Activity modification', 'Injection / Intervention', 'Brace / Support', 'Surgery (if indicated)'];
 // Pain VAS اختياري من 1 لـ 10 (الضغط تاني على نفس الرقم بيلغيه)
 const VAS_PICK: Field = { t: 'pick', g: 'vas', items: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'], label: 'Pain VAS (اختياري 1–10):' };
+// تقييم الجرح: نفس المربع في متابعة ما بعد العمليات ومتابعة الجبس (طلب ٨/١١)
+const wound = (title: string): BoxDef => ({ title, role: 'exam', f: [
+  ...['Wound clean', 'Wound dry', 'Redness', 'Discharge', 'Wound dehiscence', 'Signs of infection']
+    .map((r): Field => ({ t: 'pick', g: `wd.${r}`, items: ['Yes', 'No'], label: `${r}:` })),
+  { t: 'pick', g: 'wstatus', items: ['Healed', 'Healing', 'Needs dressing', 'Needs further intervention'], label: 'Wound status:' },
+  { t: 'pick', g: 'suture', items: ['Not indicated', 'Done', 'Planned'], label: 'Suture removal:' }, { t: 'text', k: 'suture.on', label: 'Planned on:' },
+] });
 const SENS_NOTE = 'Tick the side with reduced / lost sensation.';
 
 export const REGION_SHEETS: RegionSheetDef[] = [
@@ -271,13 +278,14 @@ export const REGION_SHEETS: RegionSheetDef[] = [
           .map((r): Field => ({ t: 'pick', g: `ev.${r}`, items: ['Normal', 'Abnormal'], label: `${r}:` })),
         VAS_PICK, { t: 'text', k: 'cap', label: 'Capillary refill:' }, { t: 'text', k: 'ev.notes', label: 'ملاحظات:', stack: true },
       ] },
-      { title: '3. الأشعة والالتئام', role: 'exam', f: [
+      wound('3. تقييم الجرح'),
+      { title: '4. الأشعة والالتئام', role: 'exam', f: [
         { t: 'pick', g: 'xray', items: ['Not done', 'Done'], label: 'X-ray:' },
         { t: 'pick', g: 'align', items: ['Acceptable', 'Unacceptable'], label: 'Alignment:' },
         { t: 'pick', g: 'callus', items: ['Present', 'Absent'], label: 'Callus formation:' },
         { t: 'pick', g: 'heal', items: ['Early healing', 'Progressive healing', 'Union', 'Delayed union', 'Non-union'], label: 'Healing status:' },
       ] },
-      { title: '4. القرار والخطة', role: 'plan', f: [
+      { title: '5. القرار والخطة', role: 'plan', f: [
         { t: 'checks', g: 'plan', items: ['Continue cast', 'Cast modification', 'Change cast', 'Remove cast', 'Start physiotherapy', 'Start progressive weight bearing', 'Request X-ray'] },
         { t: 'text', k: 'plan.other', label: 'Other:' }, { t: 'text', k: 'next', label: 'Next follow-up:' },
       ] },
@@ -293,12 +301,7 @@ export const REGION_SHEETS: RegionSheetDef[] = [
         { t: 'checks', g: 'implant', items: ['Plate & Screws', 'Intramedullary Nail', 'K-wire', 'External Fixator', 'Arthroscopy', 'Soft tissue repair'], label: 'Implant / Fixation:' },
         { t: 'text', k: 'implant.other', label: 'Other:' },
       ] },
-      { title: '2. تقييم الجرح', role: 'exam', f: [
-        ...['Wound clean', 'Wound dry', 'Redness', 'Discharge', 'Wound dehiscence', 'Signs of infection']
-          .map((r): Field => ({ t: 'pick', g: `wd.${r}`, items: ['Yes', 'No'], label: `${r}:` })),
-        { t: 'pick', g: 'wstatus', items: ['Healed', 'Healing', 'Needs dressing', 'Needs further intervention'], label: 'Wound status:' },
-        { t: 'pick', g: 'suture', items: ['Not indicated', 'Done', 'Planned'], label: 'Suture removal:' }, { t: 'text', k: 'suture.on', label: 'Planned on:' },
-      ] },
+      wound('2. تقييم الجرح'),
       { title: '3. تقييم الطرف والوظيفة', role: 'exam', f: [
         VAS_PICK,
         { t: 'pick', g: 'swell', items: ['None', 'Mild', 'Moderate', 'Severe'], label: 'Swelling:' },
@@ -380,8 +383,8 @@ export const TREATMENT: RegionSheetDef = {
 };
 export const treatmentFilled = (s: ExamSheet) => s.on.some((o) => o.startsWith('tp.')) || Object.entries(s.txt).some(([k, v]) => k.startsWith('tp.') && v.trim());
 // أي مربع كله اختيارات (مفيش فيه خانة كتابة) بيتضافله «ملاحظات» في آخره (طلب ٨/١١) — المفتاح ثابت من عنوان المربع
-const writable = (f: Field): boolean => f.t === 'text' || f.t === 'notes' || f.t === 'imaging' || f.t === 'dxsheet' || (f.t === 'cols' && f.cols.some((c) => c.f.some(writable)));
-export const boxNeedsNotes = (b: BoxDef) => !b.f.some(writable);
+// كل مربع (طلب ٨/١١) ما عدا مربع Notes نفسه أو اللي فيه خانة ملاحظات أصلًا
+export const boxNeedsNotes = (b: BoxDef) => b.role !== 'notes' && !b.f.some((f) => f.t === 'notes');
 export const boxNotesKey = (b: BoxDef) => 'bn.' + b.title.replace(/[^A-Za-z0-9؀-ۿ]+/g, '_').replace(/^_|_$/g, '');
 export const regionSheet = (id: SheetId) => REGION_SHEETS.find((d) => d.id === id);
 

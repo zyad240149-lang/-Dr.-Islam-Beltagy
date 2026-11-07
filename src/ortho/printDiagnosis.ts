@@ -59,7 +59,9 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
     const fin = PAIN_FOR_DD[id].map((x) => (compact && !has(`${prefix}.fdx.dd`, x) ? '' : ck(has(`${prefix}.fdx.dd`, x), x))).join('') + line('Primary Diagnosis:', v(`${prefix}.fdx.primary`)) + FDX.slice(1).map((n) => line(`Additional ${n}:`, v(`${prefix}.fdx.${n}`))).join('') + line('Notes:', v(`${prefix}.fdx.notes`));
     return parts + (compact && !fin ? '' : `<div class="dxg dxfinal"><h4>Final Diagnosis</h4>${fin}</div>`);
   };
-  const box = (n: number, title: string, body: string, cls = '') => (compact && !body.trim() ? '' : `<section class="box ${cls}"><h3><span>${n}</span>${title}</h3><div class="bd">${body}</div></section>`);
+  // ملاحظات آخر كل مربع في الشيت العام وشيت الورك والركبة (المفاتيح x.bn.* / n.bn.*)
+  const BOX_NOTES: Record<string, string> = { 'العلامات الحيوية والقياسات': 'n.bn.vitals', 'التاريخ المرضي المعروف': 'n.bn.hx', 'الأدوية الحالية والحساسية': 'n.bn.meds', 'سبب الزيارة الحالية وتفاصيل المشكلة': 'n.bn.visit', 'Chief Complaint': 'x.bn.cc', 'History of Present Illness': 'x.bn.hpi', '⚠ Red Flags': 'x.bn.rf', 'Palpation': 'x.bn.palp', 'Range of Motion': 'x.bn.rom', 'Special Tests (+ve)': 'x.bn.st', 'Imaging / Investigations': 'x.bn.img', 'Diagnosis Sheet': 'x.bn.dx', 'Plan': 'x.bn.plan' };
+  const box = (n: number, title: string, body0: string, cls = '') => { const body = body0 + (BOX_NOTES[title] && !title.startsWith('__') && (s.txt[BOX_NOTES[title]] ?? '').trim() ? line('ملاحظات', v(BOX_NOTES[title])) : ''); return (compact && !body.trim() ? '' : `<section class="box ${cls}"><h3><span>${n}</span>${title}</h3><div class="bd">${body}</div></section>`); };
   const bdi = (x: string) => (x ? `<bdi>${x}</bdi>` : '');
   const name = v('n.name') || esc(p?.fullName ?? '');
   const fileNo = esc(fileNoText(p?.fileNo) || '');

@@ -223,10 +223,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
             </div>
           ) : (
             <>
-              <div className="svc-tabs" style={{ marginBottom: 14 }}>
-                <button type="button" className={`svc-tab ${mode === 'search' ? 'active' : ''}`} onClick={() => setMode('search')}>مريض موجود</button>
-                <button type="button" className={`svc-tab ${mode === 'call' ? 'active' : ''}`} onClick={() => setMode('call')}>مريض جديد (حجز مكالمة)</button>
-              </div>
+              {/* البحث الأول: تختار المريض الموجود من النتايج، أو «حجز كمريض جديد» لو مش موجود */}
               {mode === 'search' ? (
                 <>
                   <Input label="ابحث عن المريض الموجود" icon="search" placeholder="الاسم / رقم الجوال / رقم الملف" value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} />
@@ -241,13 +238,25 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
                     </div>
                   )}
                   {patientQuery.trim() && queryResults.length === 0 && (
-                    <p className="muted" style={{ marginBottom: 12 }}>ما فيه نتائج — لو المريض جديد اختار «مريض جديد (حجز مكالمة)» واكتب اسمه وجواله.</p>
+                    <p className="muted" style={{ marginBottom: 12 }}>مفيش مريض موجود بالبحث ده.</p>
+                  )}
+                  {patientQuery.trim() && (
+                    <div style={{ marginTop: 10 }}>
+                      <Button variant="outline" icon="plus" onClick={() => {
+                        // اللي اتكتب في البحث بيتنقل: أرقام ← الجوال، غير كده ← الاسم
+                        const q = patientQuery.trim();
+                        const digits = q.replace(/\D/g, '');
+                        setNp((x) => (digits.length >= 9 && digits.length >= q.replace(/\s/g, '').length - 1 ? { ...x, phone: q } : { ...x, fullName: q }));
+                        setMode('call');
+                      }}>{queryResults.length ? 'مش في القايمة؟ حجز كمريض جديد' : 'حجز كمريض جديد'}</Button>
+                    </div>
                   )}
                 </>
               ) : (
                 <>
                   <div className="alert alert-info" style={{ marginBottom: 14 }}>
-                    <Icon name="phone" size={17} /><div><strong>حجز موعد عن طريق مكالمة</strong> — أدخل بيانات المريض لإتمام الحجز.</div>
+                    <Icon name="phone" size={17} /><div style={{ flex: 1 }}><strong>حجز مريض جديد (مكالمة)</strong> — اكتب اسمه وجواله لإتمام الحجز.</div>
+                    <button type="button" className="link-more" style={{ border: 0, background: 'none', cursor: 'pointer' }} onClick={() => setMode('search')}>رجوع للبحث</button>
                   </div>
                   <div className="grid-form">
                     <Input label="اسم المريض" placeholder="اسم المريض" value={np.fullName} onChange={(e) => setNp({ ...np, fullName: e.target.value })} />

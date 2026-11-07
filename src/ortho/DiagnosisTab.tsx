@@ -93,7 +93,7 @@ export function DiagnosisTab({ patientId, embedded }: { patientId: string; embed
                     {by && by !== '—' ? <>سجّله: <b>{by}</b></> : 'سجّله: —'}
                     {visit && <> · زيارة <span className="num">{visit.no}</span> (<span className="num">{fmtTime(visit.time)}</span>)</>}
                   </div>
-                  <div className="cx-dx"><span className="cx-dx__l">التشخيص</span>{c.diagnosis ? <b dir="auto">{c.diagnosis}</b> : <span className="muted">لسه ما اتحددش</span>}{c.icd10 && <span className="badge badge--brand" dir="ltr">{c.icd10}</span>}</div>
+                  <div className="cx-dx"><span className="cx-dx__l">التشخيص</span>{c.diagnosis ? <b dir="auto" className="dx-as-written">{c.diagnosis}</b> : <span className="muted">لسه ما اتحددش</span>}{c.icd10 && <span className="badge badge--brand" dir="ltr">{c.icd10}</span>}</div>
                   {c.visitReason && <div className="cx-dx"><span className="cx-dx__l">شكوى المريض</span><span dir="auto" style={{ whiteSpace: 'pre-line' }}>{c.visitReason}</span></div>}
                   {c.patientId && <FollowUpsOfConsult consultationId={c.id} patientId={c.patientId} />}
                 </div>

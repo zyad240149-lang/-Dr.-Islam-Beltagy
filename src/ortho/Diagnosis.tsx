@@ -308,7 +308,7 @@ export default function Diagnosis() {
                         <span className="dx-queue__time num">{fmtDate(x.last.date)}</span>
                         <div className="dx-queue__who">
                           <b>{x.p?.fullName ?? patientName(x.id)}</b>
-                          <small>{x.p?.phone && <><bdi dir="ltr" className="num">{x.p.phone}</bdi> · </>}ملف <span className="num">{patientFile(x.id)}</span> · آخر تشخيص: <bdi>{x.last.diagnosis || 'لسه ما اتحددش'}</bdi></small>
+                          <small>{x.p?.phone && <><bdi dir="ltr" className="num">{x.p.phone}</bdi> · </>}ملف <span className="num">{patientFile(x.id)}</span> · آخر تشخيص: <bdi className="dx-as-written">{x.last.diagnosis || 'لسه ما اتحددش'}</bdi></small>
                         </div>
                         <span className="badge badge--warn">ما اتعملوش متابعة</span>
                         <div className="dx-queue__act">
@@ -339,7 +339,7 @@ export default function Diagnosis() {
                           <span className="dx-queue__time num">{fmtDate(all[0].date)}</span>
                           <div className="dx-queue__who">
                             <b>{x.p?.fullName ?? patientName(x.id)}</b>
-                            <small>{x.p?.phone && <><bdi dir="ltr" className="num">{x.p.phone}</bdi> · </>}ملف <span className="num">{patientFile(x.id)}</span> · آخر تشخيص: <bdi>{x.last.diagnosis || 'لسه ما اتحددش'}</bdi></small>
+                            <small>{x.p?.phone && <><bdi dir="ltr" className="num">{x.p.phone}</bdi> · </>}ملف <span className="num">{patientFile(x.id)}</span> · آخر تشخيص: <bdi className="dx-as-written">{x.last.diagnosis || 'لسه ما اتحددش'}</bdi></small>
                           </div>
                           <span className="badge badge--ok"><span className="num">{all.length}</span> {all.length > 1 ? 'متابعات' : 'متابعة'} — آخرها {fmtDate(all[0].date)}</span>
                           <div className="dx-queue__act">
@@ -374,15 +374,17 @@ export default function Diagnosis() {
                           <b>{x.p?.fullName ?? patientName(x.id)}</b>
                           <small>
                             {x.p?.phone && <><bdi dir="ltr" className="num">{x.p.phone}</bdi> · </>}ملف <span className="num">{patientFile(x.id)}</span> · <span className="num">{x.count}</span> {x.count > 1 ? 'تشخيصات' : 'تشخيص'}
-                            {' '}· آخر تشخيص: <bdi>{x.last.diagnosis || 'لسه ما اتحددش'}</bdi>
+                            {' '}· آخر تشخيص: <bdi className="dx-as-written">{x.last.diagnosis || 'لسه ما اتحددش'}</bdi>
                           </small>
                         </div>
                         {x.incomplete > 0 ? <span className="badge badge--warn">فيه تشخيص يحتاج استكمال</span> : <span />}
                         <span className="dx-queue__act" onClick={(e) => e.stopPropagation()}>
                           {whatsappNumber(x.p) && <WhatsappLink phone={whatsappNumber(x.p)} patientId={x.id} button />}
-                          {/* إضافة شيت = يفتح آخر تشخيص (حتى لو من البرنامج القديم) على كشف الطبيب ويتكمّل في نفس الكشف */}
-                          {perm.edit && <Button size="sm" variant="outline" icon="plus" onClick={() => openSaved(x.last, true)}>إضافة شيت</Button>}
-                          {perm.add && <Button size="sm" icon="stethoscope" onClick={() => startPicked(x.id)}>{drafts.some((d) => d.patientId === x.id) ? 'استكمال التشخيص' : 'تشخيص جديد'}</Button>}
+                          {/* زرار واحد «إضافة شيت أو استكمال» (بدل «تشخيص جديد»): لو فيه تشخيص لم يكتمل على الجهاز بيكمّله،
+                              وإلا بيفتح آخر تشخيص (حتى لو من البرنامج القديم) على كشف الطبيب ويتكمّل في نفس الكشف */}
+                          {drafts.some((d) => d.patientId === x.id)
+                            ? perm.add && <Button size="sm" icon="plus" onClick={() => startPicked(x.id)}>إضافة شيت أو استكمال</Button>
+                            : perm.edit && <Button size="sm" icon="plus" onClick={() => openSaved(x.last, true)}>إضافة شيت أو استكمال</Button>}
                           {perm.add && <Button size="sm" variant="outline" icon="clipboard" onClick={() => openSheet(x.id)}>متابعة</Button>}
                           <Button size="sm" variant="outline" onClick={() => pick(x.id)}>فتح ملف التشخيص</Button>
                         </span>

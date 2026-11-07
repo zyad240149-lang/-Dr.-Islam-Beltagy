@@ -28,7 +28,7 @@ import { FollowUpStep, FollowUpsOfConsult, savePendingFollowUps, useFuCan, type 
 import type { DxPart } from './printDiagnosis';
 import { db } from '../data/db';
 import { Field, IconBtn, LoadState, PageHead, PatientSelect, SearchBox, Tone, confirmDelete, patientFile, patientName, useClinicalCan, useRun } from './kit';
-import { DoctorSheet, NursingSheet, doctorStarted, emptySheet, nurseStarted, normSheet, isTripleName, pendingFromSheet, resetPatientBasics, sheetHasContent, sheetPatientPatch, sheetSummary, withPatientBasics } from './ExamSheet';
+import { DoctorSheet, NursingSheet, doctorStarted, emptySheet, nurseStarted, normSheet, isTripleName, pendingFromSheet, traumaShown, resetPatientBasics, sheetHasContent, sheetPatientPatch, sheetSummary, withPatientBasics } from './ExamSheet';
 
 // pendingFollowUps: مواعيد متابعة اتحددت في الكشف ولسه ما اتحفظتش (بتتحفظ بعد حفظ التشخيص — مش عمود في الجدول)
 type Draft = Omit<Consultation, 'id'> & { id?: string; pendingFollowUps?: FuDraft[] };
@@ -365,6 +365,14 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           <NursingSheet sheet={sheet} onChange={changeSheet} patient={c.patientId ? db.patient(c.patientId) : null} date={c.date} visitNo={visitNo}
             painScore={c.painScore} onPainScore={(v) => set('painScore', v)}
             onFirstPain={(id, side) => setC((x) => ({ ...x, region: regionById(id)?.name ?? x.region, ...(side ? { side } : {}) }))} />
+          {/* ٦) شيت التروما جوّه الشيت العام — بيظهر لما «هل توجد إصابة حديثة؟» = نعم */}
+          {traumaShown(sheet) && (
+            <section className="sh-stack sh-trauma" dir="ltr">
+              <h3 className="sh-stack__h" dir="rtl">٦ تقييم إصابات العظام والكسور (Trauma)</h3>
+              <RegionSheetForm def={regionSheet('trauma')!} sheet={sheet} onChange={changeSheet} side={c.side} onSide={(v) => set('side', v)}
+                icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap('tr.dx.other')} />
+            </section>
+          )}
           <div className="sh-next">
             <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => setOut(['nurse'])}>طباعة / إرسال الشيت العام</Button>
             <Button icon="chevronLeft" onClick={() => goTab('doctor')}>التالي: كشف الطبيب</Button>

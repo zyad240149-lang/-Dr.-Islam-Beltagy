@@ -191,14 +191,15 @@ export const REGION_SHEETS: RegionSheetDef[] = [
   },
   // شيت التروما (Orthopedic Trauma Assessment Sheet) — نفس الصورة اللي بعتها الدكتور (٧/١١): بيتضاف من «+ منطقة تانية…»
   {
+    // شيت التروما بقى جزء من الشيت العام (طلب ٨/١١) — اتشال منه المتكرر مع الشيت العام:
+    // Time since injury (= «منذ متى؟»)، Previous treatment (= «ماذا تم عمله حتى الآن؟»)، Open injury (= Open wound تحت)،
+    // العلامات الحيوية (= خانة 2؛ SpO₂ اتنقل هناك)، Diagnosis (= تشخيص كشف الطبيب)، Follow-up (= تحديد موعد متابعة في الخطة العلاجية)
     id: 'trauma', prefix: 'tr', tab: 'شيت التروما', title: 'ORTHOPEDIC TRAUMA ASSESSMENT SHEET',
     boxes: [
       { title: 'History of Trauma', role: 'hx', f: [
         { t: 'checks', g: 'mech', label: 'Mechanism of Injury:', items: ['Road Traffic Accident (RTA)', 'Fall from height', 'Fall on same level', 'Direct trauma', 'Sports injury', 'Twisting injury'] },
         { t: 'text', k: 'mech.other', label: 'Other:' },
         { t: 'text', k: 'site', label: 'Site of injury:' }, { t: 'side' },
-        { t: 'text', k: 'since', label: 'Time since injury:' }, { t: 'text', k: 'prev', label: 'Previous treatment:' },
-        { t: 'pick', g: 'open', items: ['Yes', 'No'], label: 'Open injury:' },
       ] },
       { title: 'Primary Assessment – ATLS', role: 'exam', f: [
         { t: 'pick', g: 'a', items: ['Patent', 'Compromised'], label: 'A — Airway:' },
@@ -206,10 +207,6 @@ export const REGION_SHEETS: RegionSheetDef[] = [
         { t: 'pick', g: 'c', items: ['Stable', 'Unstable'], label: 'C — Circulation:' },
         { t: 'text', k: 'gcs', label: 'D — Disability (GCS /15):' },
         { t: 'pick', g: 'e', items: ['Completed'], label: 'E — Exposure:' },
-      ] },
-      { title: 'Vital Signs', role: 'exam', f: [
-        { t: 'text', k: 'bp', label: 'BP:' }, { t: 'text', k: 'pulse', label: 'Pulse:' }, { t: 'text', k: 'rr', label: 'RR:' },
-        { t: 'text', k: 'temp', label: 'Temp:' }, { t: 'text', k: 'spo2', label: 'SpO₂:' },
       ] },
       { title: 'Orthopedic Examination', role: 'exam', wide: true, f: [{ t: 'cols', cols: [
         { title: 'Inspection', f: [
@@ -246,10 +243,9 @@ export const REGION_SHEETS: RegionSheetDef[] = [
         { t: 'text', k: 'rad.disp', label: 'Displacement:' }, { t: 'text', k: 'rad.ang', label: 'Angulation / Rotation:' },
         { t: 'text', k: 'rad.joint', label: 'Joint involvement:' },
       ] },
-      { title: 'Diagnosis', role: 'dx', f: [{ t: 'text', k: 'dx', label: 'Diagnosis:', stack: true }] },
       { title: 'Management Plan', role: 'plan', f: [
         { t: 'checks', g: 'plan', cols: true, items: ['Analgesia', 'Wound care', 'Tetanus prophylaxis', 'IV Antibiotics (if indicated)', 'Splint / Back slab', 'Reduction', 'Cast', 'Surgery', 'Admission', 'Referral'] },
-        { t: 'text', k: 'immob', label: 'Immobilization:' }, { t: 'text', k: 'fu', label: 'Follow-up:' },
+        { t: 'text', k: 'immob', label: 'Immobilization:' },
       ] },
       { title: 'Important Documentation', role: 'exam', f: [
         { t: 'text', k: 'nv.before', label: 'Neurovascular status BEFORE intervention:', stack: true },
@@ -384,12 +380,13 @@ export const treatmentFilled = (s: ExamSheet) => s.on.some((o) => o.startsWith('
 export const regionSheet = (id: SheetId) => REGION_SHEETS.find((d) => d.id === id);
 
 // كل شيت بالترتيب اللي بيظهر بيه + اسمه في تبويب الطبيب
-export const SHEET_ORDER: SheetId[] = ['hipknee', 'ankle', 'neckshoulder', 'hand', 'lumbar', 'peds', 'trauma', 'cast', 'postop'];
+// التروما مش هنا: بقى جزء من الشيت العام (بيظهر لما «هل توجد إصابة حديثة؟» = نعم)
+export const SHEET_ORDER: SheetId[] = ['hipknee', 'ankle', 'neckshoulder', 'hand', 'lumbar', 'peds', 'cast', 'postop'];
 // اسم الشيت قدام الطبيب: «كشف …» (ما عدا الشيتات اللي مش مناطق جسم)
 const NOT_REGION: SheetId[] = ['cast', 'postop', 'peds', 'trauma'];
 export const SHEET_TAB: Record<SheetId, string> = { hipknee: 'كشف الورك والركبة', ...Object.fromEntries(REGION_SHEETS.map((d) => [d.id, NOT_REGION.includes(d.id as SheetId) ? d.tab : `كشف ${d.tab}`])) } as Record<SheetId, string>;
 const PREFIX: Record<SheetId, string> = { hipknee: 'x', ...Object.fromEntries(REGION_SHEETS.map((d) => [d.id, d.prefix])) } as Record<SheetId, string>;
-export const DOCTOR_PREFIXES = [...Object.values(PREFIX), 'ra'];
+export const DOCTOR_PREFIXES = [...Object.values(PREFIX).filter((p) => p !== 'tr'), 'ra'];
 
 // منطقة جسم الإنسان (bodyRegions) ← الشيت بتاعها. الظاهر على الجسم: المناطق اللي ليها شيت بس (MAP_REGION_IDS)؛
 // المناطق المخفية متسابة هنا عشان أماكن ألم قديمة لو اتسجلت تفتح الشيت الأقرب

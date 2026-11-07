@@ -89,8 +89,10 @@ export const sheetHasContent = (s: ExamSheet) =>
   || Object.entries(s.txt).some(([k, v]) => !BASIC_KEYS.includes(k) && v.trim());
 /** فيه حاجة اتكتبت في الشيت العام (غير اللي اتملى تلقائي من ملف المريض) */
 export const nurseStarted = (s: ExamSheet) =>
-  s.on.some((o) => o.startsWith('n.') && !isAutoOn(o)) || s.pain.length > 0 || s.meds.some((m) => m.name.trim())
-  || Object.entries(s.txt).some(([k, v]) => k.startsWith('n.') && !BASIC_KEYS.includes(k) && v.trim());
+  s.on.some((o) => (o.startsWith('n.') || o.startsWith('tr.')) && !isAutoOn(o)) || s.pain.length > 0 || s.meds.some((m) => m.name.trim())
+  || Object.entries(s.txt).some(([k, v]) => (k.startsWith('n.') || k.startsWith('tr.')) && !BASIC_KEYS.includes(k) && v.trim());
+/** شيت التروما جوّه الشيت العام: بيظهر لما فيه إصابة حديثة أو اتكتب فيه قبل كده */
+export const traumaShown = (s: ExamSheet) => has(s, 'n.injury', 'نعم') || sheetFilled(s, 'trauma');
 /** فيه حاجة متكتبة في شيت الطبيب (عشان استكمال الكشف يفتح عليه على طول) */
 export const doctorStarted = (s: ExamSheet) => DOCTOR_PREFIXES.some((p) => s.on.some((o) => o.startsWith(p + '.')) || Object.entries(s.txt).some(([k, v]) => k.startsWith(p + '.') && v.trim()));
 
@@ -408,6 +410,7 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
           <Txt a={a} k="n.pulse" label="النبض" unit="/ دقيقة" num />
           <Txt a={a} k="n.temp" label="درجة الحرارة" unit="°C" num />
           <Txt a={a} k="n.rr" label="معدل التنفس" unit="/ دقيقة" num />
+          <Txt a={a} k="n.spo2" label="نسبة الأكسجين (SpO₂)" unit="%" num />
           <Txt a={a} k="n.wt" label="الوزن" unit="كجم" num />
           <Txt a={a} k="n.ht" label="الطول" unit="سم" num />
           <div className="sh-line"><span className="sh-line__l">مؤشر كتلة الجسم (BMI)</span><output className={`sh-bmi num${bmiCls ? ` sh-bmi--${bmiCls.tone}` : ''}`}>{bmi || '—'}{bmiCls && <small className="sh-bmi__c">{bmiCls.label}</small>}</output></div>

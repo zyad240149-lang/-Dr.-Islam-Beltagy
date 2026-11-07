@@ -8,7 +8,7 @@ import { SIDE, type Consultation, type ExamSheet } from './data';
 import { SHEET_LISTS as L, bmiOf, bmiClass, bmiText, normSheet, painLabel, sheetHasContent } from './ExamSheet';
 import { RX_CSS, rxPageHtml } from './printRx';
 import { DX_SHEETS, FDX, PAIN_FOR_DD, dxGroupKey, dxSub, type DxSheetId } from './dxCatalog';
-import { TREATMENT, activeSheets, regionSheet, treatmentFilled, type Field, type RegionSheetDef } from './regionSheets';
+import { TREATMENT, activeSheets, regionSheet, sheetFilled, treatmentFilled, type Field, type RegionSheetDef } from './regionSheets';
 import { openPrintWindow, printHtml } from '../utils/printDoc';
 import { US_SHEETS, usFilled, usImage } from './ultrasoundSheets';
 
@@ -92,7 +92,7 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
         + row('متزوج', cks('n.married', L.YES_NO)) + line('اسم الابن الكبير', v('n.son')) + line('العنوان', v('n.address'))
         + lbl('الوظيفة', wrap('row', cks('n.job', L.N_JOB))) + lbl('النشاط البدني', wrap('row', cks('n.activity', L.N_ACTIVITY))) + line('ملاحظات', v('n.notes'))),
       box(2, 'العلامات الحيوية والقياسات', line('ضغط الدم', v('n.bp.sys') || v('n.bp.dia') ? `<bdi>${v('n.bp.sys')} / ${v('n.bp.dia')} mmHg</bdi>` : '') + line('النبض', v('n.pulse') && `${v('n.pulse')} / دقيقة`)
-        + line('درجة الحرارة', v('n.temp') && `${v('n.temp')} °C`) + line('معدل التنفس', v('n.rr') && `${v('n.rr')} / دقيقة`) + line('الوزن', v('n.wt') && `${v('n.wt')} كجم`)
+        + line('درجة الحرارة', v('n.temp') && `${v('n.temp')} °C`) + line('معدل التنفس', v('n.rr') && `${v('n.rr')} / دقيقة`) + line('نسبة الأكسجين (SpO₂)', v('n.spo2') && `${v('n.spo2')} %`) + line('الوزن', v('n.wt') && `${v('n.wt')} كجم`)
         + line('الطول', v('n.ht') && `${v('n.ht')} سم`) + line('مؤشر كتلة الجسم (BMI)', bmiText(s) && `<bdi>${bmiText(s)}</bdi> · ${bmiClass(bmiOf(s))?.ar ?? ''}`)),
       box(3, 'التاريخ المرضي المعروف', wrap('cols2', cks('n.hx', L.N_HX)) + row('التدخين', cks('n.smoke', L.YES_NO)) + line('أخرى', v('n.hx.other'))),
       box(4, 'الأدوية الحالية والحساسية', table('<th>اسم الدواء</th><th>الجرعة</th><th>عدد المرات</th>', (meds.length || compact ? meds : [{ name: '', dose: '', freq: '' }]).map((m) => `<tr><td>${esc(m.name)}</td><td>${esc(m.dose)}</td><td>${esc(m.freq)}</td></tr>`))
@@ -165,7 +165,8 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
   const doctor = (ids.length ? ids : ['hipknee' as const]).map((id) => (id === 'hipknee' ? dr : regionPage(regionSheet(id)!))).join('') + (!compact || treatmentFilled(s) ? regionPage(TREATMENT) : '')
     // تقارير السونار اللي اتفتحت أو اتكتب فيها — صفحة لكل منطقة بعد الخطة العلاجية
     + US_SHEETS.filter((d) => s.on.includes(`us|${d.prefix}`) || usFilled(s, d)).map(regionPage).join('');
-  return { nurse, doctor };
+  // شيت التروما جزء من الشيت العام: صفحته بتتطبع بعد الشيت العام لو اتكتب فيه
+  return { nurse: nurse + (sheetFilled(s, 'trauma') ? regionPage(regionSheet('trauma')!) : ''), doctor };
 }
 
 // كشف قديم (قبل الشيت): ملخصه النصي في صفحة واحدة

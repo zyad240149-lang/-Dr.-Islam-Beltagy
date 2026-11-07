@@ -660,6 +660,18 @@ export const db = {
   patient: (id: string) => load().patients.find((p) => p.id === id) ?? guests.find((p) => p.id === id),
   /** المتصلين اللي اتحجزلهم بالمكالمة (لسه مش في «المرضى» — بيتحوّلوا لملف عادي بعد استكمال بياناتهم) */
   guests: () => guests,
+  /** حجز مكالمة (٨/١١): المتصل بيتحوّل على طول لملف مريض عادي في «المرضى» برقم ملفه — والاستكمال بيتعمل لما ييجي */
+  async promoteGuest(id: string): Promise<Patient | null> {
+    if (!net.isOnline()) return null;
+    const { data, error } = await supabase.from('patients').update({ is_guest: false }).eq('id', id).eq('is_guest', true).select().single();
+    if (error) throw new DbError(cleanMsg(error.message));
+    guests = guests.filter((x) => x.id !== id);
+    const p = map.patient(data);
+    const i = load().patients.findIndex((x) => x.id === id);
+    if (i >= 0) load().patients[i] = p; else load().patients.push(p);
+    commit();
+    return p;
+  },
   // بحث بالجوال في كل السجلات (الحقيقيين + المتصلين) — لمنع التكرار في حجز المكالمة
   findByPhone: (phone: string) => load().patients.find((p) => phoneMatches(p.phone, phone)) ?? guests.find((p) => phoneMatches(p.phone, phone)),
   patientIdsForTherapist(therapistId: string): Set<string> {

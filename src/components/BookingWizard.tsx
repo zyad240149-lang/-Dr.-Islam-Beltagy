@@ -47,6 +47,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
   // «المريض موجود» (في العيادة دلوقتي): الموعد بيتحجز النهارده في الوقت اللي تختاره، وحضوره بيتأكد على طول بعد الحجز
   const [walkIn, setWalkIn] = useState(false);
   const [completeData, setCompleteData] = useState(false);
+  const [callFile, setCallFile] = useState<string | null>(null); // حجز مكالمة: رقم الملف اللي اتعمل للمتصل
   const [result, setResult] = useState<{ id: string; patientId: string; no: string; date: string; time: string; therapist: string } | null>(null);
 
   const center = db.center();
@@ -131,7 +132,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
   const confirm = async () => {
     if (!therapistId) { toast.error('يرجى اختيار الدكتور أولًا'); setStep(2); return; }
     setBusy(true);
-    // حجز المكالمة: مفيش مريض بيتضاف في «المرضى» — الموعد والفاتورة بيتسجلوا باسم المتصل وجواله، والموظف يضيفه يدويًا لو حب
+    // حجز المكالمة: الموعد بيتسجل باسم المتصل وجواله، وبعدها بيتحوّل لملف مريض عادي في «المرضى» برقم ملف (promoteGuest)
     let pid = patientId; let guest: { fullName: string; phone: string; nationality?: 'saudi' | 'non_saudi' } | undefined;
     if (!pid) {
       if (!np.fullName.trim() || !phoneOk || !serviceId) { setBusy(false); return; }
@@ -155,6 +156,11 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
       if (!pr.ok) toast.error(`تم حجز الموعد، لكن تعذّر تسجيل الدفعة: ${pr.error}`);
       else toast.success('تم تسجيل الدفعة على فاتورة الموعد.');
     }
+    // حجز مكالمة: المتصل بيتضاف في «المرضى» على طول برقم ملف — والاستكمال لما ييجي
+    if (guest) {
+      try { const p = await db.promoteGuest(r.appointment.patientId); setCallFile(p?.fileNo ?? ''); }
+      catch (e) { setCallFile(''); toast.error(`تم الحجز، بس إضافته في «المرضى» ما اتعملتش: ${(e as Error).message}`); }
+    }
     // المريض موجود: تأكيد الحضور على طول (نفس «تأكيد» في تفاصيل الموعد)
     if (walkIn) {
       try { await db.setAppointmentStatus(r.appointment.id, 'arrived', undefined, therapistId); toast.success('تم تأكيد حضور المريض'); }
@@ -171,8 +177,8 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
         <>
           <Button variant="outline" onClick={onClose}>إغلاق</Button>
           {/* حجز مكالمة: لما المريض ييجي تستكمل بياناته — الاستكمال بيحوّله لملف مريض عادي في «المرضى» */}
-          {db.patient(result.patientId)?.isGuest && <Button variant={walkIn ? undefined : 'outline'} icon="edit" onClick={() => setCompleteData(true)}>استكمال بيانات المريض</Button>}
-          <Button icon="calendar" variant={walkIn && db.patient(result.patientId)?.isGuest ? 'outline' : undefined} onClick={() => { onClose(); navigate('/appointments'); }}>عرض تفاصيل الموعد</Button>
+          {(callFile !== null || db.patient(result.patientId)?.isGuest) && <Button variant={walkIn ? undefined : 'outline'} icon="edit" onClick={() => setCompleteData(true)}>استكمال بيانات المريض</Button>}
+          <Button icon="calendar" variant={walkIn && (callFile !== null || db.patient(result.patientId)?.isGuest) ? 'outline' : undefined} onClick={() => { onClose(); navigate('/appointments'); }}>عرض تفاصيل الموعد</Button>
         </>
       }>
         {completeData && db.patient(result.patientId) && <EditPatientModal patient={db.patient(result.patientId)!} onClose={() => setCompleteData(false)} />}
@@ -182,6 +188,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
           <dl className="dl" style={{ marginTop: 18, textAlign: 'start' }}>
             <div><dt>رقم الموعد</dt><dd className="num">{result.no}</dd></div>
             <div><dt>اسم المريض</dt><dd>{patient?.fullName ?? np.fullName}</dd></div>
+            {(() => { const fn = db.patient(result.patientId)?.fileNo || callFile; return fn ? <div><dt>رقم الملف</dt><dd className="num">{fn}{callFile !== null && <span className="badge badge--warn" style={{ marginInlineStart: 8 }}>اتضاف في «المرضى» — استكمل بياناته لما ييجي</span>}</dd></div> : null; })()}
             <div><dt>التاريخ</dt><dd>{fmtDate(result.date)}</dd></div>
             <div><dt>الوقت</dt><dd>{fmtTime(result.time)}</dd></div>
             <div><dt>المعالج</dt><dd>{result.therapist}</dd></div>
@@ -293,7 +300,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
                     </div>
                   )}
                   {!existingByPhone && phoneOk && np.fullName.trim() && (
-                    <p className="muted-sm" style={{ marginTop: 8 }}>حجز مكالمة — يُسجَّل الموعد والفاتورة باسمه وجواله، ولا يُضاف في «المرضى» (تقدر تضيفه يدويًا بعد ذلك).</p>
+                    <p className="muted-sm" style={{ marginTop: 8 }}>حجز مكالمة — بيتضاف في «المرضى» برقم ملف باسمه وجواله، ولما ييجي تستكمل باقي بياناته.</p>
                   )}
                 </>
               )}

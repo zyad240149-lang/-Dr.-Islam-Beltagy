@@ -70,7 +70,7 @@ function ServicesCatalog() {
                 <span style={{ display: 'inline-flex', gap: 6 }}>{s.active && !s.showOnSite && <StatusBadge label="إدارة فقط" tone="info" />}<StatusBadge label={s.active ? 'مفعّلة' : 'موقوفة'} tone={s.active ? 'ok' : 'muted'} /></span>
               </div>
               <h3 className="svc-card__name">{s.name}</h3>
-              <p className="svc-card__desc" title={s.description}>{s.description || '—'}</p>
+              {s.description && <p className="svc-card__desc" title={s.description}>{s.description}</p>}
               <div className="svc-card__meta">
                 <span title={doctorsText(s)}><Icon name="stethoscope" size={14} /> {doctorsText(s)}</span>
               </div>

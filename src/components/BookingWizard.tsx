@@ -12,6 +12,7 @@ import { money, fmtDate, APPT_STATUS, fmtTime, todayYmd, addDaysYmd, REFERRAL_SO
 const endTimeOf = (t: string, min: number) => { const [h, m] = t.split(':').map(Number); const v = h * 60 + m + min; return `${String(Math.floor(v / 60) % 24).padStart(2, '0')}:${String(v % 60).padStart(2, '0')}`; };
 const fmtDayName = (ymd: string) => new Date(ymd + 'T00:00:00').toLocaleDateString(document.documentElement.lang === 'en' ? 'en-GB' : 'ar-SA-u-nu-latn', { weekday: 'long' });
 import { useToast } from '../hooks/useToast';
+import { InvoiceFileButtons, InvoiceWhatsappButton } from './InvoiceActions';
 import { useNavigate } from 'react-router-dom';
 
 const STEPS = ['المريض', 'الخدمة', 'الدكتور', 'التاريخ والوقت', 'المراجعة'];
@@ -42,7 +43,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
   const [notes, setNotes] = useState('');
   const [payAmount, setPayAmount] = useState('');
   const [payMethod, setPayMethod] = useState<PaymentMethod>('cash');
-  const [result, setResult] = useState<{ no: string; date: string; time: string; therapist: string } | null>(null);
+  const [result, setResult] = useState<{ id: string; no: string; date: string; time: string; therapist: string } | null>(null);
 
   const center = db.center();
   // حجز بالتليفون: اسم + جوال. لو الجوال/الاسم لمريض مسجّل بيظهر للاختيار (من غير تكرار ملفات)
@@ -151,7 +152,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
     }
     setBusy(false);
     toast.success('تم حجز الموعد بنجاح');
-    setResult({ no: r.appointment.no, date: r.appointment.date, time: r.appointment.time, therapist: db.therapist(therapistId)?.name ?? '' });
+    setResult({ id: r.appointment.id, no: r.appointment.no, date: r.appointment.date, time: r.appointment.time, therapist: db.therapist(therapistId)?.name ?? '' });
   };
 
   if (result) {
@@ -172,6 +173,16 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
             <div><dt>الوقت</dt><dd>{fmtTime(result.time)}</dd></div>
             <div><dt>المعالج</dt><dd>{result.therapist}</dd></div>
           </dl>
+          {(() => {
+            // فاتورة الموعد (أو فاتورة الخطة/الباقة اللي الموعد تبعها) — عرض/تحميل/طباعة/واتساب على طول بعد الحجز
+            const a = db.appointment(result.id);
+            const inv = db.invoices().find((i) => i.status !== 'cancelled' && (i.appointmentId === result.id || (!!a?.planId && i.planId === a.planId) || (!!a?.packageId && i.packageId === a.packageId)));
+            return inv ? (
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center', marginTop: 16 }}>
+                <InvoiceFileButtons invoice={inv} size="sm" /><InvoiceWhatsappButton invoice={inv} size="sm" variant="outline" />
+              </div>
+            ) : null;
+          })()}
         </div>
       </Modal>
     );
@@ -386,10 +397,9 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
           <div className="grid-form grid-form--3" style={{ marginTop: 14 }}>
             <Input id="bk-pay" label="دفعة الحين (اختياري)" type="number" min={0} max={netPrice} value={payAmount} onChange={(e) => setPayAmount(e.target.value)}
               hint={netPrice > 0 ? `إجمالي الفاتورة بعد الخصم: ${money(netPrice)}` : undefined} />
-            {payAmount.trim() && Number(payAmount) > 0 && (
-              <Select id="bk-pay-method" label="طريقة الدفع" value={payMethod} onChange={(e) => setPayMethod(e.target.value as PaymentMethod)}
-                options={PAYMENT_METHOD_OPTIONS} />
-            )}
+            <Select id="bk-pay-method" label="طريقة الدفع" value={payMethod} onChange={(e) => setPayMethod(e.target.value as PaymentMethod)}
+              options={PAYMENT_METHOD_OPTIONS} />
+            {netPrice > 0 && <Button type="button" variant="ghost" size="sm" style={{ alignSelf: 'end' }} onClick={() => setPayAmount(String(netPrice))}>دفع المبلغ كامل ({money(netPrice)})</Button>}
           </div>
         )}
         <div className="field" style={{ marginTop: 14 }}><label htmlFor="bk-notes">ملاحظات</label><textarea id="bk-notes" className="input" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} /></div>

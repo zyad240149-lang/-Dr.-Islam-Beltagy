@@ -93,7 +93,7 @@ function Section({ icon, title, children, aside }: { icon: string; title: string
 
 // الكشف = الشيتين بالترتيب (التمريض قبل دخول المريض ← كشف الطبيب) وبعدهم الحقن — الروشتة والأشعة والتحاليل اتنقلت لشيت المتابعة
 // «كشف الطبيب» بيتسمى بالمنطقة: شيت الطبيب بيتحدد من مكان الألم في الشيت العام (regionSheets)
-const TABS = [['nurse', 'الشيت العام'], ['doctor', 'كشف الطبيب'], ['inj', 'الحقن'], ['plan', 'الخطة العلاجية']] as const;
+const TABS = [['nurse', 'الشيت العام'], ['doctor', 'كشف الطبيب'], ['files', 'الأشعة والتحاليل'], ['inj', 'الحقن'], ['plan', 'الخطة العلاجية']] as const;
 type Tab = typeof TABS[number][0];
 
 // appointmentId = الزيارة اللي التشخيص الجديد بيتربط بيها (من «بانتظار التشخيص»)؛ من غيرها بيتربط بزيارة النهارده المفتوحة للمريض لو فيه
@@ -394,7 +394,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('nurse')}>رجوع: الشيت العام</Button>
             <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => setOut(['doctor'])}>طباعة / إرسال كشف الطبيب</Button>
-            <Button icon="chevronLeft" onClick={() => goTab('inj')}>التالي: الحقن</Button>
+            <Button icon="chevronLeft" onClick={() => goTab('files')}>التالي: الأشعة والتحاليل</Button>
           </div>
         </>}
 
@@ -403,7 +403,40 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
             بيتسجل مرة واحدة في ملف المريض ويظهر في قسمه — مفيش نسخ جوّه الكشف ولا تكرار */}
         {tab === 'plan' && <>
           <section className="plan-part">
-            <h3 className="plan-part__h"><span className="plan-part__n num">1</span>أشعة السونار</h3>
+            <h3 className="plan-part__h"><span className="plan-part__n num">1</span>الأدوية والروشتة</h3>
+            {(() => {
+              const meds = c.medications.filter((m) => m.name.trim()), reqs = c.imagingRequests.filter((r) => r.region.trim());
+              return meds.length || reqs.length || c.labs.length ? (
+                <dl className="dl rx-sum">
+                  {meds.length > 0 && <div><dt>الأدوية</dt><dd dir="ltr" style={{ textAlign: 'start' }}>{meds.map((m) => [m.name, m.dose, m.frequency, m.duration].filter(Boolean).join(' ')).join(' • ')}</dd></div>}
+                  {reqs.length > 0 && <div><dt>أشعة / سونار مطلوبة</dt><dd>{reqs.map((r) => `${IMAGING_KIND[r.kind]} — ${r.region}${r.view ? ` (${r.view})` : ''}`).join('، ')}</dd></div>}
+                  {c.labs.length > 0 && <div><dt>تحاليل مطلوبة</dt><dd dir="ltr" style={{ textAlign: 'start' }}>{c.labs.join(' • ')}</dd></div>}
+                </dl>
+              ) : <p className="cx-empty">لسه مفيش روشتة — اضغط «فتح الروشتة» واكتب الأدوية والأشعة/السونار والتحاليل المطلوبة في صفحة واحدة.</p>;
+            })()}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+              <Button icon="receipt" onClick={() => setRxOpen(true)}>فتح الروشتة</Button>
+              <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => printRx(c, patientOf())}>طباعة الروشتة</Button>
+            </div>
+          </section>
+
+          <div dir="rtl" className="sh-treat"><RegionSheetForm def={TREATMENT} sheet={sheet} onChange={changeSheet} side={c.side} onSide={(v) => set('side', v)}
+            icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap('tp.tx.other')} /></div>
+          {/* مواعيد المتابعة جزء من الخطة العلاجية: أكتر من موعد للمريض، مربوطة بالتشخيص ده (بتتحفظ مع حفظ الكشف) */}
+          <Section icon="calendar" title="تحديد موعد متابعة">
+            <FollowUpStep patientId={c.patientId} patientLabel={pendingInfo.name} consultationId={initial?.id} pending={c.pendingFollowUps ?? []} onPending={(p) => set('pendingFollowUps', p)}
+              doctorHint={visitAppt?.therapistId} />
+          </Section>
+          <div className="sh-next">
+            <Button variant="outline" icon="chevron" onClick={() => goTab('inj')}>رجوع: الحقن</Button>
+            <Button icon="check" loading={busy} disabled={!ok} onClick={() => save(false)}>حفظ الكشف</Button>
+          </div>
+        </>}
+
+        {/* الأشعة والتحاليل: قسم لوحده قبل الحقن (طلب الدكتور ٨/١١) */}
+        {tab === 'files' && <>
+          <section className="plan-part">
+            <h3 className="plan-part__h"><span className="plan-part__n num">1</span>الأشعة / السونار</h3>
             <PatientMedicalFiles patientId={c.patientId} excludeConsultId={initial?.id} categories={['xray']} title="صور الأشعة / السونار" icon="camera" uploadCategory="xray" />
             {usImgs.length > 0 && (
               <Section icon="camera" title="صور سونار مرفقة بالكشف ده (قديمة)">
@@ -447,34 +480,9 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
             <PatientMedicalFiles patientId={c.patientId} excludeConsultId={initial?.id} categories={['lab']} title="ملفات ونتائج التحاليل" icon="doc" uploadCategory="lab" />
           </section>
 
-          <section className="plan-part">
-            <h3 className="plan-part__h"><span className="plan-part__n num">3</span>الأدوية والروشتة</h3>
-            {(() => {
-              const meds = c.medications.filter((m) => m.name.trim()), reqs = c.imagingRequests.filter((r) => r.region.trim());
-              return meds.length || reqs.length || c.labs.length ? (
-                <dl className="dl rx-sum">
-                  {meds.length > 0 && <div><dt>الأدوية</dt><dd dir="ltr" style={{ textAlign: 'start' }}>{meds.map((m) => [m.name, m.dose, m.frequency, m.duration].filter(Boolean).join(' ')).join(' • ')}</dd></div>}
-                  {reqs.length > 0 && <div><dt>أشعة / سونار مطلوبة</dt><dd>{reqs.map((r) => `${IMAGING_KIND[r.kind]} — ${r.region}${r.view ? ` (${r.view})` : ''}`).join('، ')}</dd></div>}
-                  {c.labs.length > 0 && <div><dt>تحاليل مطلوبة</dt><dd dir="ltr" style={{ textAlign: 'start' }}>{c.labs.join(' • ')}</dd></div>}
-                </dl>
-              ) : <p className="cx-empty">لسه مفيش روشتة — اضغط «فتح الروشتة» واكتب الأدوية والأشعة/السونار والتحاليل المطلوبة في صفحة واحدة.</p>;
-            })()}
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
-              <Button icon="receipt" onClick={() => setRxOpen(true)}>فتح الروشتة</Button>
-              <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => printRx(c, patientOf())}>طباعة الروشتة</Button>
-            </div>
-          </section>
-
-          <div dir="rtl" className="sh-treat"><RegionSheetForm def={TREATMENT} sheet={sheet} onChange={changeSheet} side={c.side} onSide={(v) => set('side', v)}
-            icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap('tp.tx.other')} /></div>
-          {/* مواعيد المتابعة جزء من الخطة العلاجية: أكتر من موعد للمريض، مربوطة بالتشخيص ده (بتتحفظ مع حفظ الكشف) */}
-          <Section icon="calendar" title="تحديد موعد متابعة">
-            <FollowUpStep patientId={c.patientId} patientLabel={pendingInfo.name} consultationId={initial?.id} pending={c.pendingFollowUps ?? []} onPending={(p) => set('pendingFollowUps', p)}
-              doctorHint={visitAppt?.therapistId} />
-          </Section>
           <div className="sh-next">
-            <Button variant="outline" icon="chevron" onClick={() => goTab('inj')}>رجوع: الحقن</Button>
-            <Button icon="check" loading={busy} disabled={!ok} onClick={() => save(false)}>حفظ الكشف</Button>
+            <Button variant="outline" icon="chevron" onClick={() => goTab('doctor')}>رجوع: كشف الطبيب</Button>
+            <Button icon="chevronLeft" onClick={() => goTab('inj')}>التالي: الحقن</Button>
           </div>
         </>}
 
@@ -487,7 +495,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
             </> : <p className="muted">{unlinked ? 'سجل الحقن بيتفتح بعد ما التشخيص يتربط بملف المريض.' : 'اختار المريض الأول.'}</p>}
           </Section>
           <div className="sh-next">
-            <Button variant="outline" icon="chevron" onClick={() => goTab('doctor')}>رجوع: كشف الطبيب</Button>
+            <Button variant="outline" icon="chevron" onClick={() => goTab('files')}>رجوع: الأشعة والتحاليل</Button>
             <Button icon="chevronLeft" onClick={() => goTab('plan')}>التالي: الخطة العلاجية</Button>
           </div>
         </>}

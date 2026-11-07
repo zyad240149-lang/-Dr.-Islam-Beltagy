@@ -56,7 +56,7 @@ export default function OnlineAccounts({ tabs }: { tabs?: ReactNode }) {
   return (
     <div className="page">
       <div className="page-head">
-        <div><h1>حسابات المرضى الأونلاين</h1><p>الحسابات اللي المرضى عملوها من الموقع أو التطبيق، والحجوزات اللي اتعملت عن طريق مكالمة — وبياناتهم لسه محتاجة استكمال. بيختفوا من هنا بعد الاكتمال.</p></div>
+        <div><h1>حجز مكالمات وحسابات أونلاين</h1><p>الحسابات اللي المرضى عملوها من الموقع أو التطبيق، والحجوزات اللي اتعملت عن طريق مكالمة — وبياناتهم لسه محتاجة استكمال. بيختفوا من هنا بعد الاكتمال.</p></div>
       </div>
       {tabs}
       <div className="card" style={{ marginBottom: 16 }}><div className="card__body">

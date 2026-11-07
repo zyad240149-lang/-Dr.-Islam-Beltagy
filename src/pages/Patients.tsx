@@ -37,7 +37,7 @@ export default function Patients() {
   const tabs = showOnline ? (
     <div className="tabs" style={{ marginBottom: 14 }}>
       <button type="button" className={`tab ${tab === 'all' ? 'active' : ''}`} onClick={() => go('all')}>كل المرضى</button>
-      <button type="button" className={`tab ${tab === 'online' ? 'active' : ''}`} onClick={() => go('online')}>حسابات المرضى الأونلاين</button>
+      <button type="button" className={`tab ${tab === 'online' ? 'active' : ''}`} onClick={() => go('online')}>حجز مكالمات وحسابات أونلاين</button>
     </div>
   ) : null;
   return tab === 'online' ? <OnlineAccounts tabs={tabs} /> : <PatientsList tabs={tabs} />;

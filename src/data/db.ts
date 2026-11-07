@@ -658,6 +658,8 @@ export const db = {
   // ---------- patients ----------
   patients: () => load().patients,
   patient: (id: string) => load().patients.find((p) => p.id === id) ?? guests.find((p) => p.id === id),
+  /** المتصلين اللي اتحجزلهم بالمكالمة (لسه مش في «المرضى» — بيتحوّلوا لملف عادي بعد استكمال بياناتهم) */
+  guests: () => guests,
   // بحث بالجوال في كل السجلات (الحقيقيين + المتصلين) — لمنع التكرار في حجز المكالمة
   findByPhone: (phone: string) => load().patients.find((p) => phoneMatches(p.phone, phone)) ?? guests.find((p) => phoneMatches(p.phone, phone)),
   patientIdsForTherapist(therapistId: string): Set<string> {

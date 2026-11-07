@@ -13,6 +13,7 @@ const endTimeOf = (t: string, min: number) => { const [h, m] = t.split(':').map(
 const fmtDayName = (ymd: string) => new Date(ymd + 'T00:00:00').toLocaleDateString(document.documentElement.lang === 'en' ? 'en-GB' : 'ar-SA-u-nu-latn', { weekday: 'long' });
 import { useToast } from '../hooks/useToast';
 import { InvoiceFileButtons, InvoiceWhatsappButton } from './InvoiceActions';
+import { EditPatientModal } from './PatientForms';
 import { useNavigate } from 'react-router-dom';
 
 const STEPS = ['المريض', 'الخدمة', 'الدكتور', 'التاريخ والوقت', 'المراجعة'];
@@ -45,7 +46,8 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
   const [payMethod, setPayMethod] = useState<PaymentMethod>('cash');
   // «المريض موجود» (في العيادة دلوقتي): الموعد بيتحجز النهارده في الوقت اللي تختاره، وحضوره بيتأكد على طول بعد الحجز
   const [walkIn, setWalkIn] = useState(false);
-  const [result, setResult] = useState<{ id: string; no: string; date: string; time: string; therapist: string } | null>(null);
+  const [completeData, setCompleteData] = useState(false);
+  const [result, setResult] = useState<{ id: string; patientId: string; no: string; date: string; time: string; therapist: string } | null>(null);
 
   const center = db.center();
   // حجز بالتليفون: اسم + جوال. لو الجوال/الاسم لمريض مسجّل بيظهر للاختيار (من غير تكرار ملفات)
@@ -160,7 +162,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
     }
     setBusy(false);
     toast.success('تم حجز الموعد بنجاح');
-    setResult({ id: r.appointment.id, no: r.appointment.no, date: r.appointment.date, time: r.appointment.time, therapist: db.therapist(therapistId)?.name ?? '' });
+    setResult({ id: r.appointment.id, patientId: r.appointment.patientId, no: r.appointment.no, date: r.appointment.date, time: r.appointment.time, therapist: db.therapist(therapistId)?.name ?? '' });
   };
 
   if (result) {
@@ -168,9 +170,12 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
       <Modal title="تم حجز الموعد" onClose={onClose} footer={
         <>
           <Button variant="outline" onClick={onClose}>إغلاق</Button>
-          <Button icon="calendar" onClick={() => { onClose(); navigate('/appointments'); }}>عرض تفاصيل الموعد</Button>
+          {/* حجز مكالمة: لما المريض ييجي تستكمل بياناته — الاستكمال بيحوّله لملف مريض عادي في «المرضى» */}
+          {db.patient(result.patientId)?.isGuest && <Button variant={walkIn ? undefined : 'outline'} icon="edit" onClick={() => setCompleteData(true)}>استكمال بيانات المريض</Button>}
+          <Button icon="calendar" variant={walkIn && db.patient(result.patientId)?.isGuest ? 'outline' : undefined} onClick={() => { onClose(); navigate('/appointments'); }}>عرض تفاصيل الموعد</Button>
         </>
       }>
+        {completeData && db.patient(result.patientId) && <EditPatientModal patient={db.patient(result.patientId)!} onClose={() => setCompleteData(false)} />}
         <div className="success" style={{ textAlign: 'center' }}>
           <div className="mark"><Icon name="check" size={30} /></div>
           <h1 style={{ fontSize: 20 }}>✅ تم حجز الموعد بنجاح</h1>
@@ -230,18 +235,6 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
               {!presetPatientId && <button type="button" className="link-more" style={{ border: 0, background: 'none', cursor: 'pointer' }} onClick={() => { setPatientId(''); setPatientQuery(''); setWalkIn(false); setNp((x) => ({ ...x, fullName: '', phone: '' })); }}>تغيير</button>}
             </div>
           ) : null}
-          {patientId && patient && (
-            <div className="choice-grid" style={{ marginBottom: 12 }}>
-              <button type="button" className={`choice ${!walkIn ? 'selected' : ''}`} onClick={() => { setWalkIn(false); next(); }}>
-                <span className="choice__ic"><Icon name="calendar" size={18} /></span>
-                <span><strong>حجز موعد</strong><span> اختار اليوم والوقت</span></span>
-              </button>
-              {(!lockedPreset || date === todayYmd()) && <button type="button" className={`choice ${walkIn ? 'selected' : ''}`} onClick={() => { setWalkIn(true); next(); }}>
-                <span className="choice__ic"><Icon name="checkCircle" size={18} /></span>
-                <span><strong>المريض موجود</strong><span>{lockedPreset ? ` النهارده ${fmtTime(time)} — وحضوره يتأكد على طول` : ' النهارده في الوقت اللي تختاره — وحضوره يتأكد على طول'}</span></span>
-              </button>}
-            </div>
-          )}
           {patientId && patient ? null : (
             <>
               {/* اختيارين: «بحث عن مريض» (مريض موجود) أو «حجز عن طريق مكالمة» (اسم + جوال) */}
@@ -305,6 +298,18 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
                 </>
               )}
             </>
+          )}
+          {((patientId && patient) || (!patientId && mode === 'call' && np.fullName.trim().length >= 2 && phoneOk)) && (
+            <div className="choice-grid" style={{ margin: '12px 0' }}>
+              <button type="button" className={`choice ${!walkIn ? 'selected' : ''}`} onClick={() => { setWalkIn(false); next(); }}>
+                <span className="choice__ic"><Icon name="calendar" size={18} /></span>
+                <span><strong>حجز موعد</strong><span> اختار اليوم والوقت</span></span>
+              </button>
+              {(!lockedPreset || date === todayYmd()) && <button type="button" className={`choice ${walkIn ? 'selected' : ''}`} onClick={() => { setWalkIn(true); next(); }}>
+                <span className="choice__ic"><Icon name="checkCircle" size={18} /></span>
+                <span><strong>المريض موجود</strong><span>{lockedPreset ? ` النهارده ${fmtTime(time)} — وحضوره يتأكد على طول` : ' النهارده في الوقت اللي تختاره — وحضوره يتأكد على طول'}</span></span>
+              </button>}
+            </div>
           )}
         </div>
       )}

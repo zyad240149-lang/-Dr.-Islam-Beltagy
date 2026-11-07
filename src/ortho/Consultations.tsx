@@ -90,7 +90,7 @@ function Section({ icon, title, children, aside }: { icon: string; title: string
 
 // الكشف = الشيتين بالترتيب (التمريض قبل دخول المريض ← كشف الطبيب) وبعدهم الحقن — الروشتة والأشعة والتحاليل اتنقلت لشيت المتابعة
 // «كشف الطبيب» بيتسمى بالمنطقة: شيت الطبيب بيتحدد من مكان الألم في الشيت العام (regionSheets)
-const TABS = [['nurse', 'الشيت العام'], ['doctor', 'كشف الطبيب'], ['plan', 'الخطة العلاجية'], ['us', 'السونار'], ['inj', 'الحقن'], ['fu', 'تحديد موعد متابعة']] as const;
+const TABS = [['nurse', 'الشيت العام'], ['doctor', 'كشف الطبيب'], ['plan', 'الخطة العلاجية'], ['us', 'السونار'], ['inj', 'الحقن']] as const;
 type Tab = typeof TABS[number][0];
 
 // appointmentId = الزيارة اللي التشخيص الجديد بيتربط بيها (من «بانتظار التشخيص»)؛ من غيرها بيتربط بزيارة النهارده المفتوحة للمريض لو فيه
@@ -301,7 +301,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
         </div>
         <PatientMedicalFiles patientId={c.patientId} excludeConsultId={initial?.id} />
 
-        <div className="seg seg--6 sh-tabs" role="tablist" aria-label="أجزاء الكشف">
+        <div className="seg seg--5 sh-tabs" role="tablist" aria-label="أجزاء الكشف">
           {TABS.map(([k, l], i) => (
             <button key={k} type="button" role="tab" aria-selected={tab === k} className={`seg__btn ${tab === k ? 'active' : ''}`} onClick={() => goTab(k)}>
               <span className="sh-tabs__n num">{i + 1}</span>{k === 'doctor' && active.length ? `${l} — ${active.map((id) => SHEET_TAB[id]).join(' + ')}` : l}
@@ -349,6 +349,11 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
         {tab === 'plan' && <>
           <div dir="rtl" className="sh-treat"><RegionSheetForm def={TREATMENT} sheet={sheet} onChange={changeSheet} side={c.side} onSide={(v) => set('side', v)}
             icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap('tp.tx.other')} /></div>
+          {/* مواعيد المتابعة جزء من الخطة العلاجية: أكتر من موعد للمريض، مربوطة بالتشخيص ده (بتتحفظ مع حفظ الكشف) */}
+          <Section icon="calendar" title="تحديد موعد متابعة">
+            <FollowUpStep patientId={c.patientId} patientLabel={pendingInfo.name} consultationId={initial?.id} pending={c.pendingFollowUps ?? []} onPending={(p) => set('pendingFollowUps', p)}
+              doctorHint={visitAppt?.therapistId} />
+          </Section>
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('doctor')}>رجوع: كشف الطبيب</Button>
             <Button icon="chevronLeft" onClick={() => goTab('us')}>التالي: السونار</Button>
@@ -401,18 +406,6 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           </Section>
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('us')}>رجوع: السونار</Button>
-            <Button icon="chevronLeft" onClick={() => goTab('fu')}>التالي: تحديد موعد متابعة</Button>
-          </div>
-        </>}
-
-        {/* مواعيد المتابعة: أكتر من موعد للمريض، مربوطة بالتشخيص ده (بتتحفظ مع حفظ الكشف) */}
-        {tab === 'fu' && <>
-          <Section icon="calendar" title="تحديد موعد متابعة">
-            <FollowUpStep patientId={c.patientId} patientLabel={pendingInfo.name} consultationId={initial?.id} pending={c.pendingFollowUps ?? []} onPending={(p) => set('pendingFollowUps', p)}
-              doctorHint={visitAppt?.therapistId} />
-          </Section>
-          <div className="sh-next">
-            <Button variant="outline" icon="chevron" onClick={() => goTab('inj')}>رجوع: الحقن</Button>
             <Button icon="check" loading={busy} disabled={!ok} onClick={() => save(false)}>حفظ الكشف</Button>
           </div>
         </>}

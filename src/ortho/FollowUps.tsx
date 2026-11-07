@@ -420,7 +420,7 @@ export function PatientFollowUps({ patientId }: { patientId: string }) {
         {perm.add && <Button size="sm" icon="plus" onClick={() => setEdit('new')}>موعد متابعة جديد</Button>}
       </div>
       <LoadState kind="follow_ups">
-        {all.length === 0 ? <EmptyState icon="calendar" title="مفيش مواعيد متابعة" text="المتابعات بتتحدد من التشخيص (خطوة «تحديد موعد متابعة») أو من هنا." /> : <>
+        {all.length === 0 ? <EmptyState icon="calendar" title="مفيش مواعيد متابعة" text="المتابعات بتتحدد من التشخيص (تبويب «الخطة العلاجية») أو من هنا." /> : <>
           <div className="section-title">القادمة</div>
           <FollowUpList items={next} onOpen={setEdit} />
           {past.length > 0 && <><div className="section-title" style={{ marginTop: 14 }}>السابقة</div><FollowUpList items={past} onOpen={setEdit} /></>}

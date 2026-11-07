@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { Button, EmptyState, Modal } from '../components/ui';
 import { db } from '../data/db';
 import { supabase } from '../lib/supabase';
-import { PAYMENT_METHOD_OPTIONS, fmtDate, money, todayYmd } from '../utils/format';
+import { INVOICE_STATUS, PAYMENT_METHOD_OPTIONS, fmtDate, money, todayYmd } from '../utils/format';
+import { InvoiceFileButtons, InvoiceWhatsappButton } from '../components/InvoiceActions';
 import { ORTHO_PROCEDURES, REGIONS, SIDE, STAGE_STATUS, SURGERY_STATUS, addDays, daysBetween, ortho, useOrthoVersion, type Side, type StageStatus, type Surgery, type SurgeryStage, type SurgeryStatus } from './data';
 import { Field, IconBtn, LoadState, PageHead, PatientSelect, PillTabs, Tone, confirmDelete, patientFile, patientName, useClinicalCan, useRun } from './kit';
 
@@ -212,8 +213,38 @@ function StagesModal({ surgery, onClose }: { surgery: Surgery; onClose: () => vo
       {locked && (
         <p style={{ marginBottom: 0 }}>المستحق: <strong className="num">{money(Number(surgery.price) || 0)}</strong> · المدفوع عند الإنهاء: <strong className="num">{money(Number(surgery.paidAtFinish) || 0)}</strong></p>
       )}
+      <SurgeryInvoice surgery={surgery} />
       {finishing && <FinishModal surgery={surgery} onClose={() => setFinishing(false)} onDone={onClose} />}
     </Modal>
+  );
+}
+
+/** فاتورة العملية (بتتعمل على الخادم عند «إنهاء العملية»): تفاصيلها + عرض/تحميل PDF/طباعة/إرسال واتساب — نفس أزرار الفواتير في النظام */
+function SurgeryInvoice({ surgery }: { surgery: Surgery }) {
+  const inv = surgery.invoiceId ? db.invoices().find((i) => i.id === surgery.invoiceId) : undefined;
+  return (
+    <div className="card" style={{ padding: 12, marginTop: 16 }}>
+      <h4 style={{ margin: '0 0 8px' }}>فاتورة العملية</h4>
+      {!surgery.invoiceId ? <p className="muted-sm" style={{ margin: 0 }}>الفاتورة بتتعمل لوحدها لما تدوس «إنهاء العملية» — وبعدها تقدر تعرضها وتطبعها وتحمّلها وتبعتها من هنا.</p>
+        : !inv ? <p className="muted-sm" style={{ margin: 0 }}>الفاتورة مش ظاهرة — ممكن لسه بتتحمّل، أو حسابك محتاج صلاحية «الفواتير».</p>
+        : <>
+          <dl className="dl" style={{ margin: '0 0 10px' }}>
+            <div><dt>رقم الفاتورة</dt><dd className="num">{inv.no}</dd></div>
+            <div><dt>التاريخ</dt><dd>{fmtDate(inv.date)}</dd></div>
+            <div><dt>البند</dt><dd>{inv.serviceName || surgery.procedure}</dd></div>
+            <div><dt>السعر</dt><dd className="num">{money(inv.price)}</dd></div>
+            {inv.discount > 0 && <div><dt>الخصم</dt><dd className="num">{money(inv.discount)}</dd></div>}
+            <div><dt>الإجمالي</dt><dd className="num"><b>{money(inv.total)}</b></dd></div>
+            <div><dt>المدفوع</dt><dd className="num">{money(inv.paid)}</dd></div>
+            <div><dt>المتبقي</dt><dd className="num">{money(inv.remaining)}</dd></div>
+            <div><dt>الحالة</dt><dd><Tone s={INVOICE_STATUS[inv.status]} /></dd></div>
+          </dl>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <InvoiceFileButtons invoice={inv} size="sm" />
+            <InvoiceWhatsappButton invoice={inv} size="sm" variant="outline" />
+          </div>
+        </>}
+    </div>
   );
 }
 

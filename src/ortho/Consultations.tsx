@@ -457,8 +457,30 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
 
         {/* الأشعة والتحاليل: قسم لوحده قبل الحقن (طلب الدكتور ٨/١١) */}
         {tab === 'files' && <>
+          {/* الأشعة/السونار والتحاليل المطلوبة: اختيار + حفظ + طباعة ورقة طلب لوحدها (نفس اللي بيظهر في الروشتة) */}
           <section className="plan-part">
-            <h3 className="plan-part__h"><span className="plan-part__n num">1</span>الأشعة / السونار</h3>
+            <h3 className="plan-part__h"><span className="plan-part__n num">1</span>الأشعة والتحاليل المطلوبة</h3>
+            <RxEditor rxOnly requestsOnly patientId={c.patientId} region={c.region} value={c as unknown as RxData}
+              onChange={(f) => setC((x) => ({ ...x, ...f(x as unknown as RxData) }))} />
+            {(() => {
+              const reqs = c.imagingRequests.filter((r) => r.region.trim());
+              const none = !reqs.length && !c.labs.length;
+              return (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+                  <Button variant="outline" icon="check" loading={rxSaving} disabled={none || (!c.patientId && !unlinked)} onClick={() => void saveRx(c)}>حفظ الطلبات</Button>
+                  <Button icon="print" loading={rxSaving} disabled={none || (!c.patientId && !unlinked)} onClick={async () => {
+                    const win = openPrintWindow();
+                    if (await saveRx(c)) printRx({ ...c, medications: [], plan: '', followUp: '' }, patientOf(), win, 'طلب أشعة وتحاليل');
+                    else win?.close();
+                  }}>طباعة الأشعة والتحاليل المطلوبة</Button>
+                  {none && <span className="muted-sm" style={{ alignSelf: 'center' }}>اختار الأشعة أو التحاليل المطلوبة الأول</span>}
+                </div>
+              );
+            })()}
+          </section>
+
+          <section className="plan-part">
+            <h3 className="plan-part__h"><span className="plan-part__n num">2</span>الأشعة / السونار</h3>
             <PatientMedicalFiles patientId={c.patientId} excludeConsultId={initial?.id} categories={['xray']} title="صور الأشعة / السونار" icon="camera" uploadCategory="xray" />
             {usImgs.length > 0 && (
               <Section icon="camera" title="صور سونار مرفقة بالكشف ده (قديمة)">
@@ -489,7 +511,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           </section>
 
           <section className="plan-part">
-            <h3 className="plan-part__h"><span className="plan-part__n num">2</span>التحاليل</h3>
+            <h3 className="plan-part__h"><span className="plan-part__n num">3</span>التحاليل</h3>
             {(() => {
               const waiting = c.patientId ? ortho.list('imaging', c.patientId).filter((m) => m.kind === 'lab' && m.status !== 'reviewed') : [];
               return waiting.length > 0 && (

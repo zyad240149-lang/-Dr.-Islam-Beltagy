@@ -34,6 +34,7 @@ export const RX_CSS = `
   .rxp .top img { width: 46px; height: 46px; background: #fff; border-radius: 10px; padding: 4px; flex: none; }
   .rxp .top .ar { flex: 1; min-width: 0; }
   .rxp .top h1 { margin: 0; font-size: 19px; font-weight: 700; color: #fff; }
+  .rxp .ttl { text-align: center; font-size: 17px; font-weight: 700; color: #1b2a54; margin: 4px 0 2px; }
   .rxp .top .t { font-size: 12.5px; opacity: .9; }
   .rxp .top .en { direction: ltr; text-align: left; font-size: 11.5px; opacity: .92; line-height: 1.45; }
   .rxp .top .en b { font-size: 13px; }
@@ -67,7 +68,8 @@ export const RX_CSS = `
   .rxp footer b { color: #1b2a54; font-size: 11px; }
 `;
 
-export function rxPageHtml(c: Omit<Consultation, 'id' | 'patientId'>, p?: RxPatient | null): string {
+// title: عنوان فوق بيانات المريض (زي «طلب أشعة وتحاليل»)؛ الروشتة العادية من غيره
+export function rxPageHtml(c: Omit<Consultation, 'id' | 'patientId'>, p?: RxPatient | null, title?: string): string {
   const meds = c.medications.filter((m) => m.name.trim());
   const labs = c.labs.filter(Boolean);
   const imgs = c.imagingRequests.filter((r) => r.region.trim() || r.view.trim());
@@ -85,6 +87,7 @@ export function rxPageHtml(c: Omit<Consultation, 'id' | 'patientId'>, p?: RxPati
   <div><span>رقم الملف:</span> <b>${esc(fileNoText(p?.fileNo) || '—')}</b></div>
   <div><span>التاريخ:</span> <b>${esc(fmtDate(c.date))}</b></div>
 </div>
+${title ? `<div class="ttl">${esc(title)}</div>` : ''}
 ${meds.length ? `<div class="rx">R/</div><div>${meds.map((m, i) => `<div class="li"><span class="n">${i + 1}</span><div class="b"><div class="med">${esc(m.name)}</div><div class="sig">${esc([m.dose, m.frequency, m.duration && 'لمدة ' + m.duration].filter(Boolean).join(' — '))}${m.notes ? ` <i>(${esc(m.notes)})</i>` : ''}</div></div></div>`).join('')}</div>` : ''}
 ${imgs.length ? `<div class="box img"><h3>الأشعة / السونار المطلوبة</h3>${imgs.map((r) => `<div>• ${esc(IMAGING_KIND[r.kind])} — ${esc(r.region)}${r.view ? ` <span class="ltr">(${esc(r.view)})</span>` : ''}</div>`).join('')}</div>` : ''}
 ${labs.length ? `<div class="box lab"><h3>التحاليل المطلوبة</h3><div class="chips ltr">${labs.map((l) => `<span>${esc(l)}</span>`).join('')}</div></div>` : ''}
@@ -96,8 +99,8 @@ ${c.followUp ? `<div class="fu">ميعاد المتابعة: ${esc(fmtDate(c.fol
 </div>`;
 }
 
-export function rxHtml(c: Omit<Consultation, 'id' | 'patientId'>, p?: RxPatient | null): string {
-  return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>روشتة — ${esc(p?.fullName)}</title>
+export function rxHtml(c: Omit<Consultation, 'id' | 'patientId'>, p?: RxPatient | null, title?: string): string {
+  return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>${esc(title || 'روشتة')} — ${esc(p?.fullName)}</title>
 <link rel="stylesheet" href="${FONT_HREF}">
 <style>
   @page { size: A5; margin: 12mm; }
@@ -105,10 +108,10 @@ export function rxHtml(c: Omit<Consultation, 'id' | 'patientId'>, p?: RxPatient 
   :root { color-scheme: light; }
   body { background: #fff; margin: 0; }
 ${RX_CSS}
-</style></head><body>${rxPageHtml(c, p)}</body></html>`;
+</style></head><body>${rxPageHtml(c, p, title)}</body></html>`;
 }
 
 // win = تابة الطباعة لو اتفتحت قبل كده وقت الضغطة (زي «حفظ وطباعة الروشتة» اللي بيستنى الحفظ الأول)؛ من غيرها بتتفتح دلوقتي
-export function printRx(c: Omit<Consultation, 'id' | 'patientId'>, p?: RxPatient | null, win?: Window | null) {
-  void printHtml(rxHtml(c, p), win === undefined ? openPrintWindow() : win);
+export function printRx(c: Omit<Consultation, 'id' | 'patientId'>, p?: RxPatient | null, win?: Window | null, title?: string) {
+  void printHtml(rxHtml(c, p, title), win === undefined ? openPrintWindow() : win);
 }

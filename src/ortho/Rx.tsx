@@ -39,7 +39,8 @@ function Section({ icon, title, children, aside }: { icon: string; title: string
 }
 
 /** rxOnly: جوّه الخطة العلاجية في الكشف — الروشتة بس (الأدوية + أشعة/سونار وتحاليل مطلوبة)؛ رفع الملفات في قسمي السونار والتحاليل */
-export function RxEditor({ value: c, onChange, patientId, region = '', onUploading, rxOnly }: { value: RxData; onChange: (f: (r: RxData) => RxData) => void; patientId: string; region?: string; onUploading?: (v: boolean) => void; rxOnly?: boolean }) {
+/** requestsOnly: الأشعة/السونار والتحاليل المطلوبة بس (تاب «الأشعة والتحاليل» في الكشف) */
+export function RxEditor({ value: c, onChange, patientId, region = '', onUploading, rxOnly, requestsOnly }: { value: RxData; onChange: (f: (r: RxData) => RxData) => void; patientId: string; region?: string; onUploading?: (v: boolean) => void; rxOnly?: boolean; requestsOnly?: boolean }) {
   const toast = useToast();
   const [uploading, setUp] = useState(false);
   const [labQ, setLabQ] = useState('');
@@ -169,5 +170,6 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
     </Section>
   );
   // الروشتة في الكشف: الأدوية الأول، وبعدها المطلوب من أشعة/سونار وتحاليل
+  if (requestsOnly) return <div className="cx">{[imagingSec, labsSec]}</div>;
   return <div className="cx">{rxOnly ? [medsSec, imagingSec, labsSec, notesSec] : [imagingSec, medsSec, labsSec, notesSec]}</div>;
 }

@@ -26,7 +26,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
   ] },
   { title: 'المرضى والمواعيد', items: [
     { to: '/patients', label: 'المرضى', icon: 'users', area: 'patients' },
-    { to: '/booking', label: 'حجز موعد', icon: 'calendarPlus', area: 'booking' },
+    // «حجز موعد» اتشال من القائمة (٨/١١) — الحجز من «المواعيد» وملف المريض
     { to: '/appointments', label: 'المواعيد', icon: 'calendar', area: 'appointments' },
     { to: '/services', label: 'الخدمات', icon: 'spark', area: 'services' },
   ] },

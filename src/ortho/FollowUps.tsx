@@ -602,23 +602,23 @@ function DaySchedule({ date, follows, filtered, onOpen, onBook }: {
         {!filtered && <span><b className="num">{free.size}</b> وقت فاضي</span>}
       </div>
       {/* ٨/١١: قايمة صغيرة بدل الجدول — سطر لكل ساعة، من غير سكرول لجنب على الموبايل */}
-      <ul className="fu-day">
+      <ul className="fu-slots">
         {lines.map(({ r, freeAt }) => {
           if (!r) {
             const ids = free.get(freeAt)!;
             return (
-              <li key={`free-${freeAt}`} className="fu-day__row fu-day__row--free">
-                <span className="fu-day__t num">{fmtTime(freeAt)}</span>
-                <span className="fu-day__who muted-sm">فاضي</span>
+              <li key={`free-${freeAt}`} className="fu-slot fu-slot--free">
+                <span className="fu-slot__t num">{fmtTime(freeAt)}</span>
+                <span className="fu-slot__who muted-sm">فاضي</span>
                 {perm.book && <Button size="sm" icon="plus" onClick={() => onBook({ date, time: freeAt, doctorId: ids.length === 1 ? ids[0] : undefined })}>حجز</Button>}
               </li>
             );
           }
           const { fu, appt } = r;
           return (
-            <li key={r.key} className="fu-day__row">
-              <span className="fu-day__t num"><b>{r.time ? fmtTime(r.time) : '—'}</b></span>
-              <button type="button" className="fu-day__who fu-sched__who" onClick={() => (fu ? onOpen(fu) : openVisit(appt!.id))}>
+            <li key={r.key} className="fu-slot">
+              <span className="fu-slot__t num"><b>{r.time ? fmtTime(r.time) : '—'}</b></span>
+              <button type="button" className="fu-slot__who fu-sched__who" onClick={() => (fu ? onOpen(fu) : openVisit(appt!.id))}>
                 {patientName(r.patientId)}
                 <small className="muted-sm" dir="auto">{(appt && db.service(appt.serviceId)?.name) || fu?.reason || (fu ? 'متابعة' : 'حجز')}</small>
               </button>

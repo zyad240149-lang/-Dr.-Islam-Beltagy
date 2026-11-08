@@ -134,6 +134,36 @@ export function requestHtml(kind: 'rad' | 'lab', s: ExamSheet, p: ReqPatient | n
 <link rel="stylesheet" href="${FONT_HREF}"><style>@page { size: A5; margin: 0; } body { margin: 0; } ${REQ_CSS}</style></head><body>${requestPageHtml(kind, s, p, date)}</body></html>`;
 }
 
+/** نافذة الصورة على الآيباد/الموبايل: «حفظ في الصور» (قايمة المشاركة ← حفظ الصورة) أو ضغطة مطوّلة على الصورة */
+function showImageSheet(blob: Blob, file: File) {
+  const url = URL.createObjectURL(blob);
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,.88);display:flex;flex-direction:column;align-items:center;gap:12px;padding:16px;overflow:auto;direction:rtl;font-family:"IBM Plex Sans Arabic",Tahoma,sans-serif';
+  const close = () => { ov.remove(); URL.revokeObjectURL(url); };
+  const btn = (text: string, primary: boolean) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = text;
+    b.style.cssText = `font:inherit;font-weight:700;font-size:16px;padding:10px 18px;border-radius:10px;border:0;cursor:pointer;${primary ? 'background:#16a34a;color:#fff' : 'background:#fff;color:#10182f'}`;
+    return b;
+  };
+  const bar = document.createElement('div'); bar.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;justify-content:center';
+  const nav = navigator as Navigator & { canShare?: (d: { files: File[] }) => boolean };
+  if (nav.canShare?.({ files: [file] })) {
+    const save = btn('حفظ في الصور', true);
+    save.onclick = () => { navigator.share({ files: [file] }).catch(() => undefined); };
+    bar.appendChild(save);
+  }
+  const x = btn('إغلاق', false); x.onclick = close; bar.appendChild(x);
+  const hint = document.createElement('div');
+  hint.style.cssText = 'color:#e2e8f0;font-size:14px;text-align:center';
+  hint.textContent = nav.canShare?.({ files: [file] }) ? 'اضغط «حفظ في الصور» واختار «حفظ الصورة» — أو اضغط مطوّلًا على الصورة واختار «إضافة إلى الصور»' : 'اضغط مطوّلًا على الصورة واختار «حفظ الصورة» / «إضافة إلى الصور»';
+  const img = document.createElement('img');
+  img.src = url; img.alt = file.name;
+  img.style.cssText = 'max-width:100%;height:auto;border-radius:8px;background:#fff;-webkit-touch-callout:default';
+  ov.append(bar, hint, img);
+  document.body.appendChild(ov);
+}
+
 /** حفظ الطلب كصورة PNG: على الموبايل بيفتح «مشاركة/حفظ» (الاستوديو أو واتساب)، وعلى الكمبيوتر بينزّل الصورة */
 export async function saveRequestImage(kind: 'rad' | 'lab', s: ExamSheet, p: ReqPatient | null | undefined, date: string) {
   const host = document.createElement('div');
@@ -149,10 +179,9 @@ export async function saveRequestImage(kind: 'rad' | 'lab', s: ExamSheet, p: Req
     if (!blob) throw new Error('تعذّر تجهيز الصورة');
     const name = `${kind === 'rad' ? 'Radiology-Request' : 'Laboratory-Request'}-${(p?.fullName || 'patient').replace(/\s+/g, '-')}-${date}.png`;
     const file = new File([blob], name, { type: 'image/png' });
-    const nav = navigator as Navigator & { canShare?: (d: { files: File[] }) => boolean };
-    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) && nav.canShare?.({ files: [file] })) {
-      try { await navigator.share({ files: [file], title: name }); return; } catch (e) { if ((e as Error).name === 'AbortError') return; }
-    }
+    // آيباد/موبايل (الآيباد بيقول عن نفسه «Mac» فبنعرفه باللمس): الصورة بتظهر على الشاشة وزرار «حفظ في الصور» —
+    // المشاركة لازم تبقى من ضغطة مباشرة (بعد تجهيز الصورة الضغطة الأولى بتكون انتهت، والمتصفح كان بيحفظها ملف في «الملفات»)
+    if (navigator.maxTouchPoints > 1 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) { showImageSheet(blob, file); return; }
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 4000);

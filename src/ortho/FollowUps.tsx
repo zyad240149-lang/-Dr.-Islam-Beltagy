@@ -707,7 +707,7 @@ export default function FollowUpsPage({ tabs, pageTitle }: { tabs?: React.ReactN
   return (
     <div className="page">
       <PageHead title={pageTitle ?? "متابعات المرضى"} sub="مواعيد متابعة كل المرضى — نفس سجلات «المواعيد»، والتأكيد من هنا أو من هناك بيظهر في الاتنين">
-        <Button icon="plus" onClick={() => setBookAt({ date: '', time: '' })}>موعد متابعة أو كشف</Button>
+        <Button icon="plus" onClick={() => setBookAt({ date: '', time: '' })}>حجز كشف أو متابعة</Button>
       </PageHead>
       {tabs}
       {toConfirm.length > 0 && (
@@ -740,10 +740,7 @@ export default function FollowUpsPage({ tabs, pageTitle }: { tabs?: React.ReactN
         </section>
       )}
       <section className="card">
-        <div className="filter-bar fu-bar">
-          <div className="field"><SearchBox value={q} onChange={setQ} placeholder="ابحث باسم المريض أو رقم الهاتف أو رقم الملف" /></div>
-          <div className="cx-chips">{FILTERS.map(([k, l]) => <button key={k} type="button" className={`cx-chip ${filter === k ? 'is-on' : ''}`} onClick={() => setFilter(k)}>{l} <span className="num">{counts[k] ?? 0}</span></button>)}</div>
-        </div>
+        {/* ٩/١١: البحث وفلاتر الحالة اتشالوا */}
         <div className="card__body">
           <LoadState kind="follow_ups">
             {term ? (

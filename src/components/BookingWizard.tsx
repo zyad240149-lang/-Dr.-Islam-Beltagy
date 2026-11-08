@@ -59,7 +59,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
   const patient = patientId ? db.patient(patientId) : undefined;
   // لو الحجز من خانة دكتور معيّن: الخدمات اللي يقدّمها هالدكتور بس (تخصيص الخدمة لدكتور)
   // ٨/١١: الحجز بيعرض «كشف» و«متابعة» بس
-  const services = db.services().filter((x) => ['كشف', 'متابعة'].includes(x.name.trim())).filter((x) => !presetTherapistId || therapistId !== presetTherapistId || x.therapistIds.includes(presetTherapistId));
+  const services = db.services().filter((x) => (x.name.trim() === 'كشف' || /^متابع/.test(x.name.trim()))).filter((x) => !presetTherapistId || therapistId !== presetTherapistId || x.therapistIds.includes(presetTherapistId));
   const service = serviceId ? db.service(serviceId) : undefined;
   const duration = service?.durationMin ?? 15;
   const qualifiedTherapists = serviceId ? db.therapistsForService(serviceId) : [];
@@ -317,11 +317,12 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
       {step === 1 && !presetServiceId && (
         <div className="choice-grid">
           {services.map((s) => (
-            <button key={s.id} type="button" className={`choice ${serviceId === s.id ? 'selected' : ''}`}
+            <button key={s.id} type="button" className={`choice choice--big ${serviceId === s.id ? 'selected' : ''}`} aria-pressed={serviceId === s.id}
               onClick={() => { setServiceId(s.id); if (!(presetTime && time === presetTime)) setTime(''); }}>
-              <span className="choice__ic"><Icon name="spark" size={18} /></span>
-              <span style={{ flex: 1, minWidth: 0 }}><strong>{s.name}</strong><span>{s.description}</span></span>
+              <span className="choice__ic"><Icon name={s.name.trim() === 'كشف' ? 'stethoscope' : 'calendar'} size={22} /></span>
+              <span style={{ flex: 1, minWidth: 0 }}><strong>{s.name}</strong></span>
               <span className="choice__price num">{money(s.price)}</span>
+              {serviceId === s.id && <Icon name="checkCircle" size={22} />}
             </button>
           ))}
         </div>

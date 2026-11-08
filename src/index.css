@@ -1907,3 +1907,9 @@ button.wa-link { border: 0; cursor: pointer; font-family: inherit; }
 .sh-box.is-closed { align-self: start; }
 .rq-card__h span[dir="ltr"] { margin-inline-start: 0; }
 @media print { .sh-box__t { display: none; } }
+
+/* ٨/١١: أزرار خدمة الحجز (كشف / متابعة) كبيرة وواضحة على الموبايل */
+.choice--big { align-items: center; min-height: 64px; padding: 14px 16px; }
+.choice--big strong { font-size: 17px; }
+.choice--big .choice__price { font-size: 16px; font-weight: 700; }
+.choice--big.selected { border-width: 2px; }

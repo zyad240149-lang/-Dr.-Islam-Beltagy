@@ -243,10 +243,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
           {patientId && patient ? null : (
             <>
               {/* اختيارين: «بحث عن مريض» (مريض موجود) أو «حجز عن طريق مكالمة» (اسم + جوال) */}
-              <div className="svc-tabs" style={{ marginBottom: 14 }}>
-                <button type="button" className={`svc-tab ${mode === 'search' ? 'active' : ''}`} onClick={() => setMode('search')}>بحث عن مريض</button>
-                <button type="button" className={`svc-tab ${mode === 'call' ? 'active' : ''}`} onClick={() => setMode('call')}>مريض جديد</button>
-              </div>
+              {/* ٨/١١: «مريض جديد» اتشال من الحجز — بحث عن مريض بس */}
               {mode === 'search' ? (
                 <>
                   <Input label="ابحث عن المريض" icon="search" placeholder="الاسم / رقم الجوال / رقم الملف" value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} />
@@ -262,17 +259,6 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
                   )}
                   {patientQuery.trim() && queryResults.length === 0 && (
                     <p className="muted" style={{ marginBottom: 12 }}>مفيش مريض موجود بالبحث ده.</p>
-                  )}
-                  {patientQuery.trim() && (
-                    <div style={{ marginTop: 10 }}>
-                      <Button variant="outline" icon="plus" onClick={() => {
-                        // اللي اتكتب في البحث بيتنقل: أرقام ← الجوال، غير كده ← الاسم
-                        const q = patientQuery.trim();
-                        const digits = q.replace(/\D/g, '');
-                        setNp((x) => (digits.length >= 9 && digits.length >= q.replace(/\s/g, '').length - 1 ? { ...x, phone: q } : { ...x, fullName: q }));
-                        setMode('call');
-                      }}>{queryResults.length ? 'مش في القايمة؟ مريض جديد' : 'مريض جديد'}</Button>
-                    </div>
                   )}
                 </>
               ) : (

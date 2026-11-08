@@ -1887,3 +1887,8 @@ button.wa-link { border: 0; cursor: pointer; font-family: inherit; }
 .rq-col { display: flex; flex-direction: column; font-size: 13px; }
 .rq-ex { display: flex; flex-wrap: wrap; gap: 6px 28px; }
 .rq-ex > div { display: flex; flex-direction: column; font-size: 13px; }
+
+.rq-det__h { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 8px 12px; font-size: 14.5px; }
+.rq-det__h span[dir="ltr"] { color: var(--muted, #6b7280); font-size: 13px; }
+.rq-det.is-open > .rq-det__h { border-bottom: 1px solid var(--line-2); background: var(--brand-50); }
+.rq-det__q { padding: 10px 12px; }

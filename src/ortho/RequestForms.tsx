@@ -1,11 +1,11 @@
 // شاشة «طلب أشعة» و«طلب تحاليل» في تاب «الأشعة والتحاليل» بالكشف — اختيار + حفظ + طباعة + حفظ كصورة
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { RAD_FORMS, radPicked } from './radDetail';
 import { Button } from '../components/ui';
 import { Icon } from '../utils/icons';
 import type { ExamSheet } from './data';
 import { Checks, Pick, Txt, sheetApi } from './ExamSheet';
-import { LAB_OTHERS, LAB_REQ_GROUPS, RAD_REGIONS, RAD_SIDES, RAD_TYPES, labOthers, labPicked, radCount } from './requestData';
+import { LAB_OTHERS, LAB_REQ_GROUPS, RAD_REGIONS, RAD_SIDES, RAD_TYPES, labOthers, labPicked, radCount, radTypes } from './requestData';
 
 type Act = (kind: 'rad' | 'lab') => void;
 
@@ -16,6 +16,20 @@ function Card({ icon, title, en, children, actions }: { icon: string; title: str
       <div className="rq-card__b">{children}</div>
       <div className="rq-card__f">{actions}</div>
     </section>
+  );
+}
+
+/** مربع مقفول افتراضيًا بزرار «فتح» / «إغلاق» — اللي اتعلّم جوّاه بيفضل محفوظ وعدده ظاهر في العنوان */
+function Fold({ title, en, count, children }: { title: string; en: string; count: number; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={`rq-det${open ? ' is-open' : ''}`}>
+      <div className="rq-det__h">
+        <b>{title}</b> <span dir="ltr">{en}</span>{count > 0 && <span className="badge badge--info num">{count} مختار</span>}
+        <Button size="sm" variant={open ? 'outline' : undefined} icon={open ? 'close' : 'plus'} onClick={() => setOpen(!open)} style={{ marginInlineStart: 'auto' }}>{open ? 'إغلاق' : 'فتح'}</Button>
+      </div>
+      {open && children}
+    </div>
   );
 }
 
@@ -43,19 +57,22 @@ export function RequestForms({ sheet, onChange, busy, disabled, onSave, onPrint,
   return (
     <div className="rq-forms">
       <Card icon="scan" title={`طلب أشعة${radN ? ` (${radN})` : ''}`} en="Radiology Request" actions={acts('rad', radN)}>
-        <div className="sh-lbl">نوع الأشعة المطلوبة — Requested Investigation</div>
-        <div className="rq-grid" dir="ltr"><Checks a={a} g="rr.type" items={RAD_TYPES.map(([l]) => l)} /></div>
-        <div className="sh-lbl">الجانب — Side</div>
-        <div className="sh-inline" dir="ltr"><Pick a={a} g="rr.side" items={RAD_SIDES} /></div>
-        <div className="sh-lbl">المنطقة المطلوبة — Body Region</div>
-        <div className="rq-grid" dir="ltr"><Checks a={a} g="rr.reg" items={RAD_REGIONS} /></div>
-        <Txt a={a} k="rr.reg.other" label="Other region" dir="ltr" />
+        <Fold title="طلب سريع (النوع والجانب والمنطقة)" en="Quick Request" count={radTypes(sheet).length}>
+          <div className="rq-det__q">
+            <div className="sh-lbl">نوع الأشعة المطلوبة — Requested Investigation</div>
+            <div className="rq-grid" dir="ltr"><Checks a={a} g="rr.type" items={RAD_TYPES.map(([l]) => l)} /></div>
+            <div className="sh-lbl">الجانب — Side</div>
+            <div className="sh-inline" dir="ltr"><Pick a={a} g="rr.side" items={RAD_SIDES} /></div>
+            <div className="sh-lbl">المنطقة المطلوبة — Body Region</div>
+            <div className="rq-grid" dir="ltr"><Checks a={a} g="rr.reg" items={RAD_REGIONS} /></div>
+            <Txt a={a} k="rr.reg.other" label="Other region" dir="ltr" />
+          </div>
+        </Fold>
         {/* ورق X-Ray / MRI / CT التفصيلي — مقفول، بتفتحه وتعلّم على اللي عاوزه */}
         {RAD_FORMS.map((f) => {
           const n = radPicked(sheet, f).count;
           return (
-            <details key={f.id} className="rq-det">
-              <summary><b>{f.ar}</b> <span dir="ltr">{f.en}</span>{n > 0 && <span className="badge badge--info num">{n}</span>}</summary>
+            <Fold key={f.id} title={f.ar} en={f.en} count={n}>
               <div className="rq-det__b">
                 {f.groups.map((g) => (
                   <div key={g.en} className="rq-grp">
@@ -80,7 +97,7 @@ export function RequestForms({ sheet, onChange, busy, disabled, onSave, onPrint,
                 <div className="sh-lbl">ملاحظات طبية — Clinical Notes</div>
                 <textarea className="sh-in sh-notes" dir="auto" rows={2} aria-label="Clinical Notes" value={a.txt(`${f.id}.notes`)} onChange={(e) => a.set(`${f.id}.notes`, e.target.value)} />
               </div>
-            </details>
+            </Fold>
           );
         })}
         <div className="sh-lbl">السبب الطبي / الاشتباه الإكلينيكي — Clinical Indication</div>

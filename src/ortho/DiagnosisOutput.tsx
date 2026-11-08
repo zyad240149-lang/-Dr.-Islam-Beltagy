@@ -13,7 +13,7 @@ import type { Patient } from '../types';
 import type { Consultation } from './data';
 import { DX_PARTS, buildDiagnosisPdf, hasRx, printDiagnosis, type DxPart } from './printDiagnosis';
 
-// ٩/١١: من غير رسالة مكتوبة — الواتساب يفتح فاضي والملف بس
+const SHARE_TEXT = 'السلام عليكم، مرفق لكم ملف الكشف من عيادة د. إسلام جمعة بلتاجي.';
 
 function saveFile(file: File) {
   const a = document.createElement('a');
@@ -52,7 +52,7 @@ export function DiagnosisOutput({ c, patient, visitNo, initial, onClose }: {
 
   async function share(file: File) {
     try {
-      await navigator.share({ files: [file] });
+      await navigator.share({ files: [file], text: SHARE_TEXT });
       setReady(null);
     } catch (e) {
       const name = (e as DOMException).name;
@@ -70,7 +70,7 @@ export function DiagnosisOutput({ c, patient, visitNo, initial, onClose }: {
       const file = await makeFile();
       if (mobileShare) { await share(file); return; }
       saveFile(file);
-      const url = phone ? `https://wa.me/${phone}` : 'https://api.whatsapp.com/send';
+      const url = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(SHARE_TEXT)}` : `https://api.whatsapp.com/send?text=${encodeURIComponent(SHARE_TEXT)}`;
       if (win && !win.closed) win.location.href = url; else window.open(url, '_blank');
       toast.info('اتحمّل ملف الـ PDF — ارفقه في محادثة واتساب اللي اتفتحت.');
     } catch (e) {

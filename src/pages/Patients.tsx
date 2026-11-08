@@ -75,6 +75,7 @@ function PatientsList({ tabs }: { tabs: ReactNode }) {
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' });
   const nextFu = (pid: string) => ortho.list('follow_ups', pid).filter((f) => f.status === 'scheduled' && f.date >= today).length;
   const [booking, setBooking] = useState<PatientRow | null>(null);
+  const [newBooking, setNewBooking] = useState(false);
   const [planning, setPlanning] = useState<PatientRow | null>(null);
   const [deleting, setDeleting] = useState<PatientRow | null>(null);
   const [minSessions, setMinSessions] = useState('3');
@@ -113,6 +114,7 @@ function PatientsList({ tabs }: { tabs: ReactNode }) {
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {/* «استيراد المرضى من Excel» و«تصدير ملف المرضى (Excel)» اتشالوا من الصفحة (٨/١١) */}
           {can('patients', 'create') && <Button icon="user" onClick={() => setAdding(true)}>فتح ملف مريض جديد</Button>}
+          {(can('booking', 'create') || can('appointments', 'create')) && <Button variant="outline" icon="calendarPlus" onClick={() => setNewBooking(true)}>حجز كشف ومتابعة</Button>}
         </div>
       </div>
       {local && <LocalDataNote />}
@@ -193,6 +195,7 @@ function PatientsList({ tabs }: { tabs: ReactNode }) {
       {fuFor && <FollowUpsModal patientId={fuFor} onClose={() => setFuFor(null)} />}
       {editing && <EditPatientModal patient={db.patient(editing.id) ?? editing} onClose={() => { setEditing(null); reload(); }} />}
       {booking && <BookingWizard presetPatientId={booking.id} onClose={() => { setBooking(null); reload(); }} />}
+      {newBooking && <BookingWizard onClose={() => { setNewBooking(false); reload(); }} />}
       {planning && <PlanModal patientId={planning.id} onClose={() => { setPlanning(null); reload(); }} />}
       {deleting && (
         <ConfirmDialog title="حذف ملف المريض" onClose={() => setDeleting(null)}

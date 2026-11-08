@@ -60,7 +60,7 @@ async function prepare(invoiceId: string, phoneOverride?: string): Promise<Prepa
 export type ShareOutcome = 'shared' | 'cancelled' | 'needs_click' | 'fallback' | 'fallback_blocked';
 
 // نص المشاركة: عام ومختصر — من غير أي بيانات طبية أو تفاصيل خدمة
-const SHARE_TEXT = 'السلام عليكم، مرفق لكم فاتورة الخدمة الخاصة بكم.';
+
 
 // هل الجهاز/المتصفح بيدعم مشاركة ملفات PDF (Web Share Level 2)؟ — اكتشاف حقيقي، مش افتراض
 export function canShareFiles(): boolean {
@@ -85,7 +85,7 @@ export function openChatWithFile(p: Extract<Prepared, { ok: true }>, win: Window
 export async function shareInvoiceFile(p: Extract<Prepared, { ok: true }>, win: Window | null = null): Promise<ShareOutcome> {
   if (canShareFiles() && navigator.canShare({ files: [p.file] })) {
     try {
-      await navigator.share({ files: [p.file], title: `فاتورة ${p.invoiceNo}`, text: SHARE_TEXT });
+      await navigator.share({ files: [p.file] }); // ٩/١١: من غير رسالة مكتوبة — الواتساب يفتح فاضي والملف بس
       win?.close();
       void db.logInvoiceShare(p.invoiceId, 'share');
       return 'shared';

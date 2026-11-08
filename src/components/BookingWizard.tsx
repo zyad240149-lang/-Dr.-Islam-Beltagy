@@ -64,6 +64,11 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
   const service = serviceId ? db.service(serviceId) : undefined;
   const duration = service?.durationMin ?? 15;
   const qualifiedTherapists = serviceId ? db.therapistsForService(serviceId) : [];
+  // ٩/١١: مفيش خطوة دكتور — أول دكتور بيقدم الخدمة بيتختار تلقائي
+  useEffect(() => {
+    if (lockedPreset || !serviceId) return;
+    if (!therapistId || !qualifiedTherapists.some((t) => t.id === therapistId)) { const t = qualifiedTherapists[0]?.id ?? ''; if (t !== therapistId) { setTherapistId(t); setTime(''); setPriceId(''); } }
+  }, [serviceId, qualifiedTherapists.map((t) => t.id).join()]);
 
   // أوقات الدكتور المختار بس (ساعات المركز + إجازته + حجوزاته) — مفيش أوقات قبل اختيار الدكتور
   // الأوقات لازم تكون من آخر نسخة من الخادم: لو الكاش قديم (اتصال لحظي مقطوع) وقت «فاضي» ممكن يطلع محجوز عند التأكيد
@@ -127,7 +132,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
   const blockedMsg = [mode === 'call' ? 'أدخل اسم المريض ورقم جواله' : 'ابحث عن المريض واختره', 'اختر الخدمة أولًا', 'يرجى اختيار الدكتور أولًا', 'اختر التاريخ والوقت أولًا', ''][step];
 
   // حجز من خانة فاضية في جدول المواعيد: الدكتور والتاريخ والوقت محددين → بنتخطى خطوتي «الدكتور» و«التاريخ والوقت»
-  const visible = lockedPreset ? [0, 1] : [0, 1, 2, 3];
+  const visible = lockedPreset ? [0, 1] : [0, 1, 3]; // ٩/١١: خطوة «الدكتور» اتشالت — الدكتور بيتحدد تلقائي
   const lastStep = visible[visible.length - 1];
   const next = () => setStep((s) => visible.find((x) => x > s) ?? s);
   const back = () => setStep((s) => [...visible].reverse().find((x) => x < s) ?? s);
@@ -226,7 +231,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
   return (
     <Modal title="حجز موعد جديد" onClose={onClose} footer={footer} wide>
       <div className="steps">
-        {STEPS.map((label, i) => (lockedPreset && (i === 2 || i === 3)) ? null : (
+        {STEPS.map((label, i) => (i === 2 || (lockedPreset && i === 3)) ? null : (
           <div key={label} style={{ display: 'contents' }}>
             <div className={`step-dot ${i === step ? 'active' : ''} ${i < step ? 'done' : ''}`}>
               <span className="step-dot__n">{i < step ? <Icon name="check" size={13} /> : visible.indexOf(i) + 1}</span>

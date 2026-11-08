@@ -59,7 +59,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
   const patient = patientId ? db.patient(patientId) : undefined;
   // لو الحجز من خانة دكتور معيّن: الخدمات اللي يقدّمها هالدكتور بس (تخصيص الخدمة لدكتور)
   // ٨/١١: الحجز بيعرض «كشف» و«متابعة» بس
-  const services = db.services().filter((x) => /^\s*(كشف|متابع)/.test(x.name)).filter((x) => !presetTherapistId || therapistId !== presetTherapistId || x.therapistIds.includes(presetTherapistId));
+  const services = db.services().filter((x) => ['كشف', 'متابعة'].includes(x.name.trim())).filter((x) => !presetTherapistId || therapistId !== presetTherapistId || x.therapistIds.includes(presetTherapistId));
   const service = serviceId ? db.service(serviceId) : undefined;
   const duration = service?.durationMin ?? 15;
   const qualifiedTherapists = serviceId ? db.therapistsForService(serviceId) : [];

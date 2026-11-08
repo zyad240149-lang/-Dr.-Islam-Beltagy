@@ -645,7 +645,7 @@ export default function FollowUpsPage({ tabs, pageTitle }: { tabs?: React.ReactN
   useOrthoVersion();
   useDbVersion();
   const t = todayYmd();
-  const [view, setView] = useState<View>('day');
+  const [view, setView] = useState<View>('day'); // ٨/١١: يومي بس (اختيار شهري/أسبوعي اتشال)
   const [bookAt, setBookAt] = useState<{ date: string; time: string; doctorId?: string } | null>(null);
   const [cursor, setCursor] = useState(t);
   const [filter, setFilter] = useState<FuState | ''>('');
@@ -756,9 +756,7 @@ export default function FollowUpsPage({ tabs, pageTitle }: { tabs?: React.ReactN
               </>
             ) : <>
               <div className="fu-cal__nav">
-                <div className="seg" role="tablist" aria-label="طريقة العرض">
-                  {([['month', 'شهري'], ['week', 'أسبوعي'], ['day', 'يومي']] as [View, string][]).map(([k, l]) => <button key={k} type="button" role="tab" aria-selected={view === k} className={`seg__btn ${view === k ? 'active' : ''}`} onClick={() => setView(k)}>{l}</button>)}
-                </div>
+                {/* ٨/١١: العرض يومي بس */}
                 <div className="fu-cal__move">
                   <button type="button" className="icon-btn" aria-label="السابق" onClick={() => step(-1)}><Icon name="chevron" size={18} /></button>
                   <button type="button" className="btn btn--outline btn--sm" onClick={() => setCursor(t)}>النهارده</button>

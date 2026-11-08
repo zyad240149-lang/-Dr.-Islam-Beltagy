@@ -1870,3 +1870,6 @@ button.wa-link { border: 0; cursor: pointer; font-family: inherit; }
 .rq-grp__t { display: flex; flex-direction: column; margin-bottom: 4px; }
 .rq-grp__t b { font-size: 13px; color: var(--brand-700); }
 .rq-grp__t span { font-size: 12px; color: var(--muted, #6b7280); }
+
+.rq-grp--top { grid-column: 1 / -1; border-color: var(--brand-700); background: var(--brand-50); }
+.rq-grp--top > div[dir="ltr"] { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 2px 10px; }

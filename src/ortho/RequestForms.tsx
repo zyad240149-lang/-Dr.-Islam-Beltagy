@@ -56,7 +56,7 @@ export function RequestForms({ sheet, onChange, busy, disabled, onSave, onPrint,
       <Card icon="list" title={`طلب تحاليل${labN ? ` (${labN})` : ''}`} en="Laboratory Request" actions={acts('lab', labN)}>
         <div className="rq-labs">
           {LAB_REQ_GROUPS.map((g) => (
-            <div key={g.en} className={`rq-grp${g.special ? ' rq-grp--sp' : ''}`}>
+            <div key={g.en} className={`rq-grp${g.special ? ' rq-grp--sp' : ''}${g.top ? ' rq-grp--top' : ''}`}>
               <div className="rq-grp__t"><b dir="ltr">{g.en}</b><span>{g.ar}</span></div>
               <div dir="ltr"><Checks a={a} g="lr" items={g.items} /></div>
             </div>

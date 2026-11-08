@@ -13,7 +13,9 @@ export const RAD_TYPES: [label: string, kind: ImagingKind][] = [
 export const RAD_SIDES = ['Right', 'Left', 'Bilateral'];
 export const RAD_REGIONS = ['Cervical Spine', 'Thoracic Spine', 'Lumbar Spine', 'Pelvis / Hip', 'Knee', 'Shoulder', 'Elbow', 'Wrist / Hand', 'Ankle / Foot'];
 
-export const LAB_REQ_GROUPS: { en: string; ar: string; items: string[]; special?: boolean }[] = [
+export const LAB_REQ_GROUPS: { en: string; ar: string; items: string[]; special?: boolean; top?: boolean }[] = [
+  // الأكثر طلبًا (ورقة الدكتور ٨/١١) — أول مجموعة؛ التحليل اللي اسمه متكرر في مجموعة تانية بيتعلّم في الاتنين ويتطبع مرة واحدة
+  { en: 'Most Requested', ar: 'الأكثر طلبًا', top: true, items: ['HbA1c', 'Complete Blood Count (CBC)', 'ESR', 'C-Reactive Protein (CRP)', 'Procalcitonin', 'Rheumatoid Factor (RF)', 'Anti-CCP', 'ANA', 'HLA-B27', 'Albumin', 'Serum Calcium', 'Serum Phosphate', 'Vitamin D (25-OH)', 'Parathyroid Hormone (PTH)', 'TSH', 'Free T3 (T3)', 'Free T4 (T4)', 'Urine Analysis', 'Serum Uric Acid'] },
   { en: 'Complete Blood Count (CBC)', ar: 'صورة دم كاملة', items: ['CBC', 'Hb', 'Hct', 'RBCs', 'WBCs', 'Platelets', 'MCV / MCH / MCHC', 'RDW'] },
   { en: 'Inflammatory Markers', ar: 'مؤشرات الالتهاب', items: ['ESR', 'CRP', 'Procalcitonin'] },
   { en: 'Liver Function', ar: 'وظائف الكبد', items: ['ALT (SGPT)', 'AST (SGOT)', 'ALP', 'GGT', 'Bilirubin (T/D)', 'Albumin', 'Total Protein'] },
@@ -45,7 +47,7 @@ const tx = (s: ExamSheet, k: string) => (s.txt[k] ?? '').trim();
 export const radTypes = (s: ExamSheet) => RAD_TYPES.filter(([l]) => on(s, 'rr.type', l));
 export const radRegions = (s: ExamSheet) => [...RAD_REGIONS.filter((r) => on(s, 'rr.reg', r)), tx(s, 'rr.reg.other')].filter(Boolean);
 export const radSide = (s: ExamSheet) => RAD_SIDES.find((x) => on(s, 'rr.side', x)) ?? '';
-export const labPicked = (s: ExamSheet) => LAB_REQ_GROUPS.flatMap((g) => g.items.filter((i) => on(s, 'lr', i)));
+export const labPicked = (s: ExamSheet) => [...new Set(LAB_REQ_GROUPS.flatMap((g) => g.items.filter((i) => on(s, 'lr', i))))];
 export const labOthers = (s: ExamSheet) => LAB_OTHERS.map((k) => tx(s, k)).filter(Boolean);
 
 /** طلبات الأشعة للكشف: طلب لكل نوع، والمنطقة = المناطق + الجانب */
@@ -74,7 +76,8 @@ export function requestText(kind: 'rad' | 'lab', s: ExamSheet, p: { fullName?: s
     if (radRegions(s).length) body.push(`Region: ${radRegions(s).join(', ')}`);
     if (tx(s, 'rr.ind')) body.push(`Clinical Indication: ${tx(s, 'rr.ind')}`);
   } else {
-    for (const g of LAB_REQ_GROUPS) { const xs = g.items.filter((i) => on(s, 'lr', i)); if (xs.length) body.push(`• ${g.en}: ${xs.join(', ')}`); }
+    const seen = new Set<string>();
+    for (const g of LAB_REQ_GROUPS) { const xs = g.items.filter((i) => on(s, 'lr', i) && !seen.has(i) && !!seen.add(i)); if (xs.length) body.push(`• ${g.en}: ${xs.join(', ')}`); }
     if (labOthers(s).length) body.push(`• Others: ${labOthers(s).join(', ')}`);
     if (tx(s, 'lr.notes')) body.push(`Clinical Notes: ${tx(s, 'lr.notes')}`);
   }
@@ -129,7 +132,8 @@ export function requestPageHtml(kind: 'rad' | 'lab', s: ExamSheet, p: ReqPatient
       + sec('Body Region', radRegions(s).length ? chips(radRegions(s)) : '')
       + sec('Clinical Indication / Suspected Condition', tx(s, 'rr.ind') ? `<div class="txt">${esc(tx(s, 'rr.ind'))}</div>` : '');
   } else {
-    const groups = LAB_REQ_GROUPS.map((g) => ({ g, xs: g.items.filter((i) => on(s, 'lr', i)) })).filter((x) => x.xs.length);
+    const seen = new Set<string>();
+    const groups = LAB_REQ_GROUPS.map((g) => ({ g, xs: g.items.filter((i) => on(s, 'lr', i) && !seen.has(i) && !!seen.add(i)) })).filter((x) => x.xs.length);
     const others = labOthers(s);
     body = sec('Requested Tests', groups.map(({ g, xs }) => `<div class="grp"><b>${esc(g.en)}</b>${chips(xs)}</div>`).join('') + (others.length ? `<div class="grp"><b>Others</b>${chips(others)}</div>` : ''))
       + sec('Clinical Notes', tx(s, 'lr.notes') ? `<div class="txt">${esc(tx(s, 'lr.notes'))}</div>` : '');

@@ -1969,3 +1969,4 @@ button.dsch__who small { white-space: nowrap; font-size: 12.5px; color: var(--mu
 .xsvc__files { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px; }
 .xsvc__out { margin: 10px 0 6px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .xsvc__files .btn { width: 100%; }
+@media screen and (max-width: 640px) { .dsch__row { flex-wrap: wrap; } .dsch__row:not(.dsch__row--free) .dsch__who { flex-basis: calc(100% - 80px); } }

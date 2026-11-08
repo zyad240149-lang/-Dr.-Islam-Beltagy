@@ -167,7 +167,15 @@ function showImageSheet(dataUrl: string, file: File) {
   };
   const bar = document.createElement('div'); bar.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;justify-content:center';
   const nav = navigator as Navigator & { canShare?: (d: { files: File[] }) => boolean };
-  if (nav.canShare?.({ files: [file] })) {
+  const share = !!nav.canShare?.({ files: [file] });
+  // أندرويد: قايمة المشاركة مافيهاش «حفظ في المعرض» — التنزيل بيحط الصورة في «التنزيلات» وبتظهر في معرض الصور على طول
+  const android = /Android/i.test(navigator.userAgent);
+  if (android) {
+    const dl = btn('حفظ في معرض الصور', true);
+    dl.onclick = () => { const a = document.createElement('a'); a.href = url; a.download = file.name; document.body.appendChild(a); a.click(); a.remove(); dl.textContent = '✓ اتحفظت — افتح معرض الصور'; };
+    bar.appendChild(dl);
+    if (share) { const sh = btn('مشاركة / واتساب', false); sh.onclick = () => { navigator.share({ files: [file] }).catch(() => undefined); }; bar.appendChild(sh); }
+  } else if (share) {
     const save = btn('حفظ في الصور', true);
     save.onclick = () => { navigator.share({ files: [file] }).catch(() => undefined); };
     bar.appendChild(save);
@@ -175,7 +183,8 @@ function showImageSheet(dataUrl: string, file: File) {
   const x = btn('إغلاق', false); x.onclick = close; bar.appendChild(x);
   const hint = document.createElement('div');
   hint.style.cssText = 'color:#e2e8f0;font-size:14px;text-align:center';
-  hint.textContent = nav.canShare?.({ files: [file] }) ? 'اضغط «حفظ في الصور» واختار «حفظ الصورة» — أو اضغط مطوّلًا على الصورة واختار «إضافة إلى الصور»' : 'اضغط مطوّلًا على الصورة واختار «حفظ الصورة» / «إضافة إلى الصور»';
+  hint.textContent = android ? 'اضغط «حفظ في معرض الصور» — الصورة بتتحفظ في «التنزيلات» وبتظهر في المعرض. أو اضغط مطوّلًا على الصورة واختار «تنزيل الصورة»'
+    : share ? 'اضغط «حفظ في الصور» واختار «حفظ الصورة» — أو اضغط مطوّلًا على الصورة واختار «إضافة إلى الصور»' : 'اضغط مطوّلًا على الصورة واختار «حفظ الصورة» / «إضافة إلى الصور»';
   const img = document.createElement('img');
   img.src = url; img.alt = file.name;
   img.style.cssText = 'max-width:100%;height:auto;border-radius:8px;background:#fff;-webkit-touch-callout:default';

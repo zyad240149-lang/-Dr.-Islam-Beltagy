@@ -13,7 +13,7 @@ import { DOCTOR_DAY_LABEL, db } from '../data/db';
 import { useDbVersion } from '../hooks/useDb';
 import { isScopedToOwnPatients } from '../services/permissions';
 import { Icon } from '../utils/icons';
-import { APPT_STATUS, fmtDate, fmtTime, riyadhNow, todayYmd } from '../utils/format';
+import { APPT_STATUS, fmtDate, fmtTime, riyadhNow, todayYmd, waLink, whatsappNumber } from '../utils/format';
 import type { Appointment } from '../types';
 import { normalizeSearch, phoneMatches } from '../utils/phoneUtils';
 import { FOLLOW_UP_KIND, addDays, ortho, useOrthoVersion, type FollowUp, type FollowUpKind } from './data';
@@ -364,6 +364,20 @@ export function FollowUpModal({ patientId, patientLabel, consultationId, initial
 }
 
 // ---------- قايمة متابعات ----------
+/** إرسال ميعاد المتابعة للمريض على واتساب (رسالة جاهزة بالميعاد والطبيب) */
+export function fuWhatsappText(f: Pick<FollowUp, 'patientId' | 'date' | 'time' | 'doctorId' | 'reason'>) {
+  const p = db.patient(f.patientId);
+  const doc = f.doctorId ? db.therapist(f.doctorId)?.name : '';
+  return [`أهلاً ${p?.fullName ?? ''}،`, `ميعاد متابعتك${doc ? ` مع ${doc}` : ''}: ${longDay(f.date)}${f.time ? ` الساعة ${fmtTime(hhmm(f.time))}` : ''}.`,
+    f.reason && f.reason !== 'متابعة' ? `السبب: ${f.reason}` : '', 'عيادة د. إسلام بلتاجي لجراحة العظام والكسور — نتمنى لك السلامة.'].filter(Boolean).join(String.fromCharCode(10));
+}
+function FuWhatsapp({ f }: { f: FollowUp }) {
+  const p = db.patient(f.patientId);
+  const n = p ? whatsappNumber(p) : '';
+  if (!n) return null;
+  return <a className="btn btn--outline btn--sm" href={waLink(n, fuWhatsappText(f))} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}><Icon name="share" size={14} /> إرسال الموعد واتساب</a>;
+}
+
 export function FollowUpList({ items, onOpen, showPatient }: { items: FollowUp[]; onOpen: (f: FollowUp) => void; showPatient?: boolean }) {
   useDbVersion();
   const perm = useFuCan();
@@ -380,6 +394,7 @@ export function FollowUpList({ items, onOpen, showPatient }: { items: FollowUp[]
           </button>
           {showPatient && <Link to={`/patients/${f.patientId}`} className="fu-item__patient">{patientName(f.patientId)}</Link>}
           <FuBadge f={f} />
+          {f.status === 'scheduled' && f.date >= todayYmd() && <FuWhatsapp f={f} />}
           {(() => {
             const a = f.appointmentId ? db.appointment(f.appointmentId) : undefined;
             if (!a) return f.status === 'scheduled' ? <span className="badge">لسه مش في المواعيد</span> : null;

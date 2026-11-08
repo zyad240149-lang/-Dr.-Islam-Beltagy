@@ -17,6 +17,7 @@ import { exportPatientsWorkbook } from '../utils/patientsWorkbook';
 import ImportPatientsModal from '../components/ImportPatientsModal';
 import { EditPatientModal, NewPatientModal, PlanModal } from '../components/PatientForms';
 import BookingWizard from '../components/BookingWizard';
+import FollowUpsPage from '../ortho/FollowUps';
 import { FollowUpsModal } from '../ortho/FollowUps';
 import { ortho, useOrthoVersion } from '../ortho/data';
 import { patientGaps } from '../utils/patientGaps';
@@ -32,14 +33,17 @@ export default function Patients() {
   const can = useCan();
   const [params, setParams] = useSearchParams();
   const showOnline = false; // ٨/١١: تبويب «حجز مكالمات وحسابات أونلاين» اتشال
-  const tab = params.get('tab') === 'online' && showOnline ? 'online' : 'all';
-  const go = (t: 'all' | 'online') => setParams(t === 'online' ? { tab: 'online' } : {}, { replace: true });
-  const tabs = showOnline ? (
+  const t = params.get('tab');
+  const tab = t === 'book' ? 'book' : t === 'online' && showOnline ? 'online' : 'all';
+  const go = (x: 'all' | 'book') => setParams(x === 'book' ? { tab: 'book' } : {}, { replace: true });
+  // ٨/١١: «حجز كشف ومتابعة» قسم جنب «كل المرضى» فيه جدول اليوم بالأوقات الفاضية وزرار «حجز»
+  const tabs = (
     <div className="tabs" style={{ marginBottom: 14 }}>
       <button type="button" className={`tab ${tab === 'all' ? 'active' : ''}`} onClick={() => go('all')}>كل المرضى</button>
-      <button type="button" className={`tab ${tab === 'online' ? 'active' : ''}`} onClick={() => go('online')}>حجز مكالمات وحسابات أونلاين</button>
+      <button type="button" className={`tab ${tab === 'book' ? 'active' : ''}`} onClick={() => go('book')}>حجز كشف ومتابعة</button>
     </div>
-  ) : null;
+  );
+  if (tab === 'book') return <FollowUpsPage tabs={tabs} pageTitle="حجز كشف ومتابعة" />;
   return tab === 'online' ? <OnlineAccounts tabs={tabs} /> : <PatientsList tabs={tabs} />;
 }
 
@@ -50,7 +54,7 @@ function PatientsList({ tabs }: { tabs: ReactNode }) {
   const can = useCan();
   const { user } = useAuth();
   const [importing, setImporting] = useState(false);
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const [q, setQ] = useState(params.get('q') ?? '');
   const [dq, setDq] = useState(q);
   const [gender, setGender] = useState('');
@@ -75,7 +79,6 @@ function PatientsList({ tabs }: { tabs: ReactNode }) {
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' });
   const nextFu = (pid: string) => ortho.list('follow_ups', pid).filter((f) => f.status === 'scheduled' && f.date >= today).length;
   const [booking, setBooking] = useState<PatientRow | null>(null);
-  const [newBooking, setNewBooking] = useState(false);
   const [planning, setPlanning] = useState<PatientRow | null>(null);
   const [deleting, setDeleting] = useState<PatientRow | null>(null);
   const [minSessions, setMinSessions] = useState('3');
@@ -114,7 +117,7 @@ function PatientsList({ tabs }: { tabs: ReactNode }) {
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {/* «استيراد المرضى من Excel» و«تصدير ملف المرضى (Excel)» اتشالوا من الصفحة (٨/١١) */}
           {can('patients', 'create') && <Button icon="user" onClick={() => setAdding(true)}>فتح ملف مريض جديد</Button>}
-          {(can('booking', 'create') || can('appointments', 'create')) && <Button variant="outline" icon="calendarPlus" onClick={() => setNewBooking(true)}>حجز كشف ومتابعة</Button>}
+          {(can('booking', 'create') || can('appointments', 'create')) && <Button variant="outline" icon="calendarPlus" onClick={() => setParams({ tab: 'book' }, { replace: true })}>حجز كشف ومتابعة</Button>}
         </div>
       </div>
       {local && <LocalDataNote />}
@@ -195,7 +198,6 @@ function PatientsList({ tabs }: { tabs: ReactNode }) {
       {fuFor && <FollowUpsModal patientId={fuFor} onClose={() => setFuFor(null)} />}
       {editing && <EditPatientModal patient={db.patient(editing.id) ?? editing} onClose={() => { setEditing(null); reload(); }} />}
       {booking && <BookingWizard presetPatientId={booking.id} onClose={() => { setBooking(null); reload(); }} />}
-      {newBooking && <BookingWizard onClose={() => { setNewBooking(false); reload(); }} />}
       {planning && <PlanModal patientId={planning.id} onClose={() => { setPlanning(null); reload(); }} />}
       {deleting && (
         <ConfirmDialog title="حذف ملف المريض" onClose={() => setDeleting(null)}

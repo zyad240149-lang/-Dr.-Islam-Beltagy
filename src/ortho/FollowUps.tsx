@@ -641,7 +641,7 @@ function DaySchedule({ date, follows, filtered, onOpen, onBook }: {
   );
 }
 
-export default function FollowUpsPage() {
+export default function FollowUpsPage({ tabs, pageTitle }: { tabs?: React.ReactNode; pageTitle?: string } = {}) {
   useOrthoVersion();
   useDbVersion();
   const t = todayYmd();
@@ -709,9 +709,10 @@ export default function FollowUpsPage() {
 
   return (
     <div className="page">
-      <PageHead title="متابعات المرضى" sub="مواعيد متابعة كل المرضى — نفس سجلات «المواعيد»، والتأكيد من هنا أو من هناك بيظهر في الاتنين">
+      <PageHead title={pageTitle ?? "متابعات المرضى"} sub="مواعيد متابعة كل المرضى — نفس سجلات «المواعيد»، والتأكيد من هنا أو من هناك بيظهر في الاتنين">
         <Button icon="plus" onClick={() => setAdding(true)}>موعد متابعة جديد</Button>
       </PageHead>
+      {tabs}
       {toConfirm.length > 0 && (
         <section className="card fu-confirm" aria-label="مواعيد محتاجة تأكيد">
           <div className="card__body">

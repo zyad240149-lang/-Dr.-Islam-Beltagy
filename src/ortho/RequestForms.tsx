@@ -1,5 +1,5 @@
 // شاشة «طلب أشعة» و«طلب تحاليل» في تاب «الأشعة والتحاليل» بالكشف — اختيار + حفظ + طباعة + حفظ كصورة
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Button } from '../components/ui';
 import { Icon } from '../utils/icons';
 import type { ExamSheet } from './data';
@@ -18,12 +18,18 @@ function Card({ icon, title, en, children, actions }: { icon: string; title: str
   );
 }
 
-export function RequestForms({ sheet, onChange, busy, disabled, onSave, onPrint, onImage, onWhatsapp }: {
+export function RequestForms({ sheet, onChange, busy, disabled, onSave, onPrint, onImage, onWhatsapp, prepare }: {
   sheet: ExamSheet; onChange: (f: (s: ExamSheet) => ExamSheet) => void; busy: boolean; disabled: boolean;
-  onSave: () => void; onPrint: Act; onImage: Act; onWhatsapp: Act;
+  onSave: () => void; onPrint: Act; onImage: Act; onWhatsapp: Act; prepare: Act;
 }) {
   const a = sheetApi(sheet, onChange);
   const radN = radTypes(sheet).length, labN = labPicked(sheet).length + labOthers(sheet).length;
+  // صورة كل طلب بتتجهز في الخلفية بعد ما الاختيارات تهدى ثانية — عشان «حفظ كصورة» يحفظ في نفس الضغطة
+  useEffect(() => {
+    if (disabled) return;
+    const t = window.setTimeout(() => { if (radN) prepare('rad'); if (labN) prepare('lab'); }, 1000);
+    return () => window.clearTimeout(t);
+  }, [sheet, disabled]);
   const acts = (kind: 'rad' | 'lab', n: number) => (
     <>
       <Button size="sm" variant="outline" icon="check" loading={busy} disabled={disabled || !n} onClick={onSave}>حفظ</Button>

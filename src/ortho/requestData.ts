@@ -192,12 +192,17 @@ function showImageSheet(dataUrl: string, file: File) {
   document.body.appendChild(ov);
 }
 
-/** حفظ الطلب كصورة PNG: على الموبايل بيفتح «مشاركة/حفظ» (الاستوديو أو واتساب)، وعلى الكمبيوتر بينزّل الصورة */
-// 'saved' = اتحفظت على طول (أندرويد/كمبيوتر)، 'sheet' = ظهرت نافذة «حفظ في الصور» (آيفون/آيباد — أبل مابتسمحش بالحفظ في الصور من غير خطوتها)
-export async function saveRequestImage(kind: 'rad' | 'lab', s: ExamSheet, p: ReqPatient | null | undefined, date: string): Promise<'saved' | 'sheet'> {
+// ---------- صورة الطلب ----------
+// الصورة بتتجهز مقدمًا في الخلفية أول ما الاختيارات تتغيّر (prepareRequestImage)، فالضغطة على «حفظ كصورة» بتحفظ في نفس اللحظة —
+// المتصفحات (أندرويد وآيفون) بتسمح بالتنزيل/المشاركة بس جوّه الضغطة نفسها، ولو استنينا تجهيز الصورة بعد الضغطة كانت بتترفض.
+export interface ReqImage { key: string; blob: Blob; dataUrl: string; file: File }
+const imgCache = new Map<'rad' | 'lab', ReqImage>();
+const pending = new Map<string, Promise<ReqImage>>();
+
+async function renderImage(kind: 'rad' | 'lab', html: string, p: ReqPatient | null | undefined, date: string): Promise<ReqImage> {
   const host = document.createElement('div');
   host.style.cssText = 'position:fixed;left:-10000px;top:0;z-index:-1;background:#fff';
-  host.innerHTML = `<style>${REQ_CSS}</style>${requestPageHtml(kind, s, p, date)}`;
+  host.innerHTML = `<style>${REQ_CSS}</style>${html}`;
   document.body.appendChild(host);
   try {
     await Promise.race([document.fonts?.ready, new Promise((r) => setTimeout(r, 2000))]).catch(() => undefined);
@@ -206,15 +211,44 @@ export async function saveRequestImage(kind: 'rad' | 'lab', s: ExamSheet, p: Req
     const canvas = await html2canvas(host.querySelector('.rqp') as HTMLElement, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
     const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/png'));
     if (!blob) throw new Error('تعذّر تجهيز الصورة');
-    const name = `${kind === 'rad' ? 'Radiology-Request' : 'Laboratory-Request'}-${(p?.fullName || 'patient').replace(/\s+/g, '-')}-${date}.png`;
-    const file = new File([blob], name, { type: 'image/png' });
-    // آيباد/موبايل (الآيباد بيقول عن نفسه «Mac» فبنعرفه باللمس): الصورة بتظهر على الشاشة وزرار «حفظ في الصور» —
-    // المشاركة لازم تبقى من ضغطة مباشرة (بعد تجهيز الصورة الضغطة الأولى بتكون انتهت، والمتصفح كان بيحفظها ملف في «الملفات»)
-    // أندرويد: ضغطة واحدة — الصورة بتتنزّل على طول في «التنزيلات» وبتظهر في معرض الصور
-    if (!/Android/i.test(navigator.userAgent) && (navigator.maxTouchPoints > 1 || /iPhone|iPad|iPod/i.test(navigator.userAgent))) { showImageSheet(canvas.toDataURL('image/png'), file); return 'sheet'; }
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 4000);
-    return 'saved';
+    // اسم الملف بحروف إنجليزي بس (بعض تطبيقات المعرض بتتلخبط في الأسماء العربي)
+    const name = `${kind === 'rad' ? 'Radiology-Request' : 'Laboratory-Request'}-${(p?.fileNo || '').replace(/[^A-Za-z0-9-]/g, '') || 'patient'}-${date}-${Date.now().toString().slice(-5)}.png`;
+    return { key: html, blob, dataUrl: canvas.toDataURL('image/png'), file: new File([blob], name, { type: 'image/png', lastModified: Date.now() }) };
   } finally { host.remove(); }
+}
+
+/** تجهيز صورة الطلب مقدمًا (بتتنادي من الشاشة بعد ما الاختيارات تهدى) */
+export function prepareRequestImage(kind: 'rad' | 'lab', s: ExamSheet, p: ReqPatient | null | undefined, date: string): Promise<ReqImage> {
+  const html = requestPageHtml(kind, s, p, date);
+  const hit = imgCache.get(kind);
+  if (hit && hit.key === html) return Promise.resolve(hit);
+  const k = kind + html;
+  if (!pending.has(k)) {
+    pending.set(k, renderImage(kind, html, p, date).then((img) => { imgCache.set(kind, img); return img; }).finally(() => pending.delete(k)));
+  }
+  return pending.get(k)!;
+}
+/** الصورة الجاهزة لو مطابقة للاختيارات الحالية */
+export function readyRequestImage(kind: 'rad' | 'lab', s: ExamSheet, p: ReqPatient | null | undefined, date: string): ReqImage | null {
+  const hit = imgCache.get(kind);
+  return hit && hit.key === requestPageHtml(kind, s, p, date) ? hit : null;
+}
+
+const isIOS = () => !/Android/i.test(navigator.userAgent) && (/iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/i.test(navigator.userAgent)));
+/** تسليم الصورة — لازم تتنادي جوّه الضغطة نفسها:
+ *  أندرويد/كمبيوتر ← تنزيل على طول (أندرويد: ألبوم «Download» في معرض الصور)
+ *  آيفون/آيباد ← قايمة المشاركة على طول ← «حفظ الصورة» (أبل مابتسمحش بالحفظ في الصور من غيرها)؛ ولو المشاركة مش متاحة نافذة الصورة */
+export function deliverRequestImage(img: ReqImage): 'saved' | 'share' | 'sheet' {
+  if (isIOS()) {
+    const nav = navigator as Navigator & { canShare?: (d: { files: File[] }) => boolean };
+    if (nav.canShare?.({ files: [img.file] })) {
+      navigator.share({ files: [img.file] }).catch((e: Error) => { if (e.name !== 'AbortError') showImageSheet(img.dataUrl, img.file); });
+      return 'share';
+    }
+    showImageSheet(img.dataUrl, img.file);
+    return 'sheet';
+  }
+  const a = document.createElement('a'); a.href = img.dataUrl; a.download = img.file.name; a.rel = 'noopener';
+  document.body.appendChild(a); a.click(); a.remove();
+  return 'saved';
 }

@@ -18,7 +18,7 @@ import { IMAGING_KIND, IMAGING_STATUS, REGIONS, SIDE, isIncomplete, isUnlinked, 
 import { printRx } from './printRx';
 import { openPrintWindow, printHtml } from '../utils/printDoc';
 import { RequestForms } from './RequestForms';
-import { applyRequestForms, labOthers, requestHtml, saveRequestImage } from './requestData';
+import { applyRequestForms, deliverRequestImage, labOthers, prepareRequestImage, readyRequestImage, requestHtml } from './requestData';
 import { DiagnosisOutput } from './DiagnosisOutput';
 import { InjectionList, InjectionModal } from './Injections';
 import { PatientMedicalFiles } from './PatientMedicalFiles';
@@ -483,9 +483,17 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
                 const url = `https://wa.me/${waPhone(pt ? whatsappNumber(pt) : (pendingInfo.phone ?? ''))}`;
                 if (win && !win.closed) win.location.href = url; else window.location.href = url;
               }}
+              prepare={(kind) => { void prepareRequestImage(kind, sheet, patientOf(), c.date).catch(() => undefined); }}
               onImage={async (kind) => {
+                // الصورة جاهزة مقدمًا ← بتتحفظ في نفس الضغطة؛ مش جاهزة لسه ← بنجهزها (والحفظ ممكن يطلب ضغطة كمان)
+                const say = (r: string) => {
+                  if (r === 'saved') toast.success(/Android/i.test(navigator.userAgent) ? 'اتحفظت الصورة في معرض الصور — ألبوم «Download» (التنزيلات)' : 'اتحفظت الصورة على الجهاز');
+                };
+                const ready = readyRequestImage(kind, sheet, patientOf(), c.date);
+                if (ready) { say(deliverRequestImage(ready)); void saveReq(); return; }
                 if (!(await saveReq())) return;
-                try { if ((await saveRequestImage(kind, sheet, patientOf(), c.date)) === 'saved') toast.success(/Android/i.test(navigator.userAgent) ? 'اتحفظت الصورة — هتلاقيها في معرض الصور (التنزيلات)' : 'اتحفظت الصورة على الجهاز'); } catch (e) { toast.error((e as Error).message); }
+                try { const img = await prepareRequestImage(kind, sheet, patientOf(), c.date); say(deliverRequestImage(img)); }
+                catch (e) { toast.error((e as Error).message); }
               }} />
           </section>
 

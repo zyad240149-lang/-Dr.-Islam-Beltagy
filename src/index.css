@@ -1898,3 +1898,5 @@ button.wa-link { border: 0; cursor: pointer; font-family: inherit; }
 
 .sh-treat-fu { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--line); grid-column: 1 / -1; }
 .sh-treat-fu .sh-lbl { display: flex; align-items: center; gap: 6px; }
+
+.rq-row__n .ck, .rq-row__n label { font-weight: 600; }

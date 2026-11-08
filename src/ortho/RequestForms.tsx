@@ -74,19 +74,7 @@ export function RequestForms({ sheet, onChange, busy, disabled, onSave, onPrint,
           return (
             <Fold key={f.id} title={f.ar} en={f.en} count={n}>
               <div className="rq-det__b">
-                {f.groups.map((g) => (
-                  <div key={g.en} className="rq-grp">
-                    <div className="rq-grp__t"><b dir="ltr">{g.en}</b><span>{g.ar}</span></div>
-                    <div dir="ltr">
-                      {g.rows?.map(([r, opts]) => (
-                        <div key={r} className="rq-row"><span className="rq-row__n">{r}</span><span className="rq-row__o"><Checks a={a} g={`${f.id}.r.${r}`} items={opts} /></span></div>
-                      ))}
-                      {g.items && <div className="rq-col"><Checks a={a} g={`${f.id}.sp`} items={g.items} /></div>}
-                      {g.items && g.other && <Txt a={a} k={groupOtherKey(f, g)} label="Other" dir="ltr" />}
-                      {g.items && f.other && <Txt a={a} k={`${f.id}.other`} label="Other Region" dir="ltr" />}
-                    </div>
-                  </div>
-                ))}
+                {/* التفاصيل الإضافية (الجانب / النوع / الصبغة…) أول حاجة لما الورقة تتفتح */}
                 <div className="rq-grp rq-grp--top">
                   <div className="rq-grp__t"><b dir="ltr">Additional Details</b><span>تفاصيل إضافية</span></div>
                   <div dir="ltr" className="rq-ex">
@@ -95,6 +83,19 @@ export function RequestForms({ sheet, onChange, busy, disabled, onSave, onPrint,
                     ))}
                   </div>
                 </div>
+                {f.groups.map((g) => (
+                  <div key={g.en} className="rq-grp">
+                    <div className="rq-grp__t"><b dir="ltr">{g.en}</b><span>{g.ar}</span></div>
+                    <div dir="ltr">
+                      {g.rows?.map(([r, opts]) => (
+                        <div key={r} className="rq-row"><span className="rq-row__n"><Checks a={a} g={`${f.id}.rows`} items={[r]} /></span><span className="rq-row__o"><Checks a={a} g={`${f.id}.r.${r}`} items={opts} /></span></div>
+                      ))}
+                      {g.items && <div className="rq-col"><Checks a={a} g={`${f.id}.sp`} items={g.items} /></div>}
+                      {g.items && g.other && <Txt a={a} k={groupOtherKey(f, g)} label="Other" dir="ltr" />}
+                      {g.items && f.other && <Txt a={a} k={`${f.id}.other`} label="Other Region" dir="ltr" />}
+                    </div>
+                  </div>
+                ))}
                 <div className="sh-lbl">ملاحظات طبية — Clinical Notes</div>
                 <textarea className="sh-in sh-notes" dir="auto" rows={2} aria-label="Clinical Notes" value={a.txt(`${f.id}.notes`)} onChange={(e) => a.set(`${f.id}.notes`, e.target.value)} />
               </div>

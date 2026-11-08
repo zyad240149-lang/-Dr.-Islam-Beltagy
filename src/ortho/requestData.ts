@@ -138,7 +138,7 @@ export function requestPageHtml(kind: 'rad' | 'lab', s: ExamSheet, p: ReqPatient
       + RAD_FORMS.map((f) => {
         const p = radPicked(s, f);
         if (!p.count && !p.extras.length && !p.notes) return '';
-        const rows = p.rows.map(([r, o]) => `<div class="grp"><b>${esc(r)}</b>${chips(o)}</div>`).join('');
+        const rows = p.rows.map(([r, o]) => (o.length ? `<div class="grp"><b>${esc(r)}</b>${chips(o)}</div>` : `<div class="grp">${chips([r])}</div>`)).join('');
         const items = p.groups.map((x) => `<div class="grp"><b>${esc(x.g.en)}</b>${chips([...x.items, ...(x.other ? [`Other: ${x.other}`] : [])])}</div>`).join('');
         const other = p.other ? `<div class="grp"><b>Other Region</b>${chips([p.other])}</div>` : '';
         const ex = p.extras.map(([l, v]) => `<div class="grp"><b>${esc(l)}</b>${chips(v)}</div>`).join('');

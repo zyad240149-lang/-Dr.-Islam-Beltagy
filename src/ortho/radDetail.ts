@@ -59,7 +59,9 @@ export interface RadPicked { f: RadForm; rows: [string, string[]][]; items: stri
 export const groupOtherKey = (f: RadForm, g: RadGroup) => `${f.id}.o.${g.en}`;
 /** اللي اتعلّم في ورقة واحدة */
 export function radPicked(s: ExamSheet, f: RadForm): RadPicked {
-  const rows = f.groups.flatMap((g) => g.rows ?? []).map(([r, opts]) => [r, opts.filter((o) => has(s, `${f.id}.r.${r}`, o))] as [string, string[]]).filter(([, o]) => o.length);
+  // المنطقة بتتطلب بمربعها قدام اسمها، أو باختيار وضع/صبغة جنبها
+  const rows = f.groups.flatMap((g) => g.rows ?? []).map(([r, opts]) => [r, opts.filter((o) => has(s, `${f.id}.r.${r}`, o)), has(s, `${f.id}.rows`, r)] as const)
+    .filter(([, o, on]) => on || o.length).map(([r, o]) => [r, [...o]] as [string, string[]]);
   const groups = f.groups.filter((g) => g.items).map((g) => ({ g, items: g.items!.filter((i) => has(s, `${f.id}.sp`, i)), other: g.other ? tx(s, groupOtherKey(f, g)) : '' })).filter((x) => x.items.length || x.other);
   const items = groups.flatMap((x) => x.items);
   const other = f.other ? tx(s, `${f.id}.other`) : '';
@@ -78,7 +80,7 @@ export function radDetailRequests(s: ExamSheet): ImagingRequest[] {
     const side = p.extras.find(([l]) => l === 'Side')?.[1].join('') ?? '';
     const sfx = side ? ` — ${side}` : '';
     return [
-      ...p.rows.map(([r, o]) => ({ kind: f.kind, region: r, view: o.join(', ') + sfx })),
+      ...p.rows.map(([r, o]) => ({ kind: f.kind, region: r, view: (o.join(', ') + sfx).replace(/^ — /, '') })),
       ...p.groups.flatMap((x) => [...x.items.map((i) => ({ kind: x.g.kind ?? f.kind, region: i, view: side })), ...(x.other ? [{ kind: x.g.kind ?? f.kind, region: `${x.g.en}: ${x.other}`, view: side }] : [])]),
       ...(p.other ? [{ kind: f.kind, region: p.other, view: side }] : []),
     ];

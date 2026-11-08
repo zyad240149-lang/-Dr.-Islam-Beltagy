@@ -1895,3 +1895,6 @@ button.wa-link { border: 0; cursor: pointer; font-family: inherit; }
 
 .fu-datepick { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .fu-datepick .input { max-width: 220px; }
+
+.sh-treat-fu { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--line); grid-column: 1 / -1; }
+.sh-treat-fu .sh-lbl { display: flex; align-items: center; gap: 6px; }

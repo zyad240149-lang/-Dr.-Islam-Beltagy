@@ -12,9 +12,10 @@ const SIDES: [Side, string][] = [['right', 'Right'], ['left', 'Left'], ['both', 
 
 const REFLEX4_OPTS: [string, string][] = [...REFLEX_OPTS, ['Brisk', 'Brisk (↑)']];
 
-export function RegionSheetForm({ def, sheet, onChange, side, onSide, icd10, onIcd10, onOpenMap }: {
+/** lastBoxExtra: حاجة بتتحط في آخر مربع (زي «تحديد موعد متابعة» جوّه مربع الخطة العلاجية) */
+export function RegionSheetForm({ def, sheet, onChange, side, onSide, icd10, onIcd10, onOpenMap, lastBoxExtra }: {
   def: RegionSheetDef; sheet: ExamSheet; onChange: (f: (s: ExamSheet) => ExamSheet) => void; side: Side; onSide: (s: Side) => void;
-  icd10: string; onIcd10: (v: string) => void; onOpenMap: () => void;
+  icd10: string; onIcd10: (v: string) => void; onOpenMap: () => void; lastBoxExtra?: ReactNode;
 }) {
   const a = sheetApi(sheet, onChange);
   const k = (x: string) => `${def.prefix}.${x}`;
@@ -108,7 +109,8 @@ export function RegionSheetForm({ def, sheet, onChange, side, onSide, icd10, onI
       <div className="sh-grid sh-grid--3">
         {def.boxes.map((b, i) => (
           <Box key={i} n={i + 1} tone={b.tone} wide={b.wide} title={b.tone === 'red' ? <><Icon name="alert" size={15} /> {b.title.replace('⚠ ', '')}</> : b.title}>{b.f.map(field)}
-            {boxNeedsNotes(b) && <><div className="sh-lbl">ملاحظات</div><textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt(k(boxNotesKey(b)))} onChange={(e) => a.set(k(boxNotesKey(b)), e.target.value)} /></>}</Box>
+            {boxNeedsNotes(b) && <><div className="sh-lbl">ملاحظات</div><textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt(k(boxNotesKey(b)))} onChange={(e) => a.set(k(boxNotesKey(b)), e.target.value)} /></>}
+            {i === def.boxes.length - 1 && lastBoxExtra}</Box>
         ))}
       </div>
     </div>

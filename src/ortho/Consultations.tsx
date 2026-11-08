@@ -450,12 +450,14 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           </section>
 
           <div dir="rtl" className="sh-treat"><RegionSheetForm def={TREATMENT} sheet={sheet} onChange={changeSheet} side={c.side} onSide={(v) => set('side', v)}
-            icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap('tp.tx.other')} /></div>
-          {/* مواعيد المتابعة جزء من الخطة العلاجية: أكتر من موعد للمريض، مربوطة بالتشخيص ده (بتتحفظ مع حفظ الكشف) */}
-          <Section icon="calendar" title="تحديد موعد متابعة">
-            <FollowUpStep patientId={c.patientId} patientLabel={pendingInfo.name} consultationId={initial?.id} pending={c.pendingFollowUps ?? []} onPending={(p) => set('pendingFollowUps', p)}
-              doctorHint={visitAppt?.therapistId} />
-          </Section>
+            icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap('tp.tx.other')}
+            lastBoxExtra={
+              /* مواعيد المتابعة جوّه مربع الخطة العلاجية (٨/١١): أكتر من موعد للمريض، مربوطة بالتشخيص ده (بتتحفظ مع حفظ الكشف) */
+              <div className="sh-treat-fu">
+                <div className="sh-lbl"><Icon name="calendar" size={15} /> تحديد موعد متابعة</div>
+                <FollowUpStep patientId={c.patientId} patientLabel={pendingInfo.name} consultationId={initial?.id} pending={c.pendingFollowUps ?? []} onPending={(p) => set('pendingFollowUps', p)}
+                  doctorHint={visitAppt?.therapistId} />
+              </div>} /></div>
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('inj')}>رجوع: الحقن</Button>
             <Button icon="check" loading={busy} disabled={!ok} onClick={() => save(false)}>حفظ الكشف</Button>

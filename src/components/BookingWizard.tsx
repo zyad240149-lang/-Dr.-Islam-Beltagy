@@ -16,7 +16,7 @@ import { InvoiceFileButtons, InvoiceWhatsappButton } from './InvoiceActions';
 import { EditPatientModal } from './PatientForms';
 import { useNavigate } from 'react-router-dom';
 
-const STEPS = ['المريض', 'الخدمة', 'الدكتور', 'التاريخ والوقت', 'المراجعة'];
+const STEPS = ['المريض', 'الخدمة', 'الدكتور', 'التاريخ والوقت']; // ٩/١١: «المراجعة» اتشالت — الحجز من آخر خطوة
 
 export default function BookingWizard({ onClose, presetPatientId, presetServiceId, presetTherapistId, presetDate, presetTime }: { onClose: () => void; presetPatientId?: string; presetServiceId?: string; presetTherapistId?: string; presetDate?: string; presetTime?: string }) {
   useDbVersion(); // يعيد رسم الأوقات فورًا لما حجز/إلغاء يوصل من جهاز تاني
@@ -127,7 +127,8 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
   const blockedMsg = [mode === 'call' ? 'أدخل اسم المريض ورقم جواله' : 'ابحث عن المريض واختره', 'اختر الخدمة أولًا', 'يرجى اختيار الدكتور أولًا', 'اختر التاريخ والوقت أولًا', ''][step];
 
   // حجز من خانة فاضية في جدول المواعيد: الدكتور والتاريخ والوقت محددين → بنتخطى خطوتي «الدكتور» و«التاريخ والوقت»
-  const visible = lockedPreset ? [0, 1, 4] : [0, 1, 2, 3, 4];
+  const visible = lockedPreset ? [0, 1] : [0, 1, 2, 3];
+  const lastStep = visible[visible.length - 1];
   const next = () => setStep((s) => visible.find((x) => x > s) ?? s);
   const back = () => setStep((s) => [...visible].reverse().find((x) => x < s) ?? s);
 
@@ -216,9 +217,9 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
     <>
       {step > 0 && <Button variant="outline" onClick={back} disabled={busy}>رجوع</Button>}
       <span style={{ flex: 1 }} />
-      {step < 4
+      {step < lastStep
         ? <Button onClick={() => (canNext ? next() : toast.error(blockedMsg))} aria-disabled={!canNext} style={canNext ? undefined : { opacity: 0.55 }}>التالي</Button>
-        : <Button icon="check" onClick={confirm} loading={busy}>{walkIn ? 'حجز وتأكيد الحضور' : 'حجز الموعد'}</Button>}
+        : <Button icon="check" onClick={() => (canNext ? void confirm() : toast.error(blockedMsg))} loading={busy} aria-disabled={!canNext} style={canNext ? undefined : { opacity: 0.55 }}>{walkIn ? 'حجز وتأكيد الحضور' : 'حجز الموعد'}</Button>}
     </>
   );
 
@@ -231,7 +232,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
               <span className="step-dot__n">{i < step ? <Icon name="check" size={13} /> : visible.indexOf(i) + 1}</span>
               <span className="hide-sm">{label}</span>
             </div>
-            {i < 4 && <span className="step-sep" />}
+            {i < STEPS.length - 1 && <span className="step-sep" />}
           </div>
         ))}
       </div>
@@ -410,7 +411,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
       )}
 
       {/* Step 4: review */}
-      {step === 4 && (
+      {step === lastStep && (
         <>
         {!walkIn && (
           <div className="field" style={{ marginBottom: 14 }}>
@@ -421,20 +422,6 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
             </div>
           </div>
         )}
-        <dl className="review-list">
-          <div><dt>المريض</dt><dd>{patient?.fullName ?? np.fullName}</dd></div>
-          <div><dt>الجوال</dt><dd className="num">{patient?.phone ?? np.phone}</dd></div>
-          <div><dt>المكان</dt><dd>{(date && branchForDate(db.therapist(therapistId)?.workHours ?? [], date)?.name) || `المركز — ${center.city} – ${center.district}`}</dd></div>
-          <div><dt>الخدمة</dt><dd>{service?.name}</dd></div>
-          <div><dt>الدكتور</dt><dd>{db.therapist(therapistId)?.name}</dd></div>
-          <div><dt>التاريخ</dt><dd>{date && fmtDate(date)}</dd></div>
-          <div><dt>الوقت</dt><dd className="num">{time && fmtTime(time)}</dd></div>
-          {walkIn && <div><dt>الحضور</dt><dd><span className="badge badge--ok">المريض موجود — هيتأكد حضوره على طول</span></dd></div>}
-          <div><dt>الجنسية</dt><dd>{(patient ? patient.nationality : np.nationality) === 'non_saudi' ? 'أجنبي' : 'مصري'}</dd></div>
-          <div><dt>السعر</dt><dd className="num">{pricedPlan ? 'مشمول في سعر الخطة العلاجية' : money(shownPrice)}</dd></div>
-          <div><dt>الباقة</dt><dd>{activePkg ? `${activePkg.name} (متبقٍ ${activePkg.totalSessions - activePkg.usedSessions})` : pricedPlan ? 'بدون باقة' : 'بدون باقة — ستصدر فاتورة'}</dd></div>
-          <div><dt>الخطة العلاجية</dt><dd>{planId ? db.plan(planId)?.diagnosis : 'غير مرتبط بخطة'}</dd></div>
-        </dl>
         {extraPrices.length > 0 && (
           <div style={{ marginTop: 14 }}><Select id="bk-price" label="السعر" value={priceId} onChange={(e) => setPriceId(e.target.value)}
             options={[{ value: '', label: `السعر العادي — ${money(service?.price ?? 0)}` }, ...extraPrices.map((p) => ({ value: p.id, label: `${p.label} — ${money(p.price)}` }))]} /></div>

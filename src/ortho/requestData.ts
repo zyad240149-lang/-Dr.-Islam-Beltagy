@@ -193,7 +193,8 @@ function showImageSheet(dataUrl: string, file: File) {
 }
 
 /** حفظ الطلب كصورة PNG: على الموبايل بيفتح «مشاركة/حفظ» (الاستوديو أو واتساب)، وعلى الكمبيوتر بينزّل الصورة */
-export async function saveRequestImage(kind: 'rad' | 'lab', s: ExamSheet, p: ReqPatient | null | undefined, date: string) {
+// 'saved' = اتحفظت على طول (أندرويد/كمبيوتر)، 'sheet' = ظهرت نافذة «حفظ في الصور» (آيفون/آيباد — أبل مابتسمحش بالحفظ في الصور من غير خطوتها)
+export async function saveRequestImage(kind: 'rad' | 'lab', s: ExamSheet, p: ReqPatient | null | undefined, date: string): Promise<'saved' | 'sheet'> {
   const host = document.createElement('div');
   host.style.cssText = 'position:fixed;left:-10000px;top:0;z-index:-1;background:#fff';
   host.innerHTML = `<style>${REQ_CSS}</style>${requestPageHtml(kind, s, p, date)}`;
@@ -209,9 +210,11 @@ export async function saveRequestImage(kind: 'rad' | 'lab', s: ExamSheet, p: Req
     const file = new File([blob], name, { type: 'image/png' });
     // آيباد/موبايل (الآيباد بيقول عن نفسه «Mac» فبنعرفه باللمس): الصورة بتظهر على الشاشة وزرار «حفظ في الصور» —
     // المشاركة لازم تبقى من ضغطة مباشرة (بعد تجهيز الصورة الضغطة الأولى بتكون انتهت، والمتصفح كان بيحفظها ملف في «الملفات»)
-    if (navigator.maxTouchPoints > 1 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) { showImageSheet(canvas.toDataURL('image/png'), file); return; }
+    // أندرويد: ضغطة واحدة — الصورة بتتنزّل على طول في «التنزيلات» وبتظهر في معرض الصور
+    if (!/Android/i.test(navigator.userAgent) && (navigator.maxTouchPoints > 1 || /iPhone|iPad|iPod/i.test(navigator.userAgent))) { showImageSheet(canvas.toDataURL('image/png'), file); return 'sheet'; }
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 4000);
+    return 'saved';
   } finally { host.remove(); }
 }

@@ -485,7 +485,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
               }}
               onImage={async (kind) => {
                 if (!(await saveReq())) return;
-                try { await saveRequestImage(kind, sheet, patientOf(), c.date); } catch (e) { toast.error((e as Error).message); }
+                try { if ((await saveRequestImage(kind, sheet, patientOf(), c.date)) === 'saved') toast.success(/Android/i.test(navigator.userAgent) ? 'اتحفظت الصورة — هتلاقيها في معرض الصور (التنزيلات)' : 'اتحفظت الصورة على الجهاز'); } catch (e) { toast.error((e as Error).message); }
               }} />
           </section>
 

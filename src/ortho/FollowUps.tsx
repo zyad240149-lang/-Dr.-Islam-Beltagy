@@ -296,23 +296,11 @@ export function FollowUpModal({ patientId, patientLabel, consultationId, initial
 
       <div className="field">
         <label>يوم المتابعة *</label>
-        <div className="fu-days" role="radiogroup" aria-label="يوم المتابعة">
-          {days.map((d) => {
-            const st = dayState(d);
-            return (
-              <button key={d} type="button" role="radio" aria-checked={f.date === d} disabled={!canSave}
-                className={`fu-day ${f.date === d ? 'is-on' : ''} ${st !== 'ok' ? 'is-off' : ''} ${d === t ? 'is-today' : ''}`}
-                title={st !== 'ok' ? DOCTOR_DAY_LABEL[st] : ''} onClick={() => setF((x) => ({ ...x, date: d, time: '' }))}>
-                <span className="fu-day__w">{d === t ? 'النهارده' : weekday(d)}</span>
-                <b className="num">{dayNum(d)}</b>
-                <span className="fu-day__s">{st === 'ok' ? (f.doctorId ? 'شغال' : '') : st === 'leave' ? 'إجازة' : 'مش شغال'}</span>
-              </button>
-            );
-          })}
-          <label className="fu-day fu-day--pick" title="تاريخ تاني">
-            <Icon name="calendar" size={16} /><span className="fu-day__w">تاريخ تاني</span>
-            <input type="date" value={f.date} min={saved ? undefined : t} disabled={!canSave} onChange={(e) => e.target.value && setF((x) => ({ ...x, date: e.target.value, time: '' }))} />
-          </label>
+        {/* اختيار اليوم من التقويم بس (طلب ٨/١١) — كروت الأيام اتشالت */}
+        <div className="fu-datepick">
+          <Icon name="calendar" size={18} />
+          <input type="date" className="input" aria-label="يوم المتابعة" value={f.date} min={saved ? undefined : t} disabled={!canSave}
+            onChange={(e) => e.target.value && setF((x) => ({ ...x, date: e.target.value, time: '' }))} />
         </div>
       </div>
 

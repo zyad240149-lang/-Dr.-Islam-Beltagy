@@ -1892,3 +1892,6 @@ button.wa-link { border: 0; cursor: pointer; font-family: inherit; }
 .rq-det__h span[dir="ltr"] { color: var(--muted, #6b7280); font-size: 13px; }
 .rq-det.is-open > .rq-det__h { border-bottom: 1px solid var(--line-2); background: var(--brand-50); }
 .rq-det__q { padding: 10px 12px; }
+
+.fu-datepick { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fu-datepick .input { max-width: 220px; }

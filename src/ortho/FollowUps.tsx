@@ -203,6 +203,8 @@ export function FollowUpModal({ patientId, patientLabel, consultationId, initial
   const start = saved && f.date < t ? f.date : t;
   const days = Array.from({ length: DAYS_AHEAD }, (_, i) => addDays(start, i));
   if (!days.includes(f.date)) days.push(f.date);
+  // الترتيب: آخر يوم الأول وبعدين الأقرب لحد النهارده (طلب ٨/١١)
+  days.sort((x, y) => y.localeCompare(x));
   const dayState = (d: string) => (f.doctorId ? db.doctorDay(f.doctorId, d).status : 'ok');
   const win = f.doctorId ? db.doctorDay(f.doctorId, f.date) : null;
   // الأوقات: كل بدايات دوام الطبيب في اليوم ده + الوقت المختار لو برّه الدوام

@@ -757,7 +757,7 @@ export default function FollowUpsPage({ tabs, pageTitle }: { tabs?: React.ReactN
                   <h2 className="fu-cal__title">{title}</h2>
                 </div>
                 {/* ٩/١١: زرار الحجز جنب اليوم */}
-                <Button icon="plus" onClick={() => setBookAt({ date: cursor >= t ? cursor : '', time: '' })}>حجز كشف أو متابعة</Button>
+                <Button icon="calendarPlus" className="fu-book-btn" onClick={() => setBookAt({ date: cursor >= t ? cursor : '', time: '' })}>حجز كشف أو متابعة</Button>
               </div>
               {view === 'month' && (
                 <div className="fu-month" role="grid">

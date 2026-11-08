@@ -111,8 +111,7 @@ function PatientsList({ tabs }: { tabs: ReactNode }) {
       <div className="page-head">
         <div><h1>المرضى</h1><p>سجل جميع مرضى المركز.{(user?.role === 'system_admin' || user?.role === 'center_manager') && <> — <span className="num">{total}</span> مريض</>}</p></div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {can('patient_import', 'create') && <Button variant="outline" icon="plus" onClick={() => setImporting(true)}>استيراد المرضى من Excel</Button>}
-          {can('patient_export', 'view') && <Button variant="outline" icon="doc" onClick={async () => { try { const { error } = await supabase.rpc('authorize_patient_export'); if (error) throw new Error(error.message); exportPatientsWorkbook(); } catch (e) { toast.error((e as Error).message); } }}>تصدير ملف المرضى (Excel)</Button>}
+          {/* «استيراد المرضى من Excel» و«تصدير ملف المرضى (Excel)» اتشالوا من الصفحة (٨/١١) */}
           {can('patients', 'create') && <Button icon="user" onClick={() => setAdding(true)}>فتح ملف مريض جديد</Button>}
         </div>
       </div>

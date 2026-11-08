@@ -283,6 +283,8 @@ function VisitDetailsModal({ apptId, onClose, onBack }: { apptId: string; onClos
         {session && <StatusBadge label={session.status === 'completed' ? 'الزيارة مكتملة' : 'الزيارة قيد التنفيذ'} tone={session.status === 'completed' ? 'ok' : 'info'} />}
         <ActorBadges a={a} />
       </div>
+      {/* ٩/١١: إضافة خدمة (جبس/أشعة…) على نفس الفاتورة — أول حاجة في التفاصيل + طباعة/تحميل الفاتورة */}
+      {a.status !== 'cancelled' && <ExtraServices appointmentId={a.id} />}
       <dl className="review-list" style={{ marginBottom: 14 }}>
         <div><dt>المريض</dt><dd>{patient?.fullName} · <span className="num">{patient?.fileNo}</span></dd></div>
         <div><dt>التاريخ والوقت</dt><dd>{fmtDate(a.date)} — <span className="num">{fmtTime(a.time)}</span></dd></div>
@@ -306,8 +308,6 @@ function VisitDetailsModal({ apptId, onClose, onBack }: { apptId: string; onClos
         </div>
       )}
 
-      {/* ٩/١١: إضافة خدمة (جبس/أشعة…) على نفس الفاتورة + طباعة/تحميل الفاتورة */}
-      {a.status !== 'cancelled' && <ExtraServices appointmentId={a.id} />}
       <div className="section-title">الفاتورة والدفعات</div>
       <FinanceBlock invoices={invoices} />
 

@@ -117,7 +117,6 @@ function PatientsList({ tabs }: { tabs: ReactNode }) {
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {/* «استيراد المرضى من Excel» و«تصدير ملف المرضى (Excel)» اتشالوا من الصفحة (٨/١١) */}
           {can('patients', 'create') && <Button icon="user" onClick={() => setAdding(true)}>فتح ملف مريض جديد</Button>}
-          {(can('booking', 'create') || can('appointments', 'create')) && <Button variant="outline" icon="calendarPlus" onClick={() => setParams({ tab: 'book' }, { replace: true })}>حجز كشف ومتابعة</Button>}
         </div>
       </div>
       {local && <LocalDataNote />}

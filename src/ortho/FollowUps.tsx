@@ -704,7 +704,7 @@ export default function FollowUpsPage({ tabs, pageTitle }: { tabs?: React.ReactN
   return (
     <div className="page">
       <PageHead title={pageTitle ?? "متابعات المرضى"} sub="مواعيد متابعة كل المرضى — نفس سجلات «المواعيد»، والتأكيد من هنا أو من هناك بيظهر في الاتنين">
-        <Button icon="plus" onClick={() => setAdding(true)}>موعد متابعة جديد</Button>
+        <Button icon="plus" onClick={() => setBookAt({ date: '', time: '' })}>موعد متابعة أو كشف</Button>
       </PageHead>
       {tabs}
       {toConfirm.length > 0 && (
@@ -793,7 +793,7 @@ export default function FollowUpsPage({ tabs, pageTitle }: { tabs?: React.ReactN
       </section>
       {open && <FollowUpModal patientId={open.patientId} initial={open} onClose={() => setOpen(null)} />}
       {adding && <NewFollowUp onClose={() => setAdding(false)} />}
-      {bookAt && <BookingWizard presetDate={bookAt.date} presetTime={bookAt.time} presetTherapistId={bookAt.doctorId} onClose={() => setBookAt(null)} />}
+      {bookAt && <BookingWizard presetDate={bookAt.date || undefined} presetTime={bookAt.time || undefined} presetTherapistId={bookAt.doctorId} onClose={() => setBookAt(null)} />}
     </div>
   );
 }

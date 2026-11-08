@@ -298,15 +298,16 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
             </>
           )}
           {((patientId && patient) || (!patientId && mode === 'call' && np.fullName.trim().length >= 2 && phoneOk)) && (
-            <div className="choice-grid" style={{ margin: '12px 0' }}>
-              <button type="button" className={`choice ${!walkIn ? 'selected' : ''}`} onClick={() => { setWalkIn(false); next(); }}>
-                <span className="choice__ic"><Icon name="calendar" size={18} /></span>
-                <span><strong>حجز موعد</strong><span> اختار اليوم والوقت</span></span>
-              </button>
-              {(!lockedPreset || date === todayYmd()) && <button type="button" className={`choice ${walkIn ? 'selected' : ''}`} onClick={() => { setWalkIn(true); next(); }}>
+            <div className="choice-grid" style={{ margin: '12px 0' }} role="radiogroup" aria-label="حالة الحجز">
+              {/* ٩/١١: «حجز موعد / المريض موجود» بقوا «مؤكد / غير مؤكد» */}
+              <button type="button" role="radio" aria-checked={confirmed} className={`choice ${confirmed ? 'selected' : ''}`} onClick={() => { setWalkIn(false); setConfirmed(true); next(); }}>
                 <span className="choice__ic"><Icon name="checkCircle" size={18} /></span>
-                <span><strong>المريض موجود</strong><span>{lockedPreset ? ` النهارده ${fmtTime(time)} — وحضوره يتأكد على طول` : ' النهارده في الوقت اللي تختاره — وحضوره يتأكد على طول'}</span></span>
-              </button>}
+                <span><strong>مؤكد</strong><span> المريض أكّد إنه جاي</span></span>
+              </button>
+              <button type="button" role="radio" aria-checked={!confirmed} className={`choice ${!confirmed ? 'selected' : ''}`} onClick={() => { setWalkIn(false); setConfirmed(false); next(); }}>
+                <span className="choice__ic"><Icon name="clock" size={18} /></span>
+                <span><strong>غير مؤكد</strong><span> لسه محتاج تأكيد</span></span>
+              </button>
             </div>
           )}
         </div>
@@ -413,15 +414,6 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
       {/* Step 4: review */}
       {step === lastStep && (
         <>
-        {!walkIn && (
-          <div className="field" style={{ marginBottom: 14 }}>
-            <label>حالة الحجز</label>
-            <div className="seg" role="radiogroup" aria-label="حالة الحجز">
-              <button type="button" role="radio" aria-checked={confirmed} className={`seg__btn ${confirmed ? 'active' : ''}`} onClick={() => setConfirmed(true)}>مؤكد</button>
-              <button type="button" role="radio" aria-checked={!confirmed} className={`seg__btn ${!confirmed ? 'active' : ''}`} onClick={() => setConfirmed(false)}>غير مؤكد</button>
-            </div>
-          </div>
-        )}
         {extraPrices.length > 0 && (
           <div style={{ marginTop: 14 }}><Select id="bk-price" label="السعر" value={priceId} onChange={(e) => setPriceId(e.target.value)}
             options={[{ value: '', label: `السعر العادي — ${money(service?.price ?? 0)}` }, ...extraPrices.map((p) => ({ value: p.id, label: `${p.label} — ${money(p.price)}` }))]} /></div>

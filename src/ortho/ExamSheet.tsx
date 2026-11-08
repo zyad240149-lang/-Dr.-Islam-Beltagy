@@ -2,7 +2,7 @@
 // «الشيت العام» (يتملى قبل دخول المريض — خريطة الجسم خانة فيه لتحديد مكان الألم) و«شيت كشف الورك والركبة» (12 خانة).
 // الاختيارات بتتخزن في consultation.sheet، وsheetSummary بيطلع منها ملخص نصي للشكوى والتاريخ المرضي والفحص والتشخيص
 // (القوايم والروشتة وسجل المريض بيعرضوا الملخص ده زي الكشوفات القديمة).
-import { useState, type ReactNode } from 'react';
+import { createContext, useContext, useState, type ReactNode } from 'react';
 import { BodyFigure, regionById, type BodyView, type PinSide } from '../components/BodyFigure';
 import { SIDE_LABEL } from '../data/bodyRegions';
 import { fileNoText, normalizePhone, toLatinDigits } from '../utils/phoneUtils';
@@ -362,8 +362,10 @@ export function sheetApi(s: ExamSheet, onChange: Change) {
 export type Api = ReturnType<typeof sheetApi>;
 
 // كل مربع بيتقفل ويتفتح من زرار في عنوانه (٨/١١) — اللي اتكتب جوّاه بيفضل محفوظ؛ والحالة مش بتتحفظ: أي كشف بيتفتح والمربعات كلها مفتوحة
+/** المربعات تبدأ مفتوحة ولا مقفولة — شيتات كشف الطبيب: مقفولة في الكشف الجديد، ومفتوحة لما كشف محفوظ يتفتح تاني */
+export const BoxOpenDefault = createContext(true);
 export function Box({ n, title, tone, wide, children }: { n: number; title: ReactNode; tone?: 'red'; wide?: boolean; children: ReactNode }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(useContext(BoxOpenDefault));
   return (
     <section className={`sh-box${tone ? ' sh-box--red' : ''}${wide && open ? ' sh-box--wide' : ''}${open ? '' : ' is-closed'}`}>
       <h3 className="sh-box__h"><span className="sh-box__n">{n}</span>{title}

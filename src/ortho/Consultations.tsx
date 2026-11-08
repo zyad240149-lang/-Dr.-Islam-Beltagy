@@ -28,7 +28,7 @@ import { FollowUpStep, FollowUpsOfConsult, savePendingFollowUps, useFuCan, type 
 import type { DxPart } from './printDiagnosis';
 import { db } from '../data/db';
 import { Field, IconBtn, LoadState, PageHead, PatientSelect, SearchBox, Tone, confirmDelete, patientFile, patientName, useClinicalCan, useRun } from './kit';
-import { DoctorSheet, NursingSheet, doctorStarted, emptySheet, nurseStarted, normSheet, isTripleName, pendingFromSheet, traumaShown, resetPatientBasics, sheetHasContent, sheetPatientPatch, sheetSummary, withPatientBasics } from './ExamSheet';
+import { DoctorSheet, NursingSheet, doctorStarted, emptySheet, nurseStarted, normSheet, isTripleName, pendingFromSheet, traumaShown, BoxOpenDefault, resetPatientBasics, sheetHasContent, sheetPatientPatch, sheetSummary, withPatientBasics } from './ExamSheet';
 
 // pendingFollowUps: مواعيد متابعة اتحددت في الكشف ولسه ما اتحفظتش (بتتحفظ بعد حفظ التشخيص — مش عمود في الجدول)
 type Draft = Omit<Consultation, 'id'> & { id?: string; pendingFollowUps?: FuDraft[] };
@@ -206,8 +206,10 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
   const visitNo = initial ? Math.max(1, patientConsults.findIndex((x) => x.id === initial.id) + 1) : patientConsults.length + 1;
   const [inj, setInj] = useState<Injection | 'new' | null>(null);
   // شيت واحد (منطقة أو متابعة جبس/عمليات) جوّه تابه
+  // مربعات شيتات الطبيب: مقفولة في الكشف الجديد (تفتح اللي هتكتب فيه)، ومفتوحة كلها لما كشف محفوظ يتفتح
   const renderSheet = (id: SheetId, _i: number, list: SheetId[]) => (
-              <section key={id} className="sh-stack" data-sheet={id}>
+              <BoxOpenDefault.Provider key={id} value={!!initial?.id}>
+              <section className="sh-stack" data-sheet={id}>
                 {list.length > 1 && <h3 className="sh-stack__h">{SHEET_TAB[id]}<button type="button" className="sh-stack__x" onClick={() => dropSheet(id)}>إلغاء المنطقة</button></h3>}
                 {id === 'hipknee'
                   ? <DoctorSheet sheet={sheet} onChange={changeSheet} side={c.side} onSide={(v) => set('side', v)}
@@ -215,6 +217,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
                   : <RegionSheetForm def={regionSheet(id)!} sheet={sheet} onChange={changeSheet} side={c.side} onSide={(v) => set('side', v)}
                     icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap(`${regionSheet(id)!.prefix}.dx.other`)} />}
               </section>
+              </BoxOpenDefault.Provider>
   );
   const examActive = active.filter((id) => !FU_SHEETS.includes(id));
   const fuActive = active.filter((id) => FU_SHEETS.includes(id));
@@ -335,6 +338,8 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
       <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => setOut(['nurse', 'doctor'])}>طباعة وإرسال</Button>
       <Button icon="check" loading={busy} disabled={!ok} onClick={() => save(false)}>حفظ الكشف</Button>
     </>}>
+      {/* كل المربعات (شيتات الطبيب، الأشعة والتحاليل، الخطة) مقفولة في الكشف الجديد — ما عدا الشيت العام؛ والكشف المحفوظ بيتفتح والمربعات كلها مفتوحة */}
+      <BoxOpenDefault.Provider value={!!initial?.id}>
       <div className="cx" ref={bodyRef}>
         <div className="grid-form grid-form--4">
           {(
@@ -383,7 +388,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           ))}
         </div>
 
-        {tab === 'nurse' && <>
+        {tab === 'nurse' && <BoxOpenDefault.Provider value={true}>
           <NursingSheet sheet={sheet} onChange={changeSheet} patient={c.patientId ? db.patient(c.patientId) : null} date={c.date} visitNo={visitNo}
             painScore={c.painScore} onPainScore={(v) => set('painScore', v)}
             onFirstPain={(id, side) => setC((x) => ({ ...x, region: regionById(id)?.name ?? x.region, ...(side ? { side } : {}) }))} />
@@ -399,7 +404,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
             <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => setOut(['nurse'])}>طباعة / إرسال الشيت العام</Button>
             <Button icon="chevronLeft" onClick={() => goTab('doctor')}>التالي: كشف الطبيب</Button>
           </div>
-        </>}
+        </BoxOpenDefault.Provider>}
 
         {tab === 'doctor' && <>
           {/* ملفات المريض اللي مش أشعة ولا تحاليل */}
@@ -573,6 +578,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           }} />}
         {inj && <InjectionModal patientId={c.patientId} appointmentId={c.appointmentId ?? null} initial={inj === 'new' ? undefined : inj} onClose={() => setInj(null)} />}
       </div>
+      </BoxOpenDefault.Provider>
       {out && <DiagnosisOutput initial={out} patient={patientOf()} visitNo={visitNo} onClose={() => setOut(null)}
         c={{ ...c, ...sum, plan: c.plan, sheet, medications: c.medications.filter((m) => m.name.trim()), imagingRequests: c.imagingRequests.filter((r) => r.region.trim()) }} />}
       {ask && (

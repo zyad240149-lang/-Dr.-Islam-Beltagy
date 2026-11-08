@@ -1,17 +1,17 @@
 // شاشة «طلب أشعة» و«طلب تحاليل» في تاب «الأشعة والتحاليل» بالكشف — اختيار + حفظ + طباعة + حفظ كصورة
-import { useEffect, useState, type ReactNode } from 'react';
+import { useContext, useEffect, useState, type ReactNode } from 'react';
 import { RAD_FORMS, groupOtherKey, radPicked } from './radDetail';
 import { Button } from '../components/ui';
 import { Icon } from '../utils/icons';
 import type { ExamSheet } from './data';
-import { Checks, Pick, Txt, sheetApi } from './ExamSheet';
+import { BoxOpenDefault, Checks, Pick, Txt, sheetApi } from './ExamSheet';
 import { LAB_OTHERS, LAB_REQ_GROUPS, RAD_REGIONS, RAD_SIDES, RAD_TYPES, labOthers, labPicked, radCount, radTypes } from './requestData';
 
 type Act = (kind: 'rad' | 'lab') => void;
 
 // طلب أشعة / طلب تحاليل: مفتوح ويتقفل بزرار في العنوان (الأزرار — حفظ / طباعة / صورة / واتساب — ظاهرة دايمًا)
 function Card({ icon, title, en, children, actions }: { icon: string; title: string; en: string; children: ReactNode; actions: ReactNode }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(useContext(BoxOpenDefault));
   return (
     <section className="rq-card">
       <header className="rq-card__h"><Icon name={icon} size={18} /><b>{title}</b><span dir="ltr">{en}</span>

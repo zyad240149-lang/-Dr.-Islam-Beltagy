@@ -153,11 +153,12 @@ export function requestHtml(kind: 'rad' | 'lab', s: ExamSheet, p: ReqPatient | n
 }
 
 /** نافذة الصورة على الآيباد/الموبايل: «حفظ في الصور» (قايمة المشاركة ← حفظ الصورة) أو ضغطة مطوّلة على الصورة */
-function showImageSheet(blob: Blob, file: File) {
-  const url = URL.createObjectURL(blob);
+// الصورة data: (مش blob:) — الضغطة المطوّلة «حفظ في الصور» بتشتغل عليها في سفاري وكروم الموبايل
+function showImageSheet(dataUrl: string, file: File) {
+  const url = dataUrl;
   const ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,.88);display:flex;flex-direction:column;align-items:center;gap:12px;padding:16px;overflow:auto;direction:rtl;font-family:"IBM Plex Sans Arabic",Tahoma,sans-serif';
-  const close = () => { ov.remove(); URL.revokeObjectURL(url); };
+  const close = () => { ov.remove(); };
   const btn = (text: string, primary: boolean) => {
     const b = document.createElement('button');
     b.type = 'button'; b.textContent = text;
@@ -199,7 +200,7 @@ export async function saveRequestImage(kind: 'rad' | 'lab', s: ExamSheet, p: Req
     const file = new File([blob], name, { type: 'image/png' });
     // آيباد/موبايل (الآيباد بيقول عن نفسه «Mac» فبنعرفه باللمس): الصورة بتظهر على الشاشة وزرار «حفظ في الصور» —
     // المشاركة لازم تبقى من ضغطة مباشرة (بعد تجهيز الصورة الضغطة الأولى بتكون انتهت، والمتصفح كان بيحفظها ملف في «الملفات»)
-    if (navigator.maxTouchPoints > 1 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) { showImageSheet(blob, file); return; }
+    if (navigator.maxTouchPoints > 1 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) { showImageSheet(canvas.toDataURL('image/png'), file); return; }
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 4000);

@@ -24,8 +24,8 @@ export default function CompleteProfile({ pending }: { pending: PendingProfile }
   const [busy, setBusy] = useState(false);
 
   const clean = name.trim().replace(/\s+/g, ' ');
-  const nameError = !clean ? 'اكتب اسمك الثلاثي.' : nameWords(clean) < 3 ? 'الاسم لازم يكون ثلاثي (الاسم واسم الأب واسم الجد).' : !isArabicName(clean) ? 'اكتب الاسم بحروف عربية.' : '';
-  const genderError = gender ? '' : 'اختار النوع.';
+  const nameError = clean.length < 2 ? 'اكتب اسمك.' : '';
+  const genderError = '';
   const nid = normId(nationalId);
 
   const submit = async (e: React.FormEvent) => {

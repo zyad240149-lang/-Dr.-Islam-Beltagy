@@ -122,8 +122,6 @@ function identityErrors(f: { firstName?: string; fatherName?: string; familyName
   const e: Record<string, string> = {};
   // الاسم بالعربي (هجرة 162 — الخادم بيعتبر الملف «غير مكتمل» لو الاسم مش عربي)
   if (!f.firstName?.trim()) e.firstName = 'أدخل الاسم.';
-  else if (!f.fatherName?.trim() || !f.familyName?.trim()) e.firstName = 'اكتب الاسم ثلاثي (الاسم + الأب + العائلة).';
-  else if (![f.firstName, f.fatherName, f.familyName].every((x) => isArabicName(x ?? ''))) e.firstName = 'اكتب الاسم بالعربي.';
   return e;
 }
 function IdentityFields({ idp, f, set, errors }: { idp: string; f: { firstName?: string; fatherName?: string; familyName?: string; nationality?: string }; set: (k: 'firstName' | 'fatherName' | 'familyName' | 'nationality', v: string) => void; errors: Record<string, string> }) {
@@ -138,7 +136,7 @@ function IdentityFields({ idp, f, set, errors }: { idp: string; f: { firstName?:
         </div>
       </div>
       <div style={{ gridColumn: '1 / -1' }}>
-        <Input id={`${idp}-name`} label="الاسم الثلاثي *" value={name} error={errors.firstName}
+        <Input id={`${idp}-name`} label="الاسم *" value={name} error={errors.firstName}
           onChange={(e) => { const v = e.target.value; setName(v); const p = splitName(v); set('firstName', p.firstName); set('fatherName', p.fatherName); set('familyName', p.familyName); }} />
       </div>
     </>

@@ -8,7 +8,6 @@ import { api } from '../lib/api';
 import { supabase } from '../lib/supabase';
 import { PhoneInput } from '../components/PhoneInput';
 import { Button, Input, PasswordInput, Select } from '../components/ui';
-import { isArabicName, nameWords } from '../utils/patientGaps';
 import { NID_RE, PASSPORT_RE } from '../utils/format';
 import { phoneErrorMessage, type PhoneErrorCode } from '../utils/phoneUtils';
 import { Icon } from '../utils/icons';
@@ -75,8 +74,8 @@ export default function SignUp() {
   const clean = name.trim().replace(/\s+/g, ' ');
   const nid = normId(nationalId);
   const errors = {
-    name: !clean ? 'اكتب اسمك الثلاثي.' : nameWords(clean) < 3 ? 'الاسم لازم يكون ثلاثي (الاسم واسم الأب واسم الجد).' : !isArabicName(clean) ? 'اكتب الاسم بحروف عربية.' : '',
-    gender: gender ? '' : 'اختار النوع.',
+    name: clean.length < 2 ? 'اكتب اسمك.' : '',
+    gender: '',
     password: password.length < 6 ? 'كلمة المرور 6 خانات على الأقل.' : '',
     confirm: confirm !== password ? 'كلمتا المرور غير متطابقتين.' : '',
     nationalId: !askId ? '' : !nid ? 'اكتب الرقم القومي المسجّل في ملفك.' : !NID_RE.test(nid) && !PASSPORT_RE.test(nid) ? 'الرقم القومي 14 رقم (أو رقم جواز السفر لغير المصريين).' : '',

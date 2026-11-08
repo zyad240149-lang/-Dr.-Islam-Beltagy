@@ -1,4 +1,4 @@
-import { ARABIC_NAME_ERROR, isArabicName, nameWords } from '../../utils/patientGaps';
+import { isArabicName } from '../../utils/patientGaps';
 import { PAY_STATE, payStateOf, type InstallmentRequest } from '../../data/installments';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -149,7 +149,7 @@ function DoctorSlotsView({ res, time, onPick, own }: { res: SlotsState; time: st
 
 const BOOK_STEPS = ['الدكتور', 'الخدمة', 'الموعد', 'التأكيد'];
 
-const nameOk = (s: string) => nameWords(s) >= 3 && isArabicName(s); // ثلاثي وبالعربي — نفس الخادم (هجرة 162)
+const nameOk = (s: string) => (s ?? '').trim().length >= 2; // ٨/١١: أي اسم كفاية
 
 export function PatientBook() {
   const toast = useToast();
@@ -207,7 +207,7 @@ export function PatientBook() {
   const submit = async () => {
     if (!doctor) { toast.error('يرجى اختيار الدكتور أولًا'); setStep(0); return; }
     if (!service || !date || !time) { toast.error('أكمل اختيار الخدمة والتاريخ والوقت.'); return; }
-    if (needName && !nameOk(name)) { toast.error(ARABIC_NAME_ERROR); return; }
+    if (needName && !nameOk(name)) { toast.error('اكتب اسمك'); return; }
     setBusy(true);
     try {
       if (needName) { await patientApi.updateProfile({ fullName: name.trim().replace(/\s+/g, ' ') }); me.reload(); }
@@ -436,7 +436,7 @@ function ProfileModal({ p, onClose, onDone }: { p: any; onClose: () => void; onD
   const [busy, setBusy] = useState(false);
   const set = (k: keyof typeof f, v: string) => setF((x) => ({ ...x, [k]: v }));
   const submit = async () => {
-    if (!nameOk(f.fullName)) { toast.error(ARABIC_NAME_ERROR); return; }
+    if (!nameOk(f.fullName)) { toast.error('اكتب اسمك'); return; }
     if (f.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) { toast.error('البريد الإلكتروني غير صحيح.'); return; }
     setBusy(true);
     try { await patientApi.updateProfile(f); toast.success('تم حفظ البيانات بنجاح.'); onDone(); onClose(); } catch (e) { toast.error((e as Error).message); } finally { setBusy(false); }

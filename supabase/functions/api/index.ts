@@ -162,13 +162,13 @@ Deno.serve(async (req) => {
     const ph = checkPhone(b.phone, b.country);
     const email = String(b.email ?? "").trim().toLowerCase();
     const password = String(b.password ?? "");
-    if (name.split(" ").filter(Boolean).length < 3 || !ARABIC_NAME.test(name)) return json({ error: "اكتب اسمك الثلاثي بالعربي (الاسم واسم الأب واسم الجد) — بحروف عربية فقط" }, 400);
+    if (name.trim().length < 2) return json({ error: "اكتب اسمك" }, 400);
     if ("error" in ph) return json({ error: ph.error }, 400);
     const phone = ph.e164;
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ error: "البريد الإلكتروني غير صحيح" }, 400);
     if (password.length < 6) return json({ error: "كلمة المرور لازم ما تقل عن 6 خانات" }, 400);
     if (b.confirm !== undefined && b.confirm !== password) return json({ error: "كلمتا المرور غير متطابقتين" }, 400);
-    if (b.gender !== "male" && b.gender !== "female") return json({ error: "اختار النوع: ذكر أو أنثى" }, 400);
+    if (b.gender !== "male" && b.gender !== "female") b.gender = null; // ٨/١١: النوع اختياري
     // حد عام (10 حسابات في الدقيقة للموقع كله) + حد لكل جهاز/شبكة (5 حسابات في الساعة) — ضد إغراق النظام بحسابات وهمية
     const { count } = await admin.from("customers").select("id", { count: "exact", head: true }).gte("member_since", new Date(Date.now() - 60_000).toISOString());
     if ((count ?? 0) >= 10) return json({ error: "محاولات كثيرة، حاول بعد قليل" }, 429);
@@ -224,7 +224,7 @@ Deno.serve(async (req) => {
     const ph = checkPhone(b.phone, b.country);
     if ("error" in ph) return json({ error: ph.error }, 400);
     const phone = ph.e164;
-    if (b.gender !== "male" && b.gender !== "female") return json({ error: "اختار النوع: ذكر أو أنثى" }, 400);
+    if (b.gender !== "male" && b.gender !== "female") b.gender = null; // ٨/١١: النوع اختياري
     // الاسم اللي المريض كتبه (ثلاثي)؛ اسم جوجل يتقبل لوحده بس لو هو نفسه ثلاثي — والتحقق النهائي في register_customer
     const googleName = String(authData.user.user_metadata?.full_name ?? authData.user.user_metadata?.name ?? "").trim().replace(/\s+/g, " ");
     const name = String(b.name ?? "").trim().replace(/\s+/g, " ") || googleName;

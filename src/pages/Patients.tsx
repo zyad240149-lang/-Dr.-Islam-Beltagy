@@ -122,9 +122,7 @@ function PatientsList({ tabs }: { tabs: ReactNode }) {
         <FilterBar>
           <Input id="pt-q" label="بحث" icon="search" placeholder="الاسم أو الجوال أو رقم الملف أو الهوية" value={q} onChange={(e) => setQ(e.target.value)} />
           {can('pt_f_gender') && <Select id="pt-g" label="الجنس" value={gender} onChange={(e) => setF(setGender)(e.target.value)} options={[{ value: '', label: 'الكل' }, { value: 'male', label: 'رجل' }, { value: 'female', label: 'امرأة' }]} />}
-          {can('pt_f_source') && <Select id="pt-s" label="مصدر المعرفة" value={source} onChange={(e) => setF(setSource)(e.target.value)} options={[{ value: '', label: 'الكل' }, ...Object.entries(REFERRAL_SOURCE_LABEL).map(([value, label]) => ({ value, label }))]} />}
-          {can('pt_f_doctor') && <Select id="pt-d" label="الطبيب" value={doctor} onChange={(e) => setF(setDoctor)(e.target.value)} options={[{ value: '', label: 'الكل' }, ...db.allTherapists().map((t) => ({ value: t.id, label: t.name }))]} />}
-          {can('pt_f_status') && <Select id="pt-a" label="الحالة" value={active} onChange={(e) => setF(setActive)(e.target.value)} options={[{ value: '', label: 'الكل' }, { value: 'on', label: 'نشط' }, { value: 'off', label: 'معطّل' }]} />}
+          {/* فلاتر «مصدر المعرفة» و«الطبيب» و«الحالة» اتشالت من الصفحة (٨/١١) */}
           {can('pt_f_sort') && <Select id="pt-o" label="الترتيب" value={sort} onChange={(e) => setF(setSort)(e.target.value)} options={SORTS} />}
           <Select id="pt-gaps" label="بيانات ناقصة" value={gaps} onChange={(e) => setF(setGaps)(e.target.value)} options={[{ value: '', label: 'الكل' }, { value: 'any', label: 'أي نقص في البيانات' }, { value: 'id', label: 'بدون رقم هوية' }, { value: 'phone', label: 'بدون رقم جوال' }, { value: 'name', label: 'اسم غير ثلاثي' }, { value: 'nationality', label: 'جنسية غير مؤكدة' }, { value: 'gender', label: 'الجنس غير محدد' }]} />
         </FilterBar>

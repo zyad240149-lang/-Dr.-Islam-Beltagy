@@ -7,7 +7,7 @@ import { regionById } from '../components/BodyFigure';
 import { Icon } from '../utils/icons';
 import { findCondition } from '../data/bodyRegions';
 import type { DiagnosisRef } from '../types';
-import { fmtDate, fmtDateTime, fmtTime, todayYmd } from '../utils/format';
+import { fmtDate, fmtDateTime, fmtTime, todayYmd, waLink, whatsappNumber } from '../utils/format';
 import { openVisitFor } from './visits';
 import { SHEET_ORDER, SHEET_TAB, TREATMENT, activeSheets, regionSheet, removeSheet, sheetFilled, type SheetId } from './regionSheets';
 import { US_SHEETS, usFilled, usImage } from './ultrasoundSheets';
@@ -18,7 +18,7 @@ import { IMAGING_KIND, IMAGING_STATUS, REGIONS, SIDE, isIncomplete, isUnlinked, 
 import { printRx } from './printRx';
 import { openPrintWindow, printHtml } from '../utils/printDoc';
 import { RequestForms } from './RequestForms';
-import { applyRequestForms, labOthers, requestHtml, saveRequestImage } from './requestData';
+import { applyRequestForms, labOthers, requestHtml, requestText, saveRequestImage } from './requestData';
 import { DiagnosisOutput } from './DiagnosisOutput';
 import { InjectionList, InjectionModal } from './Injections';
 import { PatientMedicalFiles } from './PatientMedicalFiles';
@@ -472,6 +472,14 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
               onPrint={async (kind) => {
                 const win = openPrintWindow();
                 if (await saveReq()) void printHtml(requestHtml(kind, sheet, patientOf(), c.date), win); else win?.close();
+              }}
+              onWhatsapp={async (kind) => {
+                // التابة بتتفتح وقت الضغطة (وإلا المتصفح يحجبها)، وبعد الحفظ بتروح لمحادثة المريض بالطلب مكتوب
+                const win = window.open('', '_blank');
+                if (!(await saveReq())) { win?.close(); return; }
+                const pt = c.patientId ? db.patient(c.patientId) : null;
+                const url = waLink(pt ? whatsappNumber(pt) : (pendingInfo.phone ?? ''), requestText(kind, sheet, patientOf(), c.date));
+                if (win && !win.closed) win.location.href = url; else window.location.href = url;
               }}
               onImage={async (kind) => {
                 if (!(await saveReq())) return;

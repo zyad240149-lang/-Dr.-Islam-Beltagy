@@ -63,6 +63,24 @@ export function applyRequestForms<T extends { imagingRequests: ImagingRequest[];
   };
 }
 
+/** نص رسالة واتساب للمريض: المطلوب بالإنجليزي */
+export function requestText(kind: 'rad' | 'lab', s: ExamSheet, p: { fullName?: string } | null | undefined, date: string): string {
+  const head = [`د. إسلام جمعة بلتاجي — Dr. Islam Gomaa Beltagy`, kind === 'rad' ? 'طلب أشعة — Radiology Request' : 'طلب تحاليل — Laboratory Request',
+    p?.fullName ? `Patient: ${p.fullName}` : '', `Date: ${date.split('-').reverse().join('/')}`].filter(Boolean);
+  const body: string[] = [];
+  if (kind === 'rad') {
+    body.push(`Requested: ${radTypes(s).map(([l]) => l).join(', ')}`);
+    if (radSide(s)) body.push(`Side: ${radSide(s)}`);
+    if (radRegions(s).length) body.push(`Region: ${radRegions(s).join(', ')}`);
+    if (tx(s, 'rr.ind')) body.push(`Clinical Indication: ${tx(s, 'rr.ind')}`);
+  } else {
+    for (const g of LAB_REQ_GROUPS) { const xs = g.items.filter((i) => on(s, 'lr', i)); if (xs.length) body.push(`• ${g.en}: ${xs.join(', ')}`); }
+    if (labOthers(s).length) body.push(`• Others: ${labOthers(s).join(', ')}`);
+    if (tx(s, 'lr.notes')) body.push(`Clinical Notes: ${tx(s, 'lr.notes')}`);
+  }
+  return [...head, '', ...body].join('\n');
+}
+
 // ---------- الطباعة والصورة ----------
 const esc = (v: unknown) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 export interface ReqPatient { fullName: string; fileNo?: string | null; birthDate?: string | null }

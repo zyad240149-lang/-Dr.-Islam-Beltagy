@@ -18,9 +18,9 @@ function Card({ icon, title, en, children, actions }: { icon: string; title: str
   );
 }
 
-export function RequestForms({ sheet, onChange, busy, disabled, onSave, onPrint, onImage }: {
+export function RequestForms({ sheet, onChange, busy, disabled, onSave, onPrint, onImage, onWhatsapp }: {
   sheet: ExamSheet; onChange: (f: (s: ExamSheet) => ExamSheet) => void; busy: boolean; disabled: boolean;
-  onSave: () => void; onPrint: Act; onImage: Act;
+  onSave: () => void; onPrint: Act; onImage: Act; onWhatsapp: Act;
 }) {
   const a = sheetApi(sheet, onChange);
   const radN = radTypes(sheet).length, labN = labPicked(sheet).length + labOthers(sheet).length;
@@ -29,6 +29,7 @@ export function RequestForms({ sheet, onChange, busy, disabled, onSave, onPrint,
       <Button size="sm" variant="outline" icon="check" loading={busy} disabled={disabled || !n} onClick={onSave}>حفظ</Button>
       <Button size="sm" icon="print" loading={busy} disabled={disabled || !n} onClick={() => onPrint(kind)}>طباعة</Button>
       <Button size="sm" variant="outline" icon="download" loading={busy} disabled={disabled || !n} onClick={() => onImage(kind)}>حفظ كصورة على الجهاز</Button>
+      <Button size="sm" variant="outline" icon="share" loading={busy} disabled={disabled || !n} onClick={() => onWhatsapp(kind)}>إرسال واتساب للمريض</Button>
       {!n && <span className="muted-sm">اختار المطلوب الأول</span>}
     </>
   );

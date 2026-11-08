@@ -1,10 +1,11 @@
 // شاشة «طلب أشعة» و«طلب تحاليل» في تاب «الأشعة والتحاليل» بالكشف — اختيار + حفظ + طباعة + حفظ كصورة
 import { useEffect, type ReactNode } from 'react';
+import { RAD_FORMS, radPicked } from './radDetail';
 import { Button } from '../components/ui';
 import { Icon } from '../utils/icons';
 import type { ExamSheet } from './data';
 import { Checks, Pick, Txt, sheetApi } from './ExamSheet';
-import { LAB_OTHERS, LAB_REQ_GROUPS, RAD_REGIONS, RAD_SIDES, RAD_TYPES, labOthers, labPicked, radTypes } from './requestData';
+import { LAB_OTHERS, LAB_REQ_GROUPS, RAD_REGIONS, RAD_SIDES, RAD_TYPES, labOthers, labPicked, radCount } from './requestData';
 
 type Act = (kind: 'rad' | 'lab') => void;
 
@@ -23,7 +24,7 @@ export function RequestForms({ sheet, onChange, busy, disabled, onSave, onPrint,
   onSave: () => void; onPrint: Act; onImage: Act; onWhatsapp: Act; prepare: Act;
 }) {
   const a = sheetApi(sheet, onChange);
-  const radN = radTypes(sheet).length, labN = labPicked(sheet).length + labOthers(sheet).length;
+  const radN = radCount(sheet), labN = labPicked(sheet).length + labOthers(sheet).length;
   // صورة كل طلب بتتجهز في الخلفية بعد ما الاختيارات تهدى ثانية — عشان «حفظ كصورة» يحفظ في نفس الضغطة
   useEffect(() => {
     if (disabled) return;
@@ -49,6 +50,39 @@ export function RequestForms({ sheet, onChange, busy, disabled, onSave, onPrint,
         <div className="sh-lbl">المنطقة المطلوبة — Body Region</div>
         <div className="rq-grid" dir="ltr"><Checks a={a} g="rr.reg" items={RAD_REGIONS} /></div>
         <Txt a={a} k="rr.reg.other" label="Other region" dir="ltr" />
+        {/* ورق X-Ray / MRI / CT التفصيلي — مقفول، بتفتحه وتعلّم على اللي عاوزه */}
+        {RAD_FORMS.map((f) => {
+          const n = radPicked(sheet, f).count;
+          return (
+            <details key={f.id} className="rq-det">
+              <summary><b>{f.ar}</b> <span dir="ltr">{f.en}</span>{n > 0 && <span className="badge badge--info num">{n}</span>}</summary>
+              <div className="rq-det__b">
+                {f.groups.map((g) => (
+                  <div key={g.en} className="rq-grp">
+                    <div className="rq-grp__t"><b dir="ltr">{g.en}</b><span>{g.ar}</span></div>
+                    <div dir="ltr">
+                      {g.rows?.map(([r, opts]) => (
+                        <div key={r} className="rq-row"><span className="rq-row__n">{r}</span><span className="rq-row__o"><Checks a={a} g={`${f.id}.r.${r}`} items={opts} /></span></div>
+                      ))}
+                      {g.items && <div className="rq-col"><Checks a={a} g={`${f.id}.sp`} items={g.items} /></div>}
+                      {g.items && f.other && <Txt a={a} k={`${f.id}.other`} label="Other Region" dir="ltr" />}
+                    </div>
+                  </div>
+                ))}
+                <div className="rq-grp rq-grp--top">
+                  <div className="rq-grp__t"><b dir="ltr">Additional Details</b><span>تفاصيل إضافية</span></div>
+                  <div dir="ltr" className="rq-ex">
+                    {f.extras.map((x, i) => (
+                      <div key={x.label}><div className="sh-lbl">{x.label}</div>{x.one ? <Pick a={a} g={`${f.id}.x${i}`} items={x.items} /> : <Checks a={a} g={`${f.id}.x${i}`} items={x.items} />}</div>
+                    ))}
+                  </div>
+                </div>
+                <div className="sh-lbl">ملاحظات طبية — Clinical Notes</div>
+                <textarea className="sh-in sh-notes" dir="auto" rows={2} aria-label="Clinical Notes" value={a.txt(`${f.id}.notes`)} onChange={(e) => a.set(`${f.id}.notes`, e.target.value)} />
+              </div>
+            </details>
+          );
+        })}
         <div className="sh-lbl">السبب الطبي / الاشتباه الإكلينيكي — Clinical Indication</div>
         <textarea className="sh-in sh-notes" dir="auto" rows={2} aria-label="Clinical Indication" value={a.txt('rr.ind')} onChange={(e) => a.set('rr.ind', e.target.value)} />
       </Card>

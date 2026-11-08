@@ -30,6 +30,21 @@ export const printInvoicePdf = async (invoiceId: string) => {
   f.onload = () => { try { f.contentWindow?.focus(); f.contentWindow?.print(); } catch { window.open(url, '_blank', 'noopener'); } setTimeout(() => { f.remove(); URL.revokeObjectURL(url); }, 60_000); };
   document.body.appendChild(f);
 };
+/** ٩/١١: تنزيل على الجهاز — على الموبايل (أندرويد/آيفون) بيفتح قايمة «حفظ/مشاركة» بتاعة الجهاز (زي التشخيص)، وعلى الكمبيوتر تحميل عادي */
+export const saveInvoiceToDevice = async (invoiceId: string): Promise<'shared' | 'downloaded' | 'cancelled'> => {
+  const { buildInvoicePdf } = await import('../pages/Invoices');
+  const inv = db.invoice(invoiceId);
+  const file = new File([await buildInvoicePdf(invoiceId)], `${inv?.no ?? 'invoice'}.pdf`, { type: 'application/pdf' });
+  if (isMobile && canShareFiles() && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: `فاتورة ${inv?.no ?? ''}` }); return 'shared'; }
+    catch (e) { if ((e as DOMException).name === 'AbortError') return 'cancelled'; }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(file); a.download = file.name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 60_000);
+  return 'downloaded';
+};
 export const downloadPdf = async (invoiceId: string) => { const { downloadInvoicePdf } = await import('../pages/Invoices'); await downloadInvoicePdf(invoiceId); };
 
 // إدخال رقم WhatsApp لمرة واحدة (مريض من غير رقم/رقم غير صالح) — مابيتحفظش في Contacts، والحفظ في ملف المريض اختياري وبصلاحياته

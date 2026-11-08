@@ -7,7 +7,7 @@ import { useToast } from '../hooks/useToast';
 import { money } from '../utils/format';
 import { Button } from './ui';
 import { Icon } from '../utils/icons';
-import { InvoiceFileButtons, InvoiceWhatsappButton } from './InvoiceActions';
+import { InvoiceWhatsappButton, printInvoicePdf, saveInvoiceToDevice } from './InvoiceActions';
 
 type Item = { id: string; description: string; amount: number; service_id: string | null };
 
@@ -18,6 +18,16 @@ export default function ExtraServices({ appointmentId }: { appointmentId: string
   const [items, setItems] = useState<Item[] | null>(null);
   const [pick, setPick] = useState('');
   const [busy, setBusy] = useState(false);
+  const [fileBusy, setFileBusy] = useState<'' | 'print' | 'save'>('');
+  const file = async (kind: 'print' | 'save') => {
+    if (!inv) return;
+    setFileBusy(kind);
+    try {
+      if (kind === 'print') await printInvoicePdf(inv.id);
+      else { const r = await saveInvoiceToDevice(inv.id); if (r === 'downloaded') toast.success('اتنزّلت الفاتورة على الجهاز.'); }
+    } catch (e) { toast.error((e as Error).message || 'تعذّر إنشاء ملف PDF.'); }
+    finally { setFileBusy(''); }
+  };
   const load = async () => {
     if (!inv) return;
     const { data } = await supabase.from('invoice_items').select('id, description, amount, service_id').eq('invoice_id', inv.id).order('id');
@@ -49,7 +59,16 @@ export default function ExtraServices({ appointmentId }: { appointmentId: string
         ))}
       </ul>
       <div className="xsvc__total"><span>الإجمالي</span><b className="num">{money(inv.total)}</b>{inv.paid > 0 && <span className="muted-sm">مدفوع {money(inv.paid)} · باقي {money(inv.remaining)}</span>}</div>
-      <div className="xsvc__files"><InvoiceFileButtons invoice={inv} size="sm" /><InvoiceWhatsappButton invoice={inv} size="sm" variant="outline" /></div>
+      {/* ٩/١١: نفس شكل «طباعة وإرسال» في التشخيص */}
+      <div className="out-actions xsvc__out">
+        <button type="button" className="out-act" disabled={!!fileBusy} onClick={() => void file('print')}>
+          <Icon name="print" size={22} /><b>{fileBusy === 'print' ? 'بيتجهّز…' : 'طباعة'}</b><small>على الطابعة على طول</small>
+        </button>
+        <button type="button" className="out-act" disabled={!!fileBusy} onClick={() => void file('save')}>
+          <Icon name="download" size={22} /><b>{fileBusy === 'save' ? 'بيتجهّز…' : 'تنزيل على الجهاز'}</b><small>أندرويد / آيفون / كمبيوتر</small>
+        </button>
+      </div>
+      <div className="xsvc__files"><InvoiceWhatsappButton invoice={inv} /></div>
       {inv.status !== 'cancelled' && (
         <div className="xsvc__add">
           <select className="input" value={pick} onChange={(e) => setPick(e.target.value)} aria-label="اختار خدمة">

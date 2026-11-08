@@ -15,11 +15,8 @@ type GapInput = Parameters<typeof patientGaps>[0];
 
 // شارة صغيرة جنب اسم المريض في القوائم ونتايج البحث
 export function CompletenessBadge({ patient, full = false }: { patient?: (GapInput & { isGuest?: boolean }) | null; full?: boolean }) {
-  if (!patient) return null;
-  if (patient.isGuest) return <span className="gap-badge" title="اتحجز بالمكالمة — كمّل بيانات المريض لما يوصل">حجز مكالمة — استكمال بيانات</span>;
-  const g = patientGaps(patient);
-  if (!g.length) return <span className="ok-badge" title="بيانات المريض مكتملة">✓ مكتمل</span>;
-  return <span className="gap-badge" title={INCOMPLETE_MESSAGE}>غير مكتمل{full ? `: ${g.join('، ')}` : ''}</span>;
+  void patient; void full;
+  return null; // ٨/١١: مفيش شارة اكتمال بيانات
 }
 
 // زرار «استكمال البيانات» — بيفتح نافذة تعديل ملف المريض نفسه (من غير ملف جديد). بيظهر بس لصلاحية تعديل المرضى
@@ -41,6 +38,7 @@ export function CompleteDataButton({ patientId, size = 'sm', onDone }: { patient
 // التنبيه الكامل (الرسالة الحرفية + الناقص + الزرار) — في تفاصيل الموعد والفاتورة وملف المريض ونافذة التأكيد
 export function IncompleteAlert({ patientId, showComplete = false, style }: { patientId?: string | null; showComplete?: boolean; style?: React.CSSProperties }) {
   useDbVersion();
+  if (patientId !== '__never__') return null; // ٨/١١: مفيش تنبيه استكمال بيانات
   const p = patientId ? db.patient(patientId) : undefined;
   if (!p) return null;
   const g = patientGaps(p);

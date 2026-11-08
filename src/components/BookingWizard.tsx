@@ -176,8 +176,6 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
       <Modal title="تم حجز الموعد" onClose={onClose} footer={
         <>
           <Button variant="outline" onClick={onClose}>إغلاق</Button>
-          {/* حجز مكالمة: لما المريض ييجي تستكمل بياناته — الاستكمال بيحوّله لملف مريض عادي في «المرضى» */}
-          {(callFile !== null || db.patient(result.patientId)?.isGuest) && <Button variant={walkIn ? undefined : 'outline'} icon="edit" onClick={() => setCompleteData(true)}>استكمال بيانات المريض</Button>}
           <Button icon="calendar" variant={walkIn && (callFile !== null || db.patient(result.patientId)?.isGuest) ? 'outline' : undefined} onClick={() => { onClose(); navigate('/appointments'); }}>عرض تفاصيل الموعد</Button>
         </>
       }>
@@ -247,7 +245,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
               {/* اختيارين: «بحث عن مريض» (مريض موجود) أو «حجز عن طريق مكالمة» (اسم + جوال) */}
               <div className="svc-tabs" style={{ marginBottom: 14 }}>
                 <button type="button" className={`svc-tab ${mode === 'search' ? 'active' : ''}`} onClick={() => setMode('search')}>بحث عن مريض</button>
-                <button type="button" className={`svc-tab ${mode === 'call' ? 'active' : ''}`} onClick={() => setMode('call')}>حجز عن طريق مكالمة</button>
+                <button type="button" className={`svc-tab ${mode === 'call' ? 'active' : ''}`} onClick={() => setMode('call')}>مريض جديد</button>
               </div>
               {mode === 'search' ? (
                 <>
@@ -273,14 +271,14 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
                         const digits = q.replace(/\D/g, '');
                         setNp((x) => (digits.length >= 9 && digits.length >= q.replace(/\s/g, '').length - 1 ? { ...x, phone: q } : { ...x, fullName: q }));
                         setMode('call');
-                      }}>{queryResults.length ? 'مش في القايمة؟ حجز عن طريق مكالمة' : 'حجز عن طريق مكالمة'}</Button>
+                      }}>{queryResults.length ? 'مش في القايمة؟ مريض جديد' : 'مريض جديد'}</Button>
                     </div>
                   )}
                 </>
               ) : (
                 <>
                   <div className="alert alert-info" style={{ marginBottom: 14 }}>
-                    <Icon name="phone" size={17} /><div style={{ flex: 1 }}><strong>حجز موعد عن طريق مكالمة</strong> — اكتب اسم المريض وجواله لإتمام الحجز.</div>
+                    <Icon name="phone" size={17} /><div style={{ flex: 1 }}><strong>مريض جديد</strong> — اكتب اسمه ورقمه بس.</div>
                   </div>
                   <div className="grid-form">
                     <Input label="اسم المريض" placeholder="اسم المريض" value={np.fullName} onChange={(e) => setNp({ ...np, fullName: e.target.value })} />
@@ -300,7 +298,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
                     </div>
                   )}
                   {!existingByPhone && phoneOk && np.fullName.trim() && (
-                    <p className="muted-sm" style={{ marginTop: 8 }}>حجز مكالمة — بيتضاف في «المرضى» برقم ملف باسمه وجواله، ولما ييجي تستكمل باقي بياناته.</p>
+                    <p className="muted-sm" style={{ marginTop: 8 }}>بيتضاف في «المرضى» برقم ملف باسمه ورقمه.</p>
                   )}
                 </>
               )}

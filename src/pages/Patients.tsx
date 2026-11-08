@@ -31,7 +31,7 @@ const SORTS = [
 export default function Patients() {
   const can = useCan();
   const [params, setParams] = useSearchParams();
-  const showOnline = can('online_accounts');
+  const showOnline = false; // ٨/١١: تبويب «حجز مكالمات وحسابات أونلاين» اتشال
   const tab = params.get('tab') === 'online' && showOnline ? 'online' : 'all';
   const go = (t: 'all' | 'online') => setParams(t === 'online' ? { tab: 'online' } : {}, { replace: true });
   const tabs = showOnline ? (
@@ -124,7 +124,6 @@ function PatientsList({ tabs }: { tabs: ReactNode }) {
           {can('pt_f_gender') && <Select id="pt-g" label="الجنس" value={gender} onChange={(e) => setF(setGender)(e.target.value)} options={[{ value: '', label: 'الكل' }, { value: 'male', label: 'رجل' }, { value: 'female', label: 'امرأة' }]} />}
           {/* فلاتر «مصدر المعرفة» و«الطبيب» و«الحالة» اتشالت من الصفحة (٨/١١) */}
           {can('pt_f_sort') && <Select id="pt-o" label="الترتيب" value={sort} onChange={(e) => setF(setSort)(e.target.value)} options={SORTS} />}
-          <Select id="pt-gaps" label="بيانات ناقصة" value={gaps} onChange={(e) => setF(setGaps)(e.target.value)} options={[{ value: '', label: 'الكل' }, { value: 'any', label: 'أي نقص في البيانات' }, { value: 'id', label: 'بدون رقم هوية' }, { value: 'phone', label: 'بدون رقم جوال' }, { value: 'name', label: 'اسم غير ثلاثي' }, { value: 'nationality', label: 'جنسية غير مؤكدة' }, { value: 'gender', label: 'الجنس غير محدد' }]} />
         </FilterBar>
         <div className="card__body">
           {error ? <ErrorState onRetry={reload} /> : loading && rows.length === 0 ? <Skeleton h={220} /> : rows.length === 0 ? (

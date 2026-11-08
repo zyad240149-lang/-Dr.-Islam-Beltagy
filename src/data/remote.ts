@@ -25,7 +25,8 @@ export const map = {
     createdAt: ts(r.created_at), lastLogin: r.last_login ? ts(r.last_login) : null, branchId: r.branch_id ?? null, therapistId: r.therapist_id ?? null, jobTitle: r.job_title ?? '', workHours: r.work_hours ?? [], extraPerms: r.extra_perms ?? {}, permOverride: r.perm_override ?? null,
   }),
   patient: (r: any): Patient => ({
-    isGuest: !!r.is_guest, id: r.id, fileNo: String(r.file_no ?? '').replace(/\D/g, '') || r.file_no, fullName: r.full_name, phone: r.phone, nationalId: r.national_id ?? '', birthDate: r.birth_date ?? '',
+    isGuest: false, // ٨/١١: مفيش «حجز مكالمة» — كل المرضى ملفات عادية
+     id: r.id, fileNo: String(r.file_no ?? '').replace(/\D/g, '') || r.file_no, fullName: r.full_name, phone: r.phone, nationalId: r.national_id ?? '', birthDate: r.birth_date ?? '',
     gender: r.gender ?? 'male', genderUnknown: !r.gender, address: r.address ?? '', referralSource: r.referral_source ?? 'other', notes: r.notes ?? '',
     emergencyContactName: r.emergency_contact_name ?? '', emergencyContactPhone: r.emergency_contact_phone ?? '', registeredAt: ts(r.registered_at),
     active: r.active, mainComplaint: r.main_complaint ?? '', diagnosis: r.diagnosis ?? '', medicalHistory: r.medical_history ?? '',

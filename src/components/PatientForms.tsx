@@ -94,9 +94,9 @@ export function EditPatientModal({ patient, onClose }: { patient: Patient; onClo
       {(() => {
         // الناقص لحد دلوقتي (من اللي مكتوب في النموذج) — الملف بيبقى «مكتمل» تلقائيًا أول ما الحقول دي تتملى صح وتتحفظ
         const g = patientGaps({ fullName: joinName(f), phone: f.phone, nationalId: f.nationalId, nationality: f.nationality, nationalityUnconfirmed: false, genderUnknown: !f.gender });
-        return g.length
+        return false && g.length
           ? <div className="alert alert-warn" style={{ marginBottom: 12 }}><div>ليصبح الملف <strong>مكتمل</strong> (ليتسنى تأكيد الموعد واعتماد الفاتورة): {g.join('، ')}.</div></div>
-          : <div className="alert alert-ok" style={{ marginBottom: 12 }}><div>✓ البيانات الإلزامية كاملة — بعد الحفظ ستصبح حالة الملف «مكتمل».</div></div>;
+          : null;
       })()}
       <div className="form-section">
         <div className="form-section-title">البيانات الأساسية</div>

@@ -1915,11 +1915,36 @@ button.wa-link { border: 0; cursor: pointer; font-family: inherit; }
 .choice--big.selected { border-width: 2px; }
 
 /* ٨/١١: جدول اليوم في المتابعات — سطور صغيرة */
-.fu-slots { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.fu-slot { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); min-height: 48px; }
-.fu-slot--free { background: transparent; border-style: dashed; }
-.fu-slot__t { width: 64px; flex: none; font-size: 14px; }
-.fu-slot__who { flex: 1; min-width: 0; text-align: start; display: flex; flex-direction: column; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fu-slot__who small { font-weight: 400; overflow: hidden; text-overflow: ellipsis; }
-.fu-slot .btn { flex: none; }
-button.fu-slot__who { border: 0; background: none; padding: 0; font: inherit; font-weight: 600; color: inherit; cursor: pointer; }
+.dsch { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.dsch__row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); min-height: 48px; }
+.dsch__row--free { background: transparent; border-style: dashed; }
+.dsch__t { width: 64px; flex: none; font-size: 14px; }
+.dsch__who { flex: 1; min-width: 0; text-align: start; display: flex; flex-direction: column; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dsch__who small { font-weight: 400; overflow: hidden; text-overflow: ellipsis; }
+.dsch__row .btn { flex: none; }
+button.dsch__who { border: 0; background: none; padding: 0; font: inherit; font-weight: 600; color: inherit; cursor: pointer; }
+
+/* ٨/١١: جداول الموبايل — كل صف كارت، وكل خانة سطر «العنوان: القيمة»، من غير سكرول لجنب */
+@media screen and (max-width: 640px) {
+  .table-wrap { overflow-x: visible; }
+  .table-wrap .table { min-width: 0; }
+  .table, .table tbody, .table tr, .table td { display: block; width: 100%; }
+  .table thead { display: none; }
+  .table tr { border: 1px solid var(--line); border-radius: 12px; padding: 6px 12px; margin-bottom: 10px; background: var(--surface); }
+  .table td { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 0; border: 0; border-bottom: 1px solid var(--line-2, var(--line)); text-align: start; min-width: 0; overflow-wrap: anywhere; }
+  .table td:last-child { border-bottom: 0; }
+  .table td[data-label]:not([data-label=""])::before { content: attr(data-label); flex: none; max-width: 45%; color: var(--muted); font-size: 13px; font-weight: 600; }
+  .table td > * { min-width: 0; }
+  .table td.actions { width: 100%; white-space: normal; justify-content: flex-start; flex-wrap: wrap; }
+  .table td.actions .row-actions, .table td.actions > div { flex: 1 1 100%; flex-wrap: wrap; justify-content: flex-start; min-width: 0; }
+  .table td.actions .btn { max-width: 100%; white-space: normal; }
+  .tabs { flex-wrap: wrap; overflow-x: visible; }
+  .row-between { flex-wrap: wrap; }
+  .table td:empty { display: none; }
+  .table tfoot { display: block; }
+  .page-head > div:first-child { min-width: 0; }
+}
+/* اسم المريض واضح في جدول اليوم */
+.dsch__row:not(.dsch__row--free) { border-color: var(--brand); border-inline-start-width: 4px; }
+button.dsch__who { font-size: 16px; font-weight: 700; color: var(--brand-700); white-space: normal; }
+button.dsch__who small { white-space: nowrap; font-size: 12.5px; color: var(--muted); }

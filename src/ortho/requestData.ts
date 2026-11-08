@@ -5,7 +5,7 @@ import { DOCTOR, PLACES } from '../landing/content';
 import { fileNoText } from '../utils/phoneUtils';
 import { fmtDate } from '../utils/format';
 import type { ExamSheet, ImagingKind, ImagingRequest } from './data';
-import { RAD_DETAIL_REGIONS, RAD_FORMS, radDetailCount, radDetailRequests, radPicked } from './radDetail';
+import { RAD_DETAIL_REGIONS, RAD_FORMS, RAD_GROUP_PREFIXES, radDetailCount, radDetailRequests, radPicked } from './radDetail';
 
 /** عدد اللي اتعلّم في طلب الأشعة كله (الأنواع السريعة + ورق X-Ray / MRI / CT) */
 export const radCount = (s: ExamSheet) => radTypes(s).length + radDetailCount(s);
@@ -64,7 +64,7 @@ export function applyRequestForms<T extends { imagingRequests: ImagingRequest[];
   const drop = new Set(prevOthers);
   return {
     ...x,
-    imagingRequests: [...x.imagingRequests.filter((r) => !RAD_VIEWS.has(r.view) && !(RAD_DETAIL_REGIONS.has(r.region) && ['xray', 'mri', 'ct'].includes(r.kind))), ...radRequests(s), ...radDetailRequests(s)],
+    imagingRequests: [...x.imagingRequests.filter((r) => !RAD_VIEWS.has(r.view) && !(['xray', 'mri', 'ct', 'dexa'].includes(r.kind) && (RAD_DETAIL_REGIONS.has(r.region) || RAD_GROUP_PREFIXES.some((x) => r.region.startsWith(x))))), ...radRequests(s), ...radDetailRequests(s)],
     labs: [...new Set([...x.labs.filter((l) => !LAB_REQ_ALL.has(l) && !drop.has(l)), ...labPicked(s), ...labOthers(s)])],
   };
 }
@@ -139,7 +139,7 @@ export function requestPageHtml(kind: 'rad' | 'lab', s: ExamSheet, p: ReqPatient
         const p = radPicked(s, f);
         if (!p.count && !p.extras.length && !p.notes) return '';
         const rows = p.rows.map(([r, o]) => `<div class="grp"><b>${esc(r)}</b>${chips(o)}</div>`).join('');
-        const items = p.items.length ? chips(p.items) : '';
+        const items = p.groups.map((x) => `<div class="grp"><b>${esc(x.g.en)}</b>${chips([...x.items, ...(x.other ? [`Other: ${x.other}`] : [])])}</div>`).join('');
         const other = p.other ? `<div class="grp"><b>Other Region</b>${chips([p.other])}</div>` : '';
         const ex = p.extras.map(([l, v]) => `<div class="grp"><b>${esc(l)}</b>${chips(v)}</div>`).join('');
         const notes = p.notes ? `<div class="grp"><b>Clinical Notes</b><div class="txt">${esc(p.notes)}</div></div>` : '';

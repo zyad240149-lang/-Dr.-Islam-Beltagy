@@ -3,7 +3,8 @@
 // والنص: «<id>.other» (منطقة أخرى) و«<id>.notes» (ملاحظات طبية). الأسماء بالإنجليزي زي الورقة — وده اللي بيتطبع.
 import type { ExamSheet, ImagingKind, ImagingRequest } from './data';
 
-export interface RadGroup { en: string; ar: string; rows?: [string, string[]][]; items?: string[] }
+// kind: نوع الأشعة لطلبات المجموعة دي لو مختلف عن الورقة (طب نووي: ديكسا / مسح ذري)؛ other: خانة «Other» للمجموعة
+export interface RadGroup { en: string; ar: string; rows?: [string, string[]][]; items?: string[]; kind?: ImagingKind; other?: boolean }
 export interface RadForm { id: string; kind: ImagingKind; en: string; ar: string; groups: RadGroup[]; extras: { label: string; items: string[]; one?: boolean }[]; other?: boolean }
 
 const NC = ['Non-Contrast', 'With Contrast'];
@@ -40,24 +41,37 @@ export const RAD_FORMS: RadForm[] = [
     ],
     extras: [SIDE, { label: 'Study Type', items: ['Routine', 'High Resolution (Bone)', '3D Reconstruction'] }, { label: 'Contrast', items: ['Non-Contrast', 'With IV Contrast'], one: true }],
   },
+  {
+    id: 'nm', kind: 'dexa', en: 'Nuclear & Bone Density Imaging Request', ar: 'طلب فحوصات الطب النووي وكثافة العظام',
+    groups: [
+      { en: 'DEXA — Scan Area', ar: 'قياس كثافة العظام (ديكسا) — منطقة الفحص', kind: 'dexa', items: ['Lumbar Spine (L1 – L4)', 'Hip (Right / Left / Bilateral)', 'Forearm (Distal Radius)', 'Whole Study (Lumbar Spine + Both Hips)'] },
+      { en: 'DEXA — Indication', ar: 'ديكسا — الهدف من الفحص', kind: 'dexa', other: true, items: ['Diagnosis of Osteoporosis', 'Treatment Follow-up', 'Fracture Risk Assessment', 'Before Long-term Steroid Therapy'] },
+      { en: 'Bone Scan (Bone Scintigraphy) — Indication', ar: 'مسح عظمي (مسح ذري للعظام) — الهدف من الفحص', kind: 'xray', other: true, items: ['Suspected Bone Tumor (Primary or Metastasis)', 'Metastatic Work-up', 'Evaluation of Osteomyelitis', 'Assessment of Delayed or Non-union', 'Evaluation of Unexplained Bone Pain', 'Evaluation of Prosthetic Joint Complications (Loosening / Infection)'] },
+    ],
+    extras: [{ label: 'Patient Status', items: ['Pre-operative', 'Post-operative', 'Follow-up'] }, { label: 'Special Notes', items: ['Suspected Prosthetic Joint Infection', 'History of Malignancy', 'Chronic Steroid Use'] }],
+  },
 ];
 
 const has = (s: ExamSheet, g: string, i: string) => s.on.includes(`${g}|${i}`);
 const tx = (s: ExamSheet, k: string) => (s.txt[k] ?? '').trim();
 
-export interface RadPicked { f: RadForm; rows: [string, string[]][]; items: string[]; other: string; extras: [string, string[]][]; notes: string; count: number }
+export interface RadPicked { f: RadForm; rows: [string, string[]][]; items: string[]; groups: { g: RadGroup; items: string[]; other: string }[]; other: string; extras: [string, string[]][]; notes: string; count: number }
+export const groupOtherKey = (f: RadForm, g: RadGroup) => `${f.id}.o.${g.en}`;
 /** اللي اتعلّم في ورقة واحدة */
 export function radPicked(s: ExamSheet, f: RadForm): RadPicked {
   const rows = f.groups.flatMap((g) => g.rows ?? []).map(([r, opts]) => [r, opts.filter((o) => has(s, `${f.id}.r.${r}`, o))] as [string, string[]]).filter(([, o]) => o.length);
-  const items = f.groups.flatMap((g) => (g.items ?? []).filter((i) => has(s, `${f.id}.sp`, i)));
+  const groups = f.groups.filter((g) => g.items).map((g) => ({ g, items: g.items!.filter((i) => has(s, `${f.id}.sp`, i)), other: g.other ? tx(s, groupOtherKey(f, g)) : '' })).filter((x) => x.items.length || x.other);
+  const items = groups.flatMap((x) => x.items);
   const other = f.other ? tx(s, `${f.id}.other`) : '';
   const extras = f.extras.map((x, n) => [x.label, x.items.filter((i) => has(s, `${f.id}.x${n}`, i))] as [string, string[]]).filter(([, v]) => v.length);
-  return { f, rows, items, other, extras, notes: tx(s, `${f.id}.notes`), count: rows.length + items.length + (other ? 1 : 0) };
+  return { f, rows, items, groups, other, extras, notes: tx(s, `${f.id}.notes`), count: rows.length + items.length + groups.filter((x) => x.other).length + (other ? 1 : 0) };
 }
 export const radDetailCount = (s: ExamSheet) => RAD_FORMS.reduce((n, f) => n + radPicked(s, f).count, 0);
 
 /** المناطق/الفحوصات اللي الورق ده بيولّدها — عشان الحفظ يبدّلها من غير ما يلمس الطلبات اللي اتكتبت بإيد */
 export const RAD_DETAIL_REGIONS = new Set(RAD_FORMS.flatMap((f) => f.groups.flatMap((g) => [...(g.rows ?? []).map(([r]) => r), ...(g.items ?? [])])));
+/** طلبات «Other» الخاصة بالمجموعات بتبدأ باسم المجموعة («DEXA — Indication: …») */
+export const RAD_GROUP_PREFIXES = RAD_FORMS.flatMap((f) => f.groups.filter((g) => g.other).map((g) => `${g.en}: `));
 export function radDetailRequests(s: ExamSheet): ImagingRequest[] {
   return RAD_FORMS.flatMap((f) => {
     const p = radPicked(s, f);
@@ -65,7 +79,7 @@ export function radDetailRequests(s: ExamSheet): ImagingRequest[] {
     const sfx = side ? ` — ${side}` : '';
     return [
       ...p.rows.map(([r, o]) => ({ kind: f.kind, region: r, view: o.join(', ') + sfx })),
-      ...p.items.map((i) => ({ kind: f.kind, region: i, view: side })),
+      ...p.groups.flatMap((x) => [...x.items.map((i) => ({ kind: x.g.kind ?? f.kind, region: i, view: side })), ...(x.other ? [{ kind: x.g.kind ?? f.kind, region: `${x.g.en}: ${x.other}`, view: side }] : [])]),
       ...(p.other ? [{ kind: f.kind, region: p.other, view: side }] : []),
     ];
   });

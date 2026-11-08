@@ -373,13 +373,14 @@ export function fuWhatsappText(f: Pick<FollowUp, 'patientId' | 'date' | 'time' |
 }
 function FuWhatsapp({ f }: { f: FollowUp }) {
   const p = db.patient(f.patientId);
-  const n = p ? whatsappNumber(p) : '';
-  if (!n) return null;
+  // رقم الواتساب المسجّل، ولو مفيش: الموبايل — ولو مفيش خالص واتساب بيفتح ويختار الشخص
+  const n = p ? whatsappNumber(p) || p.phone || '' : '';
   return <a className="btn btn--outline btn--sm" href={waLink(n, fuWhatsappText(f))} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}><Icon name="share" size={14} /> إرسال الموعد واتساب</a>;
 }
 
 export function FollowUpList({ items, onOpen, showPatient }: { items: FollowUp[]; onOpen: (f: FollowUp) => void; showPatient?: boolean }) {
   useDbVersion();
+  const { openVisit } = useDetails();
   const perm = useFuCan();
   const { run, busy } = useRun();
   if (!items.length) return <p className="cx-empty">مفيش مواعيد متابعة.</p>;
@@ -395,6 +396,8 @@ export function FollowUpList({ items, onOpen, showPatient }: { items: FollowUp[]
           {showPatient && <Link to={`/patients/${f.patientId}`} className="fu-item__patient">{patientName(f.patientId)}</Link>}
           <FuBadge f={f} />
           {f.status === 'scheduled' && f.date >= todayYmd() && <FuWhatsapp f={f} />}
+          {/* التفاصيل: الحجز المربوط (تفاصيل الموعد) — ولو مفيش حجز: نافذة المتابعة نفسها */}
+          <Button size="sm" variant="outline" icon="eye" onClick={() => (f.appointmentId && db.appointment(f.appointmentId) ? openVisit(f.appointmentId) : onOpen(f))}>تفاصيل</Button>
           {(() => {
             const a = f.appointmentId ? db.appointment(f.appointmentId) : undefined;
             if (!a) return f.status === 'scheduled' ? <span className="badge">لسه مش في المواعيد</span> : null;

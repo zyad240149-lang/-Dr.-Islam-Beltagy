@@ -1189,6 +1189,15 @@ export const db = {
     const r = await rpc('mark_invoice_sent', { p_invoice: invoiceId }, ['invoices', 'activity']);
     return r.ok ? { ok: true } : r;
   },
+  /** ٨/١١: خدمة إضافية على نفس الفاتورة (جبس/أشعة…) — السعر بيزيد */
+  async addInvoiceService(invoiceId: string, serviceId: string): Promise<Result> {
+    const r = await rpc('invoice_add_service', { p_invoice: invoiceId, p_service: serviceId }, ['invoices', 'appointments', 'activity']);
+    return r.ok ? { ok: true } : r;
+  },
+  async removeInvoiceItem(itemId: string): Promise<Result> {
+    const r = await rpc('invoice_remove_item', { p_item: itemId }, ['invoices', 'appointments', 'activity']);
+    return r.ok ? { ok: true } : r;
+  },
   async setInvoiceName(invoiceId: string, name: string): Promise<Result> {
     const r = await rpc('set_invoice_name', { p_invoice: invoiceId, p_name: name }, ['invoices', 'activity']);
     return r.ok ? { ok: true } : r;

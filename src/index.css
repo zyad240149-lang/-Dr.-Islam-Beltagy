@@ -1948,3 +1948,21 @@ button.dsch__who { border: 0; background: none; padding: 0; font: inherit; font-
 .dsch__row:not(.dsch__row--free) { border-color: var(--brand); border-inline-start-width: 4px; }
 button.dsch__who { font-size: 16px; font-weight: 700; color: var(--brand-700); white-space: normal; }
 button.dsch__who small { white-space: nowrap; font-size: 12.5px; color: var(--muted); }
+
+/* ٨/١١: خدمات الزيارة (فاتورة واحدة) */
+.xsvc { border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin: 0 0 14px; background: var(--surface); }
+.xsvc__head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.xsvc__head .muted-sm { margin-inline-start: auto; }
+.xsvc__list { list-style: none; margin: 0; padding: 0; }
+.xsvc__list li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px dashed var(--line); }
+.xsvc__list li span { flex: 1; min-width: 0; }
+.xsvc__total { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 0 4px; font-size: 16px; }
+.xsvc__total b { font-size: 18px; color: var(--brand-700); }
+.xsvc__add { display: flex; gap: 8px; margin-top: 8px; }
+.xsvc__add .input { flex: 1; min-width: 0; }
+/* ٨/١١: أزرار أسفل النوافذ على الموبايل — اتنين جنب بعض بدل عمود طويل بياكل الشاشة */
+@media screen and (max-width: 640px) {
+  .modal__foot { flex-direction: row; flex-wrap: wrap; gap: 8px; }
+  .modal__foot .btn { width: auto; flex: 1 1 calc(50% - 8px); min-width: 0; padding-inline: 8px; }
+  .modal__foot > div { width: 100%; }
+}

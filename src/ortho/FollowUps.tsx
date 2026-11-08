@@ -1,3 +1,4 @@
+import ExtraServices from '../components/ExtraServices';
 // مواعيد المتابعات (هجرة 929 و933): المتابعة اللي ليها طبيب وساعة بتتربط بسجل حجز واحد في «المواعيد» (appointment_id).
 // حالة التأكيد بتتقرا من الحجز نفسه، والتغييرات بتتنقل في الاتجاهين (تريجر trg_follow_up_sync على الخادم).
 // الحالة المخزنة: scheduled / done / cancelled — «اليوم» و«فائتة» و«قادمة» بتتحسب من التاريخ.
@@ -343,6 +344,7 @@ export function FollowUpModal({ patientId, patientLabel, consultationId, initial
           <select className="input" value={svcId} onChange={(e) => setSvc(e.target.value)}>{services.map((s) => <option key={s.id} value={s.id}>{s.name} — {s.price} ج.م</option>)}</select>
         </Field>
       )}
+      {linked && <ExtraServices appointmentId={linked.id} />}
       {f.doctorId && <DoctorDayPlan doctorId={f.doctorId} date={f.date} exceptId={saved?.id} />}
 
       <div className="grid-form" style={{ marginTop: 12 }}>

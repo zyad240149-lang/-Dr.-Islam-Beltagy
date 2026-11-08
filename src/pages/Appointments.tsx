@@ -1,3 +1,4 @@
+import ExtraServices from '../components/ExtraServices';
 import { CompleteDataButton, CompletenessBadge, IncompleteAlert } from '../components/PatientCompleteness';
 import { needsCompletion } from '../utils/patientGaps';
 import { PendingSyncTag } from '../components/OfflineStatus';
@@ -316,6 +317,7 @@ export function AppointmentDetailModal({ appt, onClose, onOpenPatient, onResched
         <div><dt>الباقة</dt><dd>{pkg ? pkg.name : 'بدون باقة'}</dd></div>
         <div><dt>الخطة العلاجية</dt><dd>{plan ? plan.diagnosis : '—'}</dd></div>
       </dl>
+      {a.status !== 'cancelled' && <ExtraServices appointmentId={a.id} />}
       {canAct && <StatusMenu appt={a} />}
       {doctorModal}
       {a.cancelReason && <div className="alert alert-danger" style={{ marginTop: 14 }}><Icon name="alert" size={16} /><div>سبب الإلغاء: {a.cancelReason}</div></div>}

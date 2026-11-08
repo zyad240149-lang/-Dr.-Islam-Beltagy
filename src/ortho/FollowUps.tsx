@@ -624,6 +624,7 @@ function DaySchedule({ date, follows, filtered, onOpen, onBook }: {
                 {patientName(r.patientId)}
                 <small className="muted-sm" dir="auto">{(appt && db.service(appt.serviceId)?.name) || fu?.reason || (fu ? 'متابعة' : 'حجز')}</small>
               </button>
+              {appt && <Button size="sm" variant="outline" icon="receipt" onClick={() => openVisit(appt.id)}>تفاصيل</Button>}
               {appt && perm.edit && NEEDS_CONFIRM.has(appt.status)
                 ? <Button size="sm" icon="checkCircle" loading={busy} onClick={() => void run(() => db.setAppointmentStatus(appt.id, 'confirmed'), 'اتأكد الموعد في المتابعات والمواعيد')}>تأكيد</Button>
                 : appt ? <ApptBadge a={appt} /> : <FuBadge f={fu!} />}

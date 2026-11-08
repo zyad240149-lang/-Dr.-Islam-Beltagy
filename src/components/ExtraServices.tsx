@@ -7,6 +7,7 @@ import { useToast } from '../hooks/useToast';
 import { money } from '../utils/format';
 import { Button } from './ui';
 import { Icon } from '../utils/icons';
+import { InvoiceFileButtons, InvoiceWhatsappButton } from './InvoiceActions';
 
 type Item = { id: string; description: string; amount: number; service_id: string | null };
 
@@ -48,6 +49,7 @@ export default function ExtraServices({ appointmentId }: { appointmentId: string
         ))}
       </ul>
       <div className="xsvc__total"><span>الإجمالي</span><b className="num">{money(inv.total)}</b>{inv.paid > 0 && <span className="muted-sm">مدفوع {money(inv.paid)} · باقي {money(inv.remaining)}</span>}</div>
+      <div className="xsvc__files"><InvoiceFileButtons invoice={inv} size="sm" /><InvoiceWhatsappButton invoice={inv} size="sm" variant="outline" /></div>
       {inv.status !== 'cancelled' && (
         <div className="xsvc__add">
           <select className="input" value={pick} onChange={(e) => setPick(e.target.value)} aria-label="اختار خدمة">

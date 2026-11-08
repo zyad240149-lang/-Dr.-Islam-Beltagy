@@ -1,3 +1,4 @@
+import ExtraServices from './ExtraServices';
 // نوافذ التفاصيل المترابطة: المريض ← الزيارة ← الخطة العلاجية ← الخدمات ← الفاتورة ← الدفعات ← التقسيط.
 // DetailsProvider في Layout، وأي صفحة تفتح أي تفصيلة بـ useDetails().openPlan(id) / openVisit(id).
 // النافذة المفتوحة بتتبدّل (مش بتتراكب) عشان التنقل بين العناصر المرتبطة يبقى بسيط، وفيه زرار «رجوع».
@@ -305,6 +306,8 @@ function VisitDetailsModal({ apptId, onClose, onBack }: { apptId: string; onClos
         </div>
       )}
 
+      {/* ٩/١١: إضافة خدمة (جبس/أشعة…) على نفس الفاتورة + طباعة/تحميل الفاتورة */}
+      {a.status !== 'cancelled' && <ExtraServices appointmentId={a.id} />}
       <div className="section-title">الفاتورة والدفعات</div>
       <FinanceBlock invoices={invoices} />
 

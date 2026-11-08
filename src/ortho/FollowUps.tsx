@@ -707,7 +707,6 @@ export default function FollowUpsPage({ tabs, pageTitle }: { tabs?: React.ReactN
   return (
     <div className="page">
       <PageHead title={pageTitle ?? "متابعات المرضى"} sub="مواعيد متابعة كل المرضى — نفس سجلات «المواعيد»، والتأكيد من هنا أو من هناك بيظهر في الاتنين">
-        <Button icon="plus" onClick={() => setBookAt({ date: '', time: '' })}>حجز كشف أو متابعة</Button>
       </PageHead>
       {tabs}
       {toConfirm.length > 0 && (
@@ -757,6 +756,8 @@ export default function FollowUpsPage({ tabs, pageTitle }: { tabs?: React.ReactN
                   <button type="button" className="icon-btn" aria-label="التالي" onClick={() => step(1)}><Icon name="chevronLeft" size={18} /></button>
                   <h2 className="fu-cal__title">{title}</h2>
                 </div>
+                {/* ٩/١١: زرار الحجز جنب اليوم */}
+                <Button icon="plus" onClick={() => setBookAt({ date: cursor >= t ? cursor : '', time: '' })}>حجز كشف أو متابعة</Button>
               </div>
               {view === 'month' && (
                 <div className="fu-month" role="grid">

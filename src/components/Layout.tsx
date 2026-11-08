@@ -27,7 +27,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
   { title: 'المرضى والمواعيد', items: [
     { to: '/patients', label: 'المرضى', icon: 'users', area: 'patients' },
     // «حجز موعد» اتشال من القائمة (٨/١١) — الحجز من «المواعيد» وملف المريض
-    { to: '/appointments', label: 'المواعيد', icon: 'calendar', area: 'appointments' },
+    // «المواعيد» اتشالت من القائمة (٩/١١) — الحجز من «المرضى ← حجز كشف ومتابعة»
     { to: '/services', label: 'الخدمات', icon: 'spark', area: 'services' },
   ] },
   { title: 'العظام والكسور', items: [

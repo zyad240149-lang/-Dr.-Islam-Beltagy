@@ -46,6 +46,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
   const [payMethod, setPayMethod] = useState<PaymentMethod>('cash');
   // «المريض موجود» (في العيادة دلوقتي): الموعد بيتحجز النهارده في الوقت اللي تختاره، وحضوره بيتأكد على طول بعد الحجز
   const [walkIn, setWalkIn] = useState(false);
+  const [confirmed, setConfirmed] = useState(false); // ٨/١١: الحجز مؤكد ولا غير مؤكد
   const [completeData, setCompleteData] = useState(false);
   const [callFile, setCallFile] = useState<string | null>(null); // حجز مكالمة: رقم الملف اللي اتعمل للمتصل
   const [result, setResult] = useState<{ id: string; patientId: string; no: string; date: string; time: string; therapist: string } | null>(null);
@@ -161,6 +162,10 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
     if (guest) {
       try { const p = await db.promoteGuest(r.appointment.patientId); setCallFile(p?.fileNo ?? ''); }
       catch (e) { setCallFile(''); toast.error(`تم الحجز، بس إضافته في «المرضى» ما اتعملتش: ${(e as Error).message}`); }
+    }
+    if (!walkIn && confirmed) {
+      try { await db.setAppointmentStatus(r.appointment.id, 'confirmed'); }
+      catch (e) { toast.error(`تم الحجز، بس التأكيد ما اتعملش: ${(e as Error).message}`); }
     }
     // المريض موجود: تأكيد الحضور على طول (نفس «تأكيد» في تفاصيل الموعد)
     if (walkIn) {
@@ -407,6 +412,15 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
       {/* Step 4: review */}
       {step === 4 && (
         <>
+        {!walkIn && (
+          <div className="field" style={{ marginBottom: 14 }}>
+            <label>حالة الحجز</label>
+            <div className="seg" role="radiogroup" aria-label="حالة الحجز">
+              <button type="button" role="radio" aria-checked={confirmed} className={`seg__btn ${confirmed ? 'active' : ''}`} onClick={() => setConfirmed(true)}>مؤكد</button>
+              <button type="button" role="radio" aria-checked={!confirmed} className={`seg__btn ${!confirmed ? 'active' : ''}`} onClick={() => setConfirmed(false)}>غير مؤكد</button>
+            </div>
+          </div>
+        )}
         <dl className="review-list">
           <div><dt>المريض</dt><dd>{patient?.fullName ?? np.fullName}</dd></div>
           <div><dt>الجوال</dt><dd className="num">{patient?.phone ?? np.phone}</dd></div>

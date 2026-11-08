@@ -19,6 +19,7 @@ export function RegionSheetForm({ def, sheet, onChange, side, onSide, icd10, onI
 }) {
   const a = sheetApi(sheet, onChange);
   const k = (x: string) => `${def.prefix}.${x}`;
+  const hasSlot = def.boxes.some((b) => b.f.some((f) => f.t === 'slot' || (f.t === 'cols' && f.cols.some((c) => c.f.some((x) => x.t === 'slot')))));
   const field = (f: Field, i: number): ReactNode => {
     switch (f.t) {
       case 'checks': return (
@@ -101,6 +102,7 @@ export function RegionSheetForm({ def, sheet, onChange, side, onSide, icd10, onI
         </div>
       );
       case 'dxsheet': return <DxSheet key={i} a={a} prefix={def.prefix} id={f.id} />;
+      case 'slot': return <Fragment key={i}>{lastBoxExtra}</Fragment>;
       case 'notes': return <textarea key={i} className="sh-in sh-notes" dir="auto" aria-label="Notes" value={a.txt(k(f.k))} onChange={(e) => a.set(k(f.k), e.target.value)} />;
     }
   };
@@ -110,7 +112,7 @@ export function RegionSheetForm({ def, sheet, onChange, side, onSide, icd10, onI
         {def.boxes.map((b, i) => (
           <Box key={i} n={i + 1} tone={b.tone} wide={b.wide} title={b.tone === 'red' ? <><Icon name="alert" size={15} /> {b.title.replace('⚠ ', '')}</> : b.title}>{b.f.map(field)}
             {boxNeedsNotes(b) && <><div className="sh-lbl">ملاحظات</div><textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt(k(boxNotesKey(b)))} onChange={(e) => a.set(k(boxNotesKey(b)), e.target.value)} /></>}
-            {i === def.boxes.length - 1 && lastBoxExtra}</Box>
+            {i === def.boxes.length - 1 && !hasSlot && lastBoxExtra}</Box>
         ))}
       </div>
     </div>

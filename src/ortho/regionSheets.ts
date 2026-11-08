@@ -21,7 +21,8 @@ export type Field =
   | { t: 'imaging'; k: string; mods: string[] }
   | { t: 'dxmap' }
   | { t: 'dxsheet'; id: DxSheetId }
-  | { t: 'notes'; k: string };
+  | { t: 'notes'; k: string }
+  | { t: 'slot' }; // مكان لحاجة من الشاشة (زي «تحديد موعد متابعة» في الخطة العلاجية)
 export type BoxRole = 'cc' | 'hx' | 'rf' | 'exam' | 'dx' | 'plan' | 'notes';
 export interface BoxDef { title: string; role: BoxRole; tone?: 'red'; wide?: boolean; f: Field[] }
 export interface RegionSheetDef { id: Exclude<SheetId, 'hipknee'> | 'treatment'; prefix: string; tab: string; title: string; boxes: BoxDef[] }
@@ -378,7 +379,8 @@ export const TREATMENT: RegionSheetDef = {
   boxes: [{ title: 'الخطة العلاجية والتعليمات', role: 'plan', wide: true, f: [{ t: 'cols', cols: [
     { title: 'الخطة العلاجية', f: [{ t: 'checks', g: 'tx', items: ['علاج تحفظي', 'أشعة', 'حقن'] }, { t: 'text', k: 'tx.other', label: 'تفاصيل:' }] },
     { title: 'التعليمات', f: [{ t: 'checks', g: 'instr', items: ['راحة نسبية', 'تمارين منزلية', 'علاج طبيعي', 'تجنب مجهود معين'] }, { t: 'text', k: 'instr.other', label: 'تعليمات أخرى:' }] },
-    { title: 'موعد المتابعة', f: [{ t: 'pick', g: 'fu', items: ['أسبوع', 'أسبوعين', 'شهر'], label: 'بعد:' }] },
+    // «بعد أسبوع / أسبوعين / شهر» اتبدلت بتحديد موعد المتابعة نفسه (٨/١١)
+    { title: 'موعد المتابعة', f: [{ t: 'slot' }] },
   ] }] }],
 };
 export const treatmentFilled = (s: ExamSheet) => s.on.some((o) => o.startsWith('tp.')) || Object.entries(s.txt).some(([k, v]) => k.startsWith('tp.') && v.trim());
@@ -456,6 +458,7 @@ export function regionSummary(def: RegionSheetDef, s: ExamSheet, side: Side) {
       case 'ticks': { const v = join(f.rows.flatMap(([r]) => ['Rt', 'Lt'].filter((sd) => has(f.g, `${r} ${sd}`)).map((sd) => `${r} ${sd}`))); return v && `${f.title}: ${v}`; }
       case 'imaging': return join([...f.mods.filter((m) => has(f.k, m) || tx(`${f.k}.${m}`)).map((m) => join([`${m}:`, tx(`${f.k}.${m}`), tx(`${f.k}.${m}.date`) && `(${tx(`${f.k}.${m}.date`)})`], ' ')), tx(`${f.k}.prev`) && `Previous: ${tx(`${f.k}.prev`)}`, tx(`${f.k}.other`)], '; ');
       case 'notes': return tx(f.k);
+      case 'slot': return '';
       case 'dxsheet': return dxSummary(def.prefix, f.id, (g, i) => s.on.includes(`${g}|${i}`), (k) => (s.txt[k] ?? '').trim());
       default: return '';
     }

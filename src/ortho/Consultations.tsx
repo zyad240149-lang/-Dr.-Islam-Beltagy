@@ -454,7 +454,6 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
             lastBoxExtra={
               /* مواعيد المتابعة جوّه مربع الخطة العلاجية (٨/١١): أكتر من موعد للمريض، مربوطة بالتشخيص ده (بتتحفظ مع حفظ الكشف) */
               <div className="sh-treat-fu">
-                <div className="sh-lbl"><Icon name="calendar" size={15} /> تحديد موعد متابعة</div>
                 <FollowUpStep patientId={c.patientId} patientLabel={pendingInfo.name} consultationId={initial?.id} pending={c.pendingFollowUps ?? []} onPending={(p) => set('pendingFollowUps', p)}
                   doctorHint={visitAppt?.therapistId} />
               </div>} /></div>

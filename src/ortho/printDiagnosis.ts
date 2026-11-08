@@ -160,6 +160,7 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
         case 'dxmap': return c.icd10 ? line('ICD-10:', esc(c.icd10)) : '';
         case 'dxsheet': return dxPrint(def.prefix, f.id);
         case 'notes': return compact && !v(K(f.k)) ? '' : `<div class="notes">${v(K(f.k)).replace(/\n/g, '<br>') || '&nbsp;'}</div>`;
+        case 'slot': return ''; // ميعاد المتابعة بيتطبع تحت مربع الخطة (Next visit)
       }
     };
     const img = usImage(def); // تقرير سونار: رسومات التشريح فوق الخانات زي الورقة

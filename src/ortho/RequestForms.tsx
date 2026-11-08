@@ -9,11 +9,15 @@ import { LAB_OTHERS, LAB_REQ_GROUPS, RAD_REGIONS, RAD_SIDES, RAD_TYPES, labOther
 
 type Act = (kind: 'rad' | 'lab') => void;
 
+// طلب أشعة / طلب تحاليل: مفتوح ويتقفل بزرار في العنوان (الأزرار — حفظ / طباعة / صورة / واتساب — ظاهرة دايمًا)
 function Card({ icon, title, en, children, actions }: { icon: string; title: string; en: string; children: ReactNode; actions: ReactNode }) {
+  const [open, setOpen] = useState(true);
   return (
     <section className="rq-card">
-      <header className="rq-card__h"><Icon name={icon} size={18} /><b>{title}</b><span dir="ltr">{en}</span></header>
-      <div className="rq-card__b">{children}</div>
+      <header className="rq-card__h"><Icon name={icon} size={18} /><b>{title}</b><span dir="ltr">{en}</span>
+        <button type="button" className="sh-box__t" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? 'إغلاق' : 'فتح'}</button>
+      </header>
+      {open && <div className="rq-card__b">{children}</div>}
       <div className="rq-card__f">{actions}</div>
     </section>
   );

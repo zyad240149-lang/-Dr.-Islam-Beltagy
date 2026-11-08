@@ -361,11 +361,15 @@ export function sheetApi(s: ExamSheet, onChange: Change) {
 }
 export type Api = ReturnType<typeof sheetApi>;
 
+// كل مربع بيتقفل ويتفتح من زرار في عنوانه (٨/١١) — اللي اتكتب جوّاه بيفضل محفوظ؛ والحالة مش بتتحفظ: أي كشف بيتفتح والمربعات كلها مفتوحة
 export function Box({ n, title, tone, wide, children }: { n: number; title: ReactNode; tone?: 'red'; wide?: boolean; children: ReactNode }) {
+  const [open, setOpen] = useState(true);
   return (
-    <section className={`sh-box${tone ? ' sh-box--red' : ''}${wide ? ' sh-box--wide' : ''}`}>
-      <h3 className="sh-box__h"><span className="sh-box__n">{n}</span>{title}</h3>
-      <div className="sh-box__b">{children}</div>
+    <section className={`sh-box${tone ? ' sh-box--red' : ''}${wide && open ? ' sh-box--wide' : ''}${open ? '' : ' is-closed'}`}>
+      <h3 className="sh-box__h"><span className="sh-box__n">{n}</span>{title}
+        <button type="button" className="sh-box__t" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? 'إغلاق' : 'فتح'}</button>
+      </h3>
+      {open && <div className="sh-box__b">{children}</div>}
     </section>
   );
 }

@@ -1860,7 +1860,7 @@ button.wa-link { border: 0; cursor: pointer; font-family: inherit; }
 .rq-forms { display: grid; gap: 12px; }
 .rq-card { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface); }
 .rq-card__h { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--brand-700); color: #fff; }
-.rq-card__h span { margin-inline-start: auto; opacity: .85; font-size: 13px; }
+.rq-card__h span { opacity: .85; font-size: 13px; }
 .rq-card__b { padding: 10px 12px; }
 .rq-card__f { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 12px; border-top: 1px solid var(--line-2); background: var(--surface-2, #f8fafc); }
 .rq-grid { display: flex; flex-wrap: wrap; gap: 4px 14px; }
@@ -1900,3 +1900,10 @@ button.wa-link { border: 0; cursor: pointer; font-family: inherit; }
 .sh-treat-fu .sh-lbl { display: flex; align-items: center; gap: 6px; }
 
 .rq-row__n .ck, .rq-row__n label { font-weight: 600; }
+
+/* زرار فتح / إغلاق في عنوان مربعات الشيت وطلبات الأشعة والتحاليل */
+.sh-box__t { margin-inline-start: auto; flex: none; font: inherit; font-size: 12.5px; font-weight: 700; padding: 2px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,.55); background: rgba(255,255,255,.15); color: #fff; cursor: pointer; }
+.sh-box__t:hover { background: rgba(255,255,255,.3); }
+.sh-box.is-closed { align-self: start; }
+.rq-card__h span[dir="ltr"] { margin-inline-start: 0; }
+@media print { .sh-box__t { display: none; } }

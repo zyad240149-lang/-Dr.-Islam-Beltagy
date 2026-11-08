@@ -601,42 +601,34 @@ function DaySchedule({ date, follows, filtered, onOpen, onBook }: {
         <span><b className="num">{pending}</b> محتاج تأكيد</span>
         {!filtered && <span><b className="num">{free.size}</b> وقت فاضي</span>}
       </div>
-      <div className="table-wrap">
-        <table className="table fu-sched">
-          <thead><tr><th>الساعة</th><th>المريض</th><th>النوع</th><th>الخدمة / السبب</th><th>الطبيب</th><th>الحالة</th><th className="actions" aria-label="إجراء" /></tr></thead>
-          <tbody>
-            {lines.map(({ r, freeAt }) => {
-              if (!r) {
-                const ids = free.get(freeAt)!;
-                return (
-                  <tr key={`free-${freeAt}`} className="fu-sched__free">
-                    <td className="num">{fmtTime(freeAt)}</td>
-                    <td colSpan={3} className="muted-sm">فاضي</td>
-                    <td className="muted-sm">{ids.map((id) => db.therapist(id)?.name).join('، ')}</td>
-                    <td />
-                    <td className="actions">{perm.book && <Button size="sm" variant="outline" icon="plus" onClick={() => onBook({ date, time: freeAt, doctorId: ids.length === 1 ? ids[0] : undefined })}>حجز</Button>}</td>
-                  </tr>
-                );
-              }
-              const { fu, appt } = r;
-              return (
-                <tr key={r.key}>
-                  <td className="num"><b>{r.time ? fmtTime(r.time) : 'من غير ساعة'}</b></td>
-                  <td>
-                    <button type="button" className="fu-sched__who" onClick={() => (fu ? onOpen(fu) : openVisit(appt!.id))}>{patientName(r.patientId)}</button>
-                    <div className="muted-sm">ملف <span className="num">{patientFile(r.patientId)}</span></div>
-                  </td>
-                  <td><span className={`badge badge--${fu ? 'brand' : 'info'}`}>{fu ? (fu.kind ? FOLLOW_UP_KIND[fu.kind] : 'متابعة') : 'حجز'}</span></td>
-                  <td dir="auto">{(appt && db.service(appt.serviceId)?.name) || fu?.reason || '—'}</td>
-                  <td>{r.doctorId ? db.therapist(r.doctorId)?.name : '—'}</td>
-                  <td>{appt ? <ApptBadge a={appt} /> : <FuBadge f={fu!} />}</td>
-                  <td className="actions">{appt && perm.edit && NEEDS_CONFIRM.has(appt.status) && <Button size="sm" icon="checkCircle" loading={busy} onClick={() => void run(() => db.setAppointmentStatus(appt.id, 'confirmed'), 'اتأكد الموعد في المتابعات والمواعيد')}>تأكيد</Button>}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      {/* ٨/١١: قايمة صغيرة بدل الجدول — سطر لكل ساعة، من غير سكرول لجنب على الموبايل */}
+      <ul className="fu-day">
+        {lines.map(({ r, freeAt }) => {
+          if (!r) {
+            const ids = free.get(freeAt)!;
+            return (
+              <li key={`free-${freeAt}`} className="fu-day__row fu-day__row--free">
+                <span className="fu-day__t num">{fmtTime(freeAt)}</span>
+                <span className="fu-day__who muted-sm">فاضي</span>
+                {perm.book && <Button size="sm" icon="plus" onClick={() => onBook({ date, time: freeAt, doctorId: ids.length === 1 ? ids[0] : undefined })}>حجز</Button>}
+              </li>
+            );
+          }
+          const { fu, appt } = r;
+          return (
+            <li key={r.key} className="fu-day__row">
+              <span className="fu-day__t num"><b>{r.time ? fmtTime(r.time) : '—'}</b></span>
+              <button type="button" className="fu-day__who fu-sched__who" onClick={() => (fu ? onOpen(fu) : openVisit(appt!.id))}>
+                {patientName(r.patientId)}
+                <small className="muted-sm" dir="auto">{(appt && db.service(appt.serviceId)?.name) || fu?.reason || (fu ? 'متابعة' : 'حجز')}</small>
+              </button>
+              {appt && perm.edit && NEEDS_CONFIRM.has(appt.status)
+                ? <Button size="sm" icon="checkCircle" loading={busy} onClick={() => void run(() => db.setAppointmentStatus(appt.id, 'confirmed'), 'اتأكد الموعد في المتابعات والمواعيد')}>تأكيد</Button>
+                : appt ? <ApptBadge a={appt} /> : <FuBadge f={fu!} />}
+            </li>
+          );
+        })}
+      </ul>
     </>
   );
 }

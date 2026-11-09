@@ -38,12 +38,12 @@ export function consultForVisit(a: Appointment, consults: Consultation[]): Consu
     ?? consults.find((c) => unlinkedMatchesVisit(c, a));
 }
 
-/** زيارات النهارده اللي اتعملها حضور كشف أو استشارة — زيارة واحدة لكل مريض (أول زيارة لسه ما اتشخصتش، وإلا آخر زيارة اتشخصت) */
+/** مرضى النهارده: أي زيارة اتعملها حضور (كشف، متابعة، أو أي خدمة) — زيارة واحدة لكل مريض (أول زيارة لسه ما اتشخصتش، وإلا آخر زيارة اتشخصت) */
 export function todaysVisits(): VisitDx[] {
   const consults = ortho.list('consultations');
   const byPatient = new Map<string, VisitDx>();
   const order: VisitState[] = ['incomplete', 'waiting', 'done'];
-  for (const a of db.todayAppointments().filter((x) => ATTENDED.has(x.status) && needsDiagnosis(x)).sort((x, y) => x.time.localeCompare(y.time))) {
+  for (const a of db.todayAppointments().filter((x) => ATTENDED.has(x.status)).sort((x, y) => x.time.localeCompare(y.time))) {
     const consult = consultForVisit(a, consults);
     const state: VisitState = !consult ? 'waiting' : isIncomplete(consult) ? 'incomplete' : 'done';
     const cur = byPatient.get(a.patientId);

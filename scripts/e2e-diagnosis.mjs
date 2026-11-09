@@ -161,7 +161,7 @@ try {
   check('الطبيب اللي سجّل التشخيص اتسجّل (created_by)', newA?.created_by === adminEmp, newA?.created_by);
   await A.page.waitForSelector('.dx-views', { timeout: 10000 });
   check('بعد الحفظ رجع لقايمة «بانتظار التشخيص» و«ب» لسه فيها', await queueRow(A.page, PB).count() === 1);
-  check('مريض «أ» اختفى من «بانتظار التشخيص» بعد الاكتمال', await queueRow(A.page, PA).count() === 0);
+  check('مريض «أ» فاضل في «مرضى النهارده» بعد الاكتمال وزراره «إضافة شيت»', await queueRow(A.page, PA).locator('button', { hasText: 'إضافة شيت' }).count() === 1);
 
   // مريض «ب»: حفظ ناقص ← يفضل «يحتاج استكمال» ← استكمال نفس السجل
   await queueRow(A.page, PB).locator('button', { hasText: 'تشخيص' }).click();
@@ -211,7 +211,7 @@ try {
   const planOn = (await sql(`select sheet->'on' as on from ortho_consultations where id = '${cb[0]?.id}'`))[0]?.on ?? [];
   check('الخطة العلاجية اتحفظت في الشيت (tp.instr)', planOn.includes('tp.instr|تمارين منزلية'), JSON.stringify(planOn));
   await A.page.waitForSelector('.dx-views', { timeout: 10000 });
-  check('مريض «ب» اختفى من الانتظار بعد الاستكمال', await queueRow(A.page, PB).count() === 0);
+  check('مريض «ب» فاضل في «مرضى النهارده» بعد الاستكمال وزراره «إضافة شيت»', await queueRow(A.page, PB).locator('button', { hasText: 'إضافة شيت' }).count() === 1);
   check('«اتشخص النهارده» بيعد المريضين', /اتشخص النهارده\s*[2-9]/.test((await A.page.locator('.card__head', { hasText: 'حضور النهارده' }).textContent()) ?? ''));
 
   section('الواجهة — المرضى اللي اتشخصوا (بحث)');

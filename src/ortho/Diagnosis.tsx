@@ -7,7 +7,7 @@ import { isIncomplete, isUnlinked, ortho, useOrthoVersion, type Consultation } f
 import { LoadState, PageHead, SearchBox, confirmDelete, patientFile, patientName, useClinicalCan, useRun } from './kit';
 import { ConsultModal, DraftCard, LinkBadge, clearConsultDraft, listConsultDrafts } from './Consultations';
 import { DiagnosisTab } from './DiagnosisTab';
-import { newFilesToday, todaysVisits } from './visits';
+import { needsDiagnosis, newFilesToday, todaysVisits } from './visits';
 import { Button, EmptyState, Modal } from '../components/ui';
 import { db } from '../data/db';
 import { useDbVersion } from '../hooks/useDb';
@@ -63,15 +63,22 @@ export default function Diagnosis() {
     setDraftsVersion((v) => v + 1);
   };
 
-  // ---------- بانتظار التشخيص: حضور النهارده + حالة تشخيص الزيارة ----------
+  // ---------- مرضى النهارده: أي مريض حضر لأي خدمة بيفضل ظاهر لحد ما اليوم يخلص، حتى بعد التشخيص ----------
   const visits = todaysVisits();
-  const pending = visits.filter((x) => x.state !== 'done');
-  const doneToday = visits.length - pending.length;
-  const shownInQueue = new Set(pending.map((x) => x.a.patientId));
+  const doneToday = visits.filter((x) => x.state === 'done').length;
+  const lastConsultOf = (id: string) => consults.filter((c) => c.patientId === id && !isUnlinked(c)).sort((a, b) => b.date.localeCompare(a.date))[0];
+  // المتشخص ← «إضافة شيت»: تشخيص الزيارة نفسها، أو لو جاي متابعة/خدمة تانية ومن غير تشخيص النهارده ← آخر تشخيص ليه
+  const sheetTarget = (x: (typeof visits)[number]) => (x.state === 'done' ? x.consult : x.state === 'waiting' && !needsDiagnosis(x.a) ? lastConsultOf(x.a.patientId) : undefined);
+  const shownInQueue = new Set(visits.map((x) => x.a.patientId));
   const newFiles = newFilesToday().filter((p) => !shownInQueue.has(p.id));
   const shownNewFiles = new Set(newFiles.map((p) => p.id));
-  const otherDrafts = drafts.filter((d) => !shownInQueue.has(d.patientId) && !shownNewFiles.has(d.patientId));
-  const otherIncomplete = incomplete.filter((c) => !pending.some((x) => x.consult?.id === c.id));
+  // اتشخصوا النهارده من غير حضور مسجل (ملف جديد مثلًا) — بيفضلوا في القايمة بعد التشخيص
+  const dayConsults = [...consults.filter((c) => c.date === todayYmd() && !isUnlinked(c) && !shownInQueue.has(c.patientId)).sort((a, b) => Number(isIncomplete(a)) - Number(isIncomplete(b)))
+    .reduce((m, c) => m.set(c.patientId, c), new Map<string, Consultation>()).values()];
+  const dayConsultPatients = new Set(dayConsults.map((c) => c.patientId));
+  const waitingCount = visits.filter((x) => x.state !== 'done' && !sheetTarget(x)).length + newFiles.length;
+  const otherDrafts = drafts.filter((d) => !shownInQueue.has(d.patientId) && !shownNewFiles.has(d.patientId) && !dayConsultPatients.has(d.patientId));
+  const otherIncomplete = incomplete.filter((c) => !visits.some((x) => x.consult?.id === c.id) && !dayConsults.some((x) => x.id === c.id));
 
   // ---------- المرضى اللي اتشخصوا: مريض واحد لكل صف، آخر تشخيص أولًا ----------
   const diagnosed = (() => {
@@ -98,7 +105,7 @@ export default function Diagnosis() {
 
   return (
     <div className="page">
-      <PageHead title="تشخيص المريض" sub="المرضى اللي حضروا ومستنيين التشخيص — والبحث في كل المرضى اللي اتشخصوا.">
+      <PageHead title="تشخيص المريض" sub="مرضى النهارده لأي خدمة — والبحث في كل المرضى اللي اتشخصوا.">
         {perm.add && !patientId && <Button icon="plus" onClick={() => setNewFile({ name: '', phone: '' })}>فتح ملف تشخيص جديد</Button>}
       </PageHead>
 
@@ -124,7 +131,7 @@ export default function Diagnosis() {
       {!patientId && (
         <div className="seg dx-views" role="tablist" aria-label="أقسام التشخيص">
           <button type="button" role="tab" aria-selected={view === 'waiting'} className={`seg__btn ${view === 'waiting' ? 'active' : ''}`} onClick={() => setView('waiting')}>
-            مرضى بانتظار التشخيص {pending.length + newFiles.length > 0 && <span className="badge badge--warn num">{pending.length + newFiles.length}</span>}
+            مرضى النهارده {waitingCount > 0 && <span className="badge badge--warn num">{waitingCount}</span>}
           </button>
           <button type="button" role="tab" aria-selected={view === 'done'} className={`seg__btn ${view === 'done' ? 'active' : ''}`} onClick={() => setView('done')}>
             المرضى اللي اتشخصوا {diagnosed.length > 0 && <span className="badge badge--brand num">{diagnosed.length}</span>}
@@ -141,13 +148,13 @@ export default function Diagnosis() {
             </div>
             <div className="card__body">
               <LoadState kind="consultations">
-                {pending.length + newFiles.length === 0
-                  ? (visits.length === 0
-                    ? <EmptyState icon="calendarPlus" title="ما فيه مرضى حضروا أو سجلوا النهارده" text="أول ما مريض يسجل أو الاستقبال يعمل له حضور كشف أو استشارة، هيظهر هنا عشان يتشخّص." />
-                    : <EmptyState icon="checkCircle" title="كل المرضى اللي حضروا النهارده اتشخصوا ✓" text="تشخيصاتهم في «المرضى اللي اتشخصوا»." />)
+                {visits.length + newFiles.length + dayConsults.length === 0
+                  ? <EmptyState icon="calendarPlus" title="ما فيه مرضى حضروا أو سجلوا النهارده" text="أول ما مريض يسجل أو الاستقبال يعمل له حضور لأي خدمة، هيظهر هنا لحد آخر اليوم." />
                   : (
                     <div className="dx-queue">
-                      {pending.map(({ a, consult, state }) => {
+                      {visits.map((x) => {
+                        const { a, consult, state } = x;
+                        const target = sheetTarget(x);
                         const p = db.patient(a.patientId);
                         const local = drafts.find((d) => d.patientId === a.patientId && (!d.appointmentId || d.appointmentId === a.id));
                         const doctor = db.therapist(a.therapistId)?.name;
@@ -163,13 +170,14 @@ export default function Diagnosis() {
                             </div>
                             {state === 'incomplete' ? <span className="badge badge--warn">يحتاج استكمال</span>
                               : local ? <span className="badge badge--warn">لم يكتمل</span>
+                              : state === 'done' ? <span className="badge badge--ok">اتشخص</span>
                               : <span className={`badge badge--${APPT_STATUS[a.status].tone}`}>{APPT_STATUS[a.status].label}</span>}
                             <div className="dx-queue__act">
                               {p && whatsappNumber(p) && <WhatsappLink phone={whatsappNumber(p)} patientId={p.id} button />}
-                              {!perm.add ? null
-                                : state === 'incomplete' && consult ? <Button size="sm" icon="refresh" onClick={() => (consult.patientId ? openSaved(consult, true) : setUnlinkedEdit(consult))}>استكمال</Button>
-                                : local ? <Button size="sm" icon="refresh" onClick={() => resumeDraft(a.patientId, true)}>استكمال</Button>
-                                : <Button size="sm" icon="stethoscope" onClick={() => startNew(a.patientId, a.id)}>تشخيص</Button>}
+                              {state === 'incomplete' && consult ? perm.add && <Button size="sm" icon="refresh" onClick={() => (consult.patientId ? openSaved(consult, true) : setUnlinkedEdit(consult))}>استكمال</Button>
+                                : local ? perm.add && <Button size="sm" icon="refresh" onClick={() => resumeDraft(a.patientId, true)}>استكمال</Button>
+                                : target ? perm.edit && <Button size="sm" icon="plus" onClick={() => (target.patientId ? openSaved(target, true) : setUnlinkedEdit(target))}>إضافة شيت</Button>
+                                : perm.add && <Button size="sm" icon="stethoscope" onClick={() => startNew(a.patientId, a.id)}>تشخيص</Button>}
                             </div>
                           </div>
                         );
@@ -193,6 +201,25 @@ export default function Diagnosis() {
                       </div>
                     );
                   })}
+                      {dayConsults.map((c) => {
+                        const p = db.patient(c.patientId);
+                        const local = drafts.find((d) => d.patientId === c.patientId);
+                        return (
+                          <div className="dx-queue__row" key={c.id}>
+                            <span className="dx-queue__time num">{fmtDate(c.date)}</span>
+                            <div className="dx-queue__who">
+                              <b>{patientName(c.patientId)}</b>
+                              <small>{p?.phone && <><bdi dir="ltr" className="num">{p.phone}</bdi> · </>}ملف <span className="num">{patientFile(c.patientId)}</span></small>
+                            </div>
+                            {isIncomplete(c) ? <span className="badge badge--warn">يحتاج استكمال</span> : <span className="badge badge--ok">اتشخص</span>}
+                            <div className="dx-queue__act">
+                              {p && whatsappNumber(p) && <WhatsappLink phone={whatsappNumber(p)} patientId={p.id} button />}
+                              {local ? perm.add && <Button size="sm" icon="refresh" onClick={() => resumeDraft(c.patientId, true)}>استكمال</Button>
+                                : perm.edit && <Button size="sm" icon={isIncomplete(c) ? 'refresh' : 'plus'} onClick={() => openSaved(c, true)}>{isIncomplete(c) ? 'استكمال' : 'إضافة شيت'}</Button>}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
               </LoadState>

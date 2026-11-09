@@ -18,6 +18,10 @@ import { useNavigate } from 'react-router-dom';
 
 const STEPS = ['المريض', 'الخدمة', 'الدكتور', 'التاريخ والوقت']; // ٩/١١: «المراجعة» اتشالت — الحجز من آخر خطوة
 
+// ٩/١١: خدمات قسم «كشف ومتابعة» (الكشوفات + المتابعات بقوا قسم واحد في «الخدمات») — اللي بتظهر في الحجز
+export const EXAM_FOLLOW_CATEGORY = 'كشف ومتابعة';
+export const isExamOrFollowUp = (x: { name: string; category?: string }) => x.category === EXAM_FOLLOW_CATEGORY || x.category === 'الكشوفات' || x.category === 'المتابعات';
+
 export default function BookingWizard({ onClose, presetPatientId, presetServiceId, presetTherapistId, presetDate, presetTime }: { onClose: () => void; presetPatientId?: string; presetServiceId?: string; presetTherapistId?: string; presetDate?: string; presetTime?: string }) {
   useDbVersion(); // يعيد رسم الأوقات فورًا لما حجز/إلغاء يوصل من جهاز تاني
   const toast = useToast();
@@ -76,7 +80,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
   const patient = patientId ? db.patient(patientId) : undefined;
   // لو الحجز من خانة دكتور معيّن: الخدمات اللي يقدّمها هالدكتور بس (تخصيص الخدمة لدكتور)
   // ٨/١١: الحجز بيعرض «كشف» و«متابعة» بس
-  const services = db.services().filter((x) => (x.name.trim() === 'كشف' || /^متابع/.test(x.name.trim()))).filter((x) => !presetTherapistId || therapistId !== presetTherapistId || x.therapistIds.includes(presetTherapistId));
+  const services = db.services().filter(isExamOrFollowUp).filter((x) => !presetTherapistId || therapistId !== presetTherapistId || x.therapistIds.includes(presetTherapistId));
   const service = serviceId ? db.service(serviceId) : undefined;
   const duration = service?.durationMin ?? 15;
   const qualifiedTherapists = serviceId ? db.therapistsForService(serviceId) : [];

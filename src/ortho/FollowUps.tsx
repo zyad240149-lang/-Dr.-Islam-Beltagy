@@ -5,7 +5,7 @@ import ExtraServices from '../components/ExtraServices';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button, EmptyState, Modal } from '../components/ui';
-import BookingWizard from '../components/BookingWizard';
+import BookingWizard, { isExamOrFollowUp } from '../components/BookingWizard';
 import { useCan } from '../components/common';
 import { useDetails } from '../components/DetailsHost';
 import { net } from '../offline/net';
@@ -65,7 +65,9 @@ const NEEDS_CONFIRM = new Set(['new', 'rescheduled']);
 /** الخدمات اللي الطبيب بيقدمها، وخدمات المتابعة الأرخص الأول */
 function followUpServices(doctorId: string) {
   const th = db.therapist(doctorId);
-  const list = db.services().filter((s) => !th || th.serviceIds.includes(s.id));
+  const all = db.services().filter((s) => !th || th.serviceIds.includes(s.id));
+  const exam = all.filter(isExamOrFollowUp); // قسم «كشف ومتابعة» بس (لو الدكتور مالوش خدمات فيه: كل خدماته)
+  const list = exam.length ? exam : all;
   const rank = (name: string) => (/متابع/.test(name) ? 0 : /استشار/.test(name) ? 1 : 2);
   return [...list].sort((a, b) => rank(a.name) - rank(b.name) || a.price - b.price);
 }

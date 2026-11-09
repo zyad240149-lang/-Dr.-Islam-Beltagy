@@ -124,8 +124,11 @@ try {
   const openDoctor = async (page, region) => {
     await page.locator('.sh-tabs button', { hasText: 'كشف الطبيب' }).click();
     await page.locator('.sh-region__pick', { hasText: region }).click();
+    await openBoxes(page);
   };
-  const tick = (page, text) => page.locator('.sh-ck', { hasText: text }).first().locator('input').check();
+  // المربعات بتبدأ مقفولة في الكشف الجديد (٨/١١) — الطبيب بيفتح اللي هيكتب فيه
+  const openBoxes = async (page) => { while (await page.locator('.modal .sh-box.is-closed .sh-box__t').count()) await page.locator('.modal .sh-box.is-closed .sh-box__t').first().click(); };
+  const tick = async (page, text) => { await openBoxes(page); await page.locator('.sh-ck', { hasText: text }).first().locator('input').check(); };
   const saveAnswer = async (page, answer) => {
     await page.locator('.modal__foot button', { hasText: 'حفظ الكشف' }).click();
     if (answer) await page.locator('.modal__foot button', { hasText: answer }).click();
@@ -182,6 +185,7 @@ try {
   await A.page.locator('.sh-region__pick', { hasText: 'الكاحل والقدم' }).click();
   // اختيار منطقتين (الضغط = اختيار حتى من غير ما يتكتب فيها) ← إلغاء واحدة بـ ✕
   await A.page.locator('.sh-region__pick', { hasText: 'الرقبة والكتف' }).click();
+  await openBoxes(A.page);
   if (process.env.REGION_SHOT) await A.page.locator('.modal .modal__body').screenshot({ path: process.env.REGION_SHOT }).catch(() => {});
   check('اختيار منطقتين ← الشيتين مفتوحين مع بعض (الكاحل + الرقبة والكتف)', await A.page.locator('.sh-region.is-on').count() === 2 && await A.page.locator('.sh-stack').count() === 2
     && await A.page.locator('.sh-stack[data-sheet="neckshoulder"] .dxg__pic').count() === 0 && await A.page.locator('.sh-stack[data-sheet="ankle"] .dxg__pic').count() === 7
@@ -196,6 +200,7 @@ try {
   await A.page.locator('.modal .sh-line', { hasText: 'Primary Diagnosis' }).locator('input').fill('Lateral ankle sprain grade II');
   if (process.env.DX_SHOT) await A.page.locator('.modal .dxs').screenshot({ path: process.env.DX_SHOT }).catch(() => {});
   await A.page.locator('.sh-tabs button', { hasText: 'الخطة العلاجية' }).click();
+  await openBoxes(A.page);
   check('تبويب «الخطة العلاجية» فيه الخطة والتعليمات وموعد المتابعة', await A.page.locator('.modal .sh-ck', { hasText: 'علاج تحفظي' }).count() === 1 && await A.page.locator('.modal .sh-ck', { hasText: 'تمارين منزلية' }).count() === 1 && await A.page.locator('.modal', { hasText: 'موعد المتابعة' }).count() === 1);
   await tick(A.page, 'تمارين منزلية');
   await A.page.locator('.sh-tabs button', { hasText: 'الحقن' }).click();

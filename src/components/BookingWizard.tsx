@@ -48,13 +48,17 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
   const [walkIn, setWalkIn] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [extra, setExtra] = useState<{ phone2: string; wa: string; e2: unknown; eWa: unknown }>({ phone2: '', wa: '', e2: null, eWa: null });
   // ٩/١١: مريض جديد من الحجز = ملف عادي في «المرضى» على طول
   const createNew = async () => {
+    if (extra.e2) { toast.error('الرقم التاني مش صحيح'); return; }
+    if (extra.eWa) { toast.error('رقم الواتساب مش صحيح'); return; }
     setCreating(true);
     try {
       const p = await db.createPatient({ nationality: 'saudi', firstName: '', fatherName: '', familyName: '', fullName: np.fullName.trim().replace(/\s+/g, ' '), phone: np.phone, email: '', gender: 'male', genderUnknown: true,
         birthDate: '', nationalId: '', city: '', district: '', street: '', address: '', notes: '', doctorId: null, referralSource: np.referralSource,
-        emergencyContactName: '', emergencyContactPhone: '', mainComplaint: '', diagnosis: '', medicalHistory: '' } as Parameters<typeof db.createPatient>[0]);
+        emergencyContactName: '', emergencyContactPhone: '', mainComplaint: '', diagnosis: '', medicalHistory: '',
+        phone2: extra.phone2, whatsappMode: extra.wa ? 'other' : 'phone', whatsappPhone: extra.wa } as Parameters<typeof db.createPatient>[0]);
       toast.success(`اتعمل ملف للمريض برقم ${p.fileNo}`);
       setPatientId(p.id); setPatientQuery(p.fullName); setMode('search');
     } catch (e) { toast.error((e as Error).message); } finally { setCreating(false); }
@@ -297,6 +301,9 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
                   <div className="grid-form">
                     <Input label="اسم المريض" placeholder="اسم المريض" value={np.fullName} onChange={(e) => setNp({ ...np, fullName: e.target.value })} />
                     <PhoneInput id="bw-np-phone" label="رقم الجوال" value={np.phone} onChange={(v) => setNp((x) => ({ ...x, phone: v }))} />
+                    {/* ٩/١١: رقم تاني ورقم واتساب — اختياري */}
+                    <PhoneInput id="bw-np-phone2" label="رقم تاني (اختياري)" value={extra.phone2} onChange={(v, e) => setExtra((x) => ({ ...x, phone2: v, e2: v ? e : null }))} />
+                    <PhoneInput id="bw-np-wa" label="رقم واتساب (اختياري)" value={extra.wa} onChange={(v, e) => setExtra((x) => ({ ...x, wa: v, eWa: v ? e : null }))} />
                   </div>
                   {existingByPhone && (
                     <div className="alert alert-info" style={{ margin: '10px 0' }}>

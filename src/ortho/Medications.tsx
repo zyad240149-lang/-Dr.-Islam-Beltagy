@@ -82,7 +82,7 @@ function GroupModal({ initialName, meds, toRow, onClose }: { initialName: string
       <Button icon="check" loading={busy} disabled={!target || !picked.size} onClick={save}>حفظ المجموعة</Button>
     </>}>
       <Field label="اسم المجموعة"><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="مثال: روشتة الخشونة" autoFocus /></Field>
-      <div style={{ margin: '12px 0' }}><SearchBox value={q} onChange={setQ} placeholder="ابحث في بنك الأدوية" /></div>
+      <div style={{ margin: '12px 0' }}><SearchBox value={q} onChange={setQ} placeholder="ابحث بالاسم التجاري أو المادة الفعالة" /></div>
       <div style={{ maxHeight: 320, overflowY: 'auto' }}>
         {shown.map((m) => {
           const k = keyOf(m.name);
@@ -151,7 +151,7 @@ export default function Medications() {
         </button>
       </div>
       <section className="card">
-        <div className="filter-bar"><div className="field"><SearchBox value={q} onChange={setQ} placeholder="ابحث باسم الدواء أو المجموعة" /></div></div>
+        <div className="filter-bar"><div className="field"><SearchBox value={q} onChange={setQ} placeholder={view === 'bank' ? 'ابحث بالاسم التجاري أو المادة الفعالة (مثال: diclofenac)' : 'ابحث باسم الدواء أو المجموعة'} /></div></div>
         <div className="card__body">
           <LoadState kind="medications">
             {!list.length && !extra.length && !(view === 'bank' && (bankHits.length || bank.loading)) && <EmptyState icon="search" title={term ? 'مفيش أدوية بالاسم ده' : 'مفيش أدوية ظاهرة قدامك'} text={term ? undefined : 'افتح «بنك الأدوية» وعلّم على اللي عايزه يظهر.'} />}
@@ -183,11 +183,11 @@ export default function Medications() {
             ))}
             {view === 'bank' && (bankHits.length > 0 || bank.failed) && (
               <div style={{ marginTop: 20 }}>
-                <h3 className="ortho-sub" style={{ margin: '0 0 6px', fontWeight: 700 }}>باقي البنك — اكتب اسم الدواء في البحث <span className="num">({bank.total})</span></h3>
+                <h3 className="ortho-sub" style={{ margin: '0 0 6px', fontWeight: 700 }}>باقي البنك — ابحث بالاسم التجاري أو المادة الفعالة <span className="num">({bank.total})</span></h3>
                 {bank.failed && <p className="muted">البحث في البنك محتاج اتصال بالإنترنت.</p>}
                 {bankHits.map((m) => (
                   <div className="item-card ortho-row" key={m.id}>
-                    <div><b dir="ltr">{m.name}</b><div className="ortho-sub">{m.group || '—'}</div></div>
+                    <div><b dir="ltr">{m.name}</b><div className="ortho-sub" dir="ltr" style={{ textAlign: 'start' }}>{[m.scientificName, m.group].filter(Boolean).join(' · ') || '—'}</div></div>
                     <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                       <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                         <input type="checkbox" checked={isShown(m)} disabled={busy || !perm.edit} onChange={() => toggleShown(m)} /> يظهر قدامي

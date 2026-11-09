@@ -66,7 +66,7 @@ export interface InjectionSheet {
 }
 export interface Injection { id: string; patientId: string; appointmentId?: string | null; date: string; sheet: InjectionSheet; createdBy?: string | null }
 // قايمة أسامي الأدوية (قسم «الأدوية» — مش مخزون): اقتراحات الروشتة
-export interface MedItem { id: string; name: string; group: string; dose: string; frequency: string; duration: string; shown: boolean }
+export interface MedItem { id: string; name: string; group: string; dose: string; frequency: string; duration: string; shown: boolean; scientificName?: string }
 // التمرينات العلاجية: مكتبة تمرينات (اسم + وصف + صور/فيديوهات) وخطة تمرينات لكل مريض مربوطة بتشخيصه
 export interface ExerciseMedia { path: string; url: string; type: string; name: string }
 export interface Exercise { id: string; name: string; group: string; description: string; media: ExerciseMedia[] }

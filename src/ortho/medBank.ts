@@ -3,14 +3,16 @@ import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { MedItem } from './data';
 
-const pattern = (term: string) => `%${term.trim().replace(/[\\%_]/g, (c) => `\\${c}`).replace(/\s+/g, '%')}%`;
+// الرموز الخاصة بتتشال عشان تتحط جوّه فلتر or بأمان
+const pattern = (term: string) => `%${term.replace(/["\\%_*]/g, ' ').trim().replace(/\s+/g, '%')}%`;
 
 async function fetchPage(term: string, offset: number, limit: number) {
-  let q = supabase.from('ortho_medications').select('id,name,group,dose,frequency,duration,shown', { count: 'exact' }).order('name').range(offset, offset + limit - 1);
-  if (term.trim()) q = q.ilike('name', pattern(term));
+  let q = supabase.from('ortho_medications').select('id,name,group,dose,frequency,duration,shown,scientific_name', { count: 'exact' }).order('name').range(offset, offset + limit - 1);
+  const p = pattern(term);
+  if (p !== '%%') q = q.or(`name.ilike."${p}",scientific_name.ilike."${p}"`); // بالاسم التجاري أو المادة الفعالة
   const { data, error, count } = await q;
   if (error) throw error;
-  return { rows: (data ?? []) as MedItem[], total: count ?? 0 };
+  return { rows: (data ?? []).map(({ scientific_name, ...r }) => ({ ...r, scientificName: scientific_name })) as MedItem[], total: count ?? 0 };
 }
 
 export function useMedBank(term: string, enabled = true, limit = 50) {

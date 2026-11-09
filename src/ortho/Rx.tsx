@@ -122,7 +122,7 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
   const medsSec = (
     <Section key="meds" icon="receipt" title={rxOnly ? 'الأدوية' : 'العلاج — الروشتة'} aside={<Button size="sm" variant="outline" icon="plus" onClick={() => set('medications', [...c.medications, emptyMed()])}>إضافة دواء</Button>}>
       {/* اختيار من قسم «الأدوية»: ضغطة بتضيف الدواء بجرعته وتكراره ومدته، وضغطة تانية بتشيله */}
-      <input className="input cx-medq" dir="auto" placeholder="ابحث في قايمة الأدوية…" value={medQ} onChange={(e) => setMedQ(e.target.value)} />
+      <input className="input cx-medq" dir="auto" placeholder="ابحث بالاسم التجاري أو المادة الفعالة…" value={medQ} onChange={(e) => setMedQ(e.target.value)} />
       {[...medGroups].map(([g, meds]) => (
         <div className="cx-labgrp" key={g}>
           <span className="cx-labgrp__t">{g}</span>

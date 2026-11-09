@@ -2,8 +2,7 @@
 // بيانات المريض بتتبعت من الشاشة (الإدارة من كاش db، وبوابة المريض من سجله) عشان الملف ده مايسحبش كاش الإدارة كله.
 import { DOCTOR, PLACES } from '../landing/content';
 import { fileNoText } from '../utils/phoneUtils';
-import { fmtDate } from '../utils/format';
-import { IMAGING_KIND, SIDE, type Consultation } from './data';
+import { IMAGING_KIND, type Consultation } from './data';
 import { openPrintWindow, printHtml } from '../utils/printDoc';
 
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
@@ -15,7 +14,7 @@ function ageOf(birth: string) {
   const n = new Date();
   let y = n.getFullYear() - b.getFullYear();
   if (n.getMonth() < b.getMonth() || (n.getMonth() === b.getMonth() && n.getDate() < b.getDate())) y--;
-  return y >= 0 ? `${y} سنة` : '';
+  return y >= 0 ? String(y) : '';
 }
 
 export interface RxPatient { fullName: string; fileNo?: string | null; birthDate?: string | null }
@@ -24,49 +23,58 @@ export interface RxPatient { fullName: string; fileNo?: string | null; birthDate
 const FONT_HREF = 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap';
 
 // ستايل الروشتة متقيّد بـ .rxp عشان تتحط في نفس ملف طباعة التشخيص (printDiagnosis) من غير ما تلخبط ستايل الشيتات.
-// شكل الروشتة: شريط علوي باسم الدكتور واللوجو، وأرقام التواصل، وبيانات المريض، وR/ بالأدوية، والمطلوب من أشعة/سونار وتحاليل، والتوقيع، والعناوين تحت.
+// شكل الروشتة (١٠/١١): هيدر باسم الدكتور إنجليزي وعربي، شريط بيانات المريض، Rx وجدول الأدوية (الاسم/الجرعة/التكرار/المدة/ملاحظات)،
+// موعد الاستشارة، وشريط سفلي بأرقام الحجز والعنوان.
 export const RX_CSS = `
-  .rxp { font-family: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif; color: #10182f; background: #fff; font-size: 13px; line-height: 1.6;
-    -webkit-print-color-adjust: exact; print-color-adjust: exact; display: flex; flex-direction: column; min-height: 180mm; }
+  .rxp { font-family: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif; color: #10182f; background: #fff; font-size: 13px; line-height: 1.55;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact; display: flex; flex-direction: column; min-height: 180mm; position: relative; }
   .rxp .ltr { direction: ltr; text-align: left; unicode-bidi: isolate; }
-  .rxp .top { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; color: #fff;
-    background: linear-gradient(135deg, #1b2a54 0%, #24427a 100%); }
-  .rxp .top img { width: 46px; height: 46px; background: #fff; border-radius: 10px; padding: 4px; flex: none; }
-  .rxp .top .ar { flex: 1; min-width: 0; }
-  .rxp .top h1 { margin: 0; font-size: 19px; font-weight: 700; color: #fff; }
-  .rxp .ttl { text-align: center; font-size: 17px; font-weight: 700; color: #1b2a54; margin: 4px 0 2px; }
-  .rxp .top .t { font-size: 12.5px; opacity: .9; }
-  .rxp .top .en { direction: ltr; text-align: left; font-size: 11.5px; opacity: .92; line-height: 1.45; }
-  .rxp .top .en b { font-size: 13px; }
-  .rxp .tel { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; margin: 6px 0 0; padding: 5px 10px; border-radius: 8px;
-    background: #e6f4f1; color: #0f5f55; font-size: 12px; font-weight: 600; }
-  .rxp .tel span { white-space: nowrap; }
-  .rxp .pt { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: 2px 10px; margin: 10px 0 6px; padding: 7px 10px; border: 1px solid #d7deea; border-radius: 10px; font-size: 12.5px; }
-  .rxp .pt span { color: #64748b; }
-  .rxp .pt b { color: #1b2a54; }
-  .rxp .dx { margin: 4px 0 6px; padding: 6px 10px; border-inline-start: 4px solid #1b2a54; background: #f3f5fa; border-radius: 6px; font-size: 12.5px; white-space: pre-line; }
-  .rxp .rx { font-size: 30px; font-weight: 700; color: #c2410c; font-family: Georgia, "Times New Roman", serif; margin: 6px 0 2px; direction: ltr; text-align: right; }
-  .rxp .li { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; border-bottom: 1px dashed #e2e8f0; }
-  .rxp .li:last-child { border-bottom: 0; }
-  .rxp .li > .n { flex: none; width: 22px; height: 22px; border-radius: 50%; background: #1b2a54; color: #fff; font-size: 11.5px; font-weight: 700; display: grid; place-items: center; }
-  .rxp .li > .b { flex: 1; min-width: 0; }
-  .rxp .med { direction: ltr; text-align: right; unicode-bidi: isolate; font-weight: 700; font-size: 14.5px; color: #10182f; }
-  .rxp .sig { color: #334155; font-size: 12.5px; }
-  .rxp .sig i { color: #64748b; }
-  .rxp .box { margin-top: 10px; border-radius: 10px; padding: 7px 10px; border: 1px solid; }
+  .rxp .wave { height: 12px; border-radius: 0 0 0 60px; background: linear-gradient(90deg, #2bb3b1 0 38%, #1b2a54 38% 100%); }
+  .rxp .top { direction: ltr; display: flex; align-items: center; gap: 12px; padding: 12px 2px 10px; }
+  .rxp .top img { width: 50px; height: 50px; flex: none; }
+  .rxp .top .en { flex: 1; min-width: 0; text-align: left; }
+  .rxp .top .en b { display: block; font-family: Georgia, "Times New Roman", serif; font-size: 19px; color: #1b2a54; line-height: 1.2; }
+  .rxp .top .en span { font-size: 10px; letter-spacing: 1px; color: #334155; }
+  .rxp .top .sep { width: 2px; align-self: stretch; background: #1b2a54; border-radius: 2px; }
+  .rxp .top .ar { flex: 1; min-width: 0; direction: rtl; text-align: center; }
+  .rxp .top .ar h1 { margin: 0; font-size: 21px; font-weight: 700; color: #1b2a54; line-height: 1.3; }
+  .rxp .top .ar .t { font-size: 12.5px; color: #1b2a54; border-bottom: 2px solid #2bb3b1; display: inline-block; padding-bottom: 2px; }
+  .rxp .pt { direction: ltr; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; padding: 8px 14px; border-radius: 12px; background: #e8f0f8; font-size: 12.5px; }
+  .rxp .pt div { display: flex; align-items: baseline; gap: 6px; }
+  .rxp .pt .nm { flex: 1 1 40%; }
+  .rxp .pt span { font-weight: 700; color: #1b2a54; white-space: nowrap; }
+  .rxp .pt b { flex: 1; min-width: 46px; text-align: center; border-bottom: 1px solid #1b2a54; font-weight: 600; padding: 0 6px; unicode-bidi: plaintext; }
+  .rxp .ttl { text-align: center; font-size: 17px; font-weight: 700; color: #1b2a54; margin: 8px 0 0; }
+  .rxp .rx { font-size: 40px; font-weight: 700; font-style: italic; color: #1b2a54; font-family: Georgia, "Times New Roman", serif; margin: 6px auto 0 0; direction: ltr; text-align: left; line-height: 1;
+    border-bottom: 2px solid #2bb3b1; width: 78px; padding-bottom: 2px; }
+  .rxp .mark { position: absolute; left: 50%; top: 52%; width: 62%; transform: translate(-50%, -50%); opacity: .06; z-index: 0; pointer-events: none; }
+  .rxp .body { position: relative; z-index: 1; }
+  .rxp table.meds { direction: ltr; width: 100%; border-collapse: collapse; margin-top: 6px; table-layout: fixed; }
+  .rxp table.meds th { font-size: 12px; font-weight: 700; color: #1b2a54; padding: 4px 4px 8px; text-align: center; }
+  .rxp table.meds td { padding: 7px 4px; vertical-align: top; text-align: center; font-size: 12.5px; font-weight: 600; unicode-bidi: plaintext; overflow-wrap: anywhere; }
+  .rxp table.meds .n { width: 22px; text-align: left; font-weight: 700; }
+  .rxp table.meds .nm { width: 42%; text-align: left; }
+  .rxp table.meds td.nm { font-weight: 700; font-size: 13px; text-transform: uppercase; direction: ltr; }
+  .rxp .box { margin-top: 10px; border-radius: 10px; padding: 7px 10px; border: 1px solid; position: relative; z-index: 1; }
   .rxp .box h3 { margin: 0 0 4px; font-size: 13px; }
   .rxp .box.img { border-color: #f5c77e; background: #fff8eb; } .rxp .box.img h3 { color: #a35a00; }
   .rxp .box.lab { border-color: #9fd8cf; background: #effaf7; } .rxp .box.lab h3 { color: #0f5f55; }
   .rxp .box.ins { border-color: #c7d2fe; background: #f5f7ff; } .rxp .box.ins h3 { color: #1b2a54; }
   .rxp .chips { display: flex; flex-wrap: wrap; gap: 4px 6px; }
   .rxp .chips span { padding: 1px 8px; border-radius: 999px; background: #fff; border: 1px solid #cbd5e1; font-size: 12px; }
-  .rxp .fu { margin-top: 10px; font-weight: 700; color: #1b2a54; }
+  .rxp .fu { margin-top: 14px; font-weight: 700; color: #10182f; font-size: 12.5px; }
   .rxp .grow { flex: 1; }
   .rxp .sign { display: flex; justify-content: flex-end; margin-top: 16px; }
-  .rxp .sign div { min-width: 46%; text-align: center; border-top: 1px solid #94a3b8; padding-top: 4px; font-size: 12px; color: #475569; }
-  .rxp footer { margin-top: 12px; padding-top: 6px; border-top: 3px solid #1b2a54; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; font-size: 10.5px; color: #475569; }
-  .rxp footer b { color: #1b2a54; font-size: 11px; }
+  .rxp .sign div { min-width: 40%; text-align: center; border-top: 1px solid #94a3b8; padding-top: 4px; font-size: 12px; color: #475569; }
+  .rxp .places { margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; font-size: 10px; color: #475569; }
+  .rxp .places b { color: #1b2a54; font-size: 10.5px; }
+  .rxp footer { margin-top: 8px; border-top: 4px solid #2bb3b1; border-radius: 14px 14px 0 0; background: #1b2a54; color: #fff; padding: 9px 14px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 12px; font-weight: 600; }
+  .rxp footer .ph { direction: ltr; display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 13px; font-weight: 700; }
+  .rxp footer .ad { text-align: right; font-size: 11px; line-height: 1.5; }
 `;
+
+const dmy = (ymd: string) => ymd.split('-').reverse().join('/');
 
 // title: عنوان فوق بيانات المريض (زي «طلب أشعة وتحاليل»)؛ الروشتة العادية من غيره
 export function rxPageHtml(c: Omit<Consultation, 'id' | 'patientId'>, p?: RxPatient | null, title?: string): string {
@@ -75,27 +83,30 @@ export function rxPageHtml(c: Omit<Consultation, 'id' | 'patientId'>, p?: RxPati
   const imgs = c.imagingRequests.filter((r) => r.region.trim() || r.view.trim());
   const logo = typeof location !== 'undefined' ? `${location.origin}/brand/logo.svg` : '/brand/logo.svg';
   return `<div class="rxp" dir="rtl">
+<div class="wave"></div>
 <div class="top">
   <img src="${logo}" alt="">
+  <div class="en"><b>Dr. Islam Beltagy</b><span>ORTHOPEDIC &amp; TRAUMA CONSULTANT</span></div>
+  <div class="sep"></div>
   <div class="ar"><h1>${esc(DOCTOR.name)}</h1><div class="t">${esc(DOCTOR.title)}</div></div>
-  <div class="en"><b>Dr. Islam Gomaa Beltagy</b><br>Consultant of Orthopedic<br>&amp; Trauma Surgery</div>
 </div>
-<div class="tel">${DOCTOR.phones.map((t) => `<span>☎ ${esc(t.label)}: <bdi class="ltr">${esc(t.number)}</bdi></span>`).join('')}</div>
 <div class="pt">
-  <div><span>الاسم:</span> <b>${esc(p?.fullName ?? '—')}</b></div>
-  <div><span>السن:</span> <b>${esc(ageOf(p?.birthDate ?? '') || '—')}</b></div>
-  <div><span>رقم الملف:</span> <b>${esc(fileNoText(p?.fileNo) || '—')}</b></div>
-  <div><span>التاريخ:</span> <b>${esc(fmtDate(c.date))}</b></div>
+  <div class="nm"><span>Name :</span><b>${esc(p?.fullName ?? '')}</b></div>
+  <div><span>Age :</span><b>${esc(ageOf(p?.birthDate ?? ''))}</b></div>
+  <div><span>File :</span><b>${esc(fileNoText(p?.fileNo) || '')}</b></div>
+  <div><span>Date :</span><b>${esc(dmy(c.date))}</b></div>
 </div>
 ${title ? `<div class="ttl">${esc(title)}</div>` : ''}
-${meds.length ? `<div class="rx">R/</div><div>${meds.map((m, i) => `<div class="li"><span class="n">${i + 1}</span><div class="b"><div class="med">${esc(m.name)}</div><div class="sig">${esc([m.dose, m.frequency, m.duration && 'لمدة ' + m.duration].filter(Boolean).join(' — '))}${m.notes ? ` <i>(${esc(m.notes)})</i>` : ''}</div></div></div>`).join('')}</div>` : ''}
+<img class="mark" src="${logo}" alt="">
+${meds.length ? `<div class="rx">Rx</div><div class="body"><table class="meds"><thead><tr><th class="n"></th><th class="nm">اسم الدواء</th><th>الجرعة</th><th>التكرار</th><th>المدة</th><th>ملاحظات</th></tr></thead><tbody>${meds.map((m, i) => `<tr><td class="n">${i + 1}</td><td class="nm">${esc(m.name)}</td><td>${esc(m.dose)}</td><td>${esc(m.frequency)}</td><td>${esc(m.duration)}</td><td>${esc(m.notes)}</td></tr>`).join('')}</tbody></table></div>` : ''}
 ${imgs.length ? `<div class="box img"><h3>الأشعة / السونار المطلوبة</h3>${imgs.map((r) => `<div>• ${esc(IMAGING_KIND[r.kind])} — ${esc(r.region)}${r.view ? ` <span class="ltr">(${esc(r.view)})</span>` : ''}</div>`).join('')}</div>` : ''}
 ${labs.length ? `<div class="box lab"><h3>التحاليل المطلوبة</h3><div class="chips ltr">${labs.map((l) => `<span>${esc(l)}</span>`).join('')}</div></div>` : ''}
 ${c.plan.trim() ? `<div class="box ins"><h3>التعليمات</h3><div>${esc(c.plan).replace(/\n/g, '<br>')}</div></div>` : ''}
-${c.followUp ? `<div class="fu">ميعاد المتابعة: ${esc(fmtDate(c.followUp))}</div>` : ''}
+${c.followUp ? `<div class="fu">موعد الاستشارة: <bdi class="ltr">${esc(dmy(c.followUp))}</bdi></div>` : ''}
 <div class="grow"></div>
 <div class="sign"><div>توقيع الطبيب</div></div>
-<footer>${PLACES.map((pl) => `<div><b>${esc(pl.name)}</b><br>${esc(pl.address)}<br>${esc(pl.days)} — ${esc(pl.hours)}<br>☎ <bdi class="ltr">${pl.phones.map(esc).join(' • ')}</bdi></div>`).join('')}</footer>
+<div class="places">${PLACES.map((pl) => `<div><b>${esc(pl.name)}</b> — ${esc(pl.days)} — ${esc(pl.hours)}</div>`).join('')}</div>
+<footer><div class="ph">${DOCTOR.phones.map((t) => `<span>☎ ${esc(t.number)}</span>`).join('')}</div><div class="ad">📍 ${esc(DOCTOR.address)}</div></footer>
 </div>`;
 }
 

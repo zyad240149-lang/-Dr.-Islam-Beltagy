@@ -207,3 +207,9 @@
 /* ٩/١١: عنوان قسم جوّه مربع متجمّع في الشيت العام */
 .sh-lbl.sh-sub { font-size: 15px; font-weight: 800; color: var(--brand-700); margin-top: 14px; padding-top: 10px; border-top: 1px dashed var(--line); }
 .sh-box__b > .sh-lbl.sh-sub:first-child, .sh-box__b > div:first-child > .sh-lbl.sh-sub:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+/* ٩/١١: قائمة أشهر التشخيصات حسب المنطقة */
+.dxm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+.dxm-reg { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: var(--surface); }
+.dxm-reg > .sh-lbl:first-child { margin: 0 0 6px; padding: 6px 10px; border-radius: 8px; background: var(--brand-700); color: #fff; font-size: 14px; }
+.dxm-reg label.sh-ck { display: flex; width: 100%; direction: ltr; text-align: left; }
+.dxm-other { grid-column: 1 / -1; }

@@ -252,6 +252,21 @@ export const GEN_BOXES: { id: string; title: string; wide?: boolean; f: GenField
     { g: 'n.prevtx', items: ['مسكنات', 'مضادات التهاب', 'ستيرويدات', 'علاج طبيعي', 'حقن'], label: 'هل تستخدم أدوية أو علاجات من قبل؟', other: true } ] },
   { id: 'rf', title: '⚠ علامات إنذار (أعراض تستدعي الانتباه)', f: [
     { g: 'n.rf', items: ['إصابة حديثة قوية', 'ألم أثناء الراحة أو بالليل', 'نقص وزن غير مبرر', 'حمى أو اشتباه عدوى', 'ضعف أو تنميل بالأطراف', 'صعوبة في التحكم في البول أو البراز', 'عدم القدرة على التحميل على الطرف', 'تاريخ مرضي لأورام', 'استخدام مثبطات المناعة'], other: true } ] },
+  // ٩/١١: «قائمة أشهر تشخيصات العظام حسب المنطقة» (ورقة الدكتور) — مربع بيتقفل ويتفتح
+  { id: 'dxm', title: 'قائمة أشهر تشخيصات العظام حسب المنطقة — Orthopedic Diagnosis Master List', wide: true, f: [
+    { g: 'n.dxm.cs', label: "Cervical Spine – العمود العنقي", items: ["Cervical spondylosis", "Cervical disc prolapse (CDH)", "Cervical radiculopathy", "Cervical myelopathy", "Cervical facet syndrome", "Cervical muscle spasm", "Whiplash injury", "Cervical canal stenosis", "Cervical ligament sprain", "Cervicogenic headache"] },
+    { g: 'n.dxm.ls', label: "Lumbar Spine – العمود القطني", items: ["Lumbar spondylosis", "Lumbar disc prolapse (LDH)", "Lumbar radiculopathy (Sciatica)", "Lumbar canal stenosis", "Lumbar facet syndrome", "Mechanical low back pain", "Sacroiliac joint dysfunction", "Spondylolisthesis", "Spondylolysis", "Vertebral compression fracture", "Degenerative disc disease", "Piriformis syndrome"] },
+    { g: 'n.dxm.sh', label: "Shoulder – الكتف", items: ["Rotator cuff tendinopathy", "Rotator cuff tear", "Subacromial impingement", "Adhesive capsulitis (Frozen shoulder)", "Shoulder osteoarthritis", "AC joint arthritis", "Biceps tendinopathy", "SLAP lesion", "Shoulder instability", "Shoulder dislocation", "Calcific tendinitis", "Subacromial bursitis"] },
+    { g: 'n.dxm.el', label: "Elbow – الكوع", items: ["Lateral epicondylitis (Tennis elbow)", "Medial epicondylitis (Golfer's elbow)", "Olecranon bursitis", "Elbow osteoarthritis", "Cubital tunnel syndrome", "Radial tunnel syndrome", "Elbow ligament injury", "Elbow dislocation", "Distal biceps tendinopathy/tear"] },
+    { g: 'n.dxm.wh', label: "Wrist & Hand – الرسغ واليد", items: ["Carpal tunnel syndrome (CTS)", "De Quervain's tenosynovitis", "Trigger finger", "Wrist sprain", "TFCC injury", "Scaphoid fracture", "Ganglion cyst", "Thumb CMC osteoarthritis", "Dupuytren's contracture", "Intersection syndrome", "Guyon's canal syndrome", "Hand osteoarthritis"] },
+    { g: 'n.dxm.hp', label: "Hip – مفصل الفخذ", items: ["Hip osteoarthritis", "Greater trochanteric pain syndrome (GTPS)", "Gluteus medius tendinopathy", "Hip bursitis", "Femoroacetabular impingement (FAI)", "Acetabular labral tear", "Hip flexor tendinopathy", "Piriformis syndrome", "Avascular necrosis (AVN)", "Hip fracture", "Meralgia paresthetica"] },
+    { g: 'n.dxm.th', label: "Thigh – الفخذ", items: ["Hamstring strain", "Quadriceps strain", "Adductor strain", "Muscle contusion", "Quadriceps tendinopathy", "Hamstring tendinopathy", "Iliotibial band syndrome (ITBS)", "Femoral stress fracture"] },
+    { g: 'n.dxm.kn', label: "Knee – الركبة", items: ["Knee osteoarthritis (OA)", "Patellofemoral pain syndrome (PFPS)", "Patellofemoral osteoarthritis", "Meniscal tear", "ACL injury", "PCL injury", "MCL injury", "LCL injury", "Patellar tendinopathy", "Quadriceps tendinopathy", "Pes anserine bursitis", "Prepatellar bursitis", "Baker's cyst", "Iliotibial band syndrome (ITBS)", "Patellar instability", "Knee effusion", "Chondromalacia patellae", "Osteochondritis dissecans (OCD)"] },
+    { g: 'n.dxm.lg', label: "Leg – الساق", items: ["Tibialis posterior tendinopathy", "Achilles tendinopathy", "Medial tibial stress syndrome (Shin splints)", "Compartment syndrome", "Gastrocnemius strain", "Soleus strain", "Stress fracture of tibia", "Peroneal tendinopathy"] },
+    { g: 'n.dxm.an', label: "Ankle – الكاحل", items: ["Lateral ankle sprain", "ATFL injury", "CFL injury", "Deltoid ligament injury", "Syndesmotic injury (High ankle sprain)", "Chronic ankle instability", "Achilles tendon rupture", "Ankle osteoarthritis", "Osteochondral lesion of talus", "Ankle impingement", "Peroneal tendon tear", "Ankle fracture"] },
+    { g: 'n.dxm.ft', label: "Foot – القدم", items: ["Plantar fasciitis", "Hallux valgus", "Hallux rigidus", "Morton's neuroma", "Metatarsalgia", "Plantar plate injury", "Stress fracture", "Tarsal tunnel syndrome", "Flat foot (Pes planus)", "Cavus foot", "Posterior tibial tendon dysfunction", "Achilles insertional tendinopathy", "Diabetic foot", "Heel fat pad syndrome"] },
+    { g: 'n.dxm.gn', label: "General / Other – تشخيصات عامة", items: ["Osteoporosis", "Osteomalacia", "Vitamin D deficiency", "Rheumatoid arthritis", "Gout", "Septic arthritis", "Osteomyelitis", "Bone tumors", "Soft tissue tumors", "Fibromyalgia"] },
+    { k: 'n.dxm.other', label: 'Other (أخرى)', stack: true } ] },
   { id: 'sum', title: 'الخلاصة والتشخيص المبدئي', wide: true, f: [{ k: 'n.summary', label: 'الخلاصة والتشخيص المبدئي', stack: true }] },
 ];
 /** ٩/١١: ترتيب وتجميع مربعات الشيت العام في الشاشة (البيانات نفسها مااتغيرتش) — «الأدوية والعلاج المستخدم سابقًا» جوّه «سبب الزيارة» */
@@ -262,6 +277,7 @@ export const GEN_GROUPS: { ids: string[]; title?: string }[] = [
   { ids: ['ms'] },
   { ids: ['sym'] },
   { ids: ['rf'] },
+  { ids: ['dxm'] },
   { ids: ['sum'] },
 ];
 /** نص مربع من GEN_BOXES للملخص */
@@ -422,13 +438,15 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
   const raOpen = raCalc(sheet).enabled;
   // جسم مربع من GEN_BOXES (الأسئلة + الشيتات الملحقة + ملاحظات المربع)
   const genBody = (b: (typeof GEN_BOXES)[number]) => (<>
+    <div className={b.id === 'dxm' ? 'dxm-grid' : 'sh-genf'}>
     {b.f.map((f) => ('g' in f ? (
-      <div key={f.g}>
+      <div key={f.g} className={b.id === 'dxm' ? 'dxm-reg' : undefined}>
         {f.label && <div className="sh-lbl">{f.label}</div>}
         <div className={f.one ? 'sh-inline' : undefined}>{f.one ? <Pick a={a} g={f.g} items={f.items} /> : <Checks a={a} g={f.g} items={f.items} />}</div>
         {f.other && <Txt a={a} k={f.g + '.other'} label="أخرى" />}
       </div>
-    ) : <Txt key={f.k} a={a} k={f.k} label={f.label} stack={f.stack} />))}
+    ) : <div key={f.k} className={b.id === 'dxm' ? 'dxm-other' : undefined}><Txt a={a} k={f.k} label={f.label} stack={f.stack} /></div>))}
+    </div>
     {b.id === 'ms' && <RaAssessment sheet={sheet} onChange={onChange} />}
     {b.id === 'nature' && <NociChecklist sheet={sheet} onChange={onChange} />}
     {b.id !== 'sum' && <><div className="sh-lbl">ملاحظات</div>

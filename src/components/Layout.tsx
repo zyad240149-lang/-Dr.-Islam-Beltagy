@@ -25,8 +25,8 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     { to: '/', label: 'الرئيسية', icon: 'grid', area: 'dashboard', end: true },
   ] },
   { title: 'المرضى والمواعيد', items: [
+    { to: '/follow-ups', label: 'حجز كشف ومتابعة', icon: 'calendarPlus', area: 'patients' }, // ٩/١١: قسم لوحده — أول حاجة في القائمة
     { to: '/patients', label: 'المرضى', icon: 'users', area: 'patients' },
-    { to: '/follow-ups', label: 'حجز كشف ومتابعة', icon: 'calendarPlus', area: 'patients' }, // ٩/١١: قسم لوحده (كان تبويب في «المرضى»)
     // «حجز موعد» اتشال من القائمة (٨/١١) — الحجز من «المواعيد» وملف المريض
     // «المواعيد» اتشالت من القائمة (٩/١١) — الحجز من «المرضى ← حجز كشف ومتابعة»
     { to: '/services', label: 'الخدمات', icon: 'spark', area: 'services' },

@@ -15,6 +15,7 @@ import { Button, EmptyState, Skeleton, StatusBadge, Modal, Input, Select } from 
 import { ConfirmDialog, FilterBar, IconAction, RowActions, useCan } from '../components/common';
 import { StatCard } from '../components/StatCard';
 import { ALL_PERIOD, PeriodFilter, type Period } from '../components/PeriodFilter';
+import ExpensesTab from '../components/ExpensesTab';
 import { INVOICE_STATUS, PAYMENT_METHOD_LABEL, PAYMENT_METHOD_OPTIONS, addDaysYmd, amountToArabicWords, exportCsv, fmtDate, fmtDateTime, money, tsToYmd, todayYmd } from '../utils/format';
 import { useToast } from '../hooks/useToast';
 import type { Invoice, Package, Payment, PaymentMethod } from '../types';
@@ -160,7 +161,7 @@ export default function Invoices() {
   const loading = useLoading();
   const can = useCan();
   const [params] = useSearchParams();
-  const [tab, setTab] = useState<'invoices' | 'plans' | 'payments' | 'installments'>('invoices'); // ٩/١١: تبويبي «فواتير الخطط العلاجية» و«المرضى المقسّطين» اتشالوا
+  const [tab, setTab] = useState<'invoices' | 'plans' | 'payments' | 'installments' | 'expenses'>('invoices'); // ٩/١١: تبويبي «فواتير الخطط العلاجية» و«المرضى المقسّطين» اتشالوا
   const [planView, setPlanView] = useState<'draft' | 'issued'>('draft');
   const listReqs = useInstallmentRequests();
   const [planQ, setPlanQ] = useState('');
@@ -228,14 +229,14 @@ export default function Invoices() {
       <div className="page-head">
         <div><h1>الفواتير والمدفوعات</h1><p>الوضع المالي الكامل: الفواتير وحالة الدفع، وسجل كل دفعة استُلمت.</p></div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <Button variant="outline" icon="doc" onClick={tab === 'invoices' ? doExportInvoices : doExportPayments}>تصدير Excel</Button>
+          {tab !== 'expenses' && <Button variant="outline" icon="doc" onClick={tab === 'invoices' ? doExportInvoices : doExportPayments}>تصدير Excel</Button>}
         </div>
       </div>
 
       <div className="card">
-        <div className="tabs"><button className={`tab ${tab === 'invoices' ? 'active' : ''}`} onClick={() => setTab('invoices')}>الفواتير</button><button className={`tab ${tab === 'payments' ? 'active' : ''}`} onClick={() => setTab('payments')}>المدفوعات</button></div>
+        <div className="tabs"><button className={`tab ${tab === 'invoices' ? 'active' : ''}`} onClick={() => setTab('invoices')}>الفواتير</button><button className={`tab ${tab === 'payments' ? 'active' : ''}`} onClick={() => setTab('payments')}>المدفوعات</button>{can('financial', 'view') && <button className={`tab ${tab === 'expenses' ? 'active' : ''}`} onClick={() => setTab('expenses')}>المصروفات</button>}</div>
 
-        {tab === 'installments' ? <InstallmentPatientsTab onOpenInvoice={setCurrentId} onReviewPlanInvoice={setEditingPlanInv} /> : tab === 'plans' ? (
+        {tab === 'expenses' ? <ExpensesTab /> : tab === 'installments' ? <InstallmentPatientsTab onOpenInvoice={setCurrentId} onReviewPlanInvoice={setEditingPlanInv} /> : tab === 'plans' ? (
           <>
             <div className="plan-inv-intro">
               <Icon name="target" size={18} />

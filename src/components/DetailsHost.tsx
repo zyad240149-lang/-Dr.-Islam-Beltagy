@@ -1,4 +1,5 @@
 import ExtraServices from './ExtraServices';
+import type { PatientFileCategory } from '../types';
 // نوافذ التفاصيل المترابطة: المريض ← الزيارة ← الخطة العلاجية ← الخدمات ← الفاتورة ← الدفعات ← التقسيط.
 // DetailsProvider في Layout، وأي صفحة تفتح أي تفصيلة بـ useDetails().openPlan(id) / openVisit(id).
 // النافذة المفتوحة بتتبدّل (مش بتتراكب) عشان التنقل بين العناصر المرتبطة يبقى بسيط، وفيه زرار «رجوع».
@@ -70,6 +71,9 @@ export function LinkedFiles({ patientId, planId, appointmentId, planIdForAppt }:
   const [preview, setPreview] = useState<PatientFile | null>(null);
   const [busy, setBusy] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  // ٩/١١: نوع الملف قبل الرفع — أشعة / تحاليل / روشتة (الروشتة بتتحفظ «ملف آخر» بعنوان «روشتة»)
+  const kind = useRef<{ category: PatientFileCategory; title: string }>({ category: 'xray', title: '' });
+  const pick = (category: PatientFileCategory, title: string) => { kind.current = { category, title }; input.current?.click(); };
   const load = () => db.patientFiles(patientId).then((all) => setFiles(all.filter((f) =>
     planId ? f.planId === planId || (!!f.appointmentId && db.appointment(f.appointmentId)?.planId === planId) : f.appointmentId === appointmentId,
   ))).catch(() => setFiles([]));
@@ -77,7 +81,8 @@ export function LinkedFiles({ patientId, planId, appointmentId, planIdForAppt }:
   const upload = async (file?: File) => {
     if (!file) return;
     setBusy(true);
-    const r = await db.uploadPatientFile(patientId, file, '', { planId: planId ?? planIdForAppt ?? null, appointmentId: appointmentId ?? null });
+    const r = await db.uploadPatientFile(patientId, file, '', { planId: planId ?? planIdForAppt ?? null, appointmentId: appointmentId ?? null },
+      { category: kind.current.category, ...(kind.current.title ? { title: kind.current.title } : {}) });
     setBusy(false);
     if (input.current) input.current.value = '';
     if (!r.ok) { toast.error(r.error); return; }
@@ -89,7 +94,11 @@ export function LinkedFiles({ patientId, planId, appointmentId, planIdForAppt }:
         <div className="section-title" style={{ margin: 0 }}>الأشعة والملفات</div>
         {can('patients', 'edit') && <>
           <input ref={input} type="file" hidden accept=".pdf,.png,.jpg,.jpeg,.webp" onChange={(e) => upload(e.target.files?.[0])} />
-          <Button size="sm" variant="outline" icon="doc" loading={busy} onClick={() => input.current?.click()}>رفع أشعة / ملف</Button>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <Button size="sm" variant="outline" icon="doc" loading={busy} onClick={() => pick('xray', '')}>أشعة</Button>
+            <Button size="sm" variant="outline" icon="doc" loading={busy} onClick={() => pick('lab', '')}>تحاليل</Button>
+            <Button size="sm" variant="outline" icon="doc" loading={busy} onClick={() => pick('other', 'روشتة')}>روشتة</Button>
+          </div>
         </>}
       </div>
       {files === null ? <Skeleton h={50} /> : files.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>ما فيه ملفات مرتبطة.</p> : (

@@ -379,8 +379,6 @@ export const TREATMENT: RegionSheetDef = {
   boxes: [{ title: 'الخطة العلاجية والتعليمات', role: 'plan', wide: true, f: [{ t: 'cols', cols: [
     { title: 'الخطة العلاجية', f: [{ t: 'checks', g: 'tx', items: ['علاج تحفظي', 'أشعة', 'حقن'] }, { t: 'text', k: 'tx.other', label: 'تفاصيل:' }] },
     { title: 'التعليمات', f: [{ t: 'checks', g: 'instr', items: ['راحة نسبية', 'تمارين منزلية', 'علاج طبيعي', 'تجنب مجهود معين'] }, { t: 'text', k: 'instr.other', label: 'تعليمات أخرى:' }] },
-    // «بعد أسبوع / أسبوعين / شهر» اتبدلت بتحديد موعد المتابعة نفسه (٨/١١)
-    { title: 'موعد المتابعة', f: [{ t: 'slot' }] },
   ] }] }],
 };
 export const treatmentFilled = (s: ExamSheet) => s.on.some((o) => o.startsWith('tp.')) || Object.entries(s.txt).some(([k, v]) => k.startsWith('tp.') && v.trim());

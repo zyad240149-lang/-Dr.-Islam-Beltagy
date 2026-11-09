@@ -94,7 +94,7 @@ function Section({ icon, title, children, aside }: { icon: string; title: string
 
 // الكشف = الشيتين بالترتيب (التمريض قبل دخول المريض ← كشف الطبيب) وبعدهم الحقن — الروشتة والأشعة والتحاليل اتنقلت لشيت المتابعة
 // «كشف الطبيب» بيتسمى بالمنطقة: شيت الطبيب بيتحدد من مكان الألم في الشيت العام (regionSheets)
-const TABS = [['nurse', 'الشيت العام'], ['doctor', 'كشف الطبيب'], ['files', 'الأشعة والتحاليل'], ['inj', 'الحقن'], ['plan', 'الخطة العلاجية'], ['nursing', 'متابعة المريض']] as const;
+const TABS = [['nurse', 'الشيت العام'], ['doctor', 'كشف الطبيب'], ['files', 'الأشعة والتحاليل'], ['inj', 'الحقن'], ['rx', 'الأدوية والروشتة'], ['plan', 'الخطة العلاجية'], ['appt', 'موعد المتابعة'], ['nursing', 'متابعة المريض']] as const;
 type Tab = typeof TABS[number][0];
 
 // appointmentId = الزيارة اللي التشخيص الجديد بيتربط بيها (من «بانتظار التشخيص»)؛ من غيرها بيتربط بزيارة النهارده المفتوحة للمريض لو فيه
@@ -425,12 +425,12 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           </div>
         </>}
 
-        {/* الخطة العلاجية: ١) أشعة السونار  ٢) التحاليل  ٣) الأدوية والروشتة — وبعدها الخطة والتعليمات وموعد المتابعة.
+        {/* الأدوية والروشتة، والخطة والتعليمات، وموعد المتابعة: كل واحد تاب برقمه (٩/١١).
             الأشعة/السونار والتحاليل بتتقري من ملف المريض (patient_files): اللي السكرتيرة ترفعه من «المرضى» أو الطبيب يرفعه هنا
             بيتسجل مرة واحدة في ملف المريض ويظهر في قسمه — مفيش نسخ جوّه الكشف ولا تكرار */}
-        {tab === 'plan' && <>
+        {tab === 'rx' && <>
           <section className="plan-part">
-            <h3 className="plan-part__h"><span className="plan-part__n num">1</span>الأدوية والروشتة</h3>
+            <h3 className="plan-part__h">الأدوية والروشتة</h3>
             {(() => {
               const meds = c.medications.filter((m) => m.name.trim()), reqs = c.imagingRequests.filter((r) => r.region.trim());
               return meds.length || reqs.length || c.labs.length ? (
@@ -446,17 +446,31 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
               <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => printRx(c, patientOf())}>طباعة الروشتة</Button>
             </div>
           </section>
-
-          <div dir="rtl" className="sh-treat"><RegionSheetForm def={TREATMENT} sheet={sheet} onChange={changeSheet} side={c.side} onSide={(v) => set('side', v)}
-            icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap('tp.tx.other')}
-            lastBoxExtra={
-              /* مواعيد المتابعة جوّه مربع الخطة العلاجية (٨/١١): أكتر من موعد للمريض، مربوطة بالتشخيص ده (بتتحفظ مع حفظ الكشف) */
-              <div className="sh-treat-fu">
-                <FollowUpStep patientId={c.patientId} patientLabel={pendingInfo.name} consultationId={initial?.id} pending={c.pendingFollowUps ?? []} onPending={(p) => set('pendingFollowUps', p)}
-                  doctorHint={visitAppt?.therapistId} />
-              </div>} /></div>
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('inj')}>رجوع: الحقن</Button>
+            <Button icon="chevronLeft" onClick={() => goTab('plan')}>التالي: الخطة العلاجية</Button>
+          </div>
+        </>}
+
+        {tab === 'plan' && <>
+          <div dir="rtl" className="sh-treat"><RegionSheetForm def={TREATMENT} sheet={sheet} onChange={changeSheet} side={c.side} onSide={(v) => set('side', v)}
+            icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap('tp.tx.other')} /></div>
+          <div className="sh-next">
+            <Button variant="outline" icon="chevron" onClick={() => goTab('rx')}>رجوع: الأدوية والروشتة</Button>
+            <Button icon="chevronLeft" onClick={() => goTab('appt')}>التالي: موعد المتابعة</Button>
+          </div>
+        </>}
+
+        {/* مواعيد المتابعة: أكتر من موعد للمريض، مربوطة بالتشخيص ده (بتتحفظ مع حفظ الكشف) */}
+        {tab === 'appt' && <>
+          <section className="plan-part">
+            <div className="sh-treat-fu">
+              <FollowUpStep patientId={c.patientId} patientLabel={pendingInfo.name} consultationId={initial?.id} pending={c.pendingFollowUps ?? []} onPending={(p) => set('pendingFollowUps', p)}
+                doctorHint={visitAppt?.therapistId} />
+            </div>
+          </section>
+          <div className="sh-next">
+            <Button variant="outline" icon="chevron" onClick={() => goTab('plan')}>رجوع: الخطة العلاجية</Button>
             <Button variant="outline" icon="clipboard" onClick={() => goTab('nursing')}>متابعة المريض</Button>
             <Button icon="check" loading={busy} disabled={!ok} onClick={() => save(false)}>حفظ الكشف</Button>
           </div>
@@ -566,7 +580,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           </Section>
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('files')}>رجوع: الأشعة والتحاليل</Button>
-            <Button icon="chevronLeft" onClick={() => goTab('plan')}>التالي: الخطة العلاجية</Button>
+            <Button icon="chevronLeft" onClick={() => goTab('rx')}>التالي: الأدوية والروشتة</Button>
           </div>
         </>}
         {rxOpen && <RxPage patientId={c.patientId} region={c.region} busy={rxSaving}

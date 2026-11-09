@@ -12,10 +12,12 @@ type Row = Omit<MedItem, 'id'> & { id?: string };
 const emptyMed = (): Draft => ({ name: '', group: '', dose: '', frequency: '', duration: '', shown: true });
 const keyOf = (name: string) => name.trim().toLowerCase();
 const isShown = (m: MedPreset) => m.shown !== false;
+const NEW_GROUP = '__new_group__';
 
 function MedModal({ initial, groups, onClose }: { initial: Draft; groups: string[]; onClose: () => void }) {
   const { run, busy } = useRun();
   const [m, setM] = useState<Draft>(initial);
+  const [newGroup, setNewGroup] = useState(false);
   const set = (k: 'name' | 'group' | 'dose' | 'frequency' | 'duration', v: string) => setM((x) => ({ ...x, [k]: v }));
   const dup = !m.id && ortho.list('medications').some((x) => keyOf(x.name) === keyOf(m.name));
   return (
@@ -27,8 +29,15 @@ function MedModal({ initial, groups, onClose }: { initial: Draft; groups: string
       <div className="grid-form grid-form--2">
         <Field label="اسم الدواء" className="span-2"><input className="input" dir="ltr" value={m.name} onChange={(e) => set('name', e.target.value)} placeholder="مثال: Diclofenac sodium 50mg" autoFocus /></Field>
         <Field label="المجموعة" className="span-2">
-          <input className="input" list="med-groups" value={m.group} onChange={(e) => set('group', e.target.value)} placeholder="مثال: مسكنات ومضادات التهاب" />
-          <datalist id="med-groups">{groups.map((g) => <option key={g} value={g} />)}</datalist>
+          <select className="input" value={newGroup ? NEW_GROUP : m.group} onChange={(e) => {
+            const isNew = e.target.value === NEW_GROUP;
+            setNewGroup(isNew); set('group', isNew ? '' : e.target.value);
+          }}>
+            <option value="">بدون مجموعة</option>
+            {groups.map((g) => <option key={g} value={g}>{g}</option>)}
+            <option value={NEW_GROUP}>+ مجموعة جديدة</option>
+          </select>
+          {newGroup && <input className="input" style={{ marginTop: 8 }} value={m.group} onChange={(e) => set('group', e.target.value)} placeholder="اكتب اسم المجموعة الجديدة" autoFocus />}
         </Field>
         <Field label="الجرعة"><input className="input" value={m.dose} onChange={(e) => set('dose', e.target.value)} placeholder="قرص" /></Field>
         <Field label="التكرار"><input className="input" value={m.frequency} onChange={(e) => set('frequency', e.target.value)} placeholder="مرتين يوميًا بعد الأكل" /></Field>

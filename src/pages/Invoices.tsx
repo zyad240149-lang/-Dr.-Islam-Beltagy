@@ -159,7 +159,7 @@ export default function Invoices() {
   const loading = useLoading();
   const can = useCan();
   const [params] = useSearchParams();
-  const [tab, setTab] = useState<'invoices' | 'plans' | 'payments' | 'installments'>(params.get('tab') === 'plans' ? 'plans' : params.get('tab') === 'installments' ? 'installments' : 'invoices');
+  const [tab, setTab] = useState<'invoices' | 'plans' | 'payments' | 'installments'>('invoices'); // ٩/١١: تبويبي «فواتير الخطط العلاجية» و«المرضى المقسّطين» اتشالوا
   const [planView, setPlanView] = useState<'draft' | 'issued'>('draft');
   const listReqs = useInstallmentRequests();
   const [planQ, setPlanQ] = useState('');
@@ -225,7 +225,7 @@ export default function Invoices() {
       </div>
 
       <div className="card">
-        <div className="tabs"><button className={`tab ${tab === 'invoices' ? 'active' : ''}`} onClick={() => setTab('invoices')}>الفواتير</button><button className={`tab ${tab === 'plans' ? 'active' : ''}`} onClick={() => setTab('plans')}>فواتير الخطط العلاجية {draftCount > 0 && <span className="tab-count num">{draftCount}</span>}</button><button className={`tab ${tab === 'payments' ? 'active' : ''}`} onClick={() => setTab('payments')}>المدفوعات</button><button className={`tab ${tab === 'installments' ? 'active' : ''}`} onClick={() => setTab('installments')}>المرضى المقسّطين</button></div>
+        <div className="tabs"><button className={`tab ${tab === 'invoices' ? 'active' : ''}`} onClick={() => setTab('invoices')}>الفواتير</button><button className={`tab ${tab === 'payments' ? 'active' : ''}`} onClick={() => setTab('payments')}>المدفوعات</button></div>
 
         {tab === 'installments' ? <InstallmentPatientsTab onOpenInvoice={setCurrentId} onReviewPlanInvoice={setEditingPlanInv} /> : tab === 'plans' ? (
           <>

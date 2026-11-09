@@ -10,6 +10,7 @@ import {
 
 export interface PhoneInputProps {
   id: string;
+  autoComplete?: string;                                   // في صفحة الدخول: username عشان المتصفح يربطه بكلمة السر
   label?: string;
   value: string;                                           // E.164 (أو رقم قديم محفوظ بأي صيغة — بيتقرا ويتعرض صح)
   onChange: (e164: string, error: PhoneErrorCode | null) => void;
@@ -21,7 +22,7 @@ export interface PhoneInputProps {
   hint?: string;
 }
 
-export function PhoneInput({ id, label, value, onChange, required = true, showError, error, disabled, defaultCountry = DEFAULT_COUNTRY, hint }: PhoneInputProps) {
+export function PhoneInput({ id, label, value, onChange, required = true, showError, error, disabled, defaultCountry = DEFAULT_COUNTRY, hint, autoComplete = 'tel' }: PhoneInputProps) {
   const initial = useMemo(() => parseStoredPhone(value, defaultCountry), []); // eslint-disable-line react-hooks/exhaustive-deps
   const [country, setCountry] = useState<CountryCode>(initial.country);
   const [text, setText] = useState<string>(initial.e164 ? sanitizePhoneInput(initial.national) : sanitizePhoneInput(value ?? ''));
@@ -106,7 +107,7 @@ export function PhoneInput({ id, label, value, onChange, required = true, showEr
           aria-label={`الدولة: ${current?.name ?? country} +${callingCode(country)}`} onClick={() => setOpen((o) => !o)}>
           <span className="country-code__flag">{flagEmoji(country)}</span> +{callingCode(country)}
         </button>
-        <input ref={inputRef} id={id} className="input" dir="ltr" type="tel" inputMode="tel" autoComplete="tel"
+        <input ref={inputRef} id={id} className="input" dir="ltr" type="tel" inputMode="tel" autoComplete={autoComplete}
           value={formatAsYouType(text, country)} placeholder={examplePlaceholder(country)} disabled={disabled}
           onChange={handleInput} aria-invalid={!!shownErr} />
         {open && (

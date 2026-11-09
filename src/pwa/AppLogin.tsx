@@ -42,7 +42,7 @@ export default function AppLogin() {
           <h1 className="app-login__title">تسجيل الدخول</h1>
           <p className="al-lead">ادخل برقم الموبايل وكلمة المرور.</p>
           {err && <div className="alert alert-danger" style={{ marginBottom: 12 }}>{err}</div>}
-          <PhoneInput id="al-phone" label="رقم الموبايل" value={phone} showError={tried} onChange={(v, e) => { setPhone(v); setPhoneErr(e); }} />
+          <PhoneInput id="al-phone" label="رقم الموبايل" autoComplete="username" value={phone} showError={tried} onChange={(v, e) => { setPhone(v); setPhoneErr(e); }} />
           <PasswordInput id="al-pass" label="كلمة المرور" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
           <Button type="submit" block loading={busy}>دخول</Button>
           <GoogleButton />

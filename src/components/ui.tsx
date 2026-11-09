@@ -62,14 +62,14 @@ export function Input({ label, icon, error, hint, id, className = '', ...rest }:
 /* خانة الجوال الموحدة موجودة في components/PhoneInput.tsx (مبنية على utils/phoneUtils.ts) */
 
 export function PasswordInput({ label, icon = 'lock', error, id, ...rest }: FieldProps) {
-  const [show, setShow] = useState(true);
+  const [show, setShow] = useState(false); // مخفية من الأول: المتصفح بيعرض حفظ كلمة السر لخانة password بس
   const fid = id || rest.name;
   return (
     <div className={`field ${error ? 'field--invalid' : ''}`}>
       {label && <label htmlFor={fid}>{label}</label>}
       <div className="control has-icon">
         <Icon name={icon} size={18} />
-        <input id={fid} className="input" type={show ? 'text' : 'password'} dir="ltr" aria-invalid={!!error} {...rest} />
+        <input id={fid} className="input" type={show ? 'text' : 'password'} dir="ltr" aria-invalid={!!error} autoComplete="new-password" {...rest} />
         <button type="button" className="toggle-pass" onClick={() => setShow((s) => !s)} aria-label={show ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}>
           <Icon name={show ? 'eyeOff' : 'eye'} size={18} />
         </button>

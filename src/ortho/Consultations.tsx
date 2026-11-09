@@ -94,10 +94,8 @@ function Section({ icon, title, children, aside }: { icon: string; title: string
 
 // الكشف = الشيتين بالترتيب (التمريض قبل دخول المريض ← كشف الطبيب) وبعدهم الحقن — الروشتة والأشعة والتحاليل اتنقلت لشيت المتابعة
 // «كشف الطبيب» بيتسمى بالمنطقة: شيت الطبيب بيتحدد من مكان الألم في الشيت العام (regionSheets)
-const TABS = [['nurse', 'الشيت العام'], ['doctor', 'كشف الطبيب'], ['fu', 'متابعة الجبس والعمليات'], ['files', 'الأشعة والتحاليل'], ['inj', 'الحقن'], ['plan', 'الخطة العلاجية'], ['nursing', 'متابعة المريض']] as const;
+const TABS = [['nurse', 'الشيت العام'], ['doctor', 'كشف الطبيب'], ['files', 'الأشعة والتحاليل'], ['inj', 'الحقن'], ['plan', 'الخطة العلاجية'], ['nursing', 'متابعة المريض']] as const;
 type Tab = typeof TABS[number][0];
-// متابعة الجبس وما بعد العمليات: قسم لوحده (طلب ٨/١١) — باقي الشيتات في «كشف الطبيب»
-const FU_SHEETS: SheetId[] = ['cast', 'postop'];
 
 // appointmentId = الزيارة اللي التشخيص الجديد بيتربط بيها (من «بانتظار التشخيص»)؛ من غيرها بيتربط بزيارة النهارده المفتوحة للمريض لو فيه
 // pending = «فتح ملف تشخيص جديد» بالاسم الثلاثي (المريض مش ظاهر في القايمة — غالبًا من غير إنترنت): التشخيص بيتحفظ من غير ملف،
@@ -227,8 +225,6 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
               </section>
               </BoxOpenDefault.Provider>
   );
-  const examActive = active.filter((id) => !FU_SHEETS.includes(id));
-  const fuActive = active.filter((id) => FU_SHEETS.includes(id));
   const goTab = (t: Tab) => { setTab(t); if (t === 'nursing') setNursingSeen(true); bodyRef.current?.closest('.modal__body')?.scrollTo({ top: 0 }); };
 
   // كشف جديد (مش تعديل كشف محفوظ): نحفظ مسودة محليًا أول بأول عشان لو المستخدم خرج من غير ما يحفظ، يقدر يستكمل بعدين
@@ -416,24 +412,15 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           {/* ملفات المريض اللي مش أشعة ولا تحاليل */}
           <PatientMedicalFiles patientId={c.patientId} excludeConsultId={initial?.id} categories={['other']} title="ملفات أخرى للمريض" hideEmpty />
           <>
-            <SheetSwitch active={active} onPick={pickSheet} onRemove={dropSheet} ids={SHEET_ORDER.filter((id) => !FU_SHEETS.includes(id))} />
-            {!examActive.length && <p className="sh-pickfirst">اختار المنطقة اللي هتكشف عليها من فوق (أو حدد مكان الألم في الشيت العام) — شيتها هيتفتح هنا. لو اخترت منطقتين، الشيتين بيتفتحوا مع بعض.</p>}
-            {examActive.map(renderSheet)}
+            <SheetSwitch active={active} onPick={pickSheet} onRemove={dropSheet} ids={SHEET_ORDER} />
+            {!active.length && <p className="sh-pickfirst">اختار المنطقة اللي هتكشف عليها من فوق (أو حدد مكان الألم في الشيت العام) — شيتها هيتفتح هنا. لو اخترت منطقتين، الشيتين بيتفتحوا مع بعض.</p>}
+            {/* متابعة الجبس وما بعد العمليات شيتين هنا مع باقي مناطق الكشف (٩/١١) */}
+            {active.map(renderSheet)}
             {/* اختياري: تقييم الروماتويد ACR/EULAR 2010 — مش جزء إجباري من الكشف */}
           </>
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('nurse')}>رجوع: الشيت العام</Button>
             <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => setOut(['doctor'])}>طباعة / إرسال كشف الطبيب</Button>
-            <Button icon="chevronLeft" onClick={() => goTab('fu')}>التالي: متابعة الجبس والعمليات</Button>
-          </div>
-        </>}
-
-        {tab === 'fu' && <>
-          <SheetSwitch active={active} onPick={pickSheet} onRemove={dropSheet} ids={FU_SHEETS} label="المتابعة:" />
-          {!fuActive.length && <p className="sh-pickfirst">لو المريض جاي متابعة جبس أو متابعة بعد عملية، اختار الشيت من فوق. لو مش محتاج، كمّل للي بعده.</p>}
-          {fuActive.map(renderSheet)}
-          <div className="sh-next">
-            <Button variant="outline" icon="chevron" onClick={() => goTab('doctor')}>رجوع: كشف الطبيب</Button>
             <Button icon="chevronLeft" onClick={() => goTab('files')}>التالي: الأشعة والتحاليل</Button>
           </div>
         </>}
@@ -564,7 +551,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           </section>
 
           <div className="sh-next">
-            <Button variant="outline" icon="chevron" onClick={() => goTab('fu')}>رجوع: متابعة الجبس والعمليات</Button>
+            <Button variant="outline" icon="chevron" onClick={() => goTab('doctor')}>رجوع: كشف الطبيب</Button>
             <Button icon="chevronLeft" onClick={() => goTab('inj')}>التالي: الحقن</Button>
           </div>
         </>}

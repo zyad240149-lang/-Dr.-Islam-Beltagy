@@ -114,6 +114,14 @@ function applyOverlay(d: Database) {
         if (i >= 0) d.appointments[i] = { ...d.appointments[i], status: 'cancelled', cancelReason: String(op.payload.reason ?? ''), pendingSync: true };
         break;
       }
+      case 'payment.record':
+        applyPaymentLocal(d, local as Payment);
+        break;
+      case 'appointment.status': {
+        const i = d.appointments.findIndex((a) => a.id === op.entityId);
+        if (i >= 0) d.appointments[i] = { ...d.appointments[i], status: op.payload.status as AppointmentStatus, ...(op.payload.therapistId ? { therapistId: String(op.payload.therapistId) } : {}), pendingSync: true };
+        break;
+      }
       case 'assessment.save': {
         const i = d.assessments.findIndex((a) => a.id === op.entityId);
         if (i >= 0) d.assessments[i] = { ...d.assessments[i], ...local }; else d.assessments.push(local);
@@ -175,6 +183,43 @@ async function queueCancel(id: string, reason?: string): Promise<void> {
   try { await offline.queue.enqueue({ kind: 'appointment.cancel', userId: offline.userId!, entityId: id, label: `إلغاء موعد ${db.patient(a.patientId)?.fullName ?? ''} (${a.date} ${a.time})`, payload: { reason: reason ?? 'إلغاء (مسجّل بدون اتصال)' } }); } catch (e) { saveLocalFail(e); }
   Object.assign(a, { status: 'cancelled', cancelReason: reason ?? 'إلغاء (مسجّل بدون اتصال)', pendingSync: true }); commit();
 }
+const METHODS: PaymentMethod[] = ['cash', 'card', 'transfer'];
+async function queuePayment(key: string, invoiceId: string, amount: number, method: PaymentMethod, note: string): Promise<Result> {
+  const inv = load().invoices.find((i) => i.id === invoiceId);
+  if (!inv) return { ok: false, error: 'الفاتورة غير موجودة على الجهاز.' };
+  if (inv.status === 'cancelled') return { ok: false, error: 'لا يمكن الدفع على فاتورة ملغاة' };
+  if (inv.status === 'draft') return { ok: false, error: 'الفاتورة بانتظار المراجعة والاعتماد أولًا' };
+  if (!METHODS.includes(method)) return { ok: false, error: 'طريقة الدفع دي محتاجة اتصال — اختار كاش أو بطاقة أو تحويل.' };
+  if (!(amount > 0) || amount > inv.remaining + 0.001) return { ok: false, error: `المبلغ يجب أن يكون بين 1 و ${inv.remaining}` };
+  const local: Payment = { id: key, invoiceId, patientId: inv.patientId, amount, method, date: Date.now(), note, createdBy: actorId, pendingSync: true } as Payment;
+  try {
+    await offline.queue.enqueue({ id: key, kind: 'payment.record', userId: offline.userId!, entityId: invoiceId, label: `دفعة ${amount} على ${inv.no || 'فاتورة'} — ${db.patient(inv.patientId)?.fullName ?? ''}`,
+      payload: { invoiceId, amount, method, note, local } });
+  } catch (e) { return saveLocalFail(e); }
+  applyPaymentLocal(load(), local);
+  commit();
+  return { ok: true };
+}
+function applyPaymentLocal(d: Database, p: Payment) {
+  if (d.payments.some((x) => x.id === p.id)) return;
+  d.payments.push(p);
+  const i = d.invoices.findIndex((x) => x.id === p.invoiceId);
+  if (i < 0) return;
+  const inv = d.invoices[i];
+  const paid = inv.paid + p.amount, remaining = Math.max(0, +(inv.total - paid).toFixed(2));
+  d.invoices[i] = { ...inv, paid, remaining, status: remaining <= 0 ? 'paid' : 'partial', pendingSync: true } as Invoice;
+}
+const OFFLINE_STATUS: AppointmentStatus[] = ['confirmed', 'on_way', 'arrived', 'no_show'];
+async function queueStatus(id: string, status: AppointmentStatus, therapistId?: string): Promise<void> {
+  const a = load().appointments.find((x) => x.id === id); if (!a) throw new DbError('الموعد غير موجود');
+  if (a.status === 'cancelled') throw new DbError('الموعد ملغي.');
+  try {
+    await offline.queue.enqueue({ kind: 'appointment.status', userId: offline.userId!, entityId: id, label: `${db.patient(a.patientId)?.fullName ?? ''} — ${status} (${a.date} ${a.time})`,
+      payload: { status, therapistId: therapistId || null }, base: { status: a.status } });
+  } catch (e) { saveLocalFail(e); }
+  Object.assign(a, { status, ...(therapistId ? { therapistId } : {}), pendingSync: true }); commit();
+}
+
 /** نفس تحقق الخادم الأساسي محليًا (الخادم بيعيده وقت المزامنة — ده بس عشان المستخدم ما يسجّل حاجة مستحيلة) */
 function localSlotCheck(therapistId: string, date: string, time: string, durationMin: number, excludeId?: string): string | null {
   const issue = db.doctorTimeIssue(therapistId, date, time, durationMin);
@@ -310,6 +355,7 @@ const loaders: Record<Key, (d: Database) => Promise<void>> = {
   },
 };
 
+let lastStats: DashboardStats | null = null; // آخر أرقام لوحة التحكم من الخادم (للعدادات اللي مش على الجهاز)
 let hiddenKinds = new Set<string>();
 const ALL_KEYS = Object.keys(loaders) as Key[];
 const CRITICAL_KEYS: Key[] = ['center', 'permissions', 'catalog', 'employees', 'patients', 'appointments', 'invoices', 'plans', 'packages', 'payments'];
@@ -910,9 +956,15 @@ export const db = {
   },
   // therapistId: تعيين الطبيب مع تغيير الحالة (حجز المريض من الموبايل بييجي من غير طبيب)
   async setAppointmentStatus(id: string, status: AppointmentStatus, reason?: string, therapistId?: string) {
-    // الإلغاء بس هو اللي مدعوم بدون اتصال؛ باقي الحالات (تأكيد/حضور/إنهاء) بتأثر على الفواتير والزيارات فتحتاج الخادم
-    if (status === 'cancelled' && (!net.isOnline() || offline.queue.hasPendingFor(id))) return queueCancel(id, reason);
-    await rpcOrThrow('set_appointment_status', { p_id: id, p_status: status, p_reason: reason ?? null, p_therapist: therapistId || null }, ['appointments', 'invoices', 'notifications', 'activity']);
+    // بدون اتصال: الإلغاء + التأكيد/في الطريق/حضر/لم يحضر بيتسجّلوا على الجهاز وبيتبعتوا بالترتيب لما النت يرجع
+    // (الخادم بينفّذ نفس الآثار — فاتورة/زيارة — وقت المزامنة). بدء/إنهاء الزيارة بيفضلوا محتاجين الخادم.
+    const offlineOk = status === 'cancelled' || OFFLINE_STATUS.includes(status);
+    const viaQueue = !net.isOnline() || offline.queue.hasPendingFor(id);
+    if (status === 'cancelled' && viaQueue) return queueCancel(id, reason);
+    if (offlineOk && viaQueue) return queueStatus(id, status, therapistId);
+    const r = await rpc('set_appointment_status', { p_id: id, p_status: status, p_reason: reason ?? null, p_therapist: therapistId || null }, ['appointments', 'invoices', 'notifications', 'activity']);
+    if (!r.ok && r.error === OFFLINE_MSG && offlineOk) return status === 'cancelled' ? queueCancel(id, reason) : queueStatus(id, status, therapistId); // الاتصال قطع في النص
+    if (!r.ok) throw new DbError(r.error);
   },
   async rescheduleAppointment(id: string, date: string, time: string, therapistId?: string, address?: string): Promise<Result> {
     if (!net.isOnline() || offline.queue.hasPendingFor(id)) return queueReschedule(id, date, time, therapistId, address);
@@ -1174,7 +1226,17 @@ export const db = {
     const r = await rpc('update_plan_invoice', { p_invoice: id, p_price: patch.price, p_discount: patch.discount, p_note: patch.note, p_issue: issue }, ['invoices', 'plans', 'activity']);
     return r.ok ? { ok: true } : r;
   },
+  // الدفعة بمفتاح من الجهاز (offline_exec — هجرة 959): لو الاتصال قطع بعد ما الخادم حفظ، الطابور بيعيدها بنفس المفتاح فمابتتكررش.
+  // من غير إنترنت: بتتسجّل على الجهاز (الفاتورة بتبان مدفوعة/جزئي) وبتتبعت لوحدها لما النت يرجع.
   async recordPayment(invoiceId: string, amount: number, method: PaymentMethod, note = ''): Promise<Result> {
+    const key = uuid();
+    const inv = load().invoices.find((i) => i.id === invoiceId);
+    if (!net.isOnline() || offline.queue.hasPendingFor(invoiceId)) return queuePayment(key, invoiceId, amount, method, note);
+    const k = await supabase.rpc('offline_exec', { p_key: key, p_kind: 'payment.record', p: { invoiceId, amount, method, note } });
+    if (!k.error) { await pull(['invoices', 'payments', 'activity']); return { ok: true }; }
+    if (isNetworkError(k.error)) return inv ? queuePayment(key, invoiceId, amount, method, note) : fail(OFFLINE_MSG);
+    if (!/offline_exec|schema cache|Could not find/i.test(k.error.message ?? '')) return fail(cleanMsg(k.error.message));
+    // الهجرة لسه ما اتطبقتش: الطريقة القديمة (من غير مفتاح)
     const r = await rpc('record_payment', { p_invoice: invoiceId, p_amount: amount, p_method: method, p_note: note }, ['invoices', 'payments', 'activity']);
     return r.ok ? { ok: true } : r;
   },
@@ -1472,9 +1534,27 @@ export const db = {
   stopRealtime() { if (rtChannel) { supabase.removeChannel(rtChannel); rtChannel = null; } if (rtTimer) clearTimeout(rtTimer); rtPending.clear(); },
 
   // مؤشرات لوحة المعلومات — محسوبة على الخادم من الجداول مباشرة (تاريخ اليوم بتوقيت الرياض)
+  // من غير نت: نفس الأرقام محسوبة من البيانات اللي على الجهاز (المواعيد/المرضى/الفواتير/الدفعات — بعد صلاحيات الموظف)،
+  // والعدادات اللي مش على الجهاز (الطلبات/التذاكر) من آخر رد للخادم
   async dashboardStats(): Promise<DashboardStats | null> {
-    const { data, error } = await supabase.rpc('dashboard_stats');
-    return error ? null : (data as DashboardStats);
+    if (net.isOnline()) {
+      const { data, error } = await supabase.rpc('dashboard_stats');
+      if (!error) return (lastStats = data as DashboardStats);
+      if (!isNetworkError(error)) return null;
+    }
+    const d = load(); const t = today(); const month = t.slice(0, 7);
+    const money = d.payments.length > 0 || d.invoices.length > 0 || (lastStats?.monthRevenue ?? null) !== null;
+    return {
+      todayAppointments: d.appointments.filter((a) => a.date === t && a.status !== 'cancelled').length,
+      completedToday: d.appointments.filter((a) => a.date === t && a.status === 'completed').length,
+      totalPatients: d.patients.length,
+      newPatientsMonth: d.patients.filter((p) => RIYADH_DAY_FMT.format(new Date(p.registeredAt)).startsWith(month)).length,
+      monthRevenue: money ? d.payments.filter((p) => !p.voidedAt && RIYADH_DAY_FMT.format(new Date(p.date)).startsWith(month)).reduce((n, p) => n + p.amount, 0) : null,
+      outstanding: money ? d.invoices.filter((i) => i.status === 'due' || i.status === 'partial').reduce((n, i) => n + i.remaining, 0) : null,
+      draftPlanInvoices: d.invoices.filter((i) => i.status === 'draft').length,
+      unreadNotifications: db.unreadCount(),
+      pendingRequests: lastStats?.pendingRequests ?? 0, openTickets: lastStats?.openTickets ?? 0,
+    };
   },
 
   // ملخص التقارير على الخادم: الإيراد = مدفوعات الفترة الفعلية، مع فلتر المعالج والفرع وتجميع يومي/أسبوعي/شهري

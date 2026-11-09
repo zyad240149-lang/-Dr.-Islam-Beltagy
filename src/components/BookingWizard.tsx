@@ -59,7 +59,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
         birthDate: '', nationalId: '', city: '', district: '', street: '', address: '', notes: '', doctorId: null, referralSource: np.referralSource,
         emergencyContactName: '', emergencyContactPhone: '', mainComplaint: '', diagnosis: '', medicalHistory: '',
         phone2: extra.phone2, whatsappMode: extra.wa ? 'other' : 'phone', whatsappPhone: extra.wa } as Parameters<typeof db.createPatient>[0]);
-      toast.success(`اتعمل ملف للمريض برقم ${p.fileNo}`);
+      toast.success(p.fileNo ? `اتعمل ملف للمريض برقم ${p.fileNo}` : 'اتعمل ملف للمريض على الجهاز — رقم الملف هيظهر أول ما النت يرجع');
       setPatientId(p.id); setPatientQuery(p.fullName); setMode('search');
     } catch (e) { toast.error((e as Error).message); } finally { setCreating(false); }
   }; // ٨/١١: الحجز مؤكد ولا غير مؤكد

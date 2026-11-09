@@ -98,6 +98,7 @@ try {
   const D = await device(STAFF.doc);
   // نفتح الشاشات مرة بإنترنت عشان ملفاتها تتحمّل (بعدين بتشتغل من غير شبكة)
   await nav(R.page, '/patients');
+  await nav(R.page, '/work-hours');
   // صفحة ملف المريض بتتفتح بعد الحفظ — في نسخة الإنتاج ملفاتها متخزّنة مسبقًا (Service Worker)، هنا (سيرفر التطوير) بنحمّلها بإيدينا
   await R.page.evaluate(() => import('/src/pages/PatientProfile.tsx')).catch(() => {});
   await nav(D.page, '/diagnosis');
@@ -110,9 +111,10 @@ try {
   await sleep(1500);
 
   section('2) الاستقبال (بدون إنترنت): ملف مريض جديد');
-  await nav(R.page, '/patients');
-  await R.page.getByRole('button', { name: 'فتح ملف مريض جديد' }).click();
-  await R.page.fill('#np-first', P.first); await R.page.fill('#np-father', P.father); await R.page.fill('#np-family', P.family);
+  await nav(R.page, '/'); // صفحة تانية الأول عشان «المرضى» تتفتح من جديد بـ ?new=1 (الاستقبال مالوش «مواعيد العمل»)
+  await nav(R.page, '/patients?new=1');
+  await R.page.waitForSelector('#np-name', { timeout: 20000 });
+  await R.page.fill('#np-name', `${P.first} ${P.father} ${P.family}`);
   await R.page.fill('#np-phone', P.phone);
   await R.page.locator('.modal').getByRole('button', { name: 'حفظ', exact: true }).click();
   const rOps = await until(async () => { const o = await idbOps(R.page); return o.some((x) => x.kind === 'patient.create') ? o : null; }, 15000);
@@ -130,8 +132,8 @@ try {
   await nameInput.fill(`${P.first}  ${P.father} ${P.family}`); // مسافة زيادة — المطابقة بتتجاهلها
   check('رسالة «مفيش إنترنت — هيتحفظ على الجهاز»', (await D.page.locator('.modal', { hasText: 'مفيش إنترنت دلوقتي' }).count()) === 1);
   await D.page.locator('.modal__foot button', { hasText: 'ابدأ التشخيص بالاسم ده' }).click();
-  await D.page.waitForSelector('.modal .dx-unlinked', { timeout: 10000 });
-  check('نموذج التشخيص اتفتح باسم المريض في خانة 1', (await D.page.locator('.modal .dx-unlinked', { hasText: NAME }).count()) === 1);
+  await D.page.waitForSelector('.modal .dx-unlinked', { state: 'attached', timeout: 10000 });
+  check('نموذج التشخيص اتفتح باسم المريض في خانة 1 (من غير رسالة ربط)', (await D.page.locator('.modal .dx-unlinked').getAttribute('data-name'))?.replace(/\s+/g, ' ').trim() === NAME && !/ربط/.test(await D.page.locator('.modal .sh-visitlink').allInnerTexts().then((x) => x.join(' '))));
   await D.page.locator('.sh-tabs button', { hasText: 'كشف الطبيب' }).click();
   await D.page.locator('.sh-region__pick', { hasText: 'الكاحل والقدم' }).click();
   await D.page.locator('.sh-ck', { hasText: 'Ankle pain' }).first().locator('input').check();
@@ -144,7 +146,11 @@ try {
   const dOps = await idbOps(D.page);
   check('التشخيص اتحفظ على جهاز الدكتور (IndexedDB) بمعرّف مستقل', dOps.some((x) => x.kind === 'ortho.save'), JSON.stringify(dOps));
   const consultId = dOps.find((x) => x.kind === 'ortho.save')?.entityId;
-  check('ظاهر في «تشخيصات محتاجة ربط» — محفوظ على الجهاز', (await D.page.locator(`[data-unlinked="${consultId}"]`, { hasText: 'محفوظ على الجهاز' }).count()) === 1);
+  // طلب المستخدم: مفيش أي رسالة «محتاج ربط»/«اختار المريض»/«غير مرتبط» للدكتور — التشخيص ظاهر عادي باسمه في «اتشخصوا»
+  await nav(D.page, '/diagnosis?tab=done');
+  check('التشخيص ظاهر عادي في «المرضى اللي اتشخصوا» باسم المريض (محفوظ على الجهاز)', (await D.page.locator(`[data-unlinked="${consultId}"]`, { hasText: NAME }).count()) === 1);
+  const NO_LINK_MSG = /محتاج(ة)? ربط|يحتاج مراجعة وربط|اختار المريض|غير مرتبط|بانتظار ملف المريض/;
+  check('مفيش أي رسالة ربط للدكتور (شاشة التشخيص بكل تبويباتها)', !NO_LINK_MSG.test(await D.page.locator('body').innerText()) && !NO_LINK_MSG.test((await (async () => { await nav(D.page, '/diagnosis'); return D.page.locator('body').innerText(); })())));
 
   section('4) النت بيرجع — الدكتور يرفع الأول، بعده الاستقبال');
   await D.ctx.setOffline(false);
@@ -166,7 +172,7 @@ try {
   check('برقم ملف الاستقبال', bar.replace(/\s+/g, ' ').includes(String(pat?.file_no ?? '###').replace(/^TM-/, '')), `${bar.replace(/\s+/g, ' ')} / ${pat?.file_no}`);
   await R.page.goto(BASE + `/diagnosis?tab=done`);
   check('ظاهر في «المرضى اللي اتشخصوا» (جهاز الاستقبال)', !!(await until(async () => (await R.page.locator('.page', { hasText: NAME }).count()) > 0, 30000)));
-  check('مابقاش في «تشخيصات محتاجة ربط»', (await R.page.locator(`[data-unlinked="${consultId}"]`).count()) === 0);
+  check('مابقاش ظاهر كتشخيص بالاسم (بقى على ملف المريض)', (await R.page.locator(`[data-unlinked="${consultId}"]`).count()) === 0);
 
   section('6) اسمين متشابهين: مفيش دمج — «يحتاج مراجعة» والربط يدوي');
   await D.page.goto(BASE + '/diagnosis');
@@ -176,7 +182,7 @@ try {
   await D.page.locator('.modal input.input').first().fill(TWIN);
   check('النافذة بتقترح الملفات الموجودة بنفس الاسم', (await D.page.locator('.modal .dx-hits__row', { hasText: TWIN }).count()) === 2);
   await D.page.locator('.modal__foot button', { hasText: 'ابدأ التشخيص بالاسم ده' }).click();
-  await D.page.waitForSelector('.modal .dx-unlinked', { timeout: 10000 });
+  await D.page.waitForSelector('.modal .dx-unlinked', { state: 'attached', timeout: 10000 });
   await D.page.locator('.sh-tabs button', { hasText: 'كشف الطبيب' }).click();
   await D.page.locator('.sh-region__pick', { hasText: 'الكاحل والقدم' }).click();
   await D.page.locator('.modal .sh-line', { hasText: 'Primary Diagnosis' }).locator('input').fill('Twin review test');
@@ -188,18 +194,21 @@ try {
   const review = await until(() => q1(`select patient_id, link_status, link_note from ortho_consultations where id = '${twinId}' and link_status is not null`), 90000, 1500);
   check('مااتدمجش تلقائي — «يحتاج مراجعة»', review?.patient_id === null && review?.link_status === 'review', JSON.stringify(review));
   check('الملفين لسه موجودين زي ما هما', (await q1(`select count(*)::int n from patients where full_name = '${TWIN}'`)).n === 2);
-  await D.page.goto(BASE + '/diagnosis');
+  // مش متأكدين ← مابيتربطش بملف غلط، ومفيش أي رسالة للدكتور؛ بيروح لقايمة المراجعة الداخلية (الإعدادات ← مراجعة ربط التشخيصات)
+  await D.page.goto(BASE + '/diagnosis?tab=done');
   const row = D.page.locator(`[data-unlinked="${twinId}"]`);
-  check('ظاهر «يحتاج مراجعة وربط بملف المريض»', !!(await until(async () => (await row.locator('text=يحتاج مراجعة وربط بملف المريض').count()) === 1, 30000)));
-  await row.getByRole('button', { name: 'ربط بملف مريض' }).click();
-  check('نافذة الربط بتعرض الملفين', (await D.page.locator('.modal .dx-hits__row').count()) === 2);
-  await D.page.locator('.modal .dx-hits__row').nth(1).click();
-  await D.page.locator('.modal__foot button', { hasText: 'ربط' }).click();
-  await D.page.waitForFunction(() => !document.querySelector('.modal'), null, { timeout: 20000 });
+  check('عند الدكتور: التشخيص ظاهر عادي باسمه — من غير «يحتاج مراجعة»', !!(await until(async () => (await row.count()) === 1, 30000)) && !NO_LINK_MSG.test(await D.page.locator('body').innerText()));
+  await D.page.goto(BASE + '/settings');
+  await D.page.locator('.tab', { hasText: 'مراجعة ربط التشخيصات' }).click();
+  const rv = D.page.locator(`[data-review="${twinId}"]`);
+  check('في قايمة المراجعة الداخلية (الإعدادات)', !!(await until(async () => (await rv.count()) === 1, 30000)));
+  await rv.locator('input').first().fill(TWIN);
+  await rv.locator('.gsearch__hit', { hasText: TWIN }).nth(1).click();
+  await rv.getByRole('button', { name: 'ربط', exact: true }).click();
   const man = await until(() => q1(`select patient_id, link_method from ortho_consultations where id = '${twinId}' and patient_id is not null`), 15000);
-  check('الربط اليدوي ربطه بالملف اللي اتختار', !!man && twins.some((t) => t.id === man.patient_id) && man.link_method === 'manual', JSON.stringify(man));
-  await sleep(1200);
-  check('اختفى من «تشخيصات محتاجة ربط»', (await D.page.locator(`[data-unlinked="${twinId}"]`).count()) === 0);
+  check('الربط من قايمة المراجعة ربطه بالملف اللي اتختار', !!man && twins.some((t) => t.id === man.patient_id) && man.link_method === 'manual', JSON.stringify(man));
+  await sleep(1500);
+  check('اختفى من قايمة المراجعة', (await D.page.locator(`[data-review="${twinId}"]`).count()) === 0);
   check('مفيش أخطاء في الصفحات', R.errors.length + D.errors.length === 0, [...R.errors, ...D.errors].slice(0, 3).join(' | '));
 } catch (e) {
   check('تنفيذ الاختبار بدون أخطاء غير متوقعة', false, e.message);

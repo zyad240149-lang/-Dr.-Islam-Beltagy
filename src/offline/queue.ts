@@ -11,7 +11,7 @@
 // ======================================================================
 import type { KV } from './idb';
 
-export type OpKind = 'patient.create' | 'patient.update' | 'appointment.create' | 'appointment.reschedule' | 'appointment.cancel' | 'assessment.save' | 'ortho.save' | 'file.upload';
+export type OpKind = 'patient.create' | 'patient.update' | 'appointment.create' | 'appointment.reschedule' | 'appointment.cancel' | 'appointment.status' | 'payment.record' | 'assessment.save' | 'ortho.save' | 'file.upload';
 export type OpStatus = 'pending' | 'syncing' | 'failed' | 'conflict';
 
 export interface OfflineOp {
@@ -41,7 +41,7 @@ export interface ConflictInfo {
 
 export type ExecResult =
   | { type: 'done' }
-  | { type: 'retry'; error: string }                 // فشل مؤقت: شبكة/خادم
+  | { type: 'retry'; error: string; soft?: boolean }  // فشل مؤقت: شبكة/خادم (soft = العملية دي بس تستنى، الباقي يكمّل)
   | { type: 'auth'; error: string }                  // الجلسة منتهية/الصلاحية اتسحبت
   | { type: 'failed'; error: string }                // رفض من الخادم (تحقق)
   | { type: 'conflict'; conflict: ConflictInfo }
@@ -133,7 +133,7 @@ export class OfflineQueue {
       const skipped = new Set<string>();
       for (const op of this.ops.slice()) {
         // سجلات علقت بسبب عمود ربط فاضي ('' بدل null) من نسخة قديمة — المنفّذ بيصلحها دلوقتي، فترجع تتبعت لوحدها
-        if (op.status === 'failed' && /invalid input syntax for type uuid: ""/.test(op.lastError ?? '')) { op.status = 'pending'; op.nextAttemptAt = 0; await this.save(op); }
+        if (op.status === 'failed' && /invalid input syntax for type (uuid|date|smallint|integer|numeric|time[a-z ]*): ""/.test(op.lastError ?? '')) { op.status = 'pending'; op.nextAttemptAt = 0; await this.save(op); }
         if (op.status === 'failed' || op.status === 'conflict') { skipped.add(op.entityId); continue; }
         if (!opts.force && op.nextAttemptAt > this.now()) { skipped.add(op.entityId); summary.retry++; continue; }
         // عملية معتمدة على إنشاء لسه ما خلصش (أو فشل/تعارض) تستنى
@@ -157,7 +157,7 @@ export class OfflineQueue {
         } else if (r.type === 'retry') {
           op.status = 'pending'; op.lastError = r.error; op.nextAttemptAt = this.now() + backoff(op.attempts); await this.save(op);
           summary.retry++; skipped.add(op.entityId);
-          break; // الشبكة/الخادم واقع — مفيش فايدة نكمّل؛ الجولة الجاية
+          if (!r.soft) break; // الشبكة/الخادم واقع — مفيش فايدة نكمّل؛ الجولة الجاية
         } else if (r.type === 'auth') {
           op.status = 'pending'; op.lastError = r.error; op.attempts -= 1; await this.save(op);
           summary.authError = true;

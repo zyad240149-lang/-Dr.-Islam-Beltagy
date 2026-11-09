@@ -11,7 +11,7 @@
 // ======================================================================
 import { supabase } from '../lib/supabase';
 import { isNetworkError } from './net';
-import { asConflict, bookingError, classify, clean, DUP_PHONE, norm, type PgErr } from './classify';
+import { asConflict, bookingError, classify, clean, DUP_PHONE, EMPTY_NULL, norm, type PgErr } from './classify';
 import type { ExecResult, OfflineOp } from './queue';
 import { normalizeSearch } from '../utils/phoneUtils';
 
@@ -82,7 +82,9 @@ export async function executeOp(op: OfflineOp): Promise<ExecResult> {
         // كشف/أشعة/كسر/عملية: إنشاء بمعرّف الجهاز (التكرار = تعارض مفتاح أساسي ← اتنفّذ قبل كده)، تعديل بكشف تعارض مع نسخة الخادم
         const table = String(op.payload.table);
         if (!/^ortho_(consultations|imaging|fractures|surgeries|nursing|injections|medications|exercises|exercise_plans|follow_ups)$/.test(table)) return { type: 'failed', error: 'نوع سجل غير معروف' };
-        const row = op.payload.row as Record<string, unknown>;
+        const row = { ...(op.payload.row as Record<string, unknown>) };
+        // عمليات اتحفظت قبل التصليح بقيمة '' في عمود ربط/تاريخ/رقم — الخادم بيرفضها؛ null هو المقصود
+        for (const k of Object.keys(row)) if (row[k] === '' && (k.endsWith('_id') || EMPTY_NULL.test(k))) row[k] = null;
         if (op.payload.isNew) {
           const { error, status } = await supabase.from(table).insert({ ...row, id: op.entityId });
           if (!error || (error.code === '23505' && /pkey|\(id\)/.test(`${error.message} ${error.details ?? ''}`))) return { type: 'done' };
@@ -133,6 +135,30 @@ export async function executeOp(op: OfflineOp): Promise<ExecResult> {
         if (cur.status === 'cancelled') return { type: 'failed', error: 'الموعد ملغي على الخادم.' };
         const { error, status } = await supabase.rpc('reschedule_appointment', { p_id: op.entityId, p_date: to.date, p_time: to.time, p_therapist: to.therapistId ?? null, p_address: to.address ?? null });
         return error ? bookingError(error, status) : { type: 'done' };
+      }
+      case 'payment.record': {
+        // بمفتاح العملية (op.id) — نفس المفتاح = نفس الدفعة، مابتتسجّلش مرتين (هجرة 959)
+        const p = op.payload as { invoiceId: string; amount: number; method: string; note: string };
+        const { error, status } = await supabase.rpc('offline_exec', { p_key: op.id, p_kind: 'payment.record', p: { invoiceId: p.invoiceId, amount: p.amount, method: p.method, note: p.note } });
+        if (!error) return { type: 'done' };
+        // الخادم لسه مااتحدّثش (الهجرة مش مطبّقة): الدفعة تفضل محفوظة على الجهاز وتستنى — مابنبعتهاش من غير مفتاح عشان مانكررهاش
+        if (/offline_exec|schema cache|Could not find/i.test(error.message ?? '')) return { type: 'retry', soft: true, error: 'بانتظار تحديث الخادم لتسجيل الدفعات المحفوظة على الجهاز' };
+        return classify(error, status) ?? { type: 'failed', error: clean(error.message ?? '') };
+      }
+      case 'appointment.status': {
+        // تأكيد/في الطريق/حضر/لم يحضر اتسجّل من غير نت. آمن للتكرار: لو الخادم وصل للحالة دي أو بعدها ← خلصت (مابنرجّعش الموعد لورا)
+        const ORDER = ['new', 'rescheduled', 'confirmed', 'on_way', 'arrived', 'in_progress', 'completed'];
+        const to = String(op.payload.status);
+        const { data: cur, error: e0, status: s0 } = await supabase.from('appointments').select('status').eq('id', op.entityId).maybeSingle();
+        const c0 = classify(e0, s0); if (c0) return c0;
+        if (!cur) return { type: 'failed', error: 'الموعد لم يعد موجودًا على الخادم.' };
+        if (cur.status === to) return { type: 'done' };
+        if (to !== 'no_show' && ORDER.indexOf(cur.status) >= ORDER.indexOf(to)) return { type: 'done' };
+        if (!op.payload.__force && (cur.status === 'cancelled' || cur.status === 'no_show' || (to === 'no_show' && ORDER.indexOf(cur.status) >= ORDER.indexOf('arrived')))) {
+          return asConflict({ reason: 'server_changed', message: `الموعد اتغيّرت حالته على الخادم (${cur.status}) بعد ما سجّلت «${to}» محليًا.`, fields: ['status'], serverValues: { status: cur.status } });
+        }
+        const { error, status } = await supabase.rpc('set_appointment_status', { p_id: op.entityId, p_status: to, p_reason: null, p_therapist: op.payload.therapistId ?? null });
+        return classify(error, status) ?? { type: 'done' };
       }
       case 'appointment.cancel': {
         const { data: cur, error: e0, status: s0 } = await supabase.from('appointments').select('status').eq('id', op.entityId).maybeSingle();

@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { offline } from '../offline';
 import { isNetworkError, net } from '../offline/net';
 import { uuid } from '../offline/queue';
+import { EMPTY_NULL } from '../offline/classify';
 import { fetchKeyset } from '../data/download';
 
 export type Side = 'right' | 'left' | 'both' | 'na';
@@ -261,6 +262,8 @@ export const ortho = {
     // أي عمود ربط (…_id) فاضي = null: الصفوف اللي اتقرت من الخادم بتحوّل null لـ '' (fromRow)، وإرجاعها '' للخادم كان بيرفض الحفظ
     // («invalid input syntax for type uuid: ""») — زي كشف مالوش موعد (appointment_id) لما يتحفظ تاني أو من «حفظ/طباعة الروشتة»
     for (const k of Object.keys(row)) if (k.endsWith('_id') && row[k] === '') row[k] = null;
+    // نفس الكلام لأعمدة التاريخ/الوقت/الأرقام: '' (من fromRow أو خانة فاضية) الخادم بيرفضه ← العملية كانت بتعلّق «فشل» على طول
+    for (const k of Object.keys(row)) if (row[k] === '' && EMPTY_NULL.test(k)) row[k] = null;
     // بدون إنترنت (أو السجل نفسه لسه مستني مزامنة): بيتحفظ على الجهاز ويتبعت لوحده لما الاتصال يرجع
     if (!net.isOnline() || (item.id && offline.queue.hasPendingFor(item.id))) return saveOffline(kind, item.id, row);
     const table = supabase.from(tableOf(kind));

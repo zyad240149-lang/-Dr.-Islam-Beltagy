@@ -149,9 +149,10 @@ try {
 
   // ============ 3) إضافة وتعديل بدون إنترنت ============
   section('3) إضافة مريض وتعديل مرضى بدون إنترنت');
-  await nav(page, '/patients');
-  await page.getByRole('button', { name: 'فتح ملف مريض جديد' }).click();
-  await page.fill('#np-first', NEW1.first); await page.fill('#np-father', NEW1.father); await page.fill('#np-family', NEW1.family);
+  // «فتح ملف مريض جديد» اتشال من صفحة المرضى (٩/١١ — المريض الجديد من الحجز)؛ نفس النموذج لسه بيفتح بـ /patients?new=1
+  await nav(page, '/patients?new=1');
+  await page.waitForSelector('#np-name', { timeout: 20000 });
+  await page.fill('#np-name', `${NEW1.first} ${NEW1.father} ${NEW1.family}`);
   await page.fill('#np-phone', NEW1.phone);
   await page.locator('.modal').getByRole('button', { name: 'حفظ', exact: true }).click();
   const newName = `${NEW1.first} ${NEW1.father} ${NEW1.family}`;
@@ -167,7 +168,7 @@ try {
   const editFamily = async (name, family) => {
     await searchPatients(page, name);
     await page.locator('tr', { hasText: name }).first().getByRole('button', { name: 'تعديل' }).click();
-    await page.fill('#ep-family', family);
+    await page.fill('#ep-name', name.split(' ').slice(0, -1).concat(family).join(' ')); // خانة اسم واحدة (٨/١١) — العيلة = آخر كلمة
     await page.locator('.modal').getByRole('button', { name: 'حفظ', exact: true }).click();
     await page.locator('.modal').waitFor({ state: 'detached', timeout: 10000 }).catch(() => {});
   };
@@ -252,8 +253,10 @@ try {
   await p2.waitForSelector('#pt-q', { timeout: 30000 });
   await ctx2.setOffline(true);
   await p2.evaluate(() => window.dispatchEvent(new Event('offline')));
-  await p2.getByRole('button', { name: 'فتح ملف مريض جديد' }).click();
-  await p2.fill('#np-first', NEW2.first); await p2.fill('#np-father', NEW2.father); await p2.fill('#np-family', NEW2.family); await p2.fill('#np-phone', NEW2.phone);
+  await nav(p2, '/work-hours'); await p2.waitForSelector('.page h1', { timeout: 20000 });
+  await nav(p2, '/patients?new=1');
+  await p2.waitForSelector('#np-name', { timeout: 20000 });
+  await p2.fill('#np-name', `${NEW2.first} ${NEW2.father} ${NEW2.family}`); await p2.fill('#np-phone', NEW2.phone);
   await p2.locator('.modal').getByRole('button', { name: 'حفظ', exact: true }).click();
   const queued = await until(async () => (await idb(p2)).ops.some((o) => o.kind === 'patient.create'), 10000);
   check('المريض اتحفظ في الطابور وهو بدون إنترنت', !!queued, `early POSTs=${early}`);

@@ -4,6 +4,8 @@ import type { ConflictInfo, ExecResult } from './queue';
 
 export const norm = (v: unknown) => (v === null || v === undefined || v === '' ? null : typeof v === 'object' ? JSON.stringify(v) : String(v));
 export const SLOT_MSG = /حجزه|محجوز|تعارض|غير متاح|خارج|إجازة|اجازة|مغلق|عطلة|استراحة|لا يعمل|ما يعمل|مواعيد عمل|الموعد|سابق/;
+/** أعمدة تاريخ/وقت/أرقام: القيمة '' (خانة فاضية أو صف اتقرا من الخادم بـ fromRow) معناها null — الخادم بيرفض '' */
+export const EMPTY_NULL = /(^|_)(follow_up|due_date|requested_at|injury_date|cast_date|removal_due|pain_score|time|done_at|amount|total_price|discount|price|cost|position)$/;
 export const DUP_PHONE = /مسجّل بالفعل|مسجل بالفعل/;
 
 export interface PgErr { message?: string; code?: string; details?: string; hint?: string }

@@ -181,5 +181,5 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
   );
   // الروشتة في الكشف: الأدوية الأول، وبعدها المطلوب من أشعة/سونار وتحاليل
   if (requestsOnly) return <div className="cx">{[imagingSec, labsSec]}</div>;
-  return <div className="cx">{rxOnly ? [medsSec, imagingSec, labsSec, notesSec] : [imagingSec, medsSec, labsSec, notesSec]}</div>;
+  return <div className="cx">{/* الأشعة والتحاليل بتتطلب من تاب «الأشعة والتحاليل» (٩/١١) */}{rxOnly ? [medsSec, notesSec] :[imagingSec, medsSec, labsSec, notesSec]}</div>;
 }

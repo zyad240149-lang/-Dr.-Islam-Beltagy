@@ -432,14 +432,12 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           <section className="plan-part">
             <h3 className="plan-part__h">الأدوية والروشتة</h3>
             {(() => {
-              const meds = c.medications.filter((m) => m.name.trim()), reqs = c.imagingRequests.filter((r) => r.region.trim());
-              return meds.length || reqs.length || c.labs.length ? (
+              const meds = c.medications.filter((m) => m.name.trim());
+              return meds.length ? (
                 <dl className="dl rx-sum">
-                  {meds.length > 0 && <div><dt>الأدوية</dt><dd dir="ltr" style={{ textAlign: 'start' }}>{meds.map((m) => [m.name, m.dose, m.frequency, m.duration].filter(Boolean).join(' ')).join(' • ')}</dd></div>}
-                  {reqs.length > 0 && <div><dt>أشعة / سونار مطلوبة</dt><dd>{reqs.map((r) => `${IMAGING_KIND[r.kind]} — ${r.region}${r.view ? ` (${r.view})` : ''}`).join('، ')}</dd></div>}
-                  {c.labs.length > 0 && <div><dt>تحاليل مطلوبة</dt><dd dir="ltr" style={{ textAlign: 'start' }}>{c.labs.join(' • ')}</dd></div>}
+                  <div><dt>الأدوية</dt><dd dir="ltr" style={{ textAlign: 'start' }}>{meds.map((m) => [m.name, m.dose, m.frequency, m.duration].filter(Boolean).join(' ')).join(' • ')}</dd></div>
                 </dl>
-              ) : <p className="cx-empty">لسه مفيش روشتة — اضغط «فتح الروشتة» واكتب الأدوية والأشعة/السونار والتحاليل المطلوبة في صفحة واحدة.</p>;
+              ) : <p className="cx-empty">لسه مفيش روشتة — اضغط «فتح الروشتة» واكتب الأدوية والتعليمات.</p>;
             })()}
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
               <Button icon="receipt" onClick={() => setRxOpen(true)}>فتح الروشتة</Button>
@@ -632,7 +630,7 @@ function RxPage({ patientId, region, initial, busy, onClose, onSave, onPrint }: 
   const [rx, setRx] = useState<RxData>(initial);
   const pick = () => ({ medications: rx.medications, labs: rx.labs, imagingRequests: rx.imagingRequests, plan: rx.plan });
   return (
-    <Modal xl title="الروشتة — الأدوية والأشعة والتحاليل المطلوبة" onClose={onClose} footer={<>
+    <Modal xl title="الروشتة — الأدوية والتعليمات" onClose={onClose} footer={<>
       <Button variant="outline" onClick={onClose} disabled={busy}>إغلاق</Button>
       <Button variant="outline" icon="print" loading={busy} onClick={() => onPrint(pick())}>طباعة الروشتة</Button>
       <Button icon="check" loading={busy} onClick={async () => { if (await onSave(pick())) onClose(); }}>حفظ الروشتة</Button>

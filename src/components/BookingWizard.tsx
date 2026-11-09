@@ -46,7 +46,19 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
   const [payMethod, setPayMethod] = useState<PaymentMethod>('cash');
   // «المريض موجود» (في العيادة دلوقتي): الموعد بيتحجز النهارده في الوقت اللي تختاره، وحضوره بيتأكد على طول بعد الحجز
   const [walkIn, setWalkIn] = useState(false);
-  const [confirmed, setConfirmed] = useState(false); // ٨/١١: الحجز مؤكد ولا غير مؤكد
+  const [confirmed, setConfirmed] = useState(false);
+  const [creating, setCreating] = useState(false);
+  // ٩/١١: مريض جديد من الحجز = ملف عادي في «المرضى» على طول
+  const createNew = async () => {
+    setCreating(true);
+    try {
+      const p = await db.createPatient({ nationality: 'saudi', firstName: '', fatherName: '', familyName: '', fullName: np.fullName.trim().replace(/\s+/g, ' '), phone: np.phone, email: '', gender: 'male', genderUnknown: true,
+        birthDate: '', nationalId: '', city: '', district: '', street: '', address: '', notes: '', doctorId: null, referralSource: np.referralSource,
+        emergencyContactName: '', emergencyContactPhone: '', mainComplaint: '', diagnosis: '', medicalHistory: '' } as Parameters<typeof db.createPatient>[0]);
+      toast.success(`اتعمل ملف للمريض برقم ${p.fileNo}`);
+      setPatientId(p.id); setPatientQuery(p.fullName); setMode('search');
+    } catch (e) { toast.error((e as Error).message); } finally { setCreating(false); }
+  }; // ٨/١١: الحجز مؤكد ولا غير مؤكد
   const [completeData, setCompleteData] = useState(false);
   const [callFile, setCallFile] = useState<string | null>(null); // حجز مكالمة: رقم الملف اللي اتعمل للمتصل
   const [result, setResult] = useState<{ id: string; patientId: string; no: string; date: string; time: string; therapist: string } | null>(null);
@@ -123,13 +135,13 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
   const netPrice = Math.max(0, shownPrice);
 
   const canNext = [
-    !!patientId || (mode === 'call' && np.fullName.trim().length >= 2 && phoneOk),
+    !!patientId,
     !!serviceId,
     !!therapistId,
     !!date && !!time,
     true,
   ][step];
-  const blockedMsg = [mode === 'call' ? 'أدخل اسم المريض ورقم جواله' : 'ابحث عن المريض واختره', 'اختر الخدمة أولًا', 'يرجى اختيار الدكتور أولًا', 'اختر التاريخ والوقت أولًا', ''][step];
+  const blockedMsg = [mode === 'call' ? 'اكتب الاسم والرقم واضغط «فتح ملف وإضافة المريض»' : 'ابحث عن المريض واختره', 'اختر الخدمة أولًا', 'يرجى اختيار الدكتور أولًا', 'اختر التاريخ والوقت أولًا', ''][step];
 
   // حجز من خانة فاضية في جدول المواعيد: الدكتور والتاريخ والوقت محددين → بنتخطى خطوتي «الدكتور» و«التاريخ والوقت»
   const visible = lockedPreset ? [0, 1] : [0, 1, 3]; // ٩/١١: خطوة «الدكتور» اتشالت — الدكتور بيتحدد تلقائي
@@ -255,7 +267,11 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
           {patientId && patient ? null : (
             <>
               {/* اختيارين: «بحث عن مريض» (مريض موجود) أو «حجز عن طريق مكالمة» (اسم + جوال) */}
-              {/* ٨/١١: «مريض جديد» اتشال من الحجز — بحث عن مريض بس */}
+              {/* ٩/١١: «مريض جديد» رجع — بيتعمله ملف في «المرضى» على طول (اسم + رقم) */}
+              <div className="svc-tabs" style={{ marginBottom: 14 }}>
+                <button type="button" className={`svc-tab ${mode === 'search' ? 'active' : ''}`} onClick={() => setMode('search')}>بحث عن مريض</button>
+                <button type="button" className={`svc-tab ${mode === 'call' ? 'active' : ''}`} onClick={() => setMode('call')}>مريض جديد</button>
+              </div>
               {mode === 'search' ? (
                 <>
                   <Input label="ابحث عن المريض" icon="search" placeholder="الاسم / رقم الجوال / رقم الملف" value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} />
@@ -282,12 +298,6 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
                     <Input label="اسم المريض" placeholder="اسم المريض" value={np.fullName} onChange={(e) => setNp({ ...np, fullName: e.target.value })} />
                     <PhoneInput id="bw-np-phone" label="رقم الجوال" value={np.phone} onChange={(v) => setNp((x) => ({ ...x, phone: v }))} />
                   </div>
-                  {!existingByPhone && (
-                    <div className="grid-form" style={{ marginTop: 10 }}>
-                      <Select label="الجنسية" value={np.nationality} onChange={(e) => setNp({ ...np, nationality: e.target.value as 'saudi' | 'non_saudi' })}
-                        options={[{ value: 'saudi', label: 'مصري' }, { value: 'non_saudi', label: 'أجنبي' }]} />
-                    </div>
-                  )}
                   {existingByPhone && (
                     <div className="alert alert-info" style={{ margin: '10px 0' }}>
                       <Icon name="user" size={17} />
@@ -295,14 +305,13 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
                       <Button variant="outline" type="button" onClick={() => { setPatientId(existingByPhone.id); }}>استخدام السجل</Button>
                     </div>
                   )}
-                  {!existingByPhone && phoneOk && np.fullName.trim() && (
-                    <p className="muted-sm" style={{ marginTop: 8 }}>بيتضاف في «المرضى» برقم ملف باسمه ورقمه.</p>
-                  )}
+                  <Button icon="plus" style={{ marginTop: 12 }} loading={creating} disabled={!(np.fullName.trim().length >= 2 && phoneOk)} onClick={() => void createNew()}>فتح ملف وإضافة المريض</Button>
+                  <p className="muted-sm" style={{ marginTop: 8 }}>بيتعمله ملف في «المرضى» برقم ملف على طول.</p>
                 </>
               )}
             </>
           )}
-          {((patientId && patient) || (!patientId && mode === 'call' && np.fullName.trim().length >= 2 && phoneOk)) && (
+          {patientId && patient && (
             <div className="choice-grid" style={{ margin: '12px 0' }} role="radiogroup" aria-label="حالة الحجز">
               {/* ٩/١١: «حجز موعد / المريض موجود» بقوا «مؤكد / غير مؤكد» */}
               <button type="button" role="radio" aria-checked={confirmed} className={`choice ${confirmed ? 'selected' : ''}`} onClick={() => { setWalkIn(false); setConfirmed(true); next(); }}>

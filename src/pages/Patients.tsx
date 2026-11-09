@@ -116,7 +116,7 @@ function PatientsList({ tabs }: { tabs: ReactNode }) {
         <div><h1>المرضى</h1><p>سجل جميع مرضى المركز.{(user?.role === 'system_admin' || user?.role === 'center_manager') && <> — <span className="num">{total}</span> مريض</>}</p></div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {/* «استيراد المرضى من Excel» و«تصدير ملف المرضى (Excel)» اتشالوا من الصفحة (٨/١١) */}
-          {can('patients', 'create') && <Button icon="user" onClick={() => setAdding(true)}>فتح ملف مريض جديد</Button>}
+          {/* ٩/١١: «فتح ملف مريض جديد» اتشال — المريض الجديد بيتعمله ملف من الحجز («مريض جديد») */}
         </div>
       </div>
       {local && <LocalDataNote />}

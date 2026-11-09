@@ -1,4 +1,5 @@
 import ExtraServices from './ExtraServices';
+import { FileUploadBox } from './PatientExtras';
 import type { PatientFileCategory } from '../types';
 // نوافذ التفاصيل المترابطة: المريض ← الزيارة ← الخطة العلاجية ← الخدمات ← الفاتورة ← الدفعات ← التقسيط.
 // DetailsProvider في Layout، وأي صفحة تفتح أي تفصيلة بـ useDetails().openPlan(id) / openVisit(id).
@@ -293,6 +294,8 @@ function VisitDetailsModal({ apptId, onClose, onBack }: { apptId: string; onClos
         <ActorBadges a={a} />
       </div>
       {/* ٩/١١: إضافة خدمة (جبس/أشعة…) على نفس الفاتورة — أول حاجة في التفاصيل + طباعة/تحميل الفاتورة */}
+      {/* رفع أشعة/تحاليل للمريض من الزيارة نفسها — فوق «خدمات الزيارة» */}
+      {a.status !== 'cancelled' && <FileUploadBox patientId={a.patientId} appointmentId={a.id} />}
       {a.status !== 'cancelled' && <ExtraServices appointmentId={a.id} />}
       <dl className="review-list" style={{ marginBottom: 14 }}>
         <div><dt>المريض</dt><dd>{patient?.fullName} · <span className="num">{patient?.fileNo}</span></dd></div>

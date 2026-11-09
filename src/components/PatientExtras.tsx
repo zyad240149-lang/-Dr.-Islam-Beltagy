@@ -116,17 +116,12 @@ export const fileTitle = (f: PatientFile) => f.title || f.fileName;
 
 // رفع الأشعة والتحاليل من الاستقبال (أو أي حد عنده صلاحية تعديل المريض): الملف بيتحفظ في Supabase Storage (bucket خاص patient-files)
 // ومربوط بمعرّف المريض — وبيظهر للطبيب في كل تشخيص جديد للمريض ده (PatientMedicalFiles) من غير ما يترفع تاني
-export function PatientFilesTab({ patientId }: { patientId: string }) {
+/** مربع «رفع أشعة أو تحاليل» — في تبويب الملفات وفوق تفاصيل الزيارة (appointmentId = الملف بيتربط بالزيارة كمان) */
+export function FileUploadBox({ patientId, appointmentId }: { patientId: string; appointmentId?: string | null }) {
   const can = useCan();
   const toast = useToast();
-  // من نسخة الجهاز + الطابور: بتفتح من غير إنترنت، وبتتحدّث لوحدها لما حد تاني يرفع ملف (Realtime)
-  const live = usePatientFiles(patientId);
-  const files: PatientFile[] | null = live.loading ? null : live.files;
-  const err = live.error ?? '';
   const [uploading, setUploading] = useState(false);
   const [meta, setMeta] = useState({ category: 'xray' as PatientFileCategory, title: '', fileDate: todayYmd(), note: '' });
-  const [show, setShow] = useState<PatientFileCategory | ''>('');
-  const [del, setDel] = useState<PatientFile | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const camera = useRef<HTMLInputElement>(null);
   const upload = async (list: FileList | null) => {
@@ -137,7 +132,7 @@ export function PatientFilesTab({ patientId }: { patientId: string }) {
     for (const [i, file] of all.entries()) {
       // أكتر من ملف بنفس الاسم: رقم بعد الاسم عشان يتفرقوا
       const title = meta.title.trim() ? (all.length > 1 ? `${meta.title.trim()} (${i + 1})` : meta.title.trim()) : '';
-      const r = await db.uploadPatientFile(patientId, file, meta.note, {}, { category: meta.category, title, fileDate: meta.fileDate });
+      const r = await db.uploadPatientFile(patientId, file, meta.note, { appointmentId: appointmentId ?? null }, { category: meta.category, title, fileDate: meta.fileDate });
       if (r.ok) { ok++; if (r.queued) queued++; } else failed.push(`${file.name}: ${r.error}`);
     }
     setUploading(false);
@@ -148,15 +143,9 @@ export function PatientFilesTab({ patientId }: { patientId: string }) {
     if (ok - queued > 0) toast.success(ok - queued > 1 ? `تم رفع ${ok - queued} ملفات.` : 'تم رفع الملف بنجاح.');
     if (ok) setMeta((m) => ({ ...m, title: '', note: '' }));
   };
-  const [preview, setPreview] = useState<PatientFile | null>(null);
-  const { openPlan } = useDetails();
-  const shown = (files ?? []).filter((f) => !show || f.category === show);
-  const count = (c: PatientFileCategory) => (files ?? []).filter((f) => f.category === c).length;
-
+  if (!can('patients', 'edit')) return null;
   return (
-    <div>
-      {can('patients', 'edit') && (
-        <div className="pf-upload">
+    <div className="pf-upload">
           <div className="pf-upload__title">رفع أشعة أو تحاليل</div>
           <div className="seg" style={{ maxWidth: 420, marginBottom: 10 }} role="radiogroup" aria-label="نوع الملف">
             {(Object.keys(FILE_CATEGORY) as PatientFileCategory[]).map((c) => (
@@ -176,7 +165,26 @@ export function PatientFilesTab({ patientId }: { patientId: string }) {
             <span className="muted-sm" style={{ alignSelf: 'center' }}>صور JPG/PNG/WEBP أو PDF — لحد 10 ميجا للملف. من غير إنترنت الملف بيتحفظ على الجهاز ويترفع لوحده بعدين.</span>
           </div>
         </div>
-      )}
+  );
+}
+
+export function PatientFilesTab({ patientId }: { patientId: string }) {
+  const can = useCan();
+  const toast = useToast();
+  // من نسخة الجهاز + الطابور: بتفتح من غير إنترنت، وبتتحدّث لوحدها لما حد تاني يرفع ملف (Realtime)
+  const live = usePatientFiles(patientId);
+  const files: PatientFile[] | null = live.loading ? null : live.files;
+  const err = live.error ?? '';
+  const [show, setShow] = useState<PatientFileCategory | ''>('');
+  const [del, setDel] = useState<PatientFile | null>(null);
+  const [preview, setPreview] = useState<PatientFile | null>(null);
+  const { openPlan } = useDetails();
+  const shown = (files ?? []).filter((f) => !show || f.category === show);
+  const count = (c: PatientFileCategory) => (files ?? []).filter((f) => f.category === c).length;
+
+  return (
+    <div>
+      <FileUploadBox patientId={patientId} />
       {files && files.length > 0 && (
         <div className="cx-chips" style={{ margin: '4px 0 12px' }}>
           <button type="button" className={`cx-chip ${!show ? 'is-on' : ''}`} onClick={() => setShow('')}>الكل <span className="num">{files.length}</span></button>

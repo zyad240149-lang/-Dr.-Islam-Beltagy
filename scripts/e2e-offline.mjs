@@ -253,7 +253,7 @@ try {
   await p2.waitForSelector('#pt-q', { timeout: 30000 });
   await ctx2.setOffline(true);
   await p2.evaluate(() => window.dispatchEvent(new Event('offline')));
-  await nav(p2, '/work-hours'); await p2.waitForSelector('.page h1', { timeout: 20000 });
+  await nav(p2, `/patients/${p4321}`); await p2.waitForSelector('.page h1', { timeout: 20000 });
   await nav(p2, '/patients?new=1');
   await p2.waitForSelector('#np-name', { timeout: 20000 });
   await p2.fill('#np-name', `${NEW2.first} ${NEW2.father} ${NEW2.family}`); await p2.fill('#np-phone', NEW2.phone);

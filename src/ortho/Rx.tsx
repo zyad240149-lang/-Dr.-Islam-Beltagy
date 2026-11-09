@@ -63,6 +63,8 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
     : [...c.medications.filter((m) => m.name.trim()), { ...emptyMed(), name: p.name, dose: p.dose, frequency: p.frequency, duration: p.duration }]);
   const medGroups = new Map<string, MedPreset[]>();
   for (const p of medCatalog()) {
+    // من غير بحث: اللي الطبيب اختاره يظهر قدامه بس — البحث بيدور في البنك كله
+    if (!medQ.trim() && p.shown === false) continue;
     if (medQ.trim() && !norm(p.name).includes(norm(medQ)) && !p.group.includes(medQ.trim())) continue;
     const g = p.group || 'أخرى'; medGroups.set(g, [...(medGroups.get(g) ?? []), p]);
   }

@@ -1,7 +1,7 @@
 // قوائم اقتراحات للكشف (الطبيب يقدر يكتب أي حاجة غيرها) — أدوية وتحاليل وأوضاع أشعة شائعة في عيادة العظام
 import { ortho, type Medication } from './data';
 
-export interface MedPreset extends Omit<Medication, 'notes'> { group: string }
+export interface MedPreset extends Omit<Medication, 'notes'> { group: string; shown?: boolean } // shown = false: في البنك بس، مش ظاهر قدام الطبيب
 
 export const MED_PRESETS: MedPreset[] = [
   { group: 'مسكنات ومضادات التهاب', name: 'Diclofenac sodium 50mg', dose: 'قرص', frequency: 'مرتين يوميًا بعد الأكل', duration: '5 أيام' },
@@ -44,7 +44,7 @@ export const XRAY_VIEWS = ['AP & Lateral', 'AP', 'Lateral', 'Oblique', 'Standing
 
 /** اقتراحات الروشتة = قسم «الأدوية» (اللي الطبيب ضافه أو عدّله) + القايمة الأساسية — نفس الاسم: المحفوظ يكسب */
 export function medCatalog(): MedPreset[] {
-  const saved = ortho.list('medications').map(({ name, group, dose, frequency, duration }) => ({ name, group, dose, frequency, duration }));
+  const saved = ortho.list('medications').map(({ name, group, dose, frequency, duration, shown }) => ({ name, group, dose, frequency, duration, shown: shown !== false }));
   const names = new Set(saved.map((m) => m.name.trim().toLowerCase()));
   return [...saved, ...MED_PRESETS.filter((m) => !names.has(m.name.toLowerCase()))];
 }

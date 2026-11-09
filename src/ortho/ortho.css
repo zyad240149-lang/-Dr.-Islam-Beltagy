@@ -204,3 +204,6 @@
   .fu-day { width: 64px; }
   .fu-slots { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); }
 }
+/* ٩/١١: عنوان قسم جوّه مربع متجمّع في الشيت العام */
+.sh-lbl.sh-sub { font-size: 15px; font-weight: 800; color: var(--brand-700); margin-top: 14px; padding-top: 10px; border-top: 1px dashed var(--line); }
+.sh-box__b > .sh-lbl.sh-sub:first-child, .sh-box__b > div:first-child > .sh-lbl.sh-sub:first-child { margin-top: 0; padding-top: 0; border-top: 0; }

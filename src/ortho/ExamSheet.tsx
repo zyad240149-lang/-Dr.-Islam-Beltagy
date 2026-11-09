@@ -254,6 +254,16 @@ export const GEN_BOXES: { id: string; title: string; wide?: boolean; f: GenField
     { g: 'n.rf', items: ['إصابة حديثة قوية', 'ألم أثناء الراحة أو بالليل', 'نقص وزن غير مبرر', 'حمى أو اشتباه عدوى', 'ضعف أو تنميل بالأطراف', 'صعوبة في التحكم في البول أو البراز', 'عدم القدرة على التحميل على الطرف', 'تاريخ مرضي لأورام', 'استخدام مثبطات المناعة'], other: true } ] },
   { id: 'sum', title: 'الخلاصة والتشخيص المبدئي', wide: true, f: [{ k: 'n.summary', label: 'الخلاصة والتشخيص المبدئي', stack: true }] },
 ];
+/** ٩/١١: ترتيب وتجميع مربعات الشيت العام في الشاشة (البيانات نفسها مااتغيرتش) — «الأدوية والعلاج المستخدم سابقًا» جوّه «سبب الزيارة» */
+export const GEN_GROUPS: { ids: string[]; title?: string }[] = [
+  { ids: ['loc', 'onset', 'nature', 'swell'], title: 'مكان الألم وبدايته وطبيعته — تورم / احمرار / سخونة' },
+  { ids: ['aggr'] },
+  { ids: ['rel', 'adl'], title: 'ما الذي يخفف الألم؟ وتأثيره على الحياة اليومية' },
+  { ids: ['ms'] },
+  { ids: ['sym'] },
+  { ids: ['rf'] },
+  { ids: ['sum'] },
+];
 /** نص مربع من GEN_BOXES للملخص */
 export function genBoxText(s: ExamSheet, b: (typeof GEN_BOXES)[number]): string {
   return b.f.map((f) => ('g' in f ? join([...picked(s, f.g, f.items), f.other ? tx(s, f.g + '.other') : '']) : tx(s, f.k))).filter(Boolean).join(' — ');
@@ -410,6 +420,20 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
   const bmiCls = bmiClass(bmi);
   const female = a.has('n.gender', 'أنثى');
   const raOpen = raCalc(sheet).enabled;
+  // جسم مربع من GEN_BOXES (الأسئلة + الشيتات الملحقة + ملاحظات المربع)
+  const genBody = (b: (typeof GEN_BOXES)[number]) => (<>
+    {b.f.map((f) => ('g' in f ? (
+      <div key={f.g}>
+        {f.label && <div className="sh-lbl">{f.label}</div>}
+        <div className={f.one ? 'sh-inline' : undefined}>{f.one ? <Pick a={a} g={f.g} items={f.items} /> : <Checks a={a} g={f.g} items={f.items} />}</div>
+        {f.other && <Txt a={a} k={f.g + '.other'} label="أخرى" />}
+      </div>
+    ) : <Txt key={f.k} a={a} k={f.k} label={f.label} stack={f.stack} />))}
+    {b.id === 'ms' && <RaAssessment sheet={sheet} onChange={onChange} />}
+    {b.id === 'nature' && <NociChecklist sheet={sheet} onChange={onChange} />}
+    {b.id !== 'sum' && <><div className="sh-lbl">ملاحظات</div>
+    <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt(`n.bn.${b.id}`)} onChange={(e) => a.set(`n.bn.${b.id}`, e.target.value)} /></>}
+  </>);
   const togglePain = (id: string, side: PinSide) => {
     const k = side ? `${id}:${side}` : id;
     if (!sheet.pain.length) onFirstPain(id, side);
@@ -498,16 +522,15 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
           <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt('n.bn.vitals')} onChange={(e) => a.set('n.bn.vitals', e.target.value)} />
         </Box>
 
-        <Box n={3} title="التاريخ المرضي المعروف">
+        {/* ٩/١١: «التاريخ المرضي المعروف» و«الأدوية الحالية والحساسية» مربع واحد */}
+        <Box n={3} wide title="التاريخ المرضي المعروف والأدوية والحساسية">
+          <div className="sh-lbl sh-sub">التاريخ المرضي المعروف</div>
           <div className="sh-cols"><Checks a={a} g="n.hx" items={N_HX} none={N_HX_NONE} /></div>
           <Row label="التدخين"><Pick a={a} g="n.smoke" items={YES_NO} /></Row>
           <Txt a={a} k="n.hx.other" label="أخرى" />
         <div className="sh-lbl">ملاحظات</div>
           <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt('n.bn.hx')} onChange={(e) => a.set('n.bn.hx', e.target.value)} />
-        </Box>
-
-        <Box n={4} title="الأدوية الحالية والحساسية">
-          <div className="sh-lbl">الأدوية الحالية</div>
+          <div className="sh-lbl sh-sub">الأدوية الحالية</div>
           {sheet.meds.length > 0 && (
             <div className="sh-meds">
               <span>اسم الدواء</span><span>الجرعة</span><span>عدد المرات</span><span />
@@ -530,7 +553,7 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
           <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt('n.bn.meds')} onChange={(e) => a.set('n.bn.meds', e.target.value)} />
         </Box>
 
-        <Box n={5} wide title="سبب الزيارة الحالية وتفاصيل المشكلة">
+        <Box n={4} wide title="سبب الزيارة الحالية وتفاصيل المشكلة">
           <div className="sh-visit">
             <div>
               <div className="sh-lbl">الشكوى</div>
@@ -567,25 +590,21 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
           </div>
         <div className="sh-lbl">ملاحظات</div>
           <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt('n.bn.visit')} onChange={(e) => a.set('n.bn.visit', e.target.value)} />
+          {/* ٩/١١: «الأدوية والعلاج المستخدم سابقًا» جوّه سبب الزيارة */}
+          {GEN_BOXES.filter((b) => b.id === 'prevtx').map((b) => <div key={b.id}><div className="sh-lbl sh-sub">{b.title}</div>{genBody(b)}</div>)}
         </Box>
 
-        {GEN_BOXES.map((b, i) => (
-          <Box key={b.id} n={6 + i} wide={b.wide || (b.id === 'ms' && raOpen) || (b.id === 'nature' && nociOpen(sheet))} tone={b.id === 'rf' ? 'red' : undefined} title={b.title}>
-            {b.f.map((f) => ('g' in f ? (
-              <div key={f.g}>
-                {f.label && <div className="sh-lbl">{f.label}</div>}
-                <div className={f.one ? 'sh-inline' : undefined}>{f.one ? <Pick a={a} g={f.g} items={f.items} /> : <Checks a={a} g={f.g} items={f.items} />}</div>
-                {f.other && <Txt a={a} k={f.g + '.other'} label="أخرى" />}
-              </div>
-            ) : <Txt key={f.k} a={a} k={f.k} label={f.label} stack={f.stack} />))}
-            {/* تقييم الروماتويد ACR/EULAR 2010 جوّه «التيبس الصباحي» — فتح وقفل */}
-            {b.id === 'ms' && <RaAssessment sheet={sheet} onChange={onChange} />}
-            {/* Nociplastic Pain Checklist جوّه «طبيعة الألم» — فتح وقفل */}
-            {b.id === 'nature' && <NociChecklist sheet={sheet} onChange={onChange} />}
-            {b.id !== 'sum' && <><div className="sh-lbl">ملاحظات</div>
-            <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt(`n.bn.${b.id}`)} onChange={(e) => a.set(`n.bn.${b.id}`, e.target.value)} /></>}
-          </Box>
-        ))}
+        {/* ٩/١١: مربعات متجمعة — (مكان/بداية/طبيعة الألم/التورم) و(ما يخفف/التأثير على الحياة اليومية) */}
+        {GEN_GROUPS.map((g, i) => {
+          const bs = g.ids.map((id) => GEN_BOXES.find((b) => b.id === id)!);
+          const one = bs.length === 1 ? bs[0] : null;
+          const wide = !one || one.wide || (one.id === 'ms' && raOpen) || (one.id === 'nature' && nociOpen(sheet));
+          return (
+            <Box key={g.ids.join()} n={5 + i} wide={wide} tone={one?.id === 'rf' ? 'red' : undefined} title={g.title ?? bs[0].title}>
+              {bs.map((b) => <div key={b.id}>{!one && <div className="sh-lbl sh-sub">{b.title}</div>}{genBody(b)}</div>)}
+            </Box>
+          );
+        })}
       </div>
     </div>
   );

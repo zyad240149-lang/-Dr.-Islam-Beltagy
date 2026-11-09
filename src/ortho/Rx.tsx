@@ -39,7 +39,26 @@ function Section({ icon, title, children, aside }: { icon: string; title: string
   );
 }
 
-/** rxOnly: جوّه الخطة العلاجية في الكشف — الروشتة بس (الأدوية + أشعة/سونار وتحاليل مطلوبة)؛ رفع الملفات في قسمي السونار والتحاليل */
+// اختيارات خانات الدواء في الروشتة — و«أخرى…» بتفتح كتابة حرة، والقيمة المحفوظة بأي صيغة بتفضل ظاهرة
+const MED_DOSES = ['قرص', 'نصف قرص', 'قرصين', 'كبسولة', 'كبسولتين', 'كيس', 'أمبول عضل', 'أمبول وريد', 'حقنة تحت الجلد', 'ملعقة صغيرة 5 مل', 'ملعقة كبيرة 15 مل', 'نقط', 'لبوس', 'دهان', 'لصقة'];
+const MED_FREQS = ['مرة يوميًا', 'مرتين يوميًا', '3 مرات يوميًا', '4 مرات يوميًا', 'كل 6 ساعات', 'كل 8 ساعات', 'كل 12 ساعة', 'مرة كل يومين', 'مرة أسبوعيًا', 'مرتين أسبوعيًا', 'مرة شهريًا', 'عند اللزوم'];
+const MED_DURATIONS = ['يوم واحد', '3 أيام', '5 أيام', '7 أيام', '10 أيام', '14 يوم', '3 أسابيع', 'شهر', 'شهرين', '3 شهور', '6 شهور', 'مستمر'];
+const MED_NOTES = ['بعد الأكل', 'قبل الأكل', 'مع الأكل', 'على الريق', 'قبل النوم', 'صباحًا', 'مساءً', 'عند الألم', 'مع كوب ماء كبير', 'على مكان الألم'];
+const OTHER_CHOICE = '__other__';
+function MedChoice({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (v: string) => void }) {
+  const [typing, setTyping] = useState(false);
+  if (typing) return <input className="input" aria-label={label} placeholder={`اكتب ${label}`} autoFocus value={value} onChange={(e) => onChange(e.target.value)} onBlur={() => setTyping(false)} />;
+  return (
+    <select className="input" aria-label={label} value={value} onChange={(e) => { if (e.target.value === OTHER_CHOICE) { onChange(''); setTyping(true); } else onChange(e.target.value); }}>
+      <option value="">{label}</option>
+      {value && !options.includes(value) && <option value={value}>{value}</option>}
+      {options.map((o) => <option key={o} value={o}>{o}</option>)}
+      <option value={OTHER_CHOICE}>أخرى…</option>
+    </select>
+  );
+}
+
+/** rxOnly: جوّه الكشف — الروشتة بس (الأدوية والتعليمات)؛ الأشعة والتحاليل في تابها */
 /** requestsOnly: الأشعة/السونار والتحاليل المطلوبة بس (تاب «الأشعة والتحاليل» في الكشف) */
 export function RxEditor({ value: c, onChange, patientId, region = '', onUploading, rxOnly, requestsOnly }: { value: RxData; onChange: (f: (r: RxData) => RxData) => void; patientId: string; region?: string; onUploading?: (v: boolean) => void; rxOnly?: boolean; requestsOnly?: boolean }) {
   const toast = useToast();
@@ -138,10 +157,10 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
               <div className="cx-row cx-row--med" key={i}>
                 <span className="cx-row__n">{i + 1}</span>
                 <input className="input" dir="ltr" aria-label="اسم الدواء" placeholder="اسم الدواء" list="cx-meds" value={m.name} onChange={(e) => pickMedName(i, e.target.value)} />
-                <input className="input" aria-label="الجرعة" placeholder="الجرعة" value={m.dose} onChange={(e) => setMed(i, { dose: e.target.value })} />
-                <input className="input" aria-label="عدد المرات" placeholder="عدد المرات" value={m.frequency} onChange={(e) => setMed(i, { frequency: e.target.value })} />
-                <input className="input" aria-label="المدة" placeholder="المدة" value={m.duration} onChange={(e) => setMed(i, { duration: e.target.value })} />
-                <input className="input" aria-label="ملاحظة" placeholder="ملاحظة" value={m.notes} onChange={(e) => setMed(i, { notes: e.target.value })} />
+                <MedChoice label="الجرعة" value={m.dose} options={MED_DOSES} onChange={(v) => setMed(i, { dose: v })} />
+                <MedChoice label="عدد المرات" value={m.frequency} options={MED_FREQS} onChange={(v) => setMed(i, { frequency: v })} />
+                <MedChoice label="المدة" value={m.duration} options={MED_DURATIONS} onChange={(v) => setMed(i, { duration: v })} />
+                <MedChoice label="ملاحظة" value={m.notes} options={MED_NOTES} onChange={(v) => setMed(i, { notes: v })} />
                 <IconBtn icon="trash" label="حذف الدواء" danger onClick={() => set('medications', c.medications.filter((_, j) => j !== i))} />
               </div>
             ))}

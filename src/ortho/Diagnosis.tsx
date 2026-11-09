@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { isIncomplete, isUnlinked, ortho, useOrthoVersion, type Consultation } from './data';
-import { LoadState, PageHead, SearchBox, confirmDelete, patientFile, patientName, useClinicalCan, useRun } from './kit';
+import { LoadState, PageHead, SearchBox, patientFile, patientName, useClinicalCan } from './kit';
 import { ConsultModal, DraftCard, LinkBadge, clearConsultDraft, listConsultDrafts } from './Consultations';
 import { DiagnosisTab } from './DiagnosisTab';
 import { needsDiagnosis, newFilesToday, todaysVisits } from './visits';
@@ -38,7 +38,6 @@ export default function Diagnosis() {
   const [newFile, setNewFile] = useState<{ name: string; phone: string } | null>(null);
   const [pendingOpen, setPendingOpen] = useState<{ name: string; phone: string } | null>(null);
   const [unlinkedEdit, setUnlinkedEdit] = useState<Consultation | null>(null);
-  const { run, busy } = useRun();
   const { online } = useOfflineState();
   const pick = (id: string) => setParams(id ? { patient: id } : view !== 'waiting' ? { tab: view } : {}, { replace: true });
   const setView = (v: View) => setParams(v !== 'waiting' ? { tab: v } : {}, { replace: true });
@@ -46,8 +45,6 @@ export default function Diagnosis() {
   const drafts = !edit ? listConsultDrafts() : [];
   const draft = patientId ? drafts.find((d) => d.patientId === patientId) ?? null : null;
   const consults = ortho.list('consultations');
-  // تشخيصات اتحفظت ناقصة («يحتاج استكمال») — من أي جهاز، الأحدث أولًا
-  const incomplete = consults.filter((c) => isIncomplete(c) && !isUnlinked(c)).sort((a, b) => b.date.localeCompare(a.date));
   const openSaved = (c: Consultation, queue = false) => { setParams({ patient: c.patientId }, { replace: true }); setResume(false); setNewVisit(null); setFromQueue(queue); setEdit(c); };
   const resumeDraft = (id: string, queue = false) => { setParams({ patient: id }, { replace: true }); setResume(true); setNewVisit(null); setFromQueue(queue); setEdit('new'); };
   const startNew = (id: string, appointmentId: string | null) => { setParams({ patient: id }, { replace: true }); setResume(false); setNewVisit(appointmentId); setFromQueue(true); setEdit('new'); };
@@ -71,14 +68,10 @@ export default function Diagnosis() {
   const sheetTarget = (x: (typeof visits)[number]) => (x.state === 'done' ? x.consult : x.state === 'waiting' && !needsDiagnosis(x.a) ? lastConsultOf(x.a.patientId) : undefined);
   const shownInQueue = new Set(visits.map((x) => x.a.patientId));
   const newFiles = newFilesToday().filter((p) => !shownInQueue.has(p.id));
-  const shownNewFiles = new Set(newFiles.map((p) => p.id));
   // اتشخصوا النهارده من غير حضور مسجل (ملف جديد مثلًا) — بيفضلوا في القايمة بعد التشخيص
   const dayConsults = [...consults.filter((c) => c.date === todayYmd() && !isUnlinked(c) && !shownInQueue.has(c.patientId)).sort((a, b) => Number(isIncomplete(a)) - Number(isIncomplete(b)))
     .reduce((m, c) => m.set(c.patientId, c), new Map<string, Consultation>()).values()];
-  const dayConsultPatients = new Set(dayConsults.map((c) => c.patientId));
   const waitingCount = visits.filter((x) => x.state !== 'done' && !sheetTarget(x)).length + newFiles.length;
-  const otherDrafts = drafts.filter((d) => !shownInQueue.has(d.patientId) && !shownNewFiles.has(d.patientId) && !dayConsultPatients.has(d.patientId));
-  const otherIncomplete = incomplete.filter((c) => !visits.some((x) => x.consult?.id === c.id) && !dayConsults.some((x) => x.id === c.id));
 
   // ---------- المرضى اللي اتشخصوا: مريض واحد لكل صف، آخر تشخيص أولًا ----------
   const diagnosed = (() => {
@@ -225,16 +218,6 @@ export default function Diagnosis() {
               </LoadState>
             </div>
           </section>
-          {perm.add && otherDrafts.length + otherIncomplete.length > 0 && (
-            <section className="card" style={{ marginBottom: 16 }}>
-              <div className="card__head"><h2>تشخيصات لم تكتمل ({otherDrafts.length + otherIncomplete.length})</h2></div>
-              <div className="card__body">
-                {otherDrafts.map((d) => <DraftCard key={d.patientId} d={d} onResume={() => resumeDraft(d.patientId, true)} onDiscard={() => discardDraft(d.patientId)} />)}
-                {otherIncomplete.map((c) => <DraftCard key={c.id} d={c} onResume={() => openSaved(c, true)}
-                  onDiscard={perm.del ? () => confirmDelete(`تشخيص «${patientName(c.patientId)}» اللي لم يكتمل`) && run(async () => { await ortho.remove('consultations', c.id); (c.attachments ?? []).forEach((a) => void ortho.removeAttachment(a.path)); }, 'تم حذف التشخيص') : undefined} />)}
-              </div>
-            </section>
-          )}
         </>
       )}
 

@@ -212,9 +212,9 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
   const visitNo = initial ? Math.max(1, patientConsults.findIndex((x) => x.id === initial.id) + 1) : patientConsults.length + 1;
   const [inj, setInj] = useState<Injection | 'new' | null>(null);
   // شيت واحد (منطقة أو متابعة جبس/عمليات) جوّه تابه
-  // مربعات شيتات الطبيب: مقفولة في الكشف الجديد (تفتح اللي هتكتب فيه)، ومفتوحة كلها لما كشف محفوظ يتفتح
+  // كل المربعات بتبدأ مقفولة (٩/١١) — بتفتح اللي هتكتب فيه
   const renderSheet = (id: SheetId, _i: number, list: SheetId[]) => (
-              <BoxOpenDefault.Provider key={id} value={!!initial?.id}>
+              <BoxOpenDefault.Provider key={id} value={false}>
               <section className="sh-stack" data-sheet={id}>
                 {list.length > 1 && <h3 className="sh-stack__h">{SHEET_TAB[id]}<button type="button" className="sh-stack__x" onClick={() => dropSheet(id)}>إلغاء المنطقة</button></h3>}
                 {id === 'hipknee'
@@ -344,8 +344,8 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
       <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => setOut(['nurse', 'doctor'])}>طباعة وإرسال</Button>
       <Button icon="check" loading={busy} disabled={!ok} onClick={() => save(false)}>حفظ الكشف</Button>
     </>}>
-      {/* كل المربعات (شيتات الطبيب، الأشعة والتحاليل، الخطة) مقفولة في الكشف الجديد — ما عدا الشيت العام؛ والكشف المحفوظ بيتفتح والمربعات كلها مفتوحة */}
-      <BoxOpenDefault.Provider value={!!initial?.id}>
+      {/* كل مربعات الشيتات بتبدأ مقفولة — في الكشف الجديد والمحفوظ (٩/١١) */}
+      <BoxOpenDefault.Provider value={false}>
       <div className="cx" ref={bodyRef}>
         <div className="grid-form grid-form--4">
           {(
@@ -390,7 +390,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           ))}
         </div>
 
-        {tab === 'nurse' && <BoxOpenDefault.Provider value={true}>
+        {tab === 'nurse' && <BoxOpenDefault.Provider value={false}>
           <NursingSheet sheet={sheet} onChange={changeSheet} patient={c.patientId ? db.patient(c.patientId) : null} date={c.date} visitNo={visitNo}
             painScore={c.painScore} onPainScore={(v) => set('painScore', v)}
             onFirstPain={(id, side) => setC((x) => ({ ...x, region: regionById(id)?.name ?? x.region, ...(side ? { side } : {}) }))} />

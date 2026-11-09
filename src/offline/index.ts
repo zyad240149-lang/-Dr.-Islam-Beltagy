@@ -39,6 +39,9 @@ const webLock = <T,>(f: () => Promise<T>): Promise<T | undefined> => {
   return locks.request('ortho-offline-sync', { ifAvailable: true }, async (lock) => (lock ? f() : undefined)) as Promise<T | undefined>;
 };
 
+/** معرّف مريض اتعمل من غير نت ← معرّف الملف الحقيقي اللي اتدمج فيه (نفس الاسم + الموبايل على الخادم) */
+export const mergedAliases = new Map<string, string>();
+
 const stateListeners = new Set<() => void>();
 let version = 0;
 const bump = () => { version++; stateListeners.forEach((l) => l()); };
@@ -52,6 +55,8 @@ export const offline = {
       queue = new OfflineQueue({ ...store, ops: sealedOps(store) }, { lock: webLock });
       session = new OfflineSession(store);
       queue.subscribe(bump);
+      // مريض محلي اتدمج في ملف موجود على الخادم ← أي شاشة فاتحة الملف المحلي بتلاقي الملف الحقيقي
+      queue.onDone((op) => { const into = (op as OfflineOp & { mergedInto?: string }).mergedInto; if (into) mergedAliases.set(op.entityId, into); });
       net.subscribe(bump);
       bump();
     })());

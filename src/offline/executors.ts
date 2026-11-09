@@ -13,6 +13,7 @@ import { supabase } from '../lib/supabase';
 import { isNetworkError } from './net';
 import { asConflict, bookingError, classify, clean, DUP_PHONE, norm, type PgErr } from './classify';
 import type { ExecResult, OfflineOp } from './queue';
+import { normalizeSearch } from '../utils/phoneUtils';
 
 // ---------- مقارنة تعديل الحقول بنسخة الخادم ----------
 async function guardedUpdate(table: string, id: string, op: OfflineOp, row: Record<string, unknown>, label: string): Promise<ExecResult> {
@@ -48,8 +49,14 @@ export async function executeOp(op: OfflineOp): Promise<ExecResult> {
           // يبقى المحاولة اللي فاتت وصلت والرد بس اللي ضاع ← خلصت (مش تعارض يحتاج قرار)
           const { data: same } = await supabase.from('patients').select('id').eq('id', op.entityId).maybeSingle();
           if (same) return { type: 'done' };
-          const { data: ex } = await supabase.from('patients').select('id,full_name,file_no').eq('phone', String(row.phone)).limit(1);
-          return asConflict({ reason: 'duplicate_patient', message: msg, existingId: ex?.[0]?.id });
+          // الخادم بيرفض «مكرر» بس لو نفس الاسم (بعد التوحيد) ونفس آخر ٩ أرقام من الموبايل = نفس المريض بالتعريف ده.
+          // ← ندمج تلقائي في الملف الموجود (التشخيص/الموعد/الملف المعمول على الملف المحلي بيتحوّل له) من غير ما نسأل حد.
+          const last9 = String(row.phone ?? '').replace(/\D/g, '').slice(-9);
+          const { data: ex } = last9.length === 9 ? await supabase.from('patients').select('id,full_name,phone,registered_at').like('phone', `%${last9}`).order('registered_at').limit(20) : { data: [] as Array<{ id: string; full_name: string; phone: string }> };
+          const exact = (ex ?? []).filter((x) => String(x.phone ?? '').replace(/\D/g, '').slice(-9) === last9 && normalizeSearch(x.full_name) === normalizeSearch(String(row.full_name ?? '')));
+          if (exact.length === 1) return { type: 'merged', into: exact[0].id };
+          // أكتر من ملف مطابق (تكرار قديم على الخادم): مش متأكدين أنهي — يستنى قرار (مابنربطش بملف غلط)
+          return asConflict({ reason: 'duplicate_patient', message: msg, existingId: exact[0]?.id ?? ex?.[0]?.id });
         }
         return classify(error, status) ?? { type: 'failed', error: msg };
       }
@@ -92,6 +99,7 @@ export async function executeOp(op: OfflineOp): Promise<ExecResult> {
         if (up.error && !/exists|duplicate/i.test(up.error.message)) {
           return isNetworkError(up.error) || /fetch|network|timeout/i.test(up.error.message) ? { type: 'retry', error: up.error.message } : { type: 'failed', error: 'تعذّر رفع الملف: ' + up.error.message };
         }
+        if (op.payload.storageOnly) return { type: 'done' }; // صورة مرفقة بالكشف/الروشتة: مسارها محفوظ في السجل نفسه — مفيش صف في ملفات المريض
         const { error, status } = await supabase.from('patient_files').insert({ id: op.entityId, patient_id: p.patientId, uploaded_by: u.user.id, uploaded_by_name: p.uploadedByName,
           file_path: p.path, file_name: p.name, file_type: p.type, size_bytes: p.size, note: p.note, category: p.category, title: p.title, file_date: p.fileDate || null });
         if (!error || (error.code === '23505' && /pkey|\(id\)|file_path/.test(`${error.message} ${error.details ?? ''}`))) return { type: 'done' };

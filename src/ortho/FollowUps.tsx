@@ -264,7 +264,7 @@ export function FollowUpModal({ patientId, patientLabel, consultationId, initial
         {patientId ? <>
         <Link to={`/patients/${patientId}`} onClick={onClose} className="ortho-cell-strong">{patientName(patientId)}</Link>
         <span className="badge badge--brand">ملف <span className="num">{patientFile(patientId)}</span></span>
-        </> : <><b className="ortho-cell-strong">{patientLabel || '—'}</b> <span className="badge badge--warn">هيتربط بالملف تلقائي</span></>}
+        </> : <><b className="ortho-cell-strong">{patientLabel || '—'}</b></>}
         {saved && <FuBadge f={saved} />}
         {appt && <span className="badge badge--info">حجز <span className="num">{appt.no}</span></span>}
         {appt && <ApptBadge a={appt} />}

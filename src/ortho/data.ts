@@ -199,6 +199,8 @@ const KIND_LABEL: Record<Kind, string> = { consultations: 'كشف', imaging: 'أ
  * ولو حد غيّر نفس الحقول على الخادم قبل المزامنة ← «تعارض» يتعرض للطبيب يقرر (مفيش كتابة فوق تشخيص بصمت).
  * تعديل تاني على نفس السجل قبل المزامنة بيتدمج في نفس العملية.
  */
+const queuedFile = (path: string) => offline.queue.list().find((o) => o.kind === 'file.upload' && o.payload.path === path && o.payload.bytes instanceof ArrayBuffer);
+const pendingPatient = (id: string) => (id && offline.queue.list().some((o) => o.kind === 'patient.create' && o.entityId === id) ? id : undefined);
 async function saveOffline(kind: Kind, id: string | undefined, row: Record<string, unknown>, newId?: string): Promise<string> {
   if (!offline.userId) throw new Error('سجّل الدخول الأول.');
   const table = tableOf(kind);
@@ -210,6 +212,8 @@ async function saveOffline(kind: Kind, id: string | undefined, row: Record<strin
     if (pending) await offline.queue.editPayload(pending.id, { row: { ...(pending.payload.row as Row), ...row }, local });
     else await offline.queue.enqueue({
       kind: 'ortho.save', userId: offline.userId, entityId: eid, label: `${KIND_LABEL[kind]} — حفظ بدون اتصال`,
+      // سجل لمريض لسه متسجّل من غير نت ← يستنى ملف المريض يوصل الخادم الأول (ولو اتدمج في ملف موجود بيتحوّل له تلقائي)
+      dependsOn: pendingPatient(String((local as Row).patient_id ?? '')),
       payload: { table, row, isNew: !prev, local },
       base: prev ? Object.fromEntries(Object.keys(row).map((k) => [k, prev[k] ?? null])) : undefined,
     });
@@ -290,15 +294,26 @@ export const ortho = {
     offline.scheduleSnapshot();
   },
   // صور الأشعة/التقارير المرفقة بالكشف: بتترفع في ملفات المريض (نفس الـ bucket وصلاحياته) تحت مجلد xray
+  // من غير إنترنت (أو الاتصال قطع في النص): الصورة نفسها بتتحفظ متشفّرة في طابور الجهاز بمسارها النهائي وبتترفع لوحدها لما النت يرجع
+  // (نفس المسار ← الإعادة مابتكررش الملف). بتتعرض من الجهاز لحد ما تترفع.
   async uploadAttachment(patientId: string, file: File): Promise<Attachment> {
-    if (!net.isOnline()) throw new Error('رفع صور الأشعة محتاج اتصال بالإنترنت — احفظ الكشف دلوقتي وارفع الصور لما الاتصال يرجع.');
     if (file.size > 10 * 1024 * 1024) throw new Error('حجم الملف أكبر من 10 ميجابايت.');
     if (!['image/png', 'image/jpeg', 'image/webp', 'application/pdf'].includes(file.type)) throw new Error('ارفع صورة (JPG/PNG/WEBP) أو PDF.');
     const ext = (file.name.split('.').pop() ?? 'bin').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8) || 'bin';
     const path = `${patientId}/xray/${crypto.randomUUID()}.${ext}`;
+    const att = { path, name: file.name, type: file.type, size: file.size };
+    const queue = async () => {
+      if (!offline.userId) throw new Error('سجّل الدخول الأول.');
+      try {
+        await offline.queue.enqueue({ kind: 'file.upload', userId: offline.userId, entityId: uuid(), label: `رفع صورة: ${file.name}`, dependsOn: pendingPatient(patientId),
+          payload: { storageOnly: true, patientId, path, name: file.name, type: file.type, size: file.size, bytes: await file.arrayBuffer() } });
+      } catch (e) { throw new Error('تعذّر الحفظ على الجهاز (التخزين ممتلئ أو ممنوع): ' + (e instanceof Error ? e.message : String(e))); }
+      return att;
+    };
+    if (!net.isOnline() || pendingPatient(patientId)) return queue();
     const { error } = await supabase.storage.from('patient-files').upload(path, file, { contentType: file.type, upsert: false });
-    if (error) throw new Error('تعذّر رفع الملف: ' + clean(error.message));
-    return { path, name: file.name, type: file.type, size: file.size };
+    if (error) { if (isNetworkError(error) || /fetch|network|timeout/i.test(error.message)) return queue(); throw new Error('تعذّر رفع الملف: ' + clean(error.message)); }
+    return att;
   },
   // صور/فيديوهات التمرينات: bucket عام (محتوى تعليمي) عشان الروابط تتبعت للمريض
   async uploadExerciseMedia(file: File): Promise<ExerciseMedia> {
@@ -313,10 +328,17 @@ export const ortho = {
   },
   async removeExerciseMedia(path: string) { await supabase.storage.from('exercise-media').remove([path]); },
   async attachmentUrl(path: string): Promise<string | null> {
+    const local = queuedFile(path);
+    if (local) return URL.createObjectURL(new Blob([local.payload.bytes as ArrayBuffer], { type: String(local.payload.type) }));
+    if (!net.isOnline()) return null;
     const { data } = await supabase.storage.from('patient-files').createSignedUrl(path, 600);
     return data?.signedUrl ?? null;
   },
-  async removeAttachment(path: string) { await supabase.storage.from('patient-files').remove([path]); },
+  async removeAttachment(path: string) {
+    const local = queuedFile(path);
+    if (local) { await offline.queue.resolve(local.id, { type: 'discard' }); return; } // لسه ما اترفعتش ← تتشال من الجهاز بس
+    await supabase.storage.from('patient-files').remove([path]);
+  },
   pendingImaging: () => (cache.imaging ?? []).filter((r) => r.status !== 'reviewed').length,
   castsDue: () => { const t = todayYmd(); return (cache.fractures ?? []).filter((r) => r.status !== 'healed' && String(r.removal_due) <= t).length; },
   preloadCounters: () => { if (!cache.imaging) void load('imaging'); if (!cache.fractures) void load('fractures'); },

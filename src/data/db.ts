@@ -15,7 +15,7 @@ import { applyConditionRows, type ConditionRow } from './bodyRegions';
 import { patientGaps } from '../utils/patientGaps';
 import { phoneMatches, normalizeSearch } from '../utils/phoneUtils';
 import { addDaysYmd, planTotalSessions, riyadhNow, todayYmd } from '../utils/format';
-import { offline } from '../offline';
+import { offline, mergedAliases } from '../offline';
 import { net, isNetworkError } from '../offline/net';
 import { uuid } from '../offline/queue';
 import type { TableSync } from '../offline/session';
@@ -657,7 +657,8 @@ export const db = {
 
   // ---------- patients ----------
   patients: () => load().patients,
-  patient: (id: string) => load().patients.find((p) => p.id === id) ?? guests.find((p) => p.id === id),
+  patient: (id: string): Patient | undefined => load().patients.find((p) => p.id === id) ?? guests.find((p) => p.id === id)
+    ?? (mergedAliases.has(id) ? load().patients.find((p) => p.id === mergedAliases.get(id)) : undefined),
   /** المتصلين اللي اتحجزلهم بالمكالمة (لسه مش في «المرضى» — بيتحوّلوا لملف عادي بعد استكمال بياناتهم) */
   guests: () => guests,
   /** حجز مكالمة (٨/١١): المتصل بيتحوّل على طول لملف مريض عادي في «المرضى» برقم ملفه — والاستكمال بيتعمل لما ييجي */
@@ -1361,6 +1362,10 @@ export const db = {
     return { ok: true };
   },
   async fileUrl(path: string, download?: string): Promise<string | null> {
+    // ملف لسه في طابور الجهاز (اترفع من غير نت): بيتعرض من الجهاز نفسه
+    const local = offline.queue.list().find((o) => o.kind === 'file.upload' && o.payload.path === path && o.payload.bytes instanceof ArrayBuffer);
+    if (local) return URL.createObjectURL(new Blob([local.payload.bytes as ArrayBuffer], { type: String(local.payload.type) }));
+    if (!net.isOnline()) return null;
     const { data } = await supabase.storage.from('patient-files').createSignedUrl(path, 300, download ? { download } : undefined);
     return data?.signedUrl ?? null;
   },

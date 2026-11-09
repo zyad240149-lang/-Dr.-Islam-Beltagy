@@ -107,8 +107,10 @@ export default function Diagnosis() {
   const openSheet = (id: string) => setSheet({ patientId: id, appointmentId: followUps.find((a) => a.patientId === id)?.id ?? null });
 
   const selected = patientId ? db.patient(patientId) : undefined;
-  // تشخيصات من غير ملف مريض: بانتظار ملف الاستقبال أو محتاجة مراجعة وربط (الأحدث أولًا)
+  // تشخيصات اتعملت بالاسم من غير ملف (غالبًا من غير نت): بتظهر عادي في «اتشخصوا» بالاسم المكتوب — الربط بملف الاستقبال
+  // بيحصل تلقائي على الخادم، ومفيش أي رسالة «محتاج ربط» للدكتور (اللي فيه شك بيروح لقايمة مراجعة داخلية في الإعدادات)
   const unlinked = consults.filter(isUnlinked).sort((a, b) => b.date.localeCompare(a.date));
+  const unlinkedFound = term ? unlinked.filter((c) => patientMatches({ fullName: c.pendingPatient?.name ?? '', phone: c.pendingPatient?.phone ?? '' } as never, term)) : unlinked;
   const [regQ, setRegQ] = useState(''); // بحث عن مريض متسجل بالفعل (اسم/موبايل/رقم ملف) — محتاج نت
   const regHits = newFile && online && regQ.trim().length >= 2 ? db.patients().filter((p) => patientMatches(p, regQ)).slice(0, 8) : [];
   const nameHits = newFile && newFile.name.trim().length >= 2 ? db.patients().filter((p) => patientMatches(p, newFile.name)).slice(0, 6) : [];
@@ -150,35 +152,6 @@ export default function Diagnosis() {
             المرضى اللي اتشخصوا {diagnosed.length > 0 && <span className="badge badge--brand num">{diagnosed.length}</span>}
           </button>
         </div>
-      )}
-
-      {!patientId && unlinked.length > 0 && (
-        <section className="card dx-unlinked-list" style={{ marginBottom: 16 }}>
-          <div className="card__head"><h2>تشخيصات محتاجة ربط بملف مريض <span className="badge badge--warn num">{unlinked.length}</span></h2></div>
-          <div className="card__body">
-            <p className="muted" style={{ marginTop: 0 }}>اتفتحت بالاسم الثلاثي من غير ملف مريض. بتتربط تلقائي بملف الاستقبال بعد المزامنة لما الاسم وباقي البيانات يتطابقوا؛ اللي فيه شك بيستنى حد يختار الملف الصح.</p>
-            <div className="dx-queue">
-              {unlinked.map((c) => {
-                const pp = c.pendingPatient;
-                const local = (c as Consultation & { pendingSync?: boolean }).pendingSync;
-                return (
-                  <div className="dx-queue__row" key={c.id} data-unlinked={c.id}>
-                    <span className="dx-queue__time num">{fmtDate(c.date)}</span>
-                    <div className="dx-queue__who">
-                      <b>{pp?.name || '—'}</b>
-                      <small>{pp?.phone && <><bdi dir="ltr" className="num">{pp.phone}</bdi> · </>}{pp?.age && <>السن <span className="num">{pp.age}</span> · </>}{c.diagnosis || 'التشخيص لسه ما اتحددش'}{c.linkNote && !local ? ` — ${c.linkNote}` : ''}</small>
-                    </div>
-                    <LinkBadge c={c} />
-                    <div className="dx-queue__act">
-                      {whatsappNumber(pp) && <WhatsappLink phone={whatsappNumber(pp)} button />}
-                      {perm.edit && <Button size="sm" variant="outline" icon="edit" onClick={() => setUnlinkedEdit(c)}>فتح</Button>}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
       )}
 
       {!patientId && view === 'waiting' && (
@@ -363,8 +336,8 @@ export default function Diagnosis() {
           <div className="filter-bar"><div className="field"><SearchBox value={q} onChange={setQ} placeholder="ابحث باسم المريض (أو جزء منه) أو رقم الموبايل أو رقم الملف" /></div></div>
           <div className="card__body">
             <LoadState kind="consultations">
-              {diagnosed.length === 0 ? <EmptyState icon="stethoscope" title="لا يوجد مرضى متشخّصون بعد" />
-                : found.length === 0 ? <EmptyState icon="search" title="مفيش مريض متشخّص بالاسم أو الرقم ده" text="جرّب جزء تاني من الاسم أو الرقم من غير مسافات." />
+              {diagnosed.length + unlinked.length === 0 ? <EmptyState icon="stethoscope" title="لا يوجد مرضى متشخّصون بعد" />
+                : found.length + unlinkedFound.length === 0 ? <EmptyState icon="search" title="مفيش مريض متشخّص بالاسم أو الرقم ده" text="جرّب جزء تاني من الاسم أو الرقم من غير مسافات." />
                 : (
                   <div className="dx-queue">
                     {found.map((x) => (
@@ -387,6 +360,23 @@ export default function Diagnosis() {
                             : perm.edit && <Button size="sm" icon="plus" onClick={() => openSaved(x.last, true)}>إضافة شيت أو استكمال</Button>}
                           {perm.add && <Button size="sm" variant="outline" icon="clipboard" onClick={() => openSheet(x.id)}>متابعة</Button>}
                           <Button size="sm" variant="outline" onClick={() => pick(x.id)}>فتح ملف التشخيص</Button>
+                        </span>
+                      </div>
+                    ))}
+                    {unlinkedFound.map((c) => (
+                      <div className="dx-queue__row dx-pat" key={c.id} data-unlinked={c.id} onClick={() => perm.edit && setUnlinkedEdit(c)}>
+                        <span className="dx-queue__time num">{fmtDate(c.date)}</span>
+                        <div className="dx-queue__who">
+                          <b>{c.pendingPatient?.name || '—'}</b>
+                          <small>
+                            {c.pendingPatient?.phone && <><bdi dir="ltr" className="num">{c.pendingPatient.phone}</bdi> · </>}
+                            آخر تشخيص: <bdi className="dx-as-written">{c.diagnosis || 'لسه ما اتحددش'}</bdi>
+                          </small>
+                        </div>
+                        {isIncomplete(c) ? <span className="badge badge--warn">فيه تشخيص يحتاج استكمال</span> : <LinkBadge c={c} />}
+                        <span className="dx-queue__act" onClick={(e) => e.stopPropagation()}>
+                          {whatsappNumber(c.pendingPatient) && <WhatsappLink phone={whatsappNumber(c.pendingPatient)} button />}
+                          {perm.edit && <Button size="sm" variant="outline" icon="edit" onClick={() => setUnlinkedEdit(c)}>فتح التشخيص</Button>}
                         </span>
                       </div>
                     ))}
@@ -429,7 +419,7 @@ export default function Diagnosis() {
           <div className="field">
             <label>{online ? 'أو افتح ملف جديد — اسم المريض الثلاثي' : 'اسم المريض الثلاثي'}</label>
             <input className="input" autoFocus={!online} value={newFile.name} placeholder="مثال: محمد أحمد علي" onChange={(e) => setNewFile({ ...newFile, name: e.target.value })} />
-            {newFile.name.trim() && !isTripleName(newFile.name) && <small className="muted">اكتب الاسم ثلاثي على الأقل — بيه بيتربط التشخيص بملف الاستقبال.</small>}
+            {newFile.name.trim() && !isTripleName(newFile.name) && <small className="muted">اكتب الاسم ثلاثي على الأقل.</small>}
           </div>
           <div className="field">
             <label>الموبايل (اختياري — بيأكد المطابقة)</label>

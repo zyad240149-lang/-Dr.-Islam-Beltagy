@@ -9,8 +9,10 @@ import { useToast } from '../hooks/useToast';
 import type { CenterInfo, PackageKind, PackagePlan } from '../types';
 import { PhysioListsSettings } from '../components/PhysioListsSettings';
 import { AutoNotificationsSettings } from '../components/AutoNotificationsSettings';
+import { LinkReview } from '../ortho/LinkReview';
 
 const TABS = ['بيانات المنشأة', 'المواعيد', 'الإشعارات', 'كتالوج الباقات', 'النظام', 'قوائم العلاج الطبيعي'];
+const REVIEW_TAB = 'مراجعة ربط التشخيصات'; // داخلي للإدارة بس (صلاحية تعديل الإعدادات)
 
 export default function Settings() {
   useDbVersion();
@@ -36,7 +38,7 @@ export default function Settings() {
     <div className="page">
       <div className="page-head"><div><h1>الإعدادات</h1><p>إعدادات المنشأة والمواعيد والتنبيهات والباقات.</p></div></div>
       <div className="card" style={{ maxWidth: 900 }}>
-        <div className="tabs" style={{ overflowX: 'auto' }}>{TABS.map((t, i) => <button key={t} className={`tab ${tab === i ? 'active' : ''}`} onClick={() => setTab(i)}>{t}</button>)}</div>
+        <div className="tabs" style={{ overflowX: 'auto' }}>{(edit ? [...TABS, REVIEW_TAB] : TABS).map((t, i) => <button key={t} className={`tab ${tab === i ? 'active' : ''}`} onClick={() => setTab(i)}>{t}</button>)}</div>
         <div className="card__body">
           {!edit && <div className="alert alert-info" style={{ marginBottom: 14 }}>عندك صلاحية عرض الإعدادات فقط.</div>}
           {tab === 0 && (
@@ -104,6 +106,7 @@ export default function Settings() {
             </>
           )}
           {tab === 5 && <PhysioListsSettings />}
+          {tab === TABS.length && edit && <LinkReview />}
           {tab === 4 && (
             <>
               <dl className="dl" style={{ marginBottom: 16 }}>

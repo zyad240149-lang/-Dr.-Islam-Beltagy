@@ -64,6 +64,29 @@ try {
   const ids = new Set(); for (let i = 0; i < 2000; i++) ids.add((await q2.enqueue({ kind: 'patient.create', userId: 'u1', entityId: 'x' + i, label: '', payload: {} })).id);
   check('معرّفات العمليات فريدة (2000 عملية)', ids.size === 2000);
 
+  // ============ مريض اتسجّل من غير نت وطلع موجود على الخادم ← دمج تلقائي ============
+  section('الدمج التلقائي وتحويل المعرّف المحلي للحقيقي');
+  const qm = new m.OfflineQueue(m.memoryStore(), { now: () => now });
+  await qm.load('u1');
+  const LOCAL = '11111111-1111-4111-8111-111111111111', REAL = '22222222-2222-4222-8222-222222222222';
+  await qm.enqueue({ kind: 'patient.create', userId: 'u1', entityId: LOCAL, label: 'مريض', payload: { row: { full_name: 'أ ب ج', phone: '0100' } } });
+  await qm.enqueue({ kind: 'ortho.save', userId: 'u1', entityId: 'c1', label: 'تشخيص', dependsOn: LOCAL, payload: { table: 'ortho_consultations', isNew: true, row: { patient_id: LOCAL, attachments: [{ path: `${LOCAL}/xray/a.png` }] }, local: { patient_id: LOCAL } } });
+  await qm.enqueue({ kind: 'appointment.create', userId: 'u1', entityId: 'a9', label: 'موعد', dependsOn: LOCAL, payload: { patientId: LOCAL, p: { patientId: LOCAL, date: '2026-11-10' }, local: { patientId: LOCAL } } });
+  await qm.enqueue({ kind: 'file.upload', userId: 'u1', entityId: 'f1', label: 'ملف', dependsOn: LOCAL, payload: { patientId: LOCAL, path: `${LOCAL}/f1.png`, bytes: new ArrayBuffer(4) } });
+  const sent = [];
+  s = await qm.run(async (op) => { sent.push(op); return op.kind === 'patient.create' ? { type: 'merged', into: REAL } : { type: 'done' }; });
+  const cs = sent.find((o) => o.kind === 'ortho.save'), ap = sent.find((o) => o.kind === 'appointment.create'), fu = sent.find((o) => o.kind === 'file.upload');
+  check('الطابور خلص كله في نفس الجولة (مفيش سؤال ولا تعارض)', s.done === 4 && s.conflicts === 0 && qm.pendingCount() === 0, JSON.stringify(s));
+  check('التشخيص اتبعت بمعرّف الملف الحقيقي (patient_id + مسار المرفق)', cs?.payload.row.patient_id === REAL && cs.payload.row.attachments[0].path === `${REAL}/xray/a.png` && !cs.dependsOn, JSON.stringify(cs?.payload.row));
+  check('الموعد اتحوّل للملف الحقيقي', ap?.payload.patientId === REAL && ap.payload.p.patientId === REAL);
+  check('الملف اتحوّل للملف الحقيقي والبايتات زي ما هي', fu?.payload.patientId === REAL && fu.payload.path === `${REAL}/f1.png` && fu.payload.bytes instanceof ArrayBuffer && fu.payload.bytes.byteLength === 4);
+  // الترتيب: تشخيص معتمد على إنشاء لسه بيفشل مؤقتًا ← التشخيص يستنى (مايتبعتش بمعرّف مريض مش موجود على الخادم)
+  const qo = new m.OfflineQueue(m.memoryStore(), { now: () => now }); await qo.load('u1');
+  await qo.enqueue({ kind: 'patient.create', userId: 'u1', entityId: 'pX', label: '', payload: {} });
+  await qo.enqueue({ kind: 'ortho.save', userId: 'u1', entityId: 'cX', label: '', dependsOn: 'pX', payload: { row: { patient_id: 'pX' } } });
+  const order = []; await qo.run(async (op) => { order.push(op.kind); return op.kind === 'patient.create' ? { type: 'failed', error: 'x' } : { type: 'done' }; });
+  check('إنشاء المريض فشل ← التشخيص المعتمد عليه مااتبعتش', order.join() === 'patient.create' && qo.pendingCount() === 2);
+
   // ============ التشفير ونسخة الجهاز ============
   section('تشفير البيانات على الجهاز');
   const st = m.memoryStore();

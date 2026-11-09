@@ -109,11 +109,13 @@ function matchPatient(name: string, phone?: string) {
   const n = normName(name);
   if (isTripleName(n)) {
     const byName = all.filter((p) => normName(p.fullName ?? '') === n);
-    if (byName.length === 1) return byName[0];
+    // اسم واحد بس مطابق — بس لو الموبايل المكتوب مختلف عن موبايل الملف يبقى ممكن شخص تاني بنفس الاسم: مانربطش (الخادم بيقرر بعد المزامنة)
+    if (byName.length === 1) { const ph = phoneKey(phone), fp = phoneKey(byName[0].phone); return ph.length >= 9 && fp.length >= 9 && ph !== fp ? undefined : byName[0]; }
     if (byName.length > 1) { const ph = phoneKey(phone); const both = ph.length >= 9 ? byName.filter((p) => phoneKey(p.phone) === ph) : []; return both.length === 1 ? both[0] : undefined; }
   }
   const ph = phoneKey(phone);
-  if (ph.length >= 9) { const byPhone = all.filter((p) => phoneKey(p.phone) === ph); if (byPhone.length === 1) return byPhone[0]; }
+  // الموبايل لوحده: بس لو مفيش اسم مكتوب يناقضه (عيلة على نفس الرقم) — اسم مختلف = مانربطش هنا
+  if (ph.length >= 9) { const byPhone = all.filter((p) => phoneKey(p.phone) === ph); if (byPhone.length === 1 && (!isTripleName(n) || normName(byPhone[0].fullName ?? '') === n)) return byPhone[0]; }
   return undefined;
 }
 
@@ -276,7 +278,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
       const id = await ortho.save('consultations', payload);
       setC((x) => ({ ...x, ...rx, medications: meds, imagingRequests: reqs, id, complete: payload.complete }));
       if (c.patientId) await registerRequests(c.patientId, c.date, reqs, rx.labs);
-      toast.success(c.patientId ? 'اتحفظت الروشتة في ملف المريض' : 'اتحفظت الروشتة — هتتربط بملف المريض تلقائي');
+      toast.success(c.patientId ? 'اتحفظت الروشتة في ملف المريض' : 'اتحفظت الروشتة');
       return true;
     } catch (e) { toast.error((e as Error).message); return false; }
     finally { savingRef.current = false; setRxSaving(false); }
@@ -315,7 +317,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
         const now = new Set(c.attachments.map((a) => a.path));
         initial.attachments.filter((a) => !now.has(a.path)).forEach((a) => void ortho.removeAttachment(a.path));
       }
-    }, !c.patientId ? 'اتحفظ التشخيص — هيتربط بملف المريض تلقائي بعد المزامنة' : done ? 'تم حفظ الكشف — التشخيص اكتمل' : 'اتحفظ — التشخيص محتاج استكمال', () => {
+    }, !c.patientId ? 'اتحفظ التشخيص' : done ? 'تم حفظ الكشف — التشخيص اكتمل' : 'اتحفظ — التشخيص محتاج استكمال', () => {
       if (!initial) clearConsultDraft(c.patientId);
       // تعديلات خانة 1 (الاسم/السن/النوع/الهاتف/العنوان) ← ملف المريض — بعد ما الكشف اتحفظ، عشان فشلها مايكرّرش الكشف
       const p = db.patient(c.patientId);
@@ -343,7 +345,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
       <div className="cx" ref={bodyRef}>
         <div className="grid-form grid-form--4">
           {(
-            <Field label={unlinked ? 'المريض (لو ظهر في القايمة اختاره)' : 'المريض'}><PatientSelect value={c.patientId} onChange={(v) => setC((x) => {
+            <Field label="المريض"><PatientSelect value={c.patientId} onChange={(v) => setC((x) => {
               const a = initial ? undefined : openVisitFor(v); // مريض تاني ← زيارته هو
               return { ...x, patientId: v, appointmentId: initial ? x.appointmentId : a?.id ?? null, ...(a ? { date: a.date } : {}), sheet: v || !pending ? resetPatientBasics(normSheet(x.sheet), v ? db.patient(v) : null) : x.sheet };
             })} /></Field>
@@ -355,12 +357,8 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           <Field label="ميعاد المتابعة"><input type="date" className="input" value={c.followUp} min={c.date} onChange={(e) => set('followUp', e.target.value)} /></Field>
         </div>
 
-        {unlinked && !c.patientId && (
-          <div className="sh-visitlink dx-unlinked">
-            <Icon name="user" size={15} />
-            <span>ملف تشخيص جديد باسم <b>{pendingInfo.name || '—'}</b> — من غير ملف مريض. بعد المزامنة بيتربط تلقائي بملف الاستقبال لو الاسم الثلاثي أو الموبايل مطابقين — أو اختار المريض من خانة «المريض» فوق ويتربط على طول.</span>
-          </div>
-        )}
+        {/* تشخيص بالاسم (من غير ملف): مفيش أي رسالة ربط — الخادم بيربطه بملف الاستقبال تلقائي بعد المزامنة */}
+        {unlinked && !c.patientId && <div className="dx-unlinked" data-name={pendingInfo.name} hidden />}
         {visitAppt && (
           <div className="sh-visitlink">
             <Icon name="calendar" size={15} />
@@ -560,7 +558,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
             {c.patientId ? <>
               <InjectionList items={ortho.list('injections', c.patientId).sort((a, b) => b.date.localeCompare(a.date))} onEdit={(n) => setInj(n)} />
               <Button icon="plus" onClick={() => setInj('new')} style={{ marginTop: 10 }}>سجل حقن جديد</Button>
-            </> : <p className="muted">{unlinked ? 'سجل الحقن بيتفتح بعد ما التشخيص يتربط بملف المريض.' : 'اختار المريض الأول.'}</p>}
+            </> : <p className="muted">{unlinked ? 'سجل الحقن هيظهر هنا أول ما ملف المريض يتسجّل في العيادة.' : 'اختار المريض الأول.'}</p>}
           </Section>
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('files')}>رجوع: الأشعة والتحاليل</Button>
@@ -713,9 +711,9 @@ export function LegacyText({ c }: { c: Pick<Consultation, 'complaint' | 'history
 /** حالة تشخيص من غير ملف مريض (هجرة 924) */
 export function LinkBadge({ c }: { c: Consultation & { pendingSync?: boolean } }) {
   if (!isUnlinked(c)) return null;
-  const [label, tone] = c.pendingSync ? ['محفوظ على الجهاز — هيترفع لما النت يرجع', 'muted']
-    : c.linkStatus === 'review' ? ['يحتاج مراجعة وربط بملف المريض', 'danger'] : ['بانتظار ملف المريض من الاستقبال', 'warn'];
-  return <span className={`badge badge--${tone}`} title={c.linkNote || ''}>{label}</span>;
+  // حالة المزامنة بس — حالة الربط (بانتظار ملف/مراجعة) داخلية ومابتظهرش للدكتور (قايمة المراجعة في الإعدادات)
+  if (!c.pendingSync) return null;
+  return <span className="badge badge--muted">محفوظ على الجهاز — هيترفع لما النت يرجع</span>;
 }
 
 export function ConsultList({ items, onEdit, hidePatient }: { items: Consultation[]; onEdit: (c: Consultation) => void; hidePatient?: boolean }) {

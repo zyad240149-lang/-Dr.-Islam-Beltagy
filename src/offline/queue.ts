@@ -44,7 +44,8 @@ export type ExecResult =
   | { type: 'retry'; error: string }                 // فشل مؤقت: شبكة/خادم
   | { type: 'auth'; error: string }                  // الجلسة منتهية/الصلاحية اتسحبت
   | { type: 'failed'; error: string }                // رفض من الخادم (تحقق)
-  | { type: 'conflict'; conflict: ConflictInfo };
+  | { type: 'conflict'; conflict: ConflictInfo }
+  | { type: 'merged'; into: string };                // إنشاء مريض طلع مكرر بالظبط (نفس الاسم + نفس الموبايل) على الخادم ← اتدمج في الملف الموجود
 
 export type Executor = (op: OfflineOp) => Promise<ExecResult>;
 
@@ -63,6 +64,16 @@ export const uuid = (): string =>
   (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
     ? crypto.randomUUID()
     : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => { const r = (Math.random() * 16) | 0; return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16); });
+
+/** استبدال معرّف محلي بمعرّف حقيقي في بيانات عملية (قيم نصية مطابقة بالظبط + مسارات ملفات بتبدأ بيه). الملفات نفسها (ArrayBuffer) بتفضل زي ما هي. */
+export function retargetValue<T>(v: T, from: string, to: string): T {
+  if (typeof v === 'string') return (v === from ? to : v.startsWith(from + '/') ? to + v.slice(from.length) : v) as T;
+  if (Array.isArray(v)) return v.map((x) => retargetValue(x, from, to)) as T;
+  if (v && typeof v === 'object' && Object.getPrototypeOf(v) === Object.prototype) {
+    return Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, x]) => [k, retargetValue(x, from, to)])) as T;
+  }
+  return v;
+}
 
 export interface QueueEvents { change: () => void; done: (op: OfflineOp) => void }
 
@@ -138,6 +149,11 @@ export class OfflineQueue {
         if (r.type === 'done') {
           await this.remove(op); summary.done++;
           this.doneListeners.forEach((l) => l(op));
+        } else if (r.type === 'merged') {
+          // نفس المريض موجود على الخادم ← كل اللي اتعمل على الملف المحلي (تشخيص/موعد/ملف/تعديل) بيتحوّل للملف الحقيقي تلقائي، من غير سؤال
+          await this.retarget(op.entityId, r.into);
+          await this.remove(op); summary.done++;
+          this.doneListeners.forEach((l) => l({ ...op, mergedInto: r.into } as OfflineOp));
         } else if (r.type === 'retry') {
           op.status = 'pending'; op.lastError = r.error; op.nextAttemptAt = this.now() + backoff(op.attempts); await this.save(op);
           summary.retry++; skipped.add(op.entityId);
@@ -188,11 +204,7 @@ export class OfflineQueue {
     if (res.type === 'use-existing') {
       const existing = op.conflict?.existingId; if (!existing) return;
       // كل العمليات المعتمدة على المريض الجديد تتحوّل للمريض الموجود
-      for (const o of this.ops.slice()) {
-        if (o.dependsOn === op.entityId) {
-          o.payload = { ...o.payload, patientId: existing }; o.dependsOn = undefined; o.status = 'pending'; o.lastError = undefined; o.nextAttemptAt = 0; await this.save(o);
-        }
-      }
+      await this.retarget(op.entityId, existing);
       await this.remove(op); return;
     }
     if (res.type === 'retime') {
@@ -200,6 +212,22 @@ export class OfflineQueue {
       if (op.kind === 'appointment.create') op.payload = { ...op.payload, p: { ...(op.payload.p as object), ...to }, local: { ...(op.payload.local as object), ...to } };
       else op.payload = { ...op.payload, ...to, local: { ...(op.payload.local as object), ...to } };
       op.status = 'pending'; op.conflict = undefined; op.lastError = undefined; op.nextAttemptAt = 0; await this.save(op);
+    }
+  }
+
+  /** المعرّف المحلي (مريض اتعمل من غير نت) ← المعرّف الحقيقي في كل العمليات اللي لسه مستنية (row.patient_id، p.patientId، مسارات الملفات…) */
+  async retarget(from: string, to: string) {
+    for (const o of this.ops.slice()) {
+      if (o.entityId === from && o.kind.endsWith('.create')) continue; // عملية الإنشاء نفسها (بتتشال)
+      const touches = o.dependsOn === from || o.entityId === from || JSON.stringify(o.payload, (_k, v) => (v instanceof ArrayBuffer ? undefined : v)).includes(from);
+      if (!touches) continue;
+      o.payload = retargetValue(o.payload, from, to);
+      if (o.base) o.base = retargetValue(o.base, from, to);
+      if (o.entityId === from) o.entityId = to; // تعديل بيانات المريض المحلي ← تعديل الملف الحقيقي
+      if (o.dependsOn === from) o.dependsOn = undefined;
+      if (o.status === 'failed' && /foreign key|violates|غير موجود/i.test(o.lastError ?? '')) o.status = 'pending';
+      o.nextAttemptAt = 0;
+      await this.save(o);
     }
   }
 

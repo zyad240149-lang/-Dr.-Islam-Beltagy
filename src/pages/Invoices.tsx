@@ -14,6 +14,7 @@ import { useDbVersion, useLoading } from '../hooks/useDb';
 import { Button, EmptyState, Skeleton, StatusBadge, Modal, Input, Select } from '../components/ui';
 import { ConfirmDialog, FilterBar, IconAction, RowActions, useCan } from '../components/common';
 import { StatCard } from '../components/StatCard';
+import { ALL_PERIOD, PeriodFilter, type Period } from '../components/PeriodFilter';
 import { INVOICE_STATUS, PAYMENT_METHOD_LABEL, PAYMENT_METHOD_OPTIONS, addDaysYmd, amountToArabicWords, exportCsv, fmtDate, fmtDateTime, money, tsToYmd, todayYmd } from '../utils/format';
 import { useToast } from '../hooks/useToast';
 import type { Invoice, Package, Payment, PaymentMethod } from '../types';
@@ -169,13 +170,13 @@ export default function Invoices() {
   const [currentId, setCurrentId] = useState<string | null>(params.get('invoice') || null);
   const [q, setQ] = useState(params.get('q') ?? '');
   const [status, setStatus] = useState('');
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
+  const [invPeriod, setInvPeriod] = useState<Period>(ALL_PERIOD);
+  const { from, to } = invPeriod;
   const [kind, setKind] = useState('');
   const [payQ, setPayQ] = useState('');
   const [payMethod, setPayMethod] = useState('');
-  const [payFrom, setPayFrom] = useState('');
-  const [payTo, setPayTo] = useState('');
+  const [payPeriod, setPayPeriod] = useState<Period>(ALL_PERIOD);
+  const { from: payFrom, to: payTo } = payPeriod;
   const [editingPay, setEditingPay] = useState<Payment | null>(null);
   const [deletingPay, setDeletingPay] = useState<Payment | null>(null);
   const [deletingInv, setDeletingInv] = useState<string | null>(null);
@@ -280,6 +281,7 @@ export default function Invoices() {
           </>
         ) : tab === 'invoices' ? (
           <>
+            <PeriodFilter id="inv" value={invPeriod} onChange={setInvPeriod} />
             {!can('financial', 'view') ? null : loading ? <div style={{ padding: 22 }}><Skeleton h={70} /></div> : (
               <div className="kpi-grid" style={{ padding: '18px 22px 0' }}>
                 <StatCard icon="wallet" tone="brand" value={money(total)} label="إجمالي الفواتير" />
@@ -291,10 +293,7 @@ export default function Invoices() {
             <FilterBar>
               <Input id="inv-q" label="بحث" icon="search" placeholder="اسم المريض أو الجوال أو رقم الملف أو الهوية أو الفاتورة" value={q} onChange={(e) => setQ(e.target.value)} />
               <Select id="inv-status" label="الحالة" value={status} onChange={(e) => setStatus(e.target.value)} options={[{ value: '', label: 'كل الحالات' }, ...Object.entries(INVOICE_STATUS).map(([value, v]) => ({ value, label: v.label }))]} />
-              <Select id="inv-kind" label="النوع" value={kind} onChange={(e) => setKind(e.target.value)} options={[{ value: '', label: 'الكل' }, { value: 'service', label: 'زيارات/خدمات' }, { value: 'package', label: 'باقات' }]} />
-              <Input id="inv-from" label="من تاريخ" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-              <Input id="inv-to" label="إلى تاريخ" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-            </FilterBar>
+              <Select id="inv-kind" label="النوع" value={kind} onChange={(e) => setKind(e.target.value)} options={[{ value: '', label: 'الكل' }, { value: 'service', label: 'زيارات/خدمات' }, { value: 'package', label: 'باقات' }]} />            </FilterBar>
             <div className="card__body">
               {invoices.length === 0 ? <EmptyState icon="receipt" title="ما فيه فواتير مطابقة" /> : (
                 <div className="table-wrap"><table className="table">
@@ -322,6 +321,7 @@ export default function Invoices() {
           </>
         ) : (
           <>
+            <PeriodFilter id="pay" value={payPeriod} onChange={setPayPeriod} />
             {can('financial', 'view') && <div className="kpi-grid" style={{ padding: '18px 22px 0' }}>
               <StatCard icon="wallet" tone="ok" value={money(paySum())} label="إجمالي المحصّل" />
               <StatCard icon="wallet" tone="brand" value={money(paySum('cash'))} label="نقدًا" />
@@ -330,10 +330,7 @@ export default function Invoices() {
             </div>}
             <FilterBar>
               <Input id="pay-q" label="بحث" icon="search" placeholder="اسم المريض أو الجوال أو رقم الملف أو الهوية أو الفاتورة" value={payQ} onChange={(e) => setPayQ(e.target.value)} />
-              <Select id="pay-method" label="طريقة الدفع" value={payMethod} onChange={(e) => setPayMethod(e.target.value)} options={[{ value: '', label: 'الكل' }, ...PAYMENT_METHOD_OPTIONS]} />
-              <Input id="pay-from" label="من تاريخ" type="date" value={payFrom} onChange={(e) => setPayFrom(e.target.value)} />
-              <Input id="pay-to" label="إلى تاريخ" type="date" value={payTo} onChange={(e) => setPayTo(e.target.value)} />
-            </FilterBar>
+              <Select id="pay-method" label="طريقة الدفع" value={payMethod} onChange={(e) => setPayMethod(e.target.value)} options={[{ value: '', label: 'الكل' }, ...PAYMENT_METHOD_OPTIONS]} />            </FilterBar>
             <div className="card__body">
               {payments.length === 0 ? <EmptyState icon="wallet" title="ما فيه مدفوعات مطابقة" /> : (
                 <div className="table-wrap"><table className="table">

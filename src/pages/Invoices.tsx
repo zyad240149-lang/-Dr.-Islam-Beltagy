@@ -182,16 +182,23 @@ export default function Invoices() {
   const [deletingInv, setDeletingInv] = useState<string | null>(null);
   const toast = useToast();
 
-  const invoices = db.invoices().filter((i) => {
+  const matchesFilters = (i: Invoice) => {
     const p = db.patient(i.patientId);
     const s = q.trim().toLowerCase();
     return (!s || i.no.toLowerCase().includes(s) || patientMatches(p, s) || i.serviceName.includes(q.trim()))
-      && (!status || i.status === status) && (!from || i.date >= from) && (!to || i.date <= to)
+      && (!status || i.status === status)
       && (!kind || (kind === 'package' ? !!i.packageId : !i.packageId));
-  }).sort(newestInvoiceFirst);
-  const valid = invoices.filter((i) => i.status !== 'cancelled' && i.status !== 'draft');
+  };
+  const invoices = db.invoices().filter((i) => matchesFilters(i) && (!from || i.date >= from) && (!to || i.date <= to)).sort(newestInvoiceFirst);
+  const countsInTotals = (i: Invoice) => i.status !== 'cancelled' && i.status !== 'draft';
+  const valid = invoices.filter(countsInTotals);
   const total = valid.reduce((s, i) => s + i.total, 0);
-  const paid = valid.reduce((s, i) => s + i.paid, 0);
+  // «المدفوع» = الفلوس اللي اتستلمت في الفترة بيوم الدفعة نفسها، حتى لو الفاتورة تاريخها في يوم تاني
+  const paid = db.payments().reduce((s, p) => {
+    const inv = db.invoice(p.invoiceId);
+    const day = tsToYmd(p.date);
+    return inv && countsInTotals(inv) && matchesFilters(inv) && (!from || day >= from) && (!to || day <= to) ? s + p.amount : s;
+  }, 0);
   const due = valid.reduce((s, i) => s + i.remaining, 0);
   const discounts = valid.reduce((s, i) => s + i.discount, 0);
 

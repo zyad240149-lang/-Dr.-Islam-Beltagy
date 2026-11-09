@@ -21,6 +21,7 @@ import { openPrintWindow, printHtml } from '../utils/printDoc';
 import { RequestForms } from './RequestForms';
 import { applyRequestForms, deliverRequestImage, labOthers, prepareRequestImage, readyRequestImage, requestHtml } from './requestData';
 import { DiagnosisOutput } from './DiagnosisOutput';
+import { ExerciseSendModal } from './ExerciseSend';
 import { InjectionList, InjectionModal } from './Injections';
 import { PatientMedicalFiles } from './PatientMedicalFiles';
 import { RxEditor } from './Rx';
@@ -149,6 +150,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
   // خانة 1 وقت الفتح — اللي يتعدّل بعدها بس يروح لملف المريض (لو المريض اتغيّر، الخانات اتملت من ملفه هو فبنقارن بالملف بس)
   const [opened] = useState(() => ({ patientId: c.patientId, sheet: normSheet(c.sheet) }));
   const [mapOpen, setMapOpen] = useState(false);
+  const [exSend, setExSend] = useState(false); // «إرسال تمرينات واتساب» من الشيت العام / كشف الطبيب
   const [out, setOut] = useState<DxPart[] | null>(null); // نافذة «طباعة وإرسال» بالأجزاء المختارة مبدئيًا
   const bodyRef = useRef<HTMLDivElement>(null);
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setC((x) => ({ ...x, [k]: v }));
@@ -403,6 +405,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
             </section>
           )}
           <div className="sh-next">
+            <Button variant="outline" icon="share" disabled={!c.patientId} title={c.patientId ? '' : 'اختار المريض الأول'} onClick={() => setExSend(true)}>إرسال تمرينات واتساب</Button>
             <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => setOut(['nurse'])}>طباعة / إرسال الشيت العام</Button>
             <Button icon="chevronLeft" onClick={() => goTab('doctor')}>التالي: كشف الطبيب</Button>
           </div>
@@ -420,6 +423,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           </>
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('nurse')}>رجوع: الشيت العام</Button>
+            <Button variant="outline" icon="share" disabled={!c.patientId} title={c.patientId ? '' : 'اختار المريض الأول'} onClick={() => setExSend(true)}>إرسال تمرينات واتساب</Button>
             <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => setOut(['doctor'])}>طباعة / إرسال كشف الطبيب</Button>
             <Button icon="chevronLeft" onClick={() => goTab('files')}>التالي: الأشعة والتحاليل</Button>
           </div>
@@ -593,6 +597,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
         {inj && <InjectionModal patientId={c.patientId} appointmentId={c.appointmentId ?? null} initial={inj === 'new' ? undefined : inj} onClose={() => setInj(null)} />}
       </div>
       </BoxOpenDefault.Provider>
+      {exSend && c.patientId && <ExerciseSendModal patientId={c.patientId} onClose={() => setExSend(false)} />}
       {out && <DiagnosisOutput initial={out} patient={patientOf()} visitNo={visitNo} onClose={() => setOut(null)}
         c={{ ...c, ...sum, plan: c.plan, sheet, medications: c.medications.filter((m) => m.name.trim()), imagingRequests: c.imagingRequests.filter((r) => r.region.trim()) }} />}
       {ask && (

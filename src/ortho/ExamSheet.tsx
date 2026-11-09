@@ -227,7 +227,8 @@ export type GenField = { g: string; items: string[]; label?: string; one?: boole
 export const GEN_BOXES: { id: string; title: string; wide?: boolean; f: GenField[] }[] = [
   { id: 'loc', title: 'مكان الألم / الأماكن المصابة', f: [
     { g: 'n.loc', items: ['مكان واحد', 'أكثر من مكان', 'ألم في أماكن متعددة', 'ألم بجسم كله'], one: true },
-    { k: 'n.loc.where', label: 'حدد المكان / الأماكن', stack: true } ] },
+    { g: 'n.loc.areas', label: 'حدد المكان / الأماكن', items: ['الفقرات العنقية', 'الكتف والعضد', 'الكوع والساعد', 'الرسغ واليد', 'الفقرات الصدرية', 'الفقرات القطنية', 'الحوض والفخذ', 'الركبة والساق', 'الكاحل والقدم'] },
+    { k: 'n.loc.where', label: 'أماكن أخرى', stack: true } ] },
   { id: 'onset', title: 'بداية الألم وسببها', f: [
     { g: 'n.ons', items: ['فجأة', 'بالتدريج'], label: 'متى بدأ الألم؟', one: true },
     { g: 'n.cause', items: ['إصابة / حادثة', 'وقعة', 'مجهود زائد أو نشاط جديد', 'رفع أشياء ثقيلة', 'حركة معينة', 'لم أتعرض لسبب واضح'], label: 'هل كان هناك سبب واضح لبدء الألم؟', other: true } ] },

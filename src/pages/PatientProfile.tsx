@@ -153,7 +153,7 @@ export default function PatientProfile() {
                 : <span className="badge badge--ok" title={`عضو منذ ${fmtDate(account.memberSince.slice(0, 10))}`}><Icon name="checkCircle" size={13} /> عنده حساب على بوابة العميل{account.patientId === patient.id ? ' — مربوط بهذا الملف' : ''}</span>}
             </div>
           </div>
-          {can('booking', 'create') || can('appointments', 'create') ? <Button icon="calendarPlus" onClick={() => setBooking(true)}>حجز موعد</Button> : null}
+          {/* ٩/١١: «حجز موعد» اتشال من ملف المريض */}
           {canEditPatient && <Button variant="outline" icon="edit" onClick={() => setEditing(true)}>تعديل البيانات</Button>}
           {can('patients', 'delete') && <Button variant="soft-danger" icon="trash" onClick={() => ask('حذف ملف المريض', `سيتم حذف ملف ${patient.fullName} نهائيًا. ما يمكن حذف مريض عنده زيارات أو مدفوعات — عطّل الملف بدل ذلك.`, async () => {
             const r = await db.deletePatient(id); if (r.ok) { toast.success('تم حذف ملف المريض.'); navigate('/patients'); } else toast.error(r.error);

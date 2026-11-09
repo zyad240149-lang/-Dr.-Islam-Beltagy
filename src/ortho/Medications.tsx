@@ -6,6 +6,7 @@ import { Button, EmptyState, Modal } from '../components/ui';
 import { MED_PRESETS, medCatalog, type MedPreset } from './clinicalLists';
 import { ortho, useOrthoVersion, type MedItem } from './data';
 import { Field, IconBtn, LoadState, PageHead, SearchBox, confirmDelete, useClinicalCan, useRun } from './kit';
+import { useMedBank } from './medBank';
 
 type Draft = MedPreset & { id?: string };
 type Row = Omit<MedItem, 'id'> & { id?: string };
@@ -55,13 +56,20 @@ function GroupModal({ initialName, meds, toRow, onClose }: { initialName: string
   const { run, busy } = useRun();
   const [name, setName] = useState(initialName);
   const [q, setQ] = useState('');
+  const bank = useMedBank(q, q.trim().length >= 2, 30);
+  const [fromBank, setFromBank] = useState<Map<string, MedPreset>>(() => new Map()); // أدوية اتعلّمت من نتايج البحث في البنك
   const [picked, setPicked] = useState<Set<string>>(() => new Set(initialName ? meds.filter((m) => m.group === initialName).map((m) => keyOf(m.name)) : []));
-  const toggle = (k: string) => setPicked((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n; });
+  const localKeys = new Set(meds.map((m) => keyOf(m.name)));
+  const toggle = (m: MedPreset) => {
+    const k = keyOf(m.name);
+    setPicked((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n; });
+    if (!localKeys.has(k)) setFromBank((x) => new Map(x).set(k, m));
+  };
   const term = q.trim().toLowerCase();
-  const shown = meds.filter((m) => !term || m.name.toLowerCase().includes(term) || m.group.toLowerCase().includes(term));
+  const shown = [...meds.filter((m) => !term || m.name.toLowerCase().includes(term) || m.group.toLowerCase().includes(term)), ...bank.rows.filter((m) => !localKeys.has(keyOf(m.name)))];
   const target = name.trim();
   const save = () => run(async () => {
-    for (const m of meds) {
+    for (const m of [...meds, ...[...fromBank.values()].filter((x) => picked.has(keyOf(x.name)))]) {
       const inGroup = picked.has(keyOf(m.name));
       if (inGroup && (m.group !== target || !isShown(m))) await ortho.save('medications', toRow(m, { group: target, shown: true }));
       else if (!inGroup && initialName && m.group === initialName) await ortho.save('medications', toRow(m, { group: '' }));
@@ -80,12 +88,12 @@ function GroupModal({ initialName, meds, toRow, onClose }: { initialName: string
           const k = keyOf(m.name);
           return (
             <label key={k} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '6px 2px', cursor: 'pointer' }}>
-              <input type="checkbox" checked={picked.has(k)} onChange={() => toggle(k)} />
+              <input type="checkbox" checked={picked.has(k)} onChange={() => toggle(m)} />
               <b dir="ltr">{m.name}</b>{m.group && <small className="muted">{m.group}</small>}
             </label>
           );
         })}
-        {!shown.length && <p className="muted">مفيش دواء بالاسم ده في البنك.</p>}
+        {!shown.length && <p className="muted">{bank.loading ? 'بيدور في البنك…' : 'مفيش دواء بالاسم ده في البنك.'}</p>}
       </div>
     </Modal>
   );
@@ -120,11 +128,13 @@ export default function Medications() {
   const extra = view === 'bank' ? [...used.values()].filter(({ m }) => !term || m.name.toLowerCase().includes(term)).sort((a, b) => b.n - a.n) : [];
   const isBase = (name: string) => MED_PRESETS.some((p) => p.name === name);
   const remove = (s: MedItem) => confirmDelete(`«${s.name}»`) && run(() => ortho.remove('medications', s.id), isBase(s.name) ? 'اتشال التعديل — رجع للقايمة الأساسية' : 'تم الحذف');
-  const toRow = (m: MedPreset, patch: Partial<MedPreset> = {}): Row => {
-    const s = savedBy.get(keyOf(m.name));
-    return { ...(s ? { id: s.id } : {}), name: m.name, group: m.group, dose: m.dose, frequency: m.frequency, duration: m.duration, shown: isShown(m), ...patch } as Row;
+  const toRow = (m: Draft, patch: Partial<MedPreset> = {}): Row => {
+    const id = m.id ?? savedBy.get(keyOf(m.name))?.id;
+    return { ...(id ? { id } : {}), name: m.name, group: m.group, dose: m.dose, frequency: m.frequency, duration: m.duration, shown: isShown(m), ...patch } as Row;
   };
-  const toggleShown = (m: MedPreset) => run(() => ortho.save('medications', toRow(m, { shown: !isShown(m) })), isShown(m) ? 'اتشال من قدامك — لسه موجود في البنك' : 'بقى ظاهر قدامك في الروشتة');
+  const bank = useMedBank(view === 'bank' ? q : '');
+  const bankHits = bank.rows.filter((m) => !known.has(keyOf(m.name)));
+  const toggleShown = (m: Draft) => run(() => ortho.save('medications', toRow(m, { shown: !isShown(m) })), isShown(m) ? 'اتشال من قدامك — لسه موجود في البنك' : 'بقى ظاهر قدامك في الروشتة');
 
   return (
     <div className="page">
@@ -137,14 +147,14 @@ export default function Medications() {
           اللي بيظهر قدامي <span className="badge badge--brand num">{shownCount}</span>
         </button>
         <button type="button" role="tab" aria-selected={view === 'bank'} className={`seg__btn ${view === 'bank' ? 'active' : ''}`} onClick={() => setView('bank')}>
-          بنك الأدوية <span className="badge badge--brand num">{all.length}</span>
+          بنك الأدوية <span className="badge badge--brand num">{Math.max(all.length, bank.total)}</span>
         </button>
       </div>
       <section className="card">
         <div className="filter-bar"><div className="field"><SearchBox value={q} onChange={setQ} placeholder="ابحث باسم الدواء أو المجموعة" /></div></div>
         <div className="card__body">
           <LoadState kind="medications">
-            {!list.length && !extra.length && <EmptyState icon="search" title={term ? 'مفيش أدوية بالاسم ده' : 'مفيش أدوية ظاهرة قدامك'} text={term ? undefined : 'افتح «بنك الأدوية» وعلّم على اللي عايزه يظهر.'} />}
+            {!list.length && !extra.length && !(view === 'bank' && (bankHits.length || bank.loading)) && <EmptyState icon="search" title={term ? 'مفيش أدوية بالاسم ده' : 'مفيش أدوية ظاهرة قدامك'} text={term ? undefined : 'افتح «بنك الأدوية» وعلّم على اللي عايزه يظهر.'} />}
             {[...byGroup].map(([g, meds]) => (
               <div key={g} style={{ marginBottom: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 6 }}>
@@ -171,6 +181,24 @@ export default function Medications() {
                 })}
               </div>
             ))}
+            {view === 'bank' && (bankHits.length > 0 || bank.failed) && (
+              <div style={{ marginTop: 20 }}>
+                <h3 className="ortho-sub" style={{ margin: '0 0 6px', fontWeight: 700 }}>باقي البنك — اكتب اسم الدواء في البحث <span className="num">({bank.total})</span></h3>
+                {bank.failed && <p className="muted">البحث في البنك محتاج اتصال بالإنترنت.</p>}
+                {bankHits.map((m) => (
+                  <div className="item-card ortho-row" key={m.id}>
+                    <div><b dir="ltr">{m.name}</b><div className="ortho-sub">{m.group || '—'}</div></div>
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                      <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                        <input type="checkbox" checked={isShown(m)} disabled={busy || !perm.edit} onChange={() => toggleShown(m)} /> يظهر قدامي
+                      </label>
+                      {perm.edit && <IconBtn icon="edit" label="تعديل" onClick={() => setEdit({ ...m })} />}
+                    </div>
+                  </div>
+                ))}
+                {bank.hasMore && !bank.failed && <div style={{ textAlign: 'center', marginTop: 10 }}><Button variant="outline" loading={bank.loading} onClick={bank.more}>عرض المزيد</Button></div>}
+              </div>
+            )}
             {extra.length > 0 && (
               <div style={{ marginTop: 20 }}>
                 <h3 className="ortho-sub" style={{ margin: '0 0 6px', fontWeight: 700 }}>اتكتبت للمرضى ومش في البنك <span className="num">({extra.length})</span></h3>

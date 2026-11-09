@@ -171,7 +171,8 @@ async function load(kind: Kind) {
   loading.add(kind);
   try {
     // كل الصفوف بالترقيم بالمؤشر (كان فيه حد 5000 صف بيقص الباقي من غير ما يبان)
-    const rows = await fetchKeyset(tableOf(kind));
+    // بنك الأدوية المستورد (مخفي ومن غير موظف) بيتبحث فيه على الخادم — الجهاز بيحمّل الظاهر واللي الفريق ضافه بس
+    const rows = await fetchKeyset(tableOf(kind), kind === 'medications' ? { or: 'shown.eq.true,created_by.not.is.null' } : {});
     server[kind] = rows.sort(byCreatedDesc);
     cache[kind] = overlay(kind, server[kind]!);
     delete errors[kind];

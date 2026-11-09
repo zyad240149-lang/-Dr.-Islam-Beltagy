@@ -5,6 +5,7 @@ import { Icon } from '../utils/icons';
 import { useToast } from '../hooks/useToast';
 import { IMAGING_KIND, IMAGING_STATUS, ortho, type Attachment, type ImagingKind, type ImagingRequest, type Medication, type RxData } from './data';
 import { LAB_GROUPS, XRAY_VIEWS, medCatalog, type MedPreset } from './clinicalLists';
+import { useMedBank } from './medBank';
 import { AttachmentThumbs } from './Consultations';
 import { IconBtn, Tone } from './kit';
 
@@ -66,6 +67,13 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
     // من غير بحث: اللي الطبيب اختاره يظهر قدامه بس — البحث بيدور في البنك كله
     if (!medQ.trim() && p.shown === false) continue;
     if (medQ.trim() && !norm(p.name).includes(norm(medQ)) && !p.group.includes(medQ.trim())) continue;
+    const g = p.group || 'أخرى'; medGroups.set(g, [...(medGroups.get(g) ?? []), p]);
+  }
+  // البحث بيكمّل من البنك الكامل على الخادم
+  const bankHits = useMedBank(medQ, medQ.trim().length >= 2, 30).rows;
+  const listed = new Set([...medGroups.values()].flat().map((p) => norm(p.name)));
+  for (const p of bankHits) {
+    if (listed.has(norm(p.name))) continue;
     const g = p.group || 'أخرى'; medGroups.set(g, [...(medGroups.get(g) ?? []), p]);
   }
   const toggleLab = (name: string) => set('labs', c.labs.includes(name) ? c.labs.filter((l) => l !== name) : [...c.labs, name]);

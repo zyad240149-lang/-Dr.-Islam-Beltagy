@@ -39,7 +39,7 @@ async function withRetry<T>(f: () => PromiseLike<{ data: T | null; error: { mess
 }
 
 /** كل الصفوف (أو اللي اتغيّرت بعد since) بالترتيب على id — دفعة ورا دفعة */
-export async function fetchKeyset(table: string, opts: { since?: string | null; label?: string; total?: number | null } = {}): Promise<any[]> {
+export async function fetchKeyset(table: string, opts: { since?: string | null; label?: string; total?: number | null; or?: string } = {}): Promise<any[]> {
   const out: any[] = [];
   let after: string | null = null;
   for (;;) {
@@ -47,6 +47,7 @@ export async function fetchKeyset(table: string, opts: { since?: string | null; 
       let q = supabase.from(table).select('*').order('id').limit(PAGE);
       if (after) q = q.gt('id', after);
       if (opts.since) q = q.gt('updated_at', opts.since);
+      if (opts.or) q = q.or(opts.or);
       return q;
     });
     const rows = r.data ?? [];

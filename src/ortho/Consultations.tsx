@@ -8,7 +8,8 @@ import { Icon } from '../utils/icons';
 import { findCondition } from '../data/bodyRegions';
 import type { DiagnosisRef } from '../types';
 import { fmtDate, fmtDateTime, fmtTime, todayYmd, waPhone, whatsappNumber } from '../utils/format';
-import { openVisitFor } from './visits';
+import { openVisitFor, todaysFollowUps } from './visits';
+import { NursingSheetTab } from './Nursing';
 import { SHEET_ORDER, SHEET_TAB, TREATMENT, activeSheets, regionSheet, removeSheet, sheetFilled, type SheetId } from './regionSheets';
 import { US_SHEETS, usFilled, usImage } from './ultrasoundSheets';
 import { VoiceDictation } from '../components/VoiceDictation';
@@ -93,7 +94,7 @@ function Section({ icon, title, children, aside }: { icon: string; title: string
 
 // الكشف = الشيتين بالترتيب (التمريض قبل دخول المريض ← كشف الطبيب) وبعدهم الحقن — الروشتة والأشعة والتحاليل اتنقلت لشيت المتابعة
 // «كشف الطبيب» بيتسمى بالمنطقة: شيت الطبيب بيتحدد من مكان الألم في الشيت العام (regionSheets)
-const TABS = [['nurse', 'الشيت العام'], ['doctor', 'كشف الطبيب'], ['fu', 'متابعة الجبس والعمليات'], ['files', 'الأشعة والتحاليل'], ['inj', 'الحقن'], ['plan', 'الخطة العلاجية']] as const;
+const TABS = [['nurse', 'الشيت العام'], ['doctor', 'كشف الطبيب'], ['fu', 'متابعة الجبس والعمليات'], ['files', 'الأشعة والتحاليل'], ['inj', 'الحقن'], ['plan', 'الخطة العلاجية'], ['nursing', 'متابعة المريض']] as const;
 type Tab = typeof TABS[number][0];
 // متابعة الجبس وما بعد العمليات: قسم لوحده (طلب ٨/١١) — باقي الشيتات في «كشف الطبيب»
 const FU_SHEETS: SheetId[] = ['cast', 'postop'];
@@ -119,7 +120,8 @@ function matchPatient(name: string, phone?: string) {
   return undefined;
 }
 
-export function ConsultModal({ initial, resume, patientId = '', appointmentId, pending, onClose }: { initial?: Consultation; resume?: boolean; patientId?: string; appointmentId?: string | null; pending?: { name: string; phone?: string }; onClose: () => void }) {
+// openFollowUp = يفتح على تاب «متابعة المريض» بشيت متابعة جديد (زرار «متابعة» في قايمة المرضى اللي اتشخصوا)
+export function ConsultModal({ initial, resume, patientId = '', appointmentId, pending, openFollowUp, onClose }: { initial?: Consultation; resume?: boolean; patientId?: string; appointmentId?: string | null; pending?: { name: string; phone?: string }; openFollowUp?: boolean; onClose: () => void }) {
   const { run, busy } = useRun();
   const toast = useToast();
   const fuPerm = useFuCan();
@@ -141,7 +143,11 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
   });
   const visitAppt = c.appointmentId ? db.appointment(c.appointmentId) : undefined;
   const savingRef = useRef(false); // ضغطتين ورا بعض على «حفظ» ما يعملوش تشخيصين
-  const [tab, setTab] = useState<Tab>(() => (initial || doctorStarted(normSheet(c.sheet)) ? 'doctor' : 'nurse'));
+  const [tab, setTab] = useState<Tab>(() => (openFollowUp ? 'nursing' : initial || doctorStarted(normSheet(c.sheet)) ? 'doctor' : 'nurse'));
+  // شيت المتابعة بيتحفظ لوحده: بيفضل متركّب بعد أول فتحة عشان التنقل بين التابات مايمسحش اللي اتكتب فيه
+  const [nursingSeen, setNursingSeen] = useState(!!openFollowUp);
+  const [nursingDirty, setNursingDirty] = useState(false);
+  const leaveNursing = () => !nursingDirty || window.confirm('شيت المتابعة فيه كلام لسه ما اتحفظش وهيضيع. تكمل؟');
   // خانة 1 وقت الفتح — اللي يتعدّل بعدها بس يروح لملف المريض (لو المريض اتغيّر، الخانات اتملت من ملفه هو فبنقارن بالملف بس)
   const [opened] = useState(() => ({ patientId: c.patientId, sheet: normSheet(c.sheet) }));
   const [mapOpen, setMapOpen] = useState(false);
@@ -223,7 +229,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
   );
   const examActive = active.filter((id) => !FU_SHEETS.includes(id));
   const fuActive = active.filter((id) => FU_SHEETS.includes(id));
-  const goTab = (t: Tab) => { setTab(t); bodyRef.current?.closest('.modal__body')?.scrollTo({ top: 0 }); };
+  const goTab = (t: Tab) => { setTab(t); if (t === 'nursing') setNursingSeen(true); bodyRef.current?.closest('.modal__body')?.scrollTo({ top: 0 }); };
 
   // كشف جديد (مش تعديل كشف محفوظ): نحفظ مسودة محليًا أول بأول عشان لو المستخدم خرج من غير ما يحفظ، يقدر يستكمل بعدين
   useEffect(() => {
@@ -233,6 +239,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
 
   // إلغاء تعديل كشف محفوظ: الملفات اللي اترفعت في الزيارة دي ومش هتتحفظ بتتمسح (الكشف الجديد بيفضل محتفظ بيها في المسودة)
   function cancel() {
+    if (!leaveNursing()) return;
     if (initial) {
       const keep = new Set(initial.attachments.map((a) => a.path));
       c.attachments.filter((a) => !keep.has(a.path)).forEach((a) => void ortho.removeAttachment(a.path));
@@ -286,6 +293,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
 
   function save(thenPrint: boolean, complete?: boolean) {
     if (savingRef.current) return;
+    if (complete === undefined && !leaveNursing()) return;
     if (complete === undefined && missing.length) { setAsk({ thenPrint }); return; }
     if (complete === true && nothingEntered) { toast.error('التشخيص فاضي — اكتب بياناته الأول.'); return; }
     const done = complete ?? true;
@@ -462,9 +470,18 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
               </div>} /></div>
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('inj')}>رجوع: الحقن</Button>
+            <Button variant="outline" icon="clipboard" onClick={() => goTab('nursing')}>متابعة المريض</Button>
             <Button icon="check" loading={busy} disabled={!ok} onClick={() => save(false)}>حفظ الكشف</Button>
           </div>
         </>}
+
+        {/* «متابعة المرضى» بقت شيت جوّه التشخيص (٩/١١) — بتتحفظ لوحدها في ortho_nursing ومحتاجة ملف مريض */}
+        {nursingSeen && <div hidden={tab !== 'nursing'}>
+          {c.patientId
+            ? <NursingSheetTab key={c.patientId} patientId={c.patientId} startNew={openFollowUp} onDirty={setNursingDirty}
+              appointmentId={todaysFollowUps().find((a) => a.patientId === c.patientId)?.id ?? (visitAppt?.date === todayYmd() ? visitAppt.id : null)} />
+            : <p className="sh-pickfirst">شيت المتابعة بيتحفظ في ملف المريض — اختار المريض الأول.</p>}
+        </div>}
 
         {/* الأشعة والتحاليل: قسم لوحده قبل الحقن (طلب الدكتور ٨/١١) */}
         {tab === 'files' && <>

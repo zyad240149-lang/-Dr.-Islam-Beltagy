@@ -1,6 +1,6 @@
 // شيت متابعة التمريض + الروشتة والأشعة والتحاليل (نفس الشيت الورقي «يُملأ في كل زيارة متابعة»): الألم والالتزام والحركة والأعراض والعلاج الحالي،
 // وقسم الجبس وقسم العمليات بيتفتحوا بس لو المريض عنده جبس/عملية. بيتحفظ في ortho_nursing ويتطبع A4 بنفس ترتيب الورقة.
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Button, EmptyState, Modal } from '../components/ui';
 import { db } from '../data/db';
 import { DOCTOR } from '../landing/content';
@@ -11,7 +11,7 @@ import { addDays, ortho, useOrthoVersion, type Nursing, type NursingSheet, type 
 import { FollowUpModal, fuWhen, useFuCan } from './FollowUps';
 import { RxEditor, cleanRx, hasRx, normRx, registerRxRequests } from './Rx';
 import { printRx } from './printRx';
-import { Field, IconBtn, confirmDelete, useClinicalCan, useRun } from './kit';
+import { Field, IconBtn, LoadState, confirmDelete, useClinicalCan, useRun } from './kit';
 
 const OPT = {
   adherence: ['جيد', 'متوسط', 'ضعيف'],
@@ -64,7 +64,8 @@ const Box = ({ title, children, on, onToggle }: { title: string; children: React
   </fieldset>
 );
 
-export function NursingModal({ patientId, appointmentId = null, initial, onClose }: { patientId: string; appointmentId?: string | null; initial?: Nursing; onClose: () => void }) {
+// embedded = الشيت جوّه تاب «متابعة المريض» في نموذج التشخيص بدل نافذة لوحدها؛ onDirty بيبلّغ التشخيص إن فيه كلام لسه ما اتحفظش
+export function NursingModal({ patientId, appointmentId = null, initial, onClose, embedded, onDirty }: { patientId: string; appointmentId?: string | null; initial?: Nursing; onClose: () => void; embedded?: boolean; onDirty?: (dirty: boolean) => void }) {
   useOrthoVersion();
   const { run, busy } = useRun();
   const fuPerm = useFuCan();
@@ -92,23 +93,37 @@ export function NursingModal({ patientId, appointmentId = null, initial, onClose
         normRx(initial.sheet.rx).attachments.filter((a) => !now.has(a.path)).forEach((a) => void ortho.removeAttachment(a.path));
       }
     }, 'تم حفظ شيت المتابعة', () => {
+      live.current.settled = true;
       if (print === 'sheet') printNursing(item, win); else if (print === 'rx') printNursingRx(item, win);
       onClose();
     });
   };
   // إلغاء: الصور اللي اترفعت في الزيارة دي ومش هتتحفظ بتتمسح
-  const cancel = () => {
+  const dropNewFiles = (files: RxData['attachments']) => {
     const keep = new Set(normRx(initial?.sheet.rx).attachments.map((a) => a.path));
-    rx.attachments.filter((a) => !keep.has(a.path)).forEach((a) => void ortho.removeAttachment(a.path));
+    files.filter((a) => !keep.has(a.path)).forEach((a) => void ortho.removeAttachment(a.path));
+  };
+  const cancel = () => {
+    live.current.settled = true;
+    dropNewFiles(rx.attachments);
     onClose();
   };
-  return (
-    <Modal wide title={initial ? 'تعديل شيت متابعة التمريض' : 'شيت متابعة التمريض'} onClose={cancel} footer={<>
+  // الشيت جوّه التشخيص: لو التشخيص نفسه اتقفل والشيت لسه ما اتحفظش، الصور الجديدة بتتمسح زي «إلغاء»
+  const live = useRef({ files: rx.attachments, settled: false });
+  live.current.files = rx.attachments;
+  useEffect(() => () => { if (embedded && !live.current.settled) dropNewFiles(live.current.files); }, []);
+  const fingerprint = JSON.stringify({ date, s, rx });
+  const [baseline] = useState(fingerprint);
+  const dirty = fingerprint !== baseline;
+  useEffect(() => { onDirty?.(dirty); }, [dirty]);
+  useEffect(() => () => onDirty?.(false), []);
+  const foot = <>
       <Button variant="outline" onClick={cancel}>إلغاء</Button>
       <Button variant="outline" icon="print" loading={busy} disabled={uploading} onClick={() => save('sheet')}>حفظ وطباعة الشيت</Button>
       <Button variant="outline" icon="print" loading={busy} disabled={uploading || !hasRx(cleanRx(rx))} onClick={() => save('rx')}>حفظ وطباعة الروشتة</Button>
       <Button icon="check" loading={busy} disabled={uploading} onClick={() => save(null)}>حفظ</Button>
-    </>}>
+    </>;
+  const body = <>
       <div className="grid-form grid-form--3" style={{ marginBottom: 12 }}>
         <Field label="المريض"><input className="input" value={db.patient(patientId)?.fullName ?? ''} disabled /></Field>
         <Field label="التاريخ"><input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} /></Field>
@@ -177,7 +192,23 @@ export function NursingModal({ patientId, appointmentId = null, initial, onClose
         <RxEditor value={rx} onChange={setRx} patientId={patientId} region={ortho.list('consultations', patientId).sort((a, b) => b.date.localeCompare(a.date))[0]?.region} onUploading={setUploading} />
       </Box>
       {fuOpen && <FollowUpModal patientId={patientId} doctorHint={visitDoctor} presetDate={addDays(todayYmd(), FU_DAYS[pl.fu] ?? 7)} onClose={() => setFuOpen(false)} />}
-    </Modal>
+    </>;
+  if (embedded) return <div className="nu-inline">{body}<div className="sh-next">{foot}</div></div>;
+  return <Modal wide title={initial ? 'تعديل شيت متابعة التمريض' : 'شيت متابعة التمريض'} onClose={cancel} footer={foot}>{body}</Modal>;
+}
+
+// تاب «متابعة المريض» جوّه نموذج التشخيص: كل شيتات المتابعة بتاعت المريض + متابعة جديدة/تعديل في نفس المكان
+export function NursingSheetTab({ patientId, appointmentId, startNew, onDirty }: { patientId: string; appointmentId: string | null; startNew?: boolean; onDirty: (dirty: boolean) => void }) {
+  useOrthoVersion();
+  const perm = useClinicalCan();
+  const [form, setForm] = useState<Nursing | 'new' | null>(startNew && perm.add ? 'new' : null);
+  const items = ortho.list('nursing', patientId).sort((a, b) => b.date.localeCompare(a.date));
+  if (form) return <NursingModal embedded key={form === 'new' ? 'new' : form.id} patientId={patientId} appointmentId={form === 'new' ? appointmentId : form.appointmentId ?? null} initial={form === 'new' ? undefined : form} onDirty={onDirty} onClose={() => setForm(null)} />;
+  return (
+    <div>
+      {perm.add && <div className="sh-next" style={{ marginBottom: 12 }}><Button icon="clipboard" onClick={() => setForm('new')}>متابعة جديدة</Button></div>}
+      <LoadState kind="nursing"><NursingList items={items} onEdit={setForm} /></LoadState>
+    </div>
   );
 }
 

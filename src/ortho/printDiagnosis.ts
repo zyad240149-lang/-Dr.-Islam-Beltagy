@@ -193,7 +193,10 @@ export function diagnosisHtml(c: DxConsult, p?: DxPatient | null, visitNo?: numb
     if (sheetHasContent(normSheet(c.sheet)) || blank) {
       const sp = sheetPages(c, p, visitNo, compact && !blank);
       const full = compact && !blank ? sheetPages(c, p, visitNo, false) : sp;
-      sheetParts.forEach((x) => { const k = x as 'nurse' | 'doctor'; const pg = sp[k] || full[k]; if (pg) pages.push(pg); });
+      // اللي اتعلّم عليه بس؛ الجزء الفاضي بيختفي. الورقة الفاضية بتطلع بس لو مفيش ولا جزء فيه حاجة (بدل صفحة بيضا)
+      const keys = sheetParts as ('nurse' | 'doctor')[];
+      const filled = keys.map((k) => sp[k]).filter(Boolean);
+      pages.push(...(filled.length ? filled : keys.map((k) => full[k]).filter(Boolean)));
     } else pages.push(legacyHtml(c, p));
   }
   if (parts.includes('rx')) pages.push(`<div class="page rxw">${rxPageHtml(c, p)}</div>`);

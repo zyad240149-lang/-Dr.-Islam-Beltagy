@@ -4,7 +4,7 @@ import { CompletenessBadge } from '../components/PatientCompleteness';
 import { LocalDataNote, PendingSyncTag } from '../components/OfflineStatus';
 import { useEffect, useState, type ReactNode } from 'react';
 import OnlineAccounts from './OnlineAccounts';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { db, type PatientRow } from '../data/db';
 import { useDbVersion } from '../hooks/useDb';
 import { Icon } from '../utils/icons';
@@ -17,7 +17,6 @@ import { exportPatientsWorkbook } from '../utils/patientsWorkbook';
 import ImportPatientsModal from '../components/ImportPatientsModal';
 import { EditPatientModal, NewPatientModal, PlanModal } from '../components/PatientForms';
 import BookingWizard from '../components/BookingWizard';
-import FollowUpsPage from '../ortho/FollowUps';
 import { FollowUpsModal } from '../ortho/FollowUps';
 import { ortho, useOrthoVersion } from '../ortho/data';
 import { patientGaps } from '../utils/patientGaps';
@@ -31,19 +30,13 @@ const SORTS = [
 // «المرضى» قسم واحد بتبويبين: كل المرضى + «حسابات المرضى الأونلاين» (?tab=online) — التبويب التاني لصلاحية online_accounts بس
 export default function Patients() {
   const can = useCan();
-  const [params, setParams] = useSearchParams();
+  const [params] = useSearchParams();
   const showOnline = false; // ٨/١١: تبويب «حجز مكالمات وحسابات أونلاين» اتشال
   const t = params.get('tab');
-  const tab = t === 'book' ? 'book' : t === 'online' && showOnline ? 'online' : 'all';
-  const go = (x: 'all' | 'book') => setParams(x === 'book' ? { tab: 'book' } : {}, { replace: true });
-  // ٨/١١: «حجز كشف ومتابعة» قسم جنب «كل المرضى» فيه جدول اليوم بالأوقات الفاضية وزرار «حجز»
-  const tabs = (
-    <div className="tabs" style={{ marginBottom: 14 }}>
-      <button type="button" className={`tab ${tab === 'all' ? 'active' : ''}`} onClick={() => go('all')}>كل المرضى</button>
-      <button type="button" className={`tab ${tab === 'book' ? 'active' : ''}`} onClick={() => go('book')}>حجز كشف ومتابعة</button>
-    </div>
-  );
-  if (tab === 'book') return <FollowUpsPage tabs={tabs} pageTitle="حجز كشف ومتابعة" />;
+  const tab = t === 'online' && showOnline ? 'online' : 'all';
+  // ٩/١١: «حجز كشف ومتابعة» بقى قسم لوحده في القائمة (/follow-ups) — الرابط القديم ?tab=book بيروح هناك
+  if (t === 'book') return <Navigate to="/follow-ups" replace />;
+  const tabs = null;
   return tab === 'online' ? <OnlineAccounts tabs={tabs} /> : <PatientsList tabs={tabs} />;
 }
 

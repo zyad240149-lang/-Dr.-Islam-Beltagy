@@ -706,7 +706,7 @@ export default function FollowUpsPage({ tabs, pageTitle }: { tabs?: React.ReactN
 
   return (
     <div className="page">
-      <PageHead title={pageTitle ?? "متابعات المرضى"} sub="مواعيد متابعة كل المرضى — نفس سجلات «المواعيد»، والتأكيد من هنا أو من هناك بيظهر في الاتنين">
+      <PageHead title={pageTitle ?? "حجز كشف ومتابعة"} sub="مواعيد متابعة كل المرضى — نفس سجلات «المواعيد»، والتأكيد من هنا أو من هناك بيظهر في الاتنين">
       </PageHead>
       {tabs}
       {toConfirm.length > 0 && (

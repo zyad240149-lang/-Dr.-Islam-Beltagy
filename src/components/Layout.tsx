@@ -26,6 +26,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
   ] },
   { title: 'المرضى والمواعيد', items: [
     { to: '/patients', label: 'المرضى', icon: 'users', area: 'patients' },
+    { to: '/follow-ups', label: 'حجز كشف ومتابعة', icon: 'calendarPlus', area: 'patients' }, // ٩/١١: قسم لوحده (كان تبويب في «المرضى»)
     // «حجز موعد» اتشال من القائمة (٨/١١) — الحجز من «المواعيد» وملف المريض
     // «المواعيد» اتشالت من القائمة (٩/١١) — الحجز من «المرضى ← حجز كشف ومتابعة»
     { to: '/services', label: 'الخدمات', icon: 'spark', area: 'services' },
@@ -64,7 +65,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
 ];
 const NAV: NavItem[] = NAV_GROUPS.flatMap((g) => g.items);
 // شريط التنقل السفلي على الموبايل: أهم 4 أقسام بالترتيب (حسب صلاحية المستخدم) + زرار «القائمة» لباقي الأقسام
-const BOTTOM_PRIORITY = ['/', '/patients', '/appointments', '/booking', '/diagnosis', '/invoices'];
+const BOTTOM_PRIORITY = ['/', '/patients', '/follow-ups', '/appointments', '/booking', '/diagnosis', '/invoices'];
 
 // البحث بيتخصّص حسب الصفحة: في الفواتير فواتير بس، في المواعيد مواعيد بس، في المرضى مرضى بس — وإلا فالكل. لو مفيش نتايج من النوع ده يرجع للكل
 const PAGE_HIT: Record<string, string> = { '/invoices': 'invoice', '/appointments': 'appointment', '/patients': 'patient' };

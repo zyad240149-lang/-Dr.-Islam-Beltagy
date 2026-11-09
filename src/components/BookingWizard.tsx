@@ -95,10 +95,10 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
   const takenSet = new Set<string>();
   const ptBusySet = new Set<string>(); // المريض عنده موعد تاني في الوقت ده (مع أي دكتور) — الخادم بيرفضه
   if (serviceId && date && therapistId) {
-    for (const s of db.takenSlots(therapistId, date, duration)) if (!slots.includes(s)) takenSet.add(s);
+    for (const s of db.takenSlots(therapistId, date, duration)) takenSet.add(s); // محجوز بس لسه ينفع يتحجز عليه (٩/١١)
     if (patientId) for (const s of db.patientBusySlots(patientId, therapistId, date, duration)) if (!takenSet.has(s)) ptBusySet.add(s);
   }
-  const allSlots = [...slots, ...takenSet, ...ptBusySet].sort(); // الأوقات اللي فاتت (بتوقيت القاهرة) مش بتظهر
+  const allSlots = [...new Set([...slots, ...ptBusySet])].sort(); // الأوقات اللي فاتت (بتوقيت القاهرة) مش بتظهر
   // حجز أسهل: أزرار لأقرب الأيام اللي فيها أوقات فاضية (خلال أسبوعين) بعدد الأوقات، وأول يوم بيتختار لوحده
   const quickDays = (() => {
     if (!serviceId || !therapistId) return [] as Array<{ date: string; free: number }>;
@@ -405,12 +405,10 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
               <div className="field" style={{ marginBottom: 0 }}>
                 <label>المواعيد المتاحة لـ {db.therapist(therapistId)?.name}{docDay?.status === 'ok' && <span className="muted-sm"> · دوامه <span className="num">{fmtTime(docDay.doctorFrom!)} – {fmtTime(docDay.doctorTo!)}</span></span>}</label>
                 {!date ? <p className="muted">اختر التاريخ أولًا.</p> : allSlots.length ? (
-                  <div className="slots">{allSlots.map((s) => takenSet.has(s) ? (
-                    <button key={s} type="button" className="slot slot--taken" disabled title="محجوز">✕ {fmtTime(s)}</button>
-                  ) : ptBusySet.has(s) ? (
+                  <div className="slots">{allSlots.map((s) => ptBusySet.has(s) ? (
                     <button key={s} type="button" className="slot slot--taken" disabled title="عند المريض موعد تاني في هالوقت">✕ {fmtTime(s)}</button>
                   ) : (
-                    <button key={s} type="button" className={`slot ${time === s ? 'selected' : ''}`} onClick={() => setTime(s)}>{fmtTime(s)}</button>
+                    <button key={s} type="button" className={`slot ${takenSet.has(s) ? 'slot--busy' : ''} ${time === s ? 'selected' : ''}`} title={takenSet.has(s) ? 'فيه حجز في الوقت ده — ينفع تحجز عليه' : undefined} onClick={() => setTime(s)}>{fmtTime(s)}{takenSet.has(s) && <small className="slot__tag">محجوز</small>}</button>
                   ))}</div>
                 ) : <p className="muted">{docDay && docDay.status !== 'ok' ? `${DOCTOR_DAY_LABEL[docDay.status]} — جرّب يوم ثاني أو دكتور ثاني.` : 'ما فيه مواعيد لهذا الدكتور في هاليوم ضمن دوامه — جرّب يوم ثاني.'}</p>}
                 {date && therapistId && (() => {

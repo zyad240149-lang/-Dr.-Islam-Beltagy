@@ -836,8 +836,9 @@ export const db = {
   // الأوقات المتاحة للحجز: جوّه دوام الدكتور − المحجوز له هو بس − اللي فات (نفس check_slot / doctor_day_slots)
   // patientId: كمان من غير الأوقات اللي المريض عنده فيها موعد تاني مع أي دكتور (نفس تريجر الخادم — هجرة 909)
   availableSlots(therapistId: string, date: string, durationMin: number, excludeAppointmentId?: string, patientId?: string): string[] {
-    const busy = load().appointments.filter((a) => a.therapistId === therapistId && a.date === date && a.status !== 'cancelled' && a.id !== excludeAppointmentId);
-    return doctorStarts(therapistId, date, durationMin).filter((cur) => !busy.some((a) => overlaps(cur, durationMin, a.time, a.durationMin)) && !isPastSlot(date, cur)
+    // ٩/١١ (هجرة 958): الوقت المحجوز لدكتور لسه متاح — أكتر من مريض في نفس الميعاد مسموح
+    void excludeAppointmentId;
+    return doctorStarts(therapistId, date, durationMin).filter((cur) => !isPastSlot(date, cur)
       && !(patientId && this.patientConflict(patientId, date, cur, durationMin, excludeAppointmentId)));
   },
   // موعد تاني نشط للمريض متداخل مع الوقت ده (أي دكتور) — الموعد اللي خلص أو اتلغى أو ماحضرهوش مابيحجزش وقت المريض

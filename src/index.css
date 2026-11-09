@@ -1978,3 +1978,8 @@ button.dsch__who small { white-space: nowrap; font-size: 12.5px; color: var(--mu
   .fu-cal__nav { flex-direction: column-reverse; align-items: stretch; }
   .btn.fu-book-btn { width: 100%; justify-content: center; }
 }
+/* ٩/١١: وقت فيه حجز بس لسه ينفع يتحجز عليه */
+.slot.slot--busy { border-color: var(--warn); background: var(--warn-bg); display: inline-flex; flex-direction: column; align-items: center; gap: 0; }
+.slot.slot--busy.selected { background: var(--brand-700); border-color: var(--brand-700); color: #fff; }
+.slot__tag { font-size: 11px; font-weight: 600; color: var(--warn); line-height: 1.1; }
+.slot.selected .slot__tag { color: #fff; }

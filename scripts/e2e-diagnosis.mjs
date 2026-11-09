@@ -193,7 +193,7 @@ try {
   await A.page.locator('.sh-region__x[aria-label="إلغاء كشف الرقبة والكتف"]').click();
   check('إلغاء منطقة من الاتنين بـ ✕ (التانية فاضلة مفتوحة)', await A.page.locator('.sh-region.is-on').count() === 1 && await A.page.locator('.sh-stack[data-sheet="ankle"]').count() === 1 && await A.page.locator('.sh-stack').count() === 1);
   await A.page.locator('.sh-region__pick', { hasText: 'الكاحل والقدم' }).click();
-  check('زرار «رجوع: الشيت العام» موجود في كشف الطبيب', await A.page.locator('.modal button', { hasText: 'رجوع: الشيت العام' }).count() === 1);
+  check('زرار «رجوع: موعد المتابعة» موجود في كشف الطبيب', await A.page.locator('.modal button', { hasText: 'رجوع: موعد المتابعة' }).count() === 1);
   await tick(A.page, 'Ankle pain');
   await tick(A.page, 'Anterior talofibular ligament (ATFL)');
   check('شيت تشخيص الكاحل: 7 أقسام ملوّنة + التشخيص النهائي', await A.page.locator('.modal .dxg:not(.dxg--final)').count() === 7 && await A.page.locator('.modal .dxg--final', { hasText: 'Final Diagnosis' }).count() === 1);

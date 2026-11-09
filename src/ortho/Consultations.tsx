@@ -95,7 +95,7 @@ function Section({ icon, title, children, aside }: { icon: string; title: string
 
 // الكشف = الشيتين بالترتيب (التمريض قبل دخول المريض ← كشف الطبيب) وبعدهم الحقن — الروشتة والأشعة والتحاليل اتنقلت لشيت المتابعة
 // «كشف الطبيب» بيتسمى بالمنطقة: شيت الطبيب بيتحدد من مكان الألم في الشيت العام (regionSheets)
-const TABS = [['nurse', 'الشيت العام'], ['doctor', 'كشف الطبيب'], ['files', 'الأشعة والتحاليل'], ['inj', 'الحقن'], ['plan', 'الخطة العلاجية'], ['appt', 'موعد المتابعة'], ['rx', 'الأدوية والروشتة'], ['nursing', 'متابعة المريض']] as const;
+const TABS = [['nurse', 'الشيت العام'], ['appt', 'موعد المتابعة'], ['doctor', 'كشف الطبيب'], ['files', 'الأشعة والتحاليل'], ['inj', 'الحقن'], ['plan', 'الخطة العلاجية'], ['rx', 'الأدوية والروشتة'], ['nursing', 'متابعة المريض']] as const;
 type Tab = typeof TABS[number][0];
 
 // appointmentId = الزيارة اللي التشخيص الجديد بيتربط بيها (من «بانتظار التشخيص»)؛ من غيرها بيتربط بزيارة النهارده المفتوحة للمريض لو فيه
@@ -407,7 +407,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           <div className="sh-next">
             <Button variant="outline" icon="share" disabled={!c.patientId} title={c.patientId ? '' : 'اختار المريض الأول'} onClick={() => setExSend(true)}>إرسال تمرينات واتساب</Button>
             <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => setOut(['nurse'])}>طباعة / إرسال الشيت العام</Button>
-            <Button icon="chevronLeft" onClick={() => goTab('doctor')}>التالي: كشف الطبيب</Button>
+            <Button icon="chevronLeft" onClick={() => goTab('appt')}>التالي: موعد المتابعة</Button>
           </div>
         </BoxOpenDefault.Provider>}
 
@@ -422,7 +422,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
             {/* اختياري: تقييم الروماتويد ACR/EULAR 2010 — مش جزء إجباري من الكشف */}
           </>
           <div className="sh-next">
-            <Button variant="outline" icon="chevron" onClick={() => goTab('nurse')}>رجوع: الشيت العام</Button>
+            <Button variant="outline" icon="chevron" onClick={() => goTab('appt')}>رجوع: موعد المتابعة</Button>
             <Button variant="outline" icon="share" disabled={!c.patientId} title={c.patientId ? '' : 'اختار المريض الأول'} onClick={() => setExSend(true)}>إرسال تمرينات واتساب</Button>
             <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => setOut(['doctor'])}>طباعة / إرسال كشف الطبيب</Button>
             <Button icon="chevronLeft" onClick={() => goTab('files')}>التالي: الأشعة والتحاليل</Button>
@@ -449,7 +449,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
             </div>
           </section>
           <div className="sh-next">
-            <Button variant="outline" icon="chevron" onClick={() => goTab('appt')}>رجوع: موعد المتابعة</Button>
+            <Button variant="outline" icon="chevron" onClick={() => goTab('plan')}>رجوع: الخطة العلاجية</Button>
             <Button variant="outline" icon="clipboard" onClick={() => goTab('nursing')}>متابعة المريض</Button>
             <Button icon="check" loading={busy} disabled={!ok} onClick={() => save(false)}>حفظ الكشف</Button>
           </div>
@@ -460,7 +460,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
             icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap('tp.tx.other')} /></div>
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('inj')}>رجوع: الحقن</Button>
-            <Button icon="chevronLeft" onClick={() => goTab('appt')}>التالي: موعد المتابعة</Button>
+            <Button icon="chevronLeft" onClick={() => goTab('rx')}>التالي: الأدوية والروشتة</Button>
           </div>
         </>}
 
@@ -473,8 +473,8 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
             </div>
           </section>
           <div className="sh-next">
-            <Button variant="outline" icon="chevron" onClick={() => goTab('plan')}>رجوع: الخطة العلاجية</Button>
-            <Button icon="chevronLeft" onClick={() => goTab('rx')}>التالي: الأدوية والروشتة</Button>
+            <Button variant="outline" icon="chevron" onClick={() => goTab('nurse')}>رجوع: الشيت العام</Button>
+            <Button icon="chevronLeft" onClick={() => goTab('doctor')}>التالي: كشف الطبيب</Button>
           </div>
         </>}
 

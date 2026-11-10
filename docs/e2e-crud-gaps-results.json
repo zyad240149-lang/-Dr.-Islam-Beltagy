@@ -1,0 +1,252 @@
+{
+  "at": "2026-11-04T01:46:11.170Z",
+  "passed": 49,
+  "failed": 0,
+  "results": [
+    {
+      "name": "حسابات مؤقتة",
+      "ok": true,
+      "detail": "{\"id\":\"8d09f4ec-4ccc-42ad-8d22-e3072a6b54f1\",\"name\":\"استقبال اختبار العمليات\",\"username\":\"201200000941\",\"role\":\"receptio"
+    },
+    {
+      "name": "إضافة مريض اتحفظت في القاعدة",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "تعديل المريض اتحفظ",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "زائر بدون دخول مايقدرش يضيف مريض",
+      "ok": true,
+      "detail": "accepted"
+    },
+    {
+      "name": "الاستقبال مايقدرش يحذف مريض",
+      "ok": true,
+      "detail": "deleted"
+    },
+    {
+      "name": "حجز موعد",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "حجز برّه مواعيد المركز مرفوض",
+      "ok": true,
+      "detail": "accepted"
+    },
+    {
+      "name": "خدمة غير موجودة مرفوضة",
+      "ok": true,
+      "detail": "accepted"
+    },
+    {
+      "name": "مريض عنده مواعيد مايتحذفش حتى من المدير",
+      "ok": true,
+      "detail": "deleted"
+    },
+    {
+      "name": "الحجز عمل فاتورة مربوطة",
+      "ok": true,
+      "detail": "no invoice"
+    },
+    {
+      "name": "تسجيل دفعة اتحفظ",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "موعد فاتورته عليها مدفوعات مايتحذفش",
+      "ok": true,
+      "detail": "deleted"
+    },
+    {
+      "name": "حذف الموعد مقيّد بالصلاحية للاستقبال",
+      "ok": true,
+      "detail": "deleted"
+    },
+    {
+      "name": "المدير حذف الموعد وفاتورته",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "مريض من غير سجلات اتحذف من المدير",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال مايقدرش يضيف خدمة",
+      "ok": true,
+      "detail": "accepted"
+    },
+    {
+      "name": "سعر سالب مرفوض",
+      "ok": true,
+      "detail": "accepted"
+    },
+    {
+      "name": "إضافة خدمة اتحفظت",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "تعديل السعر اتحفظ",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "سعر إضافي للخدمة اتحفظ",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "حذف الخدمة اتنفذ",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الاستقبال مايقدرش يسجل مصروف",
+      "ok": true,
+      "detail": "accepted"
+    },
+    {
+      "name": "مصروف بقيمة صفر مرفوض",
+      "ok": true,
+      "detail": "accepted"
+    },
+    {
+      "name": "إضافة مصروف اتحفظت",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "تعديل المصروف اتحفظ",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "حذف المصروف اتنفذ",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "acc_dashboard: بيرد من غير خطأ",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "acc_dashboard: ممنوع على الاستقبال",
+      "ok": true,
+      "detail": "allowed"
+    },
+    {
+      "name": "acc_integrity_check: بيرد من غير خطأ",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "acc_integrity_check: ممنوع على الاستقبال",
+      "ok": true,
+      "detail": "allowed"
+    },
+    {
+      "name": "acc_treasury_overview: بيرد من غير خطأ",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "acc_treasury_overview: ممنوع على الاستقبال",
+      "ok": true,
+      "detail": "allowed"
+    },
+    {
+      "name": "acc_trial_balance: بيرد من غير خطأ",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "acc_trial_balance: ممنوع على الاستقبال",
+      "ok": true,
+      "detail": "allowed"
+    },
+    {
+      "name": "acc_income_statement: بيرد من غير خطأ",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "acc_income_statement: ممنوع على الاستقبال",
+      "ok": true,
+      "detail": "allowed"
+    },
+    {
+      "name": "acc_balance_sheet: بيرد من غير خطأ",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "acc_balance_sheet: ممنوع على الاستقبال",
+      "ok": true,
+      "detail": "allowed"
+    },
+    {
+      "name": "الاستقبال مايقدرش يزوّد صلاحياته",
+      "ok": true,
+      "detail": "updated"
+    },
+    {
+      "name": "الموظف مايقدرش يرقّي نفسه لمدير",
+      "ok": true,
+      "detail": "updated"
+    },
+    {
+      "name": "دور الموظف فضل زي ما هو",
+      "ok": true,
+      "detail": "reception"
+    },
+    {
+      "name": "جدول patients مش مقروء من زائر",
+      "ok": true,
+      "detail": "readable"
+    },
+    {
+      "name": "جدول invoices مش مقروء من زائر",
+      "ok": true,
+      "detail": "readable"
+    },
+    {
+      "name": "جدول payments مش مقروء من زائر",
+      "ok": true,
+      "detail": "readable"
+    },
+    {
+      "name": "جدول employees مش مقروء من زائر",
+      "ok": true,
+      "detail": "readable"
+    },
+    {
+      "name": "جدول ortho_consultations مش مقروء من زائر",
+      "ok": true,
+      "detail": "readable"
+    },
+    {
+      "name": "جدول appointments مش مقروء من زائر",
+      "ok": true,
+      "detail": "readable"
+    },
+    {
+      "name": "جدول expenses مش مقروء من زائر",
+      "ok": true,
+      "detail": "readable"
+    },
+    {
+      "name": "الأعداد رجعت زي ما كانت (مفيش بيانات اختبار متبقية ولا بيانات ضاعت)",
+      "ok": true,
+      "detail": "{\"before\":{\"patients\":840,\"services\":19,\"expenses\":0,\"appts\":0,\"invoices\":0,\"payments\":0,\"journals\":0,\"employees\":1,\"therapists\":1},\"after\":{\"patients\":840,\"services\":19,\"expenses\":0,\"appts\":0,\"invoic"
+    }
+  ]
+}

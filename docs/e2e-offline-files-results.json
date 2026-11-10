@@ -1,17 +1,17 @@
 {
-  "at": "2026-11-10T13:24:21.201Z",
+  "at": "2026-11-10T17:23:49.449Z",
   "passed": 27,
   "failed": 0,
   "results": [
     {
       "name": "حساب استقبال أوفلاين ملفات اختبار",
       "ok": true,
-      "detail": "{\"id\":\"05d998e1-7d97-4efc-8e33-39310615c86a\",\"name\":\"استقبال أوفلاين ملفات اختبار\",\"username\":\"201200000982\",\"role\":\"rec"
+      "detail": "{\"id\":\"b820c42a-1a75-4953-a35a-f06ce8740560\",\"name\":\"استقبال أوفلاين ملفات اختبار\",\"username\":\"201200000982\",\"role\":\"rec"
     },
     {
       "name": "حساب طبيب أوفلاين ملفات اختبار",
       "ok": true,
-      "detail": "{\"id\":\"517b5421-9d18-46bb-9fdb-069fc934a382\",\"name\":\"طبيب أوفلاين ملفات اختبار\",\"username\":\"201200000984\",\"role\":\"therap"
+      "detail": "{\"id\":\"e8b63a7e-64f4-404c-a6e9-8789ce9ac6bc\",\"name\":\"طبيب أوفلاين ملفات اختبار\",\"username\":\"201200000984\",\"role\":\"therap"
     },
     {
       "name": "الجهازين دخلوا ونزّلوا البيانات على الجهاز",
@@ -41,12 +41,12 @@
     {
       "name": "الملف اتحفظ في طابور الجهاز (IndexedDB)",
       "ok": true,
-      "detail": "[{\"kind\":\"file.upload\",\"status\":\"pending\",\"entityId\":\"b64379ef-ffb6-45b5-8b76-a7b8ca9ba96b\",\"hasSealed\":true,\"hasSealedBytes\":true,\"plain\":false,\"leak\":false}]"
+      "detail": "[{\"kind\":\"file.upload\",\"status\":\"pending\",\"entityId\":\"7c7cb469-a62f-437a-9004-0f46b07cad13\",\"hasSealed\":true,\"hasSealedBytes\":true,\"plain\":false,\"leak\":false}]"
     },
     {
       "name": "العملية متشفّرة على الجهاز (البيانات والملف نفسه)",
       "ok": true,
-      "detail": "{\"kind\":\"file.upload\",\"status\":\"pending\",\"entityId\":\"b64379ef-ffb6-45b5-8b76-a7b8ca9ba96b\",\"hasSealed\":true,\"hasSealedBytes\":true,\"plain\":false,\"leak\":false}"
+      "detail": "{\"kind\":\"file.upload\",\"status\":\"pending\",\"entityId\":\"7c7cb469-a62f-437a-9004-0f46b07cad13\",\"hasSealed\":true,\"hasSealedBytes\":true,\"plain\":false,\"leak\":false}"
     },
     {
       "name": "الخادم ماوصلهوش حاجة لسه",
@@ -101,7 +101,7 @@
     {
       "name": "التشخيص وموعد المتابعة اتحفظوا في طابور الجهاز (متشفّرين)",
       "ok": true,
-      "detail": "[{\"kind\":\"ortho.save\",\"status\":\"pending\",\"entityId\":\"8e850d52-bccd-484b-874e-8f4ba5d3db57\",\"hasSealed\":true,\"hasSealedBytes\":false,\"plain\":false,\"leak\":false},{\"kind\":\"ortho.save\",\"status\":\"pending\",\""
+      "detail": "[{\"kind\":\"ortho.save\",\"status\":\"pending\",\"entityId\":\"67f970c9-0044-4a33-8b07-e42180d920a0\",\"hasSealed\":true,\"hasSealedBytes\":false,\"plain\":false,\"leak\":false},{\"kind\":\"ortho.save\",\"status\":\"pending\",\""
     },
     {
       "name": "الخادم ماوصلهوش التشخيص لسه",
@@ -121,12 +121,12 @@
     {
       "name": "التشخيص وصل الخادم مرة واحدة بالشكوى",
       "ok": true,
-      "detail": "[{\"id\":\"54eb7287-b6e9-4d28-9794-8ac99569c9ec\",\"visit_reason\":\"متابعة بعد الأشعة — من غير إنترنت\"}]"
+      "detail": "[{\"id\":\"59d59e64-1628-48e4-8309-f81ccc9b91f0\",\"visit_reason\":\"متابعة بعد الأشعة — من غير إنترنت\"}]"
     },
     {
       "name": "موعد المتابعة وصل مرة واحدة ومربوط بنفس التشخيص",
       "ok": true,
-      "detail": "[{\"consultation_id\":\"54eb7287-b6e9-4d28-9794-8ac99569c9ec\",\"reason\":\"متابعة أوفلاين\",\"time\":\"12:00:00\"}]"
+      "detail": "[{\"consultation_id\":\"59d59e64-1628-48e4-8309-f81ccc9b91f0\",\"reason\":\"متابعة أوفلاين\",\"time\":\"12:00:00\"}]"
     },
     {
       "name": "الاستقبال: من غير أخطاء JavaScript",

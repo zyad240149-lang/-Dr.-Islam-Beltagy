@@ -1,22 +1,22 @@
 {
-  "at": "2026-11-04T00:43:24.097Z",
+  "at": "2026-11-10T15:03:34.043Z",
   "passed": 2,
   "failed": 1,
   "results": [
     {
       "name": "حساب استقبال اختبار المتابعات واجهة",
       "ok": true,
-      "detail": "{\"id\":\"b00994ec-638f-4c56-b25c-bf91d4c13bcb\",\"name\":\"استقبال اختبار المتابعات واجهة\",\"username\":\"201200000972\",\"role\":\"r"
+      "detail": "{\"id\":\"592d6a7a-c71b-48b7-a195-dee85bdb5ccb\",\"name\":\"استقبال اختبار المتابعات واجهة\",\"username\":\"201200000972\",\"role\":\"r"
     },
     {
       "name": "حساب طبيب اختبار المتابعات واجهة",
       "ok": true,
-      "detail": "{\"id\":\"294015c7-c92c-42cb-90bb-999252b67a39\",\"name\":\"طبيب اختبار المتابعات واجهة\",\"username\":\"201200000974\",\"role\":\"ther"
+      "detail": "{\"id\":\"2ddc594b-b86c-41fd-9c66-49e2176e1218\",\"name\":\"طبيب اختبار المتابعات واجهة\",\"username\":\"201200000974\",\"role\":\"ther"
     },
     {
       "name": "تنفيذ الاختبارات بدون أخطاء غير متوقعة",
       "ok": false,
-      "detail": "page.waitForURL: Timeout 30000ms exceeded."
+      "detail": "page.waitForSelector: Timeout 20000ms exceeded."
     }
   ]
 }

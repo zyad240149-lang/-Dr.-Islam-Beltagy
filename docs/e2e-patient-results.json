@@ -1,7 +1,7 @@
 {
-  "at": "2026-11-03T23:02:35.013Z",
-  "passed": 38,
-  "failed": 0,
+  "at": "2026-11-10T14:58:25.002Z",
+  "passed": 6,
+  "failed": 3,
   "results": [
     {
       "name": "ملف طبيب الاختبار",
@@ -11,12 +11,12 @@
     {
       "name": "اسم مش ثلاثي مرفوض",
       "ok": true,
-      "detail": "{\"error\":\"اكتب اسمك الثلاثي بالعربي (الاسم واسم الأب واسم الجد) — بحروف عربية فقط\"}"
+      "detail": "{\"error\":\"null value in column \\\"father_name\\\" of relation \\\"patients\\\" violates not-null constraint\"}"
     },
     {
       "name": "اسم بحروف إنجليزي مرفوض",
-      "ok": true,
-      "detail": "{\"error\":\"اكتب اسمك الثلاثي بالعربي (الاسم واسم الأب واسم الجد) — بحروف عربية فقط\"}"
+      "ok": false,
+      "detail": "{\"ok\":true,\"patientId\":\"07ba829d-5aa5-4b20-9002-f146490e7abc\",\"customerId\":\"f20d6eaf-304e-408e-9081-50a1e1571923\"}"
     },
     {
       "name": "كلمة مرور قصيرة مرفوضة",
@@ -35,8 +35,8 @@
     },
     {
       "name": "إنشاء الحساب ينجح ويرجع رقم الملف",
-      "ok": true,
-      "detail": "{\"ok\":true,\"patientId\":\"03cf9371-351f-49cc-a0e7-ca0b7d094fe8\",\"customerId\":\"e5d467fa-1e30-4325-8dbd-462a7af2715e\"}"
+      "ok": false,
+      "detail": "{\"error\":\"فيه حساب بهذا الرقم — سجّل الدخول أو تواصل مع المركز\"}"
     },
     {
       "name": "نفس الرقم مرتين مرفوض",
@@ -44,154 +44,9 @@
       "detail": "{\"error\":\"فيه حساب بهذا الرقم — سجّل الدخول أو تواصل مع المركز\"}"
     },
     {
-      "name": "ملف مريض اتعمل تلقائيًا (المصدر: الموقع)",
-      "ok": true,
-      "detail": "{\"full_name\":\"مريض بوابة اختبار\",\"phone\":\"+201200000931\",\"referral_source\":\"website\",\"file_no\":\"TM-841\"}"
-    },
-    {
-      "name": "الاستقبال فتح ملف للمريض (من غير رقم قومي) قبل ما يعمل حساب",
-      "ok": true,
-      "detail": ""
-    },
-    {
-      "name": "ملف من غير رقم قومي ← «كلّم العيادة» ومفيش ربط",
-      "ok": true,
-      "detail": "{\"error\":\"الرقم ده مسجّل عندنا في ملف مريض من غير رقم قومي، فمش هنقدر نتأكد إنه ملفك. كلّم العيادة يضيفوا رقمك القومي للملف، وبعدها اعمل الحساب.\",\"code\":\"contact_clinic\"}"
-    },
-    {
-      "name": "مفيش حساب دخول ولا حساب مريض اتعمل",
-      "ok": true,
-      "detail": "{\"u\":0,\"c\":0}"
-    },
-    {
-      "name": "الاستقبال أضاف الرقم القومي للملف",
-      "ok": true,
-      "detail": ""
-    },
-    {
-      "name": "من غير رقم قومي ← بيطلب الرقم القومي المسجّل في الملف",
-      "ok": true,
-      "detail": "{\"error\":\"الرقم ده مسجّل عندنا في ملف مريض. اكتب الرقم القومي (أو رقم جواز السفر) المسجّل في ملفك عشان نربط حسابك بيه.\",\"code\":\"need_id\"}"
-    },
-    {
-      "name": "رقم قومي غلط ← مرفوض",
-      "ok": true,
-      "detail": "{\"error\":\"الرقم القومي مش مطابق للمسجّل في ملفك. راجعه، أو كلّم العيادة.\",\"code\":\"id_mismatch\"}"
-    },
-    {
-      "name": "الرقم الصح (حتى بأرقام عربية ومسافة) ← اتربط بنفس الملف",
-      "ok": true,
-      "detail": "{\"ok\":true,\"patientId\":\"5264c1a1-078a-46dd-834e-1245e4d6b78f\",\"customerId\":\"7d7214db-4fdb-42c2-a404-a1b62f506e8a\"}"
-    },
-    {
-      "name": "مفيش ملف مكرر لنفس الموبايل",
-      "ok": true,
-      "detail": "1"
-    },
-    {
-      "name": "ملفين بنفس الموبايل",
-      "ok": true,
-      "detail": ""
-    },
-    {
-      "name": "الحساب اتربط بملف صاحب الرقم القومي (الابن) مش أول ملف",
-      "ok": true,
-      "detail": "{\"ok\":true,\"patientId\":\"775c7c75-333d-42be-aa28-7fb29da6faa0\",\"customerId\":\"4a862fbd-a7dc-4b51-a818-9ef13bff95a4\"}"
-    },
-    {
-      "name": "5 محاولات غلط بترجع «غير مطابق»",
-      "ok": true,
-      "detail": "id_mismatch,id_mismatch,id_mismatch,id_mismatch,id_mismatch"
-    },
-    {
-      "name": "بعدها الرقم بيتقفل ساعة (حتى بالرقم الصح)",
-      "ok": true,
-      "detail": "{\"error\":\"محاولات غلط كتير على الرقم ده. جرّب بعد ساعة، أو كلّم العيادة.\",\"code\":\"locked\"}"
-    },
-    {
-      "name": "دالة الفحص مش متاحة من المتصفح",
-      "ok": true,
-      "detail": "permission denied for function register_link_check"
-    },
-    {
-      "name": "دالة إنشاء العميل مش متاحة من المتصفح",
-      "ok": true,
-      "detail": "permission denied for function register_customer"
-    },
-    {
-      "name": "كلمة مرور غلط مرفوضة",
-      "ok": true,
-      "detail": "Invalid login credentials"
-    },
-    {
-      "name": "الدخول كمريض و /api/me = customer",
-      "ok": true,
-      "detail": "{\"kind\":\"customer\",\"customer\":{\"id\":\"e5d467fa-1e30-4325-8dbd-462a7af2715e\",\"auth_user_id\":\"0a9499b2-11e3-473d-b921-395f482d4d06\",\"patient_id\":\"03cf937"
-    },
-    {
-      "name": "ملفي (patient_me)",
-      "ok": true,
-      "detail": ""
-    },
-    {
-      "name": "لوحة المريض (patient_dashboard)",
-      "ok": true,
-      "detail": ""
-    },
-    {
-      "name": "كتالوج الخدمات والأطباء للحجز",
-      "ok": true,
-      "detail": ""
-    },
-    {
-      "name": "أوقات الطبيب المتاحة",
-      "ok": true,
-      "detail": "{\"slots\":[{\"time\":\"16:00\",\"available\":true},{\"time\":\"16:30\",\"available\":true},{\"time\":\"17:00\",\"available\":true},{\"time\":"
-    },
-    {
-      "name": "المريض يحجز كشف أونلاين",
-      "ok": true,
-      "detail": ""
-    },
-    {
-      "name": "الحجز ظاهر في «مواعيدي»",
-      "ok": true,
-      "detail": ""
-    },
-    {
-      "name": "الاستقبال شايف الحجز ومصدره أونلاين",
-      "ok": true,
-      "detail": "{\"source\":\"online\",\"status\":\"new\"}"
-    },
-    {
-      "name": "حجز نفس الوقت تاني مرفوض",
-      "ok": true,
-      "detail": "عندك موعد محجوز في اليوم نفسه — الحجز الإلكتروني موعد واحد في اليوم. للحجز الإضافي تواصل مع المركز"
-    },
-    {
-      "name": "المريض بيشوف ملفه هو بس",
-      "ok": true,
-      "detail": "[{\"id\":\"03cf9371-351f-49cc-a0e7-ca0b7d094fe8\"}]"
-    },
-    {
-      "name": "ملف مريض تاني مش ظاهر له",
-      "ok": true,
-      "detail": "[]"
-    },
-    {
-      "name": "المريض ما يقدرش يستخدم دوال الموظفين",
-      "ok": true,
-      "detail": "غير مصرح — سجّل الدخول بحساب موظف"
-    },
-    {
-      "name": "المريض ما يقدرش يكتب تشخيص",
-      "ok": true,
-      "detail": "new row violates row-level security policy for table \"ortho_consultations\""
-    },
-    {
-      "name": "المريض ما يقدرش يفتح حسابات الموظفين",
-      "ok": true,
-      "detail": "401"
+      "name": "تنفيذ الاختبارات بدون أخطاء غير متوقعة",
+      "ok": false,
+      "detail": "SQL 400: {\"message\":\"Failed to run sql query: ERROR:  22P02: invalid input syntax for type uuid: \\\"undefined\\\"\\nLINE 1: select full_name, phone, referral_source, file_no from patients where id = 'unde"
     }
   ]
 }

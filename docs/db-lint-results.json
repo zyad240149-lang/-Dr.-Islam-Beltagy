@@ -1,7 +1,7 @@
 {
-  "at": "2026-11-03T23:01:09.853Z",
-  "functions": 321,
-  "skippedUnboundTriggers": 5,
+  "at": "2026-11-10T14:57:07.689Z",
+  "functions": 346,
+  "skippedUnboundTriggers": 6,
   "ignoredFalsePositives": 14,
   "problems": []
 }

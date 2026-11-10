@@ -15,7 +15,8 @@ import { useInstallmentRequests } from './PackagePayment';
 import { InstallmentStateBadge, InstallmentSummary } from './InstallmentSummary';
 import { empName, requestFor } from '../data/installments';
 import { Button, EmptyState, Modal, Skeleton, StatusBadge } from './ui';
-import { useCan } from './common';
+import { ConfirmDialog, useCan } from './common';
+import { CancelModal, RescheduleModal } from './AppointmentActions';
 import { DiagnosisCode } from './DiagnosisPicker';
 // شاشات تقيلة (تقييم العلاج الطبيعي + تعديل الخطة) — بتتحمّل لما تتفتح بس، مش مع أول فتحة للبرنامج
 const PhysioPlanDetails = lazy(() => import('./PhysioTab').then((m) => ({ default: m.PhysioPlanDetails })));
@@ -278,6 +279,8 @@ function VisitDetailsModal({ apptId, onClose, onBack }: { apptId: string; onClos
   useDbVersion();
   const can = useCan();
   const { openPlan } = useDetails();
+  const toast = useToast();
+  const [act, setAct] = useState<'reschedule' | 'cancel' | 'delete' | null>(null);
   const a = db.appointment(apptId);
   if (!a) return <Modal title="الزيارة" onClose={onClose}><EmptyState icon="calendar" title="الزيارة غير موجودة" /></Modal>;
   const patient = db.patient(a.patientId);
@@ -288,8 +291,20 @@ function VisitDetailsModal({ apptId, onClose, onBack }: { apptId: string; onClos
   const invoices = db.invoicesForPatient(a.patientId).filter((i) => i.appointmentId === a.id || (!!a.planId && i.planId === a.planId));
   const canMedical = can('sessions', 'view');
   const st = APPT_STATUS[a.status];
+  // ١٠/١١: تغيير الموعد / إلغاؤه / حذفه من تفاصيل الزيارة نفسها — نفس صلاحيات صفحة «المواعيد» القديمة
+  const canAct = a.status !== 'completed' && a.status !== 'cancelled' && can('appointments', 'edit');
+  const actions = <>
+    {canAct && <Button variant="outline" icon="calendar" onClick={() => setAct('reschedule')}>تغيير الموعد</Button>}
+    {canAct && can('appt_cancel', 'view') && <Button variant="danger" onClick={() => setAct('cancel')}>إلغاء الموعد</Button>}
+    {can('appointments', 'delete') && <Button variant="soft-danger" icon="trash" onClick={() => setAct('delete')}>حذف</Button>}
+  </>;
+  if (act === 'reschedule') return <RescheduleModal appt={a} onClose={() => setAct(null)} />;
+  if (act === 'cancel') return <CancelModal appt={a} onClose={() => setAct(null)} />;
+  if (act === 'delete') return <ConfirmDialog title="حذف الموعد" onClose={() => setAct(null)}
+    message={`سيتم حذف الموعد ${a.no} وفاتورته غير المدفوعة نهائيًا. للاحتفاظ بالسجل استخدم «إلغاء الموعد» بدل الحذف.`}
+    onConfirm={async () => { const r = await db.deleteAppointment(a.id); if (r.ok) { toast.success('تم حذف الموعد.'); onClose(); } else toast.error(r.error); }} />;
   return (
-    <Modal title={`الزيارة ${a.no} — ${fmtDate(a.date)}`} wide onClose={onClose} footer={<>{onBack && <Button variant="outline" onClick={onBack}>رجوع</Button>}<Button onClick={onClose}>إغلاق</Button></>}>
+    <Modal title={`الزيارة ${a.no} — ${fmtDate(a.date)}`} wide onClose={onClose} footer={<>{onBack && <Button variant="outline" onClick={onBack}>رجوع</Button>}{actions}<Button onClick={onClose}>إغلاق</Button></>}>
       <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
         <StatusBadge label={st.label} tone={st.tone} />
         {session && <StatusBadge label={session.status === 'completed' ? 'الزيارة مكتملة' : 'الزيارة قيد التنفيذ'} tone={session.status === 'completed' ? 'ok' : 'info'} />}

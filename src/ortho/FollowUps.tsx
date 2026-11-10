@@ -599,11 +599,14 @@ function DaySchedule({ date, follows, filtered, onOpen, onBook }: {
   const doctors = db.therapists().filter((d) => mine(d.id));
   const now = riyadhNow(); const nowMin = now.getHours() * 60 + now.getMinutes();
   const free = new Map<string, string[]>();
+  let dayOver = false; // النهارده: الدكتور كان شغال بس كل أوقاته عدّت
   if (!filtered && date >= today) for (const d of doctors) {
     const dur = d.defaultDurationMin || 30;
     const taken = new Set(db.takenSlots(d.id, date, dur));
     const fus = allFu.filter((x) => x.date === date && x.doctorId === d.id && x.status !== 'cancelled' && x.time);
-    for (const s of db.doctorSlots(d.id, date, dur)) {
+    const all = db.doctorSlots(d.id, date, dur);
+    if (date === today && all.length && all.every((s) => minOf(s) <= nowMin)) dayOver = true;
+    for (const s of all) {
       if ((date === today && minOf(s) <= nowMin) || taken.has(s) || fus.some((x) => near(hhmm(x.time), s, dur))) continue;
       free.set(s, [...(free.get(s) ?? []), d.id]);
     }
@@ -614,7 +617,7 @@ function DaySchedule({ date, follows, filtered, onOpen, onBook }: {
   ].sort((a, b) => a.at.localeCompare(b.at) || a.order - b.order);
 
   const pending = rows.filter((r) => r.appt && NEEDS_CONFIRM.has(r.appt.status)).length;
-  if (!lines.length) return <p className="cx-empty">{filtered ? 'مفيش مواعيد بالفلتر ده في اليوم ده.' : 'مفيش حجوزات في اليوم ده، والأطباء مش شغالين فيه.'}</p>;
+  if (!lines.length) return <p className="cx-empty">{filtered ? 'مفيش مواعيد بالفلتر ده في اليوم ده.' : dayOver ? 'مفيش حجوزات النهارده، ودوام الدكتور النهارده خلص — اختار يوم تاني من الأسهم فوق أو احجز ليوم تاني.' : 'مفيش حجوزات في اليوم ده، والأطباء مش شغالين فيه.'}</p>;
   return (
     <>
       <div className="fu-sched__sum muted-sm">

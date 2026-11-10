@@ -23,14 +23,16 @@ try {
   // ============ التجهيز ============
   section('التجهيز');
   const admin = await loginAdmin();
-  const newDoctor = async (name) => {
-    const r = await admin.rpc('save_therapist', { p: { name, title: 'طبيب اختبار', phone: '', serviceIds: ALL_SERVICES, workHours: allDayHours(), onLeave: [], active: true, defaultDurationMin: 30 } });
+  const newDoctor = async (name, workHours = allDayHours()) => {
+    const r = await admin.rpc('save_therapist', { p: { name, title: 'طبيب اختبار', phone: '', serviceIds: ALL_SERVICES, workHours, onLeave: [], active: true, defaultDurationMin: 30 } });
     if (r.error) throw new Error('save_therapist: ' + r.error.message);
     made.therapists.push(idOf(r));
     return idOf(r);
   };
   const D1 = await newDoctor('د. اختبار أقسام أول'), D2 = await newDoctor('د. اختبار أقسام تاني');
-  check('دكتورين للاختبار', D1 && D2);
+  // دكتور بمواعيد محددة (9 الصبح لـ 5) — من ٧/١١ (هجرة 954) الحجز بمواعيد الدكتور بس، مش ساعات المركز
+  const D3 = await newDoctor('د. اختبار أقسام بمواعيد', allDayHours().map((h) => ({ ...h, from: '09:00', to: '17:00' })));
+  check('دكاترة للاختبار', D1 && D2 && D3);
   for (const [k, s] of Object.entries(STAFF)) {
     const r = await api(admin, 'POST', 'staff', { name: s.name, phone: s.phone, country: 'EG', password: PW, role: s.role, therapistId: k === 'doc' ? D1 : undefined, workHours: allDayHours() });
     if (r.body?.id) { made.employees.push(r.body.id); s.id = r.body.id; }
@@ -51,26 +53,28 @@ try {
   section('تضارب المواعيد — الدكتور والمريض');
   const d = cairoDate(8);
   const a1 = await book(recep, { patientId: P.id, therapistId: D1, date: d, time: '17:00' });
-  check('حجز المريض مع الدكتور الأول 17:00 (كشف 30 دقيقة)', !a1.error, err(a1));
+  check('حجز المريض مع الدكتور الأول 17:00 (كشف 15 دقيقة)', !a1.error, err(a1));
   const a2 = await book(recep, { patientId: P.id, therapistId: D2, date: d, time: '17:00' });
   check('نفس المريض مع دكتور تاني في نفس الوقت مرفوض', /المريض عنده موعد تاني/.test(err(a2)), err(a2) || 'accepted!');
-  const a3 = await book(recep, { patientId: P.id, therapistId: D2, date: d, time: '17:15' });
-  check('نفس المريض في وقت متداخل (17:15 جوّه الكشف) مرفوض', /المريض عنده موعد تاني/.test(err(a3)), err(a3) || 'accepted!');
+  const a3 = await book(recep, { patientId: P.id, therapistId: D2, date: d, time: '17:10' });
+  check('نفس المريض في وقت متداخل (17:10 جوّه الكشف) مرفوض', /المريض عنده موعد تاني/.test(err(a3)), err(a3) || 'accepted!');
   const a4 = await book(recep, { patientId: P.id, therapistId: D2, date: d, time: '17:30' });
   check('نفس المريض بعد ما الكشف يخلص (17:30) مسموح', !a4.error, err(a4));
-  const a5 = await book(recep, { patientId: Q.id, therapistId: D1, date: d, time: '17:10' });
-  check('مريض تاني مع نفس الدكتور في وقت متداخل مرفوض', /تم حجزه/.test(err(a5)), err(a5) || 'accepted!');
+  const a5 = await book(recep, { patientId: Q.id, therapistId: D1, date: d, time: '17:00' });
+  check('مريض تاني مع نفس الدكتور في نفس الميعاد مسموح (٩/١١ — هجرة 958)', !a5.error, err(a5));
   const rs = await recep.rpc('reschedule_appointment', { p_id: idOf(a4), p_date: d, p_time: '17:00', p_therapist: null, p_address: null });
   check('إعادة جدولة لوقت المريض مشغول فيه مرفوضة', /المريض عنده موعد تاني/.test(err(rs)), err(rs) || 'accepted!');
-  const ud = await recep.rpc('update_appointment_details', { p_id: idOf(a4), p: { time: '17:20' } });
+  const ud = await recep.rpc('update_appointment_details', { p_id: idOf(a4), p: { time: '17:05' } });
   check('تعديل وقت الموعد لوقت متداخل للمريض مرفوض', /المريض عنده موعد تاني/.test(err(ud)), err(ud) || 'accepted!');
   const [c1, c2] = await Promise.all([book(recep, { patientId: P.id, therapistId: D1, date: d, time: '19:00' }), book(admin, { patientId: P.id, therapistId: D2, date: d, time: '19:00' })]);
   check('حجزين متزامنين لنفس المريض مع دكتورين: واحد بس ينجح', [c1, c2].filter((x) => !x.error).length === 1, `${err(c1) || 'ok'} | ${err(c2) || 'ok'}`);
   const cx = await recep.rpc('set_appointment_status', { p_id: idOf(a1), p_status: 'cancelled', p_reason: 'اختبار', p_therapist: null });
   const a6 = await book(recep, { patientId: P.id, therapistId: D2, date: d, time: '17:00', serviceId: 'old_consult' });
   check('بعد إلغاء الموعد وقته بيرجع متاح للمريض', !cx.error && !a6.error, err(cx) || err(a6));
-  const off = await recep.rpc('book_appointment', { p: { patientId: Q.id, type: 'initial', serviceId: 'old_exam', therapistId: D2, date: d, time: '23:30', location: 'center' } });
-  check('حجز خارج ساعات العمل مرفوض', !!off.error, err(off) || 'accepted!');
+  const off = await recep.rpc('book_appointment', { p: { patientId: Q.id, type: 'initial', serviceId: 'old_exam', therapistId: D3, date: d, time: '23:30', location: 'center' } });
+  check('حجز خارج مواعيد عمل الدكتور مرفوض', /خارج مواعيد عمل الدكتور/.test(err(off)), err(off) || 'accepted!');
+  const late = await book(recep, { patientId: Q.id, therapistId: D2, date: d, time: '23:30' });
+  check('حجز بالليل مع دكتور شغال اليوم كله مسموح (ساعات المركز مابقتش بتحدّ — هجرة 954)', !late.error, err(late));
   const today = cairoToday();
   if (new Date(today + 'T12:00:00Z').getUTCDay() !== 5) {
     const n1 = await book(recep, { patientId: Q.id, therapistId: D1, date: today, time: '16:00', serviceId: 'old_consult' });

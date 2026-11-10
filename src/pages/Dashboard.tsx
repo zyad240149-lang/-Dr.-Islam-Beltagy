@@ -85,7 +85,7 @@ export default function Dashboard() {
             <p style={{ fontSize: 15.5, fontWeight: 600, color: 'var(--brand-700)', margin: 0 }}>{dailyMotivation()}</p>
           </div>
           : <div><h1>مرحبًا، {user.name.split(' ')[0]}</h1><p>نظرة سريعة على أداء المركز اليوم.</p></div>}
-        {canBook && <Button icon="calendarPlus" onClick={() => setBooking(true)}>حجز موعد جديد</Button>}
+        {/* ١٠/١١: زرار «حجز موعد جديد» اتشال من الرئيسية — الحجز من «حجز كشف ومتابعة» */}
       </div>
 
       {doctorId ? <DoctorPatients therapistId={doctorId} /> : loading ? (

@@ -14,12 +14,14 @@ import { DOCTOR_DAY_LABEL, db } from '../data/db';
 import { useDbVersion } from '../hooks/useDb';
 import { isScopedToOwnPatients } from '../services/permissions';
 import { Icon } from '../utils/icons';
-import { APPT_STATUS, fmtDate, fmtTime, riyadhNow, todayYmd, waLink, whatsappNumber } from '../utils/format';
+import { APPT_STATUS, fmtDate, fmtTime, riyadhNow, todayYmd } from '../utils/format';
 import type { Appointment } from '../types';
 import { normalizeSearch, phoneMatches } from '../utils/phoneUtils';
 import { FOLLOW_UP_KIND, addDays, ortho, useOrthoVersion, type FollowUp, type FollowUpKind } from './data';
 import { ExerciseSendModal, useCanSendExercises } from './ExerciseSend';
 import { Field, LoadState, PageHead, PatientSelect, SearchBox, patientFile, patientName, useRun } from './kit';
+import { PainCompare, PrevRx } from './history';
+import { BookingWhatsapp } from '../components/BookingWhatsapp';
 
 export type FuState = 'upcoming' | 'today' | 'done' | 'missed' | 'cancelled';
 export const FU_STATE: Record<FuState, [string, string]> = {
@@ -89,7 +91,7 @@ function ApptBadge({ a }: { a: Appointment }) {
   return <span className={`badge badge--${st.tone}`}>{st.label}</span>;
 }
 
-const emptyDraft = (patientId: string, doctorId: string): FuDraft => ({ patientId, doctorId, date: todayYmd(), time: '', reason: '', notes: '' });
+const emptyDraft = (patientId: string, doctorId: string): FuDraft => ({ patientId, doctorId, date: todayYmd(), time: '', reason: '', notes: '', painScore: '' });
 
 // ---------- نافذة موعد متابعة (جديد / تعديل + تمت / إلغاء / تحويل لحجز / تسجيل حضور) ----------
 // الطبيب الأول ← أيام الأسبوعين الجايين (شغال/إجازة/مقفول) ← أوقات دوام الطبيب في اليوم ده (فاضي/محجوز/فيه متابعة/فات)،
@@ -138,6 +140,11 @@ export function FollowUpModal({ patientId, patientLabel, consultationId, initial
   const doc = useDefaultDoctor(patientId, doctorHint);
   const saved = initial && 'id' in initial ? initial as FollowUp : null;
   const [f, setF] = useState<FuDraft>(() => (initial ? { ...initial, time: hhmm(initial.time) } : { ...emptyDraft(patientId, doc), ...(presetDate ? { date: presetDate } : {}) }));
+  // درجة الألم: النافذة ممكن تتفتح من النسخة اللي على الجهاز قبل ما آخر نسخة من الخادم توصل (بعد تحديث الصفحة على طول، أو جهاز تاني سجّلها)
+  // ← طول ما المستخدم ما لمسش الألم، بتاخد آخر قيمة محفوظة
+  const painTouched = useRef(false);
+  const savedPain = initial && 'id' in initial ? ortho.list('follow_ups', patientId).find((x) => x.id === (initial as FollowUp).id)?.painScore : undefined;
+  useEffect(() => { if (!painTouched.current && savedPain !== undefined) setF((x) => (x.painScore === savedPain ? x : { ...x, painScore: savedPain })); }, [savedPain]);
   const [book, setBook] = useState<number | null>(null); // وقت فتح الحجز — عشان نلاقي الحجز اللي اتعمل ونربطه
   const createdId = useRef<string | undefined>(undefined); // لو الحجز فشل بعد حفظ المتابعة، إعادة المحاولة ماتكررهاش
   const [checkIn, setCheckIn] = useState(false);
@@ -156,7 +163,7 @@ export function FollowUpModal({ patientId, patientLabel, consultationId, initial
   // النوع بييجي من الخدمة المختارة؛ الموعد المحجوز بيحتفظ بنوعه
   const kind = linked ? f.kind ?? '' : kindOfService(db.service(svcId)?.name);
   const row = (patch: Partial<FollowUp>, id?: string) => ({
-    ...(saved ?? {}), id: id ?? saved?.id ?? createdId.current, patientId, consultationId: saved?.consultationId || consultationId || '', doctorId: f.doctorId, date: f.date, time: f.time, reason: f.reason.trim(), notes: f.notes.trim(), kind,
+    ...(saved ?? {}), id: id ?? saved?.id ?? createdId.current, patientId, consultationId: saved?.consultationId || consultationId || '', doctorId: f.doctorId, date: f.date, time: f.time, reason: f.reason.trim(), notes: f.notes.trim(), kind, painScore: f.painScore ?? '',
     status: saved?.status ?? 'scheduled', appointmentId: linked?.id ?? '', ...patch,
   } as FollowUp);
 
@@ -274,6 +281,7 @@ export function FollowUpModal({ patientId, patientLabel, consultationId, initial
         {saved && <FuBadge f={saved} />}
         {appt && <span className="badge badge--info">حجز <span className="num">{appt.no}</span></span>}
         {appt && <ApptBadge a={appt} />}
+        {saved && patientId && <BookingWhatsapp patientId={patientId} appointmentId={linked?.id} followUp={saved} />}
         {patientId && canExSend && <Button size="sm" variant="outline" icon="share" onClick={() => setExSend(true)}>إرسال تمرينات واتساب</Button>}
       </div>
       {exSend && patientId && <ExerciseSendModal patientId={patientId} onClose={() => setExSend(false)} />}
@@ -360,6 +368,12 @@ export function FollowUpModal({ patientId, patientLabel, consultationId, initial
         <Field label="ملاحظات"><textarea className="input" rows={2} dir="auto" value={f.notes} disabled={!canSave} onChange={(e) => set('notes', e.target.value)} /></Field>
       </div>
 
+      {/* يوم المتابعة جه: درجة الألم دلوقتي مقارنة باللي فاتت + روشتة الزيارة اللي فاتت (هجرة 964) */}
+      {patientId && f.date <= t && <>
+        <PainCompare patientId={patientId} title="درجة الألم في المتابعة دي (من 10)" value={f.painScore ?? ''} excludeSourceId={saved?.id} date={f.date} disabled={!canSave} onChange={(v) => { painTouched.current = true; set('painScore', v); }} />
+        <PrevRx patientId={patientId} date={f.date} />
+      </>}
+
       {saved && (
         <div className="fu-book">
           {appt ? <span><Icon name="calendar" size={15} /> نفس الموعد في «المواعيد»: <b className="num">{appt.no}</b> — {fmtDate(appt.date)} <span className="num">{fmtTime(appt.time)}</span> <Link to={`/appointments?q=${encodeURIComponent(appt.no)}`} onClick={onClose}>فتح في المواعيد</Link></span>
@@ -381,23 +395,6 @@ export function fuWhatsappText(f: Pick<FollowUp, 'patientId' | 'date' | 'time' |
   return [`أهلاً ${p?.fullName ?? ''}،`, `ميعاد متابعتك${doc ? ` مع ${doc}` : ''}: ${longDay(f.date)}${f.time ? ` الساعة ${fmtTime(hhmm(f.time))}` : ''}.`,
     f.reason && f.reason !== 'متابعة' ? `السبب: ${f.reason}` : '', 'عيادة د. إسلام بلتاجي لجراحة العظام والكسور — نتمنى لك السلامة.'].filter(Boolean).join(String.fromCharCode(10));
 }
-function FuWhatsapp({ f }: { f: FollowUp }) {
-  const p = db.patient(f.patientId);
-  // رقم الواتساب المسجّل، ولو مفيش: الموبايل — ولو مفيش خالص واتساب بيفتح ويختار الشخص
-  const n = p ? whatsappNumber(p) || p.phone || '' : '';
-  return <a className="btn btn--outline btn--sm" href={waLink(n, fuWhatsappText(f))} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}><Icon name="share" size={14} /> إرسال الموعد واتساب</a>;
-}
-
-/** إرسال تمرينات للمريض من صف المتابعة */
-function FuExercises({ patientId }: { patientId: string }) {
-  const [open, setOpen] = useState(false);
-  if (!useCanSendExercises()) return null;
-  return <>
-    <Button size="sm" variant="outline" icon="share" onClick={() => setOpen(true)}>إرسال تمرينات</Button>
-    {open && <ExerciseSendModal patientId={patientId} onClose={() => setOpen(false)} />}
-  </>;
-}
-
 export function FollowUpList({ items, onOpen, showPatient }: { items: FollowUp[]; onOpen: (f: FollowUp) => void; showPatient?: boolean }) {
   useDbVersion();
   const { openVisit } = useDetails();
@@ -415,8 +412,7 @@ export function FollowUpList({ items, onOpen, showPatient }: { items: FollowUp[]
           </button>
           {showPatient && <Link to={`/patients/${f.patientId}`} className="fu-item__patient">{patientName(f.patientId)}</Link>}
           <FuBadge f={f} />
-          {f.status === 'scheduled' && f.date >= todayYmd() && <FuWhatsapp f={f} />}
-          {f.patientId && f.status !== 'cancelled' && <FuExercises patientId={f.patientId} />}
+          {f.patientId && f.status !== 'cancelled' && <BookingWhatsapp patientId={f.patientId} appointmentId={f.appointmentId || undefined} followUp={f} />}
           {/* التفاصيل: الحجز المربوط (تفاصيل الموعد) — ولو مفيش حجز: نافذة المتابعة نفسها */}
           <Button size="sm" variant="outline" icon="eye" onClick={() => (f.appointmentId && db.appointment(f.appointmentId) ? openVisit(f.appointmentId) : onOpen(f))}>تفاصيل</Button>
           {(() => {
@@ -535,7 +531,7 @@ export async function savePendingFollowUps(patientId: string, consultationId: st
   }
   unlinkedFromStep.delete(patientId);
   for (const d of pending) {
-    const row = { patientId, consultationId, doctorId: d.doctorId, date: d.date, time: d.time, reason: d.reason.trim(), notes: d.notes.trim(), kind: d.kind ?? '', status: 'scheduled' as const, appointmentId: '' };
+    const row = { patientId, consultationId, doctorId: d.doctorId, date: d.date, time: d.time, reason: d.reason.trim(), notes: d.notes.trim(), kind: d.kind ?? '', painScore: d.painScore ?? '', status: 'scheduled' as const, appointmentId: '' };
     const id = await ortho.save('follow_ups', row);
     if (!d.time || !d.doctorId || !canBook || !net.isOnline()) continue;
     // التشخيص والمتابعة اتحفظوا؛ فشل الحجز بيتعرض للمستخدم ومايضيعش الكشف

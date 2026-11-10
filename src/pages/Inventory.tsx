@@ -22,7 +22,7 @@ export default function Inventory() {
   const [q, setQ] = useState('');
   const [state, setState] = useState('');
   const [editing, setEditing] = useState<InventoryItem | 'new' | null>(null);
-  const [moving, setMoving] = useState<InventoryItem | null>(null);
+  const [moving, setMoving] = useState<{ item: InventoryItem; type: StockMovementType } | null>(null);
   const [history, setHistory] = useState<InventoryItem | null>(null);
   const [deleting, setDeleting] = useState<InventoryItem | null>(null);
   const [reporting, setReporting] = useState(false);
@@ -44,6 +44,15 @@ export default function Inventory() {
           {can('inventory', 'create') && <Button icon="plus" onClick={() => setEditing('new')}>إضافة صنف</Button>}
         </div>
       </div>
+
+      {/* تنبيه الحد الأدنى (964): الأصناف اللي رصيدها وصل للحد الأدنى أو أقل */}
+      {lowCount > 0 && (
+        <div className="alert alert-warn inv-low" role="alert" data-testid="inv-low">
+          <strong>تنبيه: {lowCount} صنف رصيده عند الحد الأدنى أو أقل —</strong>
+          {all.filter(low).map((it) => <span key={it.id}>{it.name} (<span className="num">{it.quantity}</span> {it.unit} من <span className="num">{it.minQuantity}</span>)</span>)}
+          <span className="muted-sm">الشراء من «الفواتير والمدفوعات ← المصروفات ← مستلزمات طبية» بيسجّل المصروف ويزوّد الكمية مع بعض.</span>
+        </div>
+      )}
 
       <div className="card" style={{ marginBottom: 14 }}>
         <FilterBar>
@@ -76,7 +85,8 @@ export default function Inventory() {
                     <td>{!it.active ? <StatusBadge label="متوقف" tone="muted" /> : low(it) ? <StatusBadge label="وصل للحد الأدنى" tone="warn" /> : <StatusBadge label="متوفر" tone="ok" />}</td>
                     <td className="actions">
                       <RowActions>
-                        {can('inventory', 'edit') && <Button size="sm" variant="outline" icon="refresh" onClick={() => setMoving(it)}>حركة (توريد / صرف)</Button>}
+                        {can('inventory', 'edit') && <Button size="sm" variant="outline" icon="refresh" onClick={() => setMoving({ item: it, type: 'purchase' })}>حركة (توريد / صرف)</Button>}
+                        {can('inventory', 'edit') && <Button size="sm" variant="outline" icon="box" onClick={() => setMoving({ item: it, type: 'issue' })}>صرف / استخدام</Button>}
                         <IconAction icon="list" label="سجل الحركات" onClick={() => setHistory(it)} />
                         {can('inventory', 'edit') && <IconAction icon="edit" label="تعديل" onClick={() => setEditing(it)} />}
                         {can('inventory', 'delete') && <IconAction icon="trash" label="حذف" danger onClick={() => setDeleting(it)} />}
@@ -91,7 +101,7 @@ export default function Inventory() {
       </div>
 
       {editing && <ItemModal item={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />}
-      {moving && <MoveModal item={moving} onClose={() => setMoving(null)} />}
+      {moving && <MoveModal item={moving.item} initialType={moving.type} onClose={() => setMoving(null)} />}
       {history && <HistoryModal item={history} onClose={() => setHistory(null)} />}
       {reporting && <ReportModal onClose={() => setReporting(false)} />}
       {deleting && (
@@ -175,9 +185,9 @@ function ItemModal({ item, onClose }: { item: InventoryItem | null; onClose: () 
   );
 }
 
-function MoveModal({ item, onClose }: { item: InventoryItem; onClose: () => void }) {
+function MoveModal({ item, initialType = 'purchase', onClose }: { item: InventoryItem; initialType?: StockMovementType; onClose: () => void }) {
   const toast = useToast();
-  const [type, setType] = useState<StockMovementType>('purchase');
+  const [type, setType] = useState<StockMovementType>(initialType);
   const [qty, setQty] = useState('');
   const [cost, setCost] = useState(String(item.costPrice || ''));
   const [reference, setReference] = useState('');
@@ -197,7 +207,9 @@ function MoveModal({ item, onClose }: { item: InventoryItem; onClose: () => void
     const r = await db.addStockMovement({ itemId: item.id, type, quantity: n, unitCost: Number(cost) || 0, reference: reference.trim(), note: note.trim(), overdraw: out && n > item.quantity && overdraw, key: moveKey });
     setBusy(false);
     if (!r.ok) { toast.error(r.error); return; }
-    toast.success('تم تسجيل الحركة.');
+    toast.success(`تم تسجيل الحركة — الرصيد دلوقتي ${r.balance} ${item.unit}`);
+    // الصرف نزّل الرصيد للحد الأدنى أو أقل ← تنبيه (والخادم بيبعت إشعار للموظفين)
+    if (out && r.low) toast.error(`تنبيه: رصيد «${item.name}» (${r.balance} ${item.unit}) وصل للحد الأدنى (${item.minQuantity}) — اطلب كمية جديدة.`);
     onClose();
   };
   return (
@@ -214,7 +226,8 @@ function MoveModal({ item, onClose }: { item: InventoryItem; onClose: () => void
       {out && n > item.quantity && canOverdraw && (
         <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}><input type="checkbox" checked={overdraw} onChange={(e) => setOverdraw(e.target.checked)} />صرف أكبر من المتاح (الرصيد هيبقى بالسالب)</label>
       )}
-      {n > 0 && <p className={after < 0 ? 'alert alert-danger' : 'muted-sm'} style={{ marginBottom: 0 }}>بعد الحركة: <strong className="num">{after}</strong> {item.unit}</p>}
+      {n > 0 && <p className={after < 0 ? 'alert alert-danger' : out && after <= item.minQuantity ? 'alert alert-warn' : 'muted-sm'} style={{ marginBottom: 0 }}>بعد الحركة: <strong className="num">{after}</strong> {item.unit}{out && after <= item.minQuantity && after >= 0 ? ` — أقل من أو عند الحد الأدنى (${item.minQuantity})` : ''}</p>}
+      {type === 'purchase' && <p className="muted-sm" style={{ marginBottom: 0 }}>شراء مدفوع من العيادة؟ سجّله من «المصروفات ← مستلزمات طبية» عشان المصروف والكمية يتسجلوا مع بعض.</p>}
     </Modal>
   );
 }
@@ -262,7 +275,7 @@ function HistoryModal({ item, onClose }: { item: InventoryItem; onClose: () => v
               {moves.map((m) => (
                 <tr key={m.id}>
                   <td className="num">{fmtDateTime(m.date)}</td>
-                  <td>{MOVE_LABEL[m.type]}</td>
+                  <td>{MOVE_LABEL[m.type]}{m.expenseId && <> <span className="badge badge--info" title="حركة مربوطة بمصروف «مستلزمات طبية»">من مصروف</span></>}</td>
                   <td className="num" style={{ color: IN_TYPES.includes(m.type) ? 'var(--ok)' : 'var(--danger)' }}>{IN_TYPES.includes(m.type) ? '+' : '−'}{m.quantity} {item.unit}</td>
                   <td className="num">{m.balanceAfter ?? '—'}</td>
                   <td className="num">{m.unitCost ? money(m.unitCost) : '—'}</td>

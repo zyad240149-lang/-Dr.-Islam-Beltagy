@@ -391,6 +391,7 @@ export interface StockMovement {
   date: number;
   note: string;
   balanceAfter?: number | null;
+  expenseId?: string | null; // حركة توريد من مصروف «مستلزمات طبية» (هجرة 964)
 }
 
 export type StaffRequestType = 'leave' | 'permission' | 'other';

@@ -1317,10 +1317,17 @@ export const db = {
     return r.ok ? { ok: true } : r;
   },
   async deleteItem(id: string) { await rpcOrThrow('delete_item', { p_id: id }, ['inventory', 'activity']); },
-  async addStockMovement(input: { itemId: string; type: StockMovementType; quantity: number; unitCost: number; reference: string; note: string; overdraw?: boolean; key?: string }): Promise<Result> {
+  async addStockMovement(input: { itemId: string; type: StockMovementType; quantity: number; unitCost: number; reference: string; note: string; overdraw?: boolean; key?: string }): Promise<Result<{ low: boolean; balance: number }>> {
     const r = await rpc('add_stock_movement', { p: input }, ['inventory', 'notifications', 'activity']);
     if (r.ok) db.runAutomations();
-    return r.ok ? { ok: true } : r;
+    // تنبيه الحد الأدنى بعد الصرف: الرصيد الجديد من الكاش اللي اتحدّث
+    const it = load().inventory.find((x) => x.id === input.itemId);
+    return r.ok ? { ok: true, low: !!it && it.active && it.quantity <= it.minQuantity, balance: it?.quantity ?? 0 } : r;
+  },
+  /** شراء «مستلزمات طبية»: المصروف + التوريد للمخزون + حركة إضافة مربوطة بالمصروف — دالة واحدة على الخادم (هجرة 964).
+   *  key = مفتاح العملية: نفس المفتاح مايسجّلش المصروف ولا الكمية مرتين (ضغطتين، إعادة إرسال بعد قطع النت). */
+  async saveSupplyExpense(input: { id?: string; key: string; itemId: string; quantity: number; unitPrice: number; purchaseDate: string; description: string; paymentMethod: string }): Promise<Result<{ data: { id: string; duplicate: boolean; amount: number; balance: number; minQuantity: number; low: boolean; unit: string; item: string } }>> {
+    return rpc('save_supply_expense', { p: input }, ['inventory', 'notifications', 'activity']);
   },
 
   // ---------- أسعار الخدمة المتعددة ----------
@@ -1515,7 +1522,8 @@ export const db = {
     }
     // السجلات الطبية (التشخيص/الأشعة/المتابعات/ملفات الأشعة والتحاليل): أي تغيير من جهاز تاني ← الشاشة بتتحدّث من غير إعادة تحميل
     const orthoLive: Record<string, OrthoKind> = { ortho_consultations: 'consultations', ortho_imaging: 'imaging', ortho_follow_ups: 'follow_ups', patient_files: 'files',
-      ortho_nursing: 'nursing', ortho_injections: 'injections', ortho_fractures: 'fractures', ortho_surgeries: 'surgeries', ortho_surgery_stages: 'surgery_stages', ortho_surgery_payment_stages: 'surgery_payment_stages' };
+      ortho_nursing: 'nursing', ortho_injections: 'injections', ortho_fractures: 'fractures', ortho_surgeries: 'surgeries', ortho_surgery_stages: 'surgery_stages', ortho_surgery_payment_stages: 'surgery_payment_stages',
+      ortho_pain_scores: 'pain_scores', ortho_prescriptions: 'prescriptions', ortho_prescription_items: 'prescription_items' };
     const orthoTimers: Record<string, ReturnType<typeof setTimeout>> = {};
     for (const [table, kind] of Object.entries(orthoLive)) {
       ch.on('postgres_changes', { event: '*', schema: 'public', table }, () => {

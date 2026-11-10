@@ -85,6 +85,23 @@ function MethodModal({ p, onClose, onShare, onChat }: { p: Extract<Prepared, { o
 // زر «إرسال الفاتورة PDF عبر WhatsApp» — بدون API: مفيش إرسال تلقائي ولا تأكيد وصول من واتساب.
 //  موبايل/تابلت يدعم مشاركة الملفات → نافذة المشاركة الأصلية والـ PDF مرفق. كمبيوتر → اختيار (مشاركة / فتح محادثة الرقم + تنزيل). غير مدعوم → تنزيل + فتح المحادثة.
 export function InvoiceWhatsappButton({ invoice, size, variant = 'success', compact }: { invoice: Invoice | undefined; size?: 'sm' | 'md'; variant?: 'success' | 'outline' | 'ghost'; compact?: boolean }) {
+  const can = useCan();
+  const { send, state, ui } = useInvoiceWhatsapp(invoice);
+  if (!can('invoices', 'view')) return null;
+  const label = state === 'preparing' ? WA_MSG.preparing : state === 'ready' ? 'مشاركة الفاتورة' : 'إرسال الفاتورة PDF عبر WhatsApp';
+  return (
+    <>
+      <Button variant={variant} size={size} onClick={() => send()} disabled={state === 'preparing'} loading={state === 'preparing'}
+        title="يجهّز ملف الفاتورة PDF ويفتح واتساب/المشاركة على رقم المريض — بدون إرسال تلقائي" aria-label="إرسال الفاتورة PDF عبر WhatsApp">
+        {state !== 'preparing' && waIcon}{compact ? <span className="hide-sm">{label}</span> : label}
+      </Button>
+      {ui}
+    </>
+  );
+}
+
+/** نفس منطق زرار «إرسال الفاتورة PDF عبر WhatsApp» من غير الزرار — للقوايم (زي أيقونة واتساب الحجز). send() لازم تتنادى من ضغطة المستخدم */
+export function useInvoiceWhatsapp(invoice: Invoice | undefined) {
   const toast = useToast();
   const can = useCan();
   const [state, setState] = useState<'idle' | 'preparing' | 'ready'>('idle');
@@ -92,8 +109,6 @@ export function InvoiceWhatsappButton({ invoice, size, variant = 'success', comp
   const [choice, setChoice] = useState<Extract<Prepared, { ok: true }> | null>(null);
   const ready = useRef<Extract<Prepared, { ok: true }> | null>(null);
   const lock = useRef(false);
-  if (!can('invoices', 'view')) return null;
-  const label = state === 'preparing' ? WA_MSG.preparing : state === 'ready' ? 'مشاركة الفاتورة' : 'إرسال الفاتورة PDF عبر WhatsApp';
   const outcome = (o: ShareOutcome, p: Extract<Prepared, { ok: true }>) => {
     setChoice(null);
     if (o === 'needs_click') { setState('ready'); toast.info('تم تجهيز الفاتورة PDF — اضغط «مشاركة الفاتورة».'); return; }
@@ -125,12 +140,8 @@ export function InvoiceWhatsappButton({ invoice, size, variant = 'success', comp
     finally { lock.current = false; }
   };
   const patientId = invoice ? invoice.patientId : '';
-  return (
+  const ui = (
     <>
-      <Button variant={variant} size={size} onClick={() => run()} disabled={state === 'preparing'} loading={state === 'preparing'}
-        title="يجهّز ملف الفاتورة PDF ويفتح واتساب/المشاركة على رقم المريض — بدون إرسال تلقائي" aria-label="إرسال الفاتورة PDF عبر WhatsApp">
-        {state !== 'preparing' && waIcon}{compact ? <span className="hide-sm">{label}</span> : label}
-      </Button>
       {ask && (
         <PhoneEntryModal reason={ask} canSave={can('patients', 'edit')} onClose={() => setAsk(null)}
           onContinue={(e164, save) => {
@@ -146,6 +157,7 @@ export function InvoiceWhatsappButton({ invoice, size, variant = 'success', comp
       )}
     </>
   );
+  return { send: (phoneOverride?: string) => run(phoneOverride), state, ui };
 }
 
 // عرض + تحميل (لصفحة المواعيد وغيرها)

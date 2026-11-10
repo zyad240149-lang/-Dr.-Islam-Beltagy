@@ -126,7 +126,7 @@ export const map = {
   }),
   movement: (r: any): StockMovement => ({
     id: r.id, itemId: r.item_id, type: r.type, quantity: num(r.quantity), unitCost: num(r.unit_cost), reference: r.reference ?? '',
-    employeeId: r.employee_id ?? null, date: ts(r.date), note: r.note ?? '', balanceAfter: r.balance_after ?? null,
+    employeeId: r.employee_id ?? null, date: ts(r.date), note: r.note ?? '', balanceAfter: r.balance_after ?? null, expenseId: r.expense_id ?? null,
   }),
   activity: (r: any): ActivityLog => ({ id: r.id, at: ts(r.at), employeeId: r.employee_id ?? null, patientId: r.patient_id ?? null, action: r.action }),
   discount: (r: any): DiscountCode => ({

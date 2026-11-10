@@ -160,12 +160,14 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
                 <MedChoice label="الجرعة" value={m.dose} options={MED_DOSES} onChange={(v) => setMed(i, { dose: v })} />
                 <MedChoice label="عدد المرات" value={m.frequency} options={MED_FREQS} onChange={(v) => setMed(i, { frequency: v })} />
                 <MedChoice label="المدة" value={m.duration} options={MED_DURATIONS} onChange={(v) => setMed(i, { duration: v })} />
-                <MedChoice label="ملاحظة" value={m.notes} options={MED_NOTES} onChange={(v) => setMed(i, { notes: v })} />
+                {/* ملاحظة الدواء ده بس (بعد الأكل، قبل النوم…) — كتابة حرة مع اقتراحات، منفصلة عن ملاحظات الروشتة العامة تحت */}
+                <input className="input cx-row__note" dir="auto" aria-label={`ملاحظة الدواء ${i + 1}`} placeholder="ملاحظة الدواء (بعد الأكل…)" list="cx-med-notes" value={m.notes ?? ''} onChange={(e) => setMed(i, { notes: e.target.value })} />
                 <IconBtn icon="trash" label="حذف الدواء" danger onClick={() => set('medications', c.medications.filter((_, j) => j !== i))} />
               </div>
             ))}
           </div>
         )}
+      <datalist id="cx-med-notes">{MED_NOTES.map((n) => <option key={n} value={n} />)}</datalist>
       <datalist id="cx-meds">{medCatalog().map((p) => <option key={p.name} value={p.name}>{p.group}</option>)}</datalist>
     </Section>
   );
@@ -194,8 +196,8 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
     </Section>
   );
   const notesSec = (
-    <Section key="notes" icon="doc" title="التعليمات وملاحظات الطبيب">
-      <textarea className="input" rows={3} placeholder="مثال: راحة وتجنب طلوع السلم، كمادات تلج 15 دقيقة 3 مرات يوميًا، زيارات علاج طبيعي، رباط ضاغط…" value={c.plan} onChange={(e) => set('plan', e.target.value)} />
+    <Section key="notes" icon="doc" title="ملاحظات الروشتة العامة والتعليمات">
+      <textarea className="input cx-rxnotes" rows={2} placeholder="مثال: راحة وتجنب طلوع السلم، كمادات تلج 15 دقيقة 3 مرات يوميًا، زيارات علاج طبيعي، رباط ضاغط…" value={c.plan} onChange={(e) => set('plan', e.target.value)} />
     </Section>
   );
   // الروشتة في الكشف: الأدوية الأول، وبعدها المطلوب من أشعة/سونار وتحاليل

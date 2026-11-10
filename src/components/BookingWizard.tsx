@@ -13,6 +13,7 @@ const endTimeOf = (t: string, min: number) => { const [h, m] = t.split(':').map(
 const fmtDayName = (ymd: string) => new Date(ymd + 'T00:00:00').toLocaleDateString(document.documentElement.lang === 'en' ? 'en-GB' : 'ar-SA-u-nu-latn', { weekday: 'long' });
 import { useToast } from '../hooks/useToast';
 import { InvoiceFileButtons, InvoiceWhatsappButton } from './InvoiceActions';
+import { BookingWhatsapp } from './BookingWhatsapp';
 import { EditPatientModal } from './PatientForms';
 import { useNavigate } from 'react-router-dom';
 
@@ -220,7 +221,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
             <div><dt>اسم المريض</dt><dd>{patient?.fullName ?? np.fullName}</dd></div>
             {(() => { const fn = db.patient(result.patientId)?.fileNo || callFile; return fn ? <div><dt>رقم الملف</dt><dd className="num">{fn}{callFile !== null && <span className="badge badge--warn" style={{ marginInlineStart: 8 }}>اتضاف في «المرضى» — استكمل بياناته لما ييجي</span>}</dd></div> : null; })()}
             <div><dt>التاريخ</dt><dd>{fmtDate(result.date)}</dd></div>
-            <div><dt>الوقت</dt><dd>{fmtTime(result.time)}</dd></div>
+            <div><dt>الوقت</dt><dd>{fmtTime(result.time)}<BookingWhatsapp patientId={result.patientId} appointmentId={result.id} /></dd></div>
             <div><dt>المعالج</dt><dd>{result.therapist}</dd></div>
           </dl>
           {(() => {

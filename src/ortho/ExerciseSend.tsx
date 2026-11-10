@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Button, Modal } from '../components/ui';
 import { db } from '../data/db';
 import { useToast } from '../hooks/useToast';
-import { waPhone } from '../utils/format';
+import { waPhone, whatsappNumber } from '../utils/format';
 import { ortho, useOrthoVersion, type Exercise, type ExerciseMedia } from './data';
 import { MediaThumb } from './Exercises';
 import { Field, PatientSelect, SearchBox, useClinicalCan, useRun } from './kit';
@@ -38,7 +38,9 @@ export function ExerciseSendModal({ patientId, initialSel, onClose }: { patientI
   const toast = useToast();
   const perm = useClinicalCan('exercises');
   const { run, busy } = useRun();
-  const phone = db.patient(patientId)?.phone ?? '';
+  // رقم الواتساب المسجّل في ملف المريض، وإلا الموبايل الأساسي
+  const pt = db.patient(patientId);
+  const phone = (pt ? whatsappNumber(pt) || pt.phone : '') ?? '';
   const exercises = ortho.list('exercises');
   const plans = ortho.list('exercise_plans', patientId);
   const last = plans[0];

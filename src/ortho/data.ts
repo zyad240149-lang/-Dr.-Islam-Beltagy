@@ -73,7 +73,12 @@ export interface Exercise { id: string; name: string; group: string; description
 export interface ExercisePlan { id: string; patientId: string; consultationId?: string | null; date: string; exerciseIds: string[]; notes: string; shareToken: string }
 // مواعيد المتابعات (هجرة 929): سجل مستقل مش حجز — بيتربط بالمريض والتشخيص والطبيب، و appointmentId لما يتحوّل لحجز فعلي
 export type FollowUpStatus = 'scheduled' | 'done' | 'cancelled';
-export interface FollowUp { id: string; patientId: string; consultationId: string; doctorId: string; date: string; time: string; reason: string; notes: string; status: FollowUpStatus; appointmentId: string; kind?: FollowUpKind | ''; createdAt?: string; createdBy?: string }
+export interface FollowUp { id: string; patientId: string; consultationId: string; doctorId: string; date: string; time: string; reason: string; notes: string; status: FollowUpStatus; appointmentId: string; kind?: FollowUpKind | ''; painScore?: number | ''; createdAt?: string; createdBy?: string }
+// سجل الألم والروشتات (هجرة 964) — قراية بس: الخادم بيكتبهم بتريجرات من التشخيص وشيت المتابعة وموعد المتابعة
+export type PainSource = 'consultation' | 'nursing' | 'follow_up';
+export interface PainScore { id: string; patientId: string; visitDate: string; score: number; source: PainSource; sourceId: string; appointmentId: string; createdAt: string }
+export interface Prescription { id: string; patientId: string; rxDate: string; source: 'consultation' | 'nursing'; sourceId: string; version: number; instructions: string; labs: string[]; imagingRequests: ImagingRequest[]; appointmentId: string; createdBy: string; createdAt: string }
+export interface PrescriptionItem { id: string; prescriptionId: string; patientId: string; position: number; name: string; dose: string; frequency: string; duration: string; notes: string }
 export interface Fracture { id: string; patientId: string; bone: string; side: Side; kind: string; injuryDate: string; castDate: string; removalDue: string; status: FractureStatus }
 
 export const SIDE: Record<Side, string> = { right: 'يمين', left: 'شمال', both: 'الجانبين', na: '—' };
@@ -109,11 +114,14 @@ const COLUMNS: Record<Kind, string[]> = {
   medications: ['name', 'group', 'dose', 'frequency', 'duration', 'shown'],
   exercises: ['name', 'group', 'description', 'media'],
   exercise_plans: ['patient_id', 'consultation_id', 'date', 'exercise_ids', 'notes', 'share_token'],
-  follow_ups: ['patient_id', 'consultation_id', 'doctor_id', 'date', 'time', 'reason', 'notes', 'status', 'appointment_id', 'kind'],
+  follow_ups: ['patient_id', 'consultation_id', 'doctor_id', 'date', 'time', 'reason', 'notes', 'status', 'appointment_id', 'kind', 'pain_score'],
+  pain_scores: [], prescriptions: [], prescription_items: [], // سجلات بيكتبها الخادم بالتريجرات (هجرة 964) — قراية بس
   files: [], // ملفات المريض (patient_files) — قراية بس هنا؛ الرفع والحذف من db.uploadPatientFile / deletePatientFile
 };
-export type Kind = 'consultations' | 'imaging' | 'surgeries' | 'surgery_stages' | 'surgery_payment_stages' | 'fractures' | 'nursing' | 'injections' | 'medications' | 'exercises' | 'exercise_plans' | 'follow_ups' | 'files';
-type Of<K extends Kind> = K extends 'files' ? Record<string, unknown> : K extends 'follow_ups' ? FollowUp : K extends 'exercises' ? Exercise : K extends 'exercise_plans' ? ExercisePlan : K extends 'medications' ? MedItem : K extends 'consultations' ? Consultation : K extends 'imaging' ? Imaging : K extends 'surgeries' ? Surgery : K extends 'surgery_stages' ? SurgeryStage : K extends 'surgery_payment_stages' ? SurgeryPaymentStage : K extends 'nursing' ? Nursing : K extends 'injections' ? Injection : Fracture;
+export type Kind = 'consultations' | 'imaging' | 'surgeries' | 'surgery_stages' | 'surgery_payment_stages' | 'fractures' | 'nursing' | 'injections' | 'medications' | 'exercises' | 'exercise_plans' | 'follow_ups' | 'files' | 'pain_scores' | 'prescriptions' | 'prescription_items';
+/** الأنواع اللي الخادم بيكتبها لوحده من التريجرات — بتتحمّل تاني بعد حفظ مصدرها */
+const DERIVED: Partial<Record<Kind, Kind[]>> = { consultations: ['pain_scores', 'prescriptions', 'prescription_items'], nursing: ['pain_scores', 'prescriptions', 'prescription_items'], follow_ups: ['pain_scores'] };
+type Of<K extends Kind> = K extends 'files' ? Record<string, unknown> : K extends 'pain_scores' ? PainScore : K extends 'prescriptions' ? Prescription : K extends 'prescription_items' ? PrescriptionItem : K extends 'follow_ups' ? FollowUp : K extends 'exercises' ? Exercise : K extends 'exercise_plans' ? ExercisePlan : K extends 'medications' ? MedItem : K extends 'consultations' ? Consultation : K extends 'imaging' ? Imaging : K extends 'surgeries' ? Surgery : K extends 'surgery_stages' ? SurgeryStage : K extends 'surgery_payment_stages' ? SurgeryPaymentStage : K extends 'nursing' ? Nursing : K extends 'injections' ? Injection : Fracture;
 type Row = Record<string, unknown>;
 
 /** اسم الجدول: ملفات المريض جدولها patient_files (مش ortho_) — بتتحمّل وتتحفظ على الجهاز زي باقي السجلات الطبية عشان تفتح من غير إنترنت */
@@ -195,7 +203,7 @@ export function hydrateOrthoCache(x: Partial<Record<Kind, Row[]>> | null) {
   if (x) for (const k of Object.keys(x) as Kind[]) if (Array.isArray(x[k])) { server[k] = x[k]!; cache[k] = overlay(k, x[k]!); }
   bump();
 }
-const KIND_LABEL: Record<Kind, string> = { consultations: 'كشف', imaging: 'أشعة', surgeries: 'عملية', surgery_stages: 'مرحلة عملية', surgery_payment_stages: 'مرحلة دفع', fractures: 'كسر/جبس', nursing: 'متابعة تمريض', injections: 'حقن', medications: 'دواء', exercises: 'تمرين', exercise_plans: 'خطة تمرينات', follow_ups: 'موعد متابعة', files: 'ملف' };
+const KIND_LABEL: Record<Kind, string> = { consultations: 'كشف', imaging: 'أشعة', surgeries: 'عملية', surgery_stages: 'مرحلة عملية', surgery_payment_stages: 'مرحلة دفع', fractures: 'كسر/جبس', nursing: 'متابعة تمريض', injections: 'حقن', medications: 'دواء', exercises: 'تمرين', exercise_plans: 'خطة تمرينات', follow_ups: 'موعد متابعة', files: 'ملف', pain_scores: 'درجة ألم', prescriptions: 'روشتة', prescription_items: 'دواء في روشتة' };
 /**
  * حفظ على الجهاز ← طابور المزامنة. إنشاء: بمعرّف ثابت من الجهاز (إعادة الإرسال مابتكررش). تعديل: بنحفظ قيم الخادم وقت التعديل (base)
  * ولو حد غيّر نفس الحقول على الخادم قبل المزامنة ← «تعارض» يتعرض للطبيب يقرر (مفيش كتابة فوق تشخيص بصمت).
@@ -225,6 +233,15 @@ async function saveOffline(kind: Kind, id: string | undefined, row: Record<strin
   return eid;
 }
 
+// سجل الألم والروشتات بيتكتب على الخادم بعد حفظ المصدر ← بيتحمّل تاني (اللي اتحمّل قبل كده بس) عشان «الزيارة اللي فاتت» تبان على طول
+const derivedTimers: Partial<Record<Kind, ReturnType<typeof setTimeout>>> = {};
+function reloadDerived(kind: Kind) {
+  for (const k of DERIVED[kind] ?? []) {
+    if (!server[k]) continue;
+    clearTimeout(derivedTimers[k]);
+    derivedTimers[k] = setTimeout(() => void load(k), 400);
+  }
+}
 /** تنزيل كل أقسام العظام للجهاز بعد الدخول (عشان التاريخ المرضي والتشخيص والروشتات تفتح بدون إنترنت حتى لو الشاشة ما اتفتحتش قبل كده) */
 export function loadAllOrtho(): Promise<void[]> { return Promise.all((Object.keys(COLUMNS) as Kind[]).map((k) => load(k))); }
 /** بعد مزامنة ناجحة: إعادة تحميل الأنواع اللي اتحمّلت قبل كده */
@@ -284,6 +301,7 @@ export const ortho = {
     }
     bump();
     offline.scheduleSnapshot(true);
+    reloadDerived(kind);
     return data.id as string;
   },
   async remove(kind: Kind, id: string) {

@@ -25,6 +25,7 @@ import { ExerciseSendModal, useCanSendExercises } from './ExerciseSend';
 import { InjectionList, InjectionModal } from './Injections';
 import { PatientMedicalFiles } from './PatientMedicalFiles';
 import { RxEditor } from './Rx';
+import { PainHint, PrevRx } from './history';
 import type { RxData } from './data';
 import { FollowUpStep, FollowUpsOfConsult, savePendingFollowUps, useFuCan, type FuDraft } from './FollowUps';
 import type { DxPart } from './printDiagnosis';
@@ -394,6 +395,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
         </div>
 
         {tab === 'nurse' && <BoxOpenDefault.Provider value={false}>
+          <PainHint patientId={c.patientId} current={c.painScore} excludeSourceId={initial?.id} date={c.date} />
           <NursingSheet sheet={sheet} onChange={changeSheet} patient={c.patientId ? db.patient(c.patientId) : null} date={c.date} visitNo={visitNo}
             painScore={c.painScore} onPainScore={(v) => set('painScore', v)}
             onFirstPain={(id, side) => setC((x) => ({ ...x, region: regionById(id)?.name ?? x.region, ...(side ? { side } : {}) }))} />
@@ -440,7 +442,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
               const meds = c.medications.filter((m) => m.name.trim());
               return meds.length ? (
                 <dl className="dl rx-sum">
-                  <div><dt>الأدوية</dt><dd dir="ltr" style={{ textAlign: 'start' }}>{meds.map((m) => [m.name, m.dose, m.frequency, m.duration].filter(Boolean).join(' ')).join(' • ')}</dd></div>
+                  <div><dt>الأدوية</dt><dd dir="ltr" style={{ textAlign: 'start' }}>{meds.map((m) => [m.name, m.dose, m.frequency, m.duration].filter(Boolean).join(' ') + (m.notes?.trim() ? ` (${m.notes.trim()})` : '')).join(' • ')}</dd></div>
                 </dl>
               ) : <p className="cx-empty">لسه مفيش روشتة — اضغط «فتح الروشتة» واكتب الأدوية والتعليمات.</p>;
             })()}
@@ -586,7 +588,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
             <Button icon="chevronLeft" onClick={() => goTab('plan')}>التالي: الخطة العلاجية</Button>
           </div>
         </>}
-        {rxOpen && <RxPage patientId={c.patientId} region={c.region} busy={rxSaving}
+        {rxOpen && <RxPage patientId={c.patientId} region={c.region} busy={rxSaving} excludeSourceId={c.id} date={c.date}
           initial={{ medications: c.medications, labs: c.labs, imagingRequests: c.imagingRequests, attachments: c.attachments, plan: c.plan }}
           onClose={() => setRxOpen(false)}
           onSave={(rx) => saveRx(rx)}
@@ -629,8 +631,8 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
 
 // صور الأشعة المرفقة: روابط موقّعة مؤقتة (الـ bucket خاص)
 /** «فتح الروشتة»: صفحة واحدة للروشتة كلها — الأدوية، والأشعة/السونار المطلوبة، والتحاليل المطلوبة — وجواها «حفظ الروشتة» و«طباعة الروشتة» */
-function RxPage({ patientId, region, initial, busy, onClose, onSave, onPrint }: {
-  patientId: string; region: string; initial: RxData; busy: boolean; onClose: () => void;
+function RxPage({ patientId, region, initial, busy, onClose, onSave, onPrint, excludeSourceId, date }: {
+  patientId: string; region: string; initial: RxData; busy: boolean; onClose: () => void; excludeSourceId?: string; date?: string;
   onSave: (rx: Pick<RxData, 'medications' | 'labs' | 'imagingRequests' | 'plan'>) => Promise<boolean>; onPrint: (rx: Pick<RxData, 'medications' | 'labs' | 'imagingRequests' | 'plan'>) => void;
 }) {
   const [rx, setRx] = useState<RxData>(initial);
@@ -641,6 +643,8 @@ function RxPage({ patientId, region, initial, busy, onClose, onSave, onPrint }: 
       <Button variant="outline" icon="print" loading={busy} onClick={() => onPrint(pick())}>طباعة الروشتة</Button>
       <Button icon="check" loading={busy} onClick={async () => { if (await onSave(pick())) onClose(); }}>حفظ الروشتة</Button>
     </>}>
+      <PrevRx patientId={patientId} excludeSourceId={excludeSourceId} date={date}
+        onCopy={(meds, instructions) => setRx((x) => ({ ...x, medications: [...x.medications.filter((m) => m.name.trim()), ...meds.filter((m) => !x.medications.some((y) => y.name.trim().toLowerCase() === m.name.trim().toLowerCase()))], plan: x.plan.trim() ? x.plan : instructions }))} />
       <RxEditor rxOnly patientId={patientId} region={region} value={rx} onChange={(f) => setRx((x) => f(x))} />
     </Modal>
   );
@@ -725,7 +729,7 @@ export function LegacyText({ c }: { c: Pick<Consultation, 'complaint' | 'history
   return (
     <dl className="dl cx-legacy">
       {rows.filter(([, v]) => v?.trim()).map(([k, v]) => <div key={k}><dt>{k}</dt><dd dir="auto" style={{ whiteSpace: 'pre-line' }}>{v}</dd></div>)}
-      {meds.length > 0 && <div><dt>الأدوية</dt><dd><ol className="cx-medlist">{meds.map((m, i) => <li key={i}><b dir="ltr">{m.name}</b> <span className="muted">{[m.dose, m.frequency, m.duration].filter(Boolean).join(' — ')}</span></li>)}</ol></dd></div>}
+      {meds.length > 0 && <div><dt>الأدوية</dt><dd><ol className="cx-medlist">{meds.map((m, i) => <li key={i}><b dir="ltr">{m.name}</b> <span className="muted">{[m.dose, m.frequency, m.duration].filter(Boolean).join(' — ')}</span>{m.notes?.trim() && <span className="muted-sm" dir="auto"> ({m.notes.trim()})</span>}</li>)}</ol></dd></div>}
     </dl>
   );
 }
@@ -774,7 +778,7 @@ export function ConsultList({ items, onEdit, hidePatient }: { items: Consultatio
               {c.history && <div><dt>التاريخ المرضي</dt><dd style={{ whiteSpace: 'pre-line' }}>{c.history}</dd></div>}
               <div><dt>الفحص</dt><dd dir="auto" style={{ whiteSpace: 'pre-line' }}>{c.examination || '—'}</dd></div>
               {sheetPlan && <div><dt>الخطة</dt><dd dir="ltr" style={{ textAlign: 'start' }}>{sheetPlan}</dd></div>}
-              {meds.length > 0 && <div><dt>الأدوية</dt><dd><ol className="cx-medlist">{meds.map((m, i) => <li key={i}><b dir="ltr">{m.name}</b> <span className="muted">{[m.dose, m.frequency, m.duration].filter(Boolean).join(' — ')}</span></li>)}</ol></dd></div>}
+              {meds.length > 0 && <div><dt>الأدوية</dt><dd><ol className="cx-medlist">{meds.map((m, i) => <li key={i}><b dir="ltr">{m.name}</b> <span className="muted">{[m.dose, m.frequency, m.duration].filter(Boolean).join(' — ')}</span>{m.notes?.trim() && <span className="muted-sm" dir="auto"> ({m.notes.trim()})</span>}</li>)}</ol></dd></div>}
               {labs.length > 0 && <div><dt>التحاليل</dt><dd dir="ltr" style={{ textAlign: 'start' }}>{labs.join(' • ')}</dd></div>}
               {reqs.length > 0 && <div><dt>أشعة مطلوبة</dt><dd>{reqs.map((r) => `${IMAGING_KIND[r.kind]} — ${r.region}${r.view ? ` (${r.view})` : ''}`).join('، ')}</dd></div>}
               {c.plan && <div><dt>التعليمات</dt><dd style={{ whiteSpace: 'pre-line' }}>{c.plan}</dd></div>}

@@ -21,6 +21,8 @@ import { branchForDate } from '../components/WorkHoursEditor';
 import ScheduleGrid, { type Preset } from '../components/ScheduleGrid';
 import { ActorBadges, ActorDetails } from '../components/AppointmentActor';
 import { RescheduleModal, CancelModal, EditAppointmentModal, StatusMenu, useStatusWithDoctor, useConfirmAppointment, CONFIRMABLE, attendanceOpen } from '../components/AppointmentActions';
+import { BookingWhatsapp } from '../components/BookingWhatsapp';
+import { ortho } from '../ortho/data';
 import { PlanModal } from '../components/PatientForms';
 import { useDetails } from '../components/DetailsHost';
 import { useToast } from '../hooks/useToast';
@@ -310,7 +312,7 @@ export function AppointmentDetailModal({ appt, onClose, onOpenPatient, onResched
         <div><dt>الخدمة</dt><dd>{svc?.name}</dd></div>
         <div><dt>المعالج</dt><dd>{th?.name}</dd></div>
         <div><dt>التاريخ</dt><dd>{fmtDate(a.date)}</dd></div>
-        <div><dt>الوقت</dt><dd className="num">{fmtTime(a.time)} – {fmtTime(endTime(a.time, a.durationMin))}</dd></div>
+        <div><dt>الوقت</dt><dd className="num">{fmtTime(a.time)} – {fmtTime(endTime(a.time, a.durationMin))}{a.status !== 'cancelled' && <BookingWhatsapp patientId={a.patientId} appointmentId={a.id} followUp={ortho.list('follow_ups').find((x) => x.appointmentId === a.id)} />}</dd></div>
         <ActorDetails a={a} />
         {a.notes && <div style={{ gridColumn: '1/-1' }}><dt>ملاحظات</dt><dd>{a.notes}</dd></div>}
         <div><dt>السعر</dt><dd className="num">{money(a.price)}</dd></div>

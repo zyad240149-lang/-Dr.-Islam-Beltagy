@@ -5,6 +5,7 @@ import type { PatientFileCategory } from '../types';
 // DetailsProvider في Layout، وأي صفحة تفتح أي تفصيلة بـ useDetails().openPlan(id) / openVisit(id).
 // النافذة المفتوحة بتتبدّل (مش بتتراكب) عشان التنقل بين العناصر المرتبطة يبقى بسيط، وفيه زرار «رجوع».
 import { SessionDiagnosesList } from './SessionDiagnosesList';
+import { BookingWhatsapp } from './BookingWhatsapp';
 import { ActorBadges, ActorDetails } from './AppointmentActor';
 import { createContext, lazy, Suspense, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -300,7 +301,7 @@ function VisitDetailsModal({ apptId, onClose, onBack }: { apptId: string; onClos
       {a.status !== 'cancelled' && <ExtraServices appointmentId={a.id} />}
       <dl className="review-list" style={{ marginBottom: 14 }}>
         <div><dt>المريض</dt><dd>{patient?.fullName} · <span className="num">{patient?.fileNo}</span></dd></div>
-        <div><dt>التاريخ والوقت</dt><dd>{fmtDate(a.date)} — <span className="num">{fmtTime(a.time)}</span></dd></div>
+        <div><dt>التاريخ والوقت</dt><dd>{fmtDate(a.date)} — <span className="num">{fmtTime(a.time)}</span>{a.status !== 'cancelled' && <BookingWhatsapp patientId={a.patientId} appointmentId={a.id} />}</dd></div>
         <div><dt>الطبيب</dt><dd>{th?.name ?? '—'}</dd></div>
         <div><dt>التخصص</dt><dd>{th?.title || '—'}</dd></div>
         <div><dt>سبب الزيارة</dt><dd>{APPT_TYPE_LABEL[a.type]}{a.notes ? ` — ${a.notes}` : ''}</dd></div>

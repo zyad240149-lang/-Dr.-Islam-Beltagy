@@ -11,6 +11,7 @@ import { addDays, ortho, useOrthoVersion, type Nursing, type NursingSheet, type 
 import { FollowUpModal, fuWhen, useFuCan } from './FollowUps';
 import { RxEditor, cleanRx, hasRx, normRx, registerRxRequests } from './Rx';
 import { printRx } from './printRx';
+import { PAIN_TREND, PainCompare, PrevRx, painTrend, previousPain } from './history';
 import { Field, IconBtn, LoadState, confirmDelete, useClinicalCan, useRun } from './kit';
 
 const OPT = {
@@ -130,12 +131,11 @@ export function NursingModal({ patientId, appointmentId = null, initial, onClose
         <Field label="رقم الزيارة"><input className="input num" value={s.visitNo} onChange={(e) => set('visitNo', e.target.value)} /></Field>
       </div>
 
-      <Box title="درجة الألم حاليًا (من 10)">
-        <div className="cx-chips" role="radiogroup">
-          {Array.from({ length: 11 }, (_, n) => <button key={n} type="button" role="radio" aria-checked={s.pain === n} className={`cx-chip num ${s.pain === n ? 'is-on' : ''}`} onClick={() => set('pain', s.pain === n ? '' : n)}>{n}</button>)}
-        </div>
-        <small className="muted">0 = لا يوجد ألم · 10 = أشد ألم</small>
-      </Box>
+      {/* الألم: آخر درجة مسجلة للمريض + الحالية + المقارنة — «مقارنة بآخر زيارة» بتتعلّم لوحدها من الفرق (وتقدر تغيّرها) */}
+      <PainCompare patientId={patientId} value={s.pain} excludeSourceId={initial?.id} date={date} onChange={(v) => setS((x) => {
+        const t = painTrend(previousPain(patientId, { excludeSourceId: initial?.id, date })?.score, v);
+        return { ...x, pain: v, vsLast: t ? PAIN_TREND[t].vsLast : x.vsLast };
+      })} />
       <div className="grid-form grid-form--3">
         <Field label="الالتزام بالعلاج"><Pick options={OPT.adherence} value={s.adherence} onChange={(v) => set('adherence', v)} /></Field>
         <Field label="الحركة / الوظيفة"><Pick options={OPT.mobility} value={s.mobility} onChange={(v) => set('mobility', v)} /></Field>
@@ -189,6 +189,9 @@ export function NursingModal({ patientId, appointmentId = null, initial, onClose
       </Box>
 
       <Box title="الروشتة والأشعة والتحاليل">
+        {/* روشتة الزيارة اللي فاتت للرجوع ليها — الروشتة الجديدة بتتحفظ نسخة لوحدها ومابتمسحش القديمة */}
+        <PrevRx patientId={patientId} excludeSourceId={initial?.id} date={date}
+          onCopy={(meds, instructions) => setRx((x) => ({ ...x, medications: [...x.medications.filter((m) => m.name.trim()), ...meds.filter((m) => !x.medications.some((y) => y.name.trim().toLowerCase() === m.name.trim().toLowerCase()))], plan: x.plan.trim() ? x.plan : instructions }))} />
         <RxEditor value={rx} onChange={setRx} patientId={patientId} region={ortho.list('consultations', patientId).sort((a, b) => b.date.localeCompare(a.date))[0]?.region} onUploading={setUploading} />
       </Box>
       {fuOpen && <FollowUpModal patientId={patientId} doctorHint={visitDoctor} presetDate={addDays(todayYmd(), FU_DAYS[pl.fu] ?? 7)} onClose={() => setFuOpen(false)} />}
@@ -263,6 +266,8 @@ export function nursingHtml(n: Omit<Nursing, 'id'>): string {
   const s = norm(n.sheet);
   const p = db.patient(n.patientId);
   const pain = Array.from({ length: 11 }, (_, i) => `<span class="pn ${s.pain === i ? 'on' : ''}">${i}</span>`).join('');
+  const prevPain = previousPain(n.patientId, { excludeSourceId: (n as Partial<Nursing>).id, date: n.date });
+  const trend = painTrend(prevPain?.score, s.pain);
   return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>شيت متابعة التمريض — ${esc(p?.fullName)}</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap">
 <style>
@@ -293,7 +298,7 @@ export function nursingHtml(n: Omit<Nursing, 'id'>): string {
   <div><b class="h">الالتزام بالعلاج</b>${box(OPT.adherence, s.adherence)}</div>
   <div><b class="h">الحركة / الوظيفة</b>${box(OPT.mobility, s.mobility)}</div>
   <div><b class="h">مقارنة بآخر زيارة</b>${box(OPT.vsLast, s.vsLast)}</div>
-  <div><b class="h">درجة الألم حاليًا (من 10)</b><div dir="ltr">${pain}</div></div>
+  <div><b class="h">درجة الألم حاليًا (من 10)</b><div dir="ltr">${pain}</div>${prevPain ? `<div>الزيارة اللي فاتت (${esc(fmtDate(prevPain.date))}): <b>${prevPain.score}/10</b>${trend ? ` — <b>${PAIN_TREND[trend].label}</b>` : ''}</div>` : ''}</div>
 </div>
 <div class="sec"><b>أعراض أو مشكلة جديدة؟</b> ${box(OPT.newSymptoms, s.newSymptoms)} — التفاصيل: ${val(s.symptomsDetails)}</div>
 <div class="row c2">

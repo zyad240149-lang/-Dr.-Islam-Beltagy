@@ -1983,3 +1983,38 @@ button.dsch__who small { white-space: nowrap; font-size: 12.5px; color: var(--mu
 .slot.slot--busy.selected { background: var(--brand-700); border-color: var(--brand-700); color: #fff; }
 .slot__tag { font-size: 11px; font-weight: 600; color: var(--warn); line-height: 1.1; }
 .slot.selected .slot__tag { color: #fff; }
+
+/* ===== 964: أيقونة واتساب الحجز (قايمة: تذكير / تمارين / فاتورة) ===== */
+.bk-wa { position: relative; display: inline-flex; vertical-align: middle; margin-inline-start: 8px; }
+.bk-wa__btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; border: 1px solid #b7e4c7; background: #effaf3; color: #128c4b; cursor: pointer; padding: 0; }
+.bk-wa__btn:hover, .bk-wa__btn[aria-expanded="true"] { background: #25d366; border-color: #25d366; color: #fff; }
+.bk-wa__menu { position: absolute; top: calc(100% + 6px); inset-inline-end: 0; z-index: 60; min-width: 210px; display: flex; flex-direction: column; padding: 6px; border-radius: 12px;
+  background: var(--surface, #fff); border: 1px solid var(--line, #e2e8f0); box-shadow: 0 10px 30px rgba(15, 23, 42, .16); }
+.bk-wa__menu button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 9px 10px; border: 0; border-radius: 8px; background: none; font: inherit; font-weight: 600; color: var(--text, #10182f); cursor: pointer; text-align: start; white-space: nowrap; }
+.bk-wa__menu button:hover:not(:disabled) { background: #effaf3; color: #128c4b; }
+.bk-wa__menu button:disabled { opacity: .55; cursor: default; }
+.bk-wa__menu small { font-weight: 400; color: var(--muted, #64748b); }
+
+/* ===== 964: الألم الحالي مقارنة بالزيارة اللي فاتت ===== */
+.pain-cmp { padding: 12px 14px; margin: 0 0 12px; border: 1px solid var(--line, #e2e8f0); }
+.pain-cmp legend { font-weight: 700; padding: 0 6px; }
+.pain-cmp__prev { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-bottom: 8px; }
+.pain-cmp__n { display: inline-block; min-width: 46px; text-align: center; border-radius: 999px; padding: 1px 8px; font-weight: 700; color: #fff; background: var(--ok, #16a34a); }
+.pain-cmp__n--mid { background: var(--warn, #d97706); } .pain-cmp__n--hi { background: var(--danger, #dc2626); }
+.pain-cmp__trend { font-size: 13px; }
+.pain-cmp__b--lo.is-on { background: var(--ok, #16a34a); border-color: var(--ok, #16a34a); color: #fff; }
+.pain-cmp__b--mid.is-on { background: var(--warn, #d97706); border-color: var(--warn, #d97706); color: #fff; }
+.pain-cmp__b--hi.is-on { background: var(--danger, #dc2626); border-color: var(--danger, #dc2626); color: #fff; }
+.pain-cmp__foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 6px; }
+.pain-cmp__log { margin: 8px 0 0; padding-inline-start: 18px; display: grid; gap: 4px; font-size: 13px; }
+
+/* ===== 964: روشتة الزيارة اللي فاتت + سجل الروشتات ===== */
+.prev-rx { border: 1px dashed #b9cbe4; background: #f6f9fd; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; }
+.prev-rx__h { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-bottom: 8px; }
+.prev-rx__h .spacer { flex: 1; }
+.prev-rx__t { font-size: 13px; }
+.prev-rx__t td, .prev-rx__t th { padding: 5px 8px; }
+.prev-rx__ins { margin: 6px 0 0; font-size: 13px; white-space: pre-line; }
+.prev-rx__log { margin: 10px 0 0; padding-inline-start: 18px; display: grid; gap: 10px; }
+.exp-link { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; margin: 0; font-size: 13.5px; font-weight: 600; }
+.inv-low { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-bottom: 14px; }

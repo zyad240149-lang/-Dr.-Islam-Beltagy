@@ -8,7 +8,18 @@ import { EmptyState } from './components/ui';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import PatientLayout from './components/PatientLayout';
 const AppLogin = lazy(() => import('./pwa/AppLogin'));
-import { PatientDashboard, PatientBook, PatientAppointments, PatientFilePage, PatientExams, PatientPlans, PatientPoints, PatientInvoices, PatientNotifications, PatientRecords } from './pages/patient/PatientPages';
+// صفحات بوابة المريض في ملف منفصل — ماتتحمّلش مع واجهة الموظفين
+const patientPage = (name: 'PatientDashboard' | 'PatientBook' | 'PatientAppointments' | 'PatientFilePage' | 'PatientExams' | 'PatientPlans' | 'PatientInvoices' | 'PatientNotifications' | 'PatientRecords') =>
+  lazy(() => import('./pages/patient/PatientPages').then((m) => ({ default: m[name] })));
+const PatientDashboard = patientPage('PatientDashboard');
+const PatientBook = patientPage('PatientBook');
+const PatientAppointments = patientPage('PatientAppointments');
+const PatientFilePage = patientPage('PatientFilePage');
+const PatientExams = patientPage('PatientExams');
+const PatientPlans = patientPage('PatientPlans');
+const PatientInvoices = patientPage('PatientInvoices');
+const PatientNotifications = patientPage('PatientNotifications');
+const PatientRecords = patientPage('PatientRecords');
 
 // كل صفحة تُحمَّل بكودها الخاص عند أول زيارة لها فقط (code-splitting) — يقلل حجم الحزمة الأولى ويسرّع التنقل بدل تحميل كل الصفحات دفعة واحدة.
 // نفس مسارات import() مكرَّرة (بنيّة) في routeImports.ts لتحميلها مسبقًا (prefetch) عند تمرير الفأرة

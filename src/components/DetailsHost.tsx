@@ -6,7 +6,7 @@ import type { PatientFileCategory } from '../types';
 // النافذة المفتوحة بتتبدّل (مش بتتراكب) عشان التنقل بين العناصر المرتبطة يبقى بسيط، وفيه زرار «رجوع».
 import { SessionDiagnosesList } from './SessionDiagnosesList';
 import { ActorBadges, ActorDetails } from './AppointmentActor';
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, lazy, Suspense, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../data/db';
 import { useDbVersion } from '../hooks/useDb';
@@ -16,8 +16,9 @@ import { empName, requestFor } from '../data/installments';
 import { Button, EmptyState, Modal, Skeleton, StatusBadge } from './ui';
 import { useCan } from './common';
 import { DiagnosisCode } from './DiagnosisPicker';
-import { PhysioPlanDetails } from './PhysioTab';
-import { PlanModal } from './PatientForms';
+// شاشات تقيلة (تقييم العلاج الطبيعي + تعديل الخطة) — بتتحمّل لما تتفتح بس، مش مع أول فتحة للبرنامج
+const PhysioPlanDetails = lazy(() => import('./PhysioTab').then((m) => ({ default: m.PhysioPlanDetails })));
+const PlanModal = lazy(() => import('./PatientForms').then((m) => ({ default: m.PlanModal })));
 import PlanSessionBooking from './PlanSessionBooking';
 import { Icon } from '../utils/icons';
 import { useToast } from '../hooks/useToast';
@@ -187,7 +188,7 @@ function PlanDetailsModal({ planId, onClose, onBack }: { planId: string; onClose
   const payMode = !inv ? '—' : req?.status === 'approved' ? 'على دفعتين (بموافقة المدير)' : req?.status === 'pending' ? 'طلب دفعتين — بانتظار المدير' : inv.paid > 0 && inv.remaining > 0 ? 'دفعات جزئية' : 'دفع كامل';
   return (
     <Modal title={`الخطة العلاجية — ${plan.diagnosis || '—'}`} wide onClose={onClose} footer={<>{onBack && <Button variant="outline" onClick={onBack}>رجوع</Button>}{can('plans', 'edit') && <Button variant="outline" icon="edit" onClick={() => setEditingPlan(true)}>تعديل الخطة</Button>}<Button onClick={onClose}>إغلاق</Button></>}>
-      {editingPlan && <PlanModal patientId={plan.patientId} plan={plan} onClose={() => setEditingPlan(false)} />}
+      {editingPlan && <Suspense fallback={null}><PlanModal patientId={plan.patientId} plan={plan} onClose={() => setEditingPlan(false)} /></Suspense>}
       <div className="row-between" style={{ marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           <StatusBadge label={ps.label} tone={ps.tone} />
@@ -223,7 +224,7 @@ function PlanDetailsModal({ planId, onClose, onBack }: { planId: string; onClose
       <SessionDiagnosesList source="plan" id={plan.id} title={patient?.fullName ?? ''} overall={plan.diagnosis} />
 
       <div className="section-title">تقييم العلاج الطبيعي (Physiotherapy Evaluation)</div>
-      <PhysioPlanDetails treatmentPlanId={plan.id} />
+      <Suspense fallback={<Skeleton />}><PhysioPlanDetails treatmentPlanId={plan.id} /></Suspense>
 
       <div className="section-title" style={{ marginTop: 14 }}>الخدمات والإجراءات</div>
       <div className="table-wrap" style={{ marginBottom: 10 }}><table className="table">

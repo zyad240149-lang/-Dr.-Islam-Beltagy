@@ -1,6 +1,6 @@
 // حالة اكتمال بيانات المريض — نفس العرض في المرضى والمواعيد والفواتير و«حسابات المرضى الأونلاين».
 // المنع الفعلي على الخادم (هجرة 159): تأكيد الموعد واعتماد الفاتورة بيترفضوا لو الملف ناقص، ورفض الخادم بيفتح IncompleteHost من أي شاشة.
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../data/db';
@@ -9,7 +9,8 @@ import { useCan } from './common';
 import { INCOMPLETE_MESSAGE, patientGaps } from '../utils/patientGaps';
 import type { Patient } from '../types';
 import { Button, Modal } from './ui';
-import { EditPatientModal } from './PatientForms';
+// نموذج تعديل المريض تقيل (بيسحب الشيت الطبي) — بيتحمّل لما يتفتح بس
+const EditPatientModal = lazy(() => import('./PatientForms').then((m) => ({ default: m.EditPatientModal })));
 
 type GapInput = Parameters<typeof patientGaps>[0];
 
@@ -30,7 +31,7 @@ export function CompleteDataButton({ patientId, size = 'sm', onDone }: { patient
   return (
     <>
       <Button type="button" size={size} icon="edit" onClick={(e) => { e.stopPropagation(); setOpen(p); }}>استكمال البيانات</Button>
-      {open && createPortal(<div onClick={(e) => e.stopPropagation()}><EditPatientModal patient={open} onClose={() => { setOpen(null); onDone?.(); }} /></div>, document.body)}
+      {open && createPortal(<div onClick={(e) => e.stopPropagation()}><Suspense fallback={null}><EditPatientModal patient={open} onClose={() => { setOpen(null); onDone?.(); }} /></Suspense></div>, document.body)}
     </>
   );
 }
@@ -71,7 +72,7 @@ export default function IncompleteHost() {
     window.addEventListener('patient-incomplete', on);
     return () => window.removeEventListener('patient-incomplete', on);
   }, []);
-  if (editing) return createPortal(<EditPatientModal patient={editing} onClose={() => { setEditing(null); setAsk(null); }} />, document.body);
+  if (editing) return createPortal(<Suspense fallback={null}><EditPatientModal patient={editing} onClose={() => { setEditing(null); setAsk(null); }} /></Suspense>, document.body);
   if (!ask) return null;
   const p = db.patient(ask.patientId);
   return (

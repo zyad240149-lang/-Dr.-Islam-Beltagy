@@ -32,6 +32,20 @@ function pwaBuildFiles(): Plugin {
 export default defineConfig({
   plugins: [react(), pwaBuildFiles()],
   define: { __BUILD_ID__: JSON.stringify(BUILD_ID) },
+  // المكتبات في ملفات لوحدها: اسمها (الهاش) مابيتغيرش مع كل نشر، فالمتصفح بيفضل محتفظ بيها
+  // وبعد أي تحديث بينزّل كود البرنامج بس — مش ~1 ميجا كل مرة. وكمان بتتحمّل بالتوازي.
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return;
+          if (/[\\/]node_modules[\\/](react|react-dom|scheduler|react-router|react-router-dom|@remix-run)[\\/]/.test(id)) return 'vendor-react';
+          if (/[\\/]node_modules[\\/](@supabase|iceberg-js|tslib)[\\/]/.test(id)) return 'vendor-supabase';
+          if (/[\\/]node_modules[\\/]libphonenumber-js[\\/]/.test(id)) return 'vendor-phone';
+        },
+      },
+    },
+  },
   server: { host: '127.0.0.1', port: 4660, strictPort: true },
   preview: { host: '127.0.0.1', port: 4660, strictPort: true },
 });

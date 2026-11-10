@@ -82,7 +82,7 @@ function Brand() {
   const center = db.center();
   return (
     <div className="brand">
-      <span className="brand__mark brand__mark--logo"><img src={`${import.meta.env.BASE_URL}landing/logo.png`} alt="" /></span>
+      <span className="brand__mark brand__mark--logo"><img src={`${import.meta.env.BASE_URL}icons/icon-192.png`} alt="" /> {/* لوجو العيادة — من icons/ عشان يتخزّن ويظهر من غير نت (landing/ مش متخزّن) */}</span>
       <div style={{ minWidth: 0 }}><div className="brand__name">{center.name}</div><div className="brand__desc">جراحة العظام والكسور</div></div>
     </div>
   );

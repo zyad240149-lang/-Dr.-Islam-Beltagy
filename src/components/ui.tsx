@@ -131,18 +131,21 @@ export function Skeleton({ h = 16, w = '100%', r = 8, style }: { h?: number; w?:
 // البرنامج عمره ما بيرجع في السجل بنفسه (كان بيعمل history.back لما نافذة تتقفل بالزرار — ولما نافذة تتبدّل بنافذة زي
 // «تغيير الموعد» كان الرجوع ده بيقفل الجديدة أو يوصل لأول صفحة ويرجّع للرئيسية). النافذة بتحط سطر واحد في السجل لو مفيش،
 // والنوافذ اللي بعدها بتستخدم نفس السطر.
-type ModalEntry = { close: () => void };
+// onBack (اختياري): النافذة نفسها فيها خطوات (زي تابات الكشف) — الرجوع بيرجّع خطوة جوّاها الأول، ولما الخطوات تخلص بتتقفل
+type ModalEntry = { close: () => void; back: () => boolean };
 const modalStack: ModalEntry[] = [];
 const ensureGuard = () => {
   if (!(window.history.state as { modalGuard?: boolean } | null)?.modalGuard) window.history.pushState({ ...(window.history.state ?? {}), modalGuard: true }, '', window.location.href);
 };
 if (typeof window !== 'undefined') window.addEventListener('popstate', () => {
-  const top = modalStack.pop();
+  const top = modalStack[modalStack.length - 1];
   if (!top) return;
+  if (top.back()) { ensureGuard(); return; } // رجعت خطوة جوّه النافذة — النافذة لسه مفتوحة
+  modalStack.pop();
   top.close();
   if (modalStack.length) ensureGuard(); // لسه فيه نافذة تحتها ← سطر جديد عشان الرجوع الجاي يقفلها هي كمان
 });
-export function Modal({ title, onClose, children, footer, wide, xl }: { title: string; onClose: () => void; children: ReactNode; footer?: ReactNode; wide?: boolean; xl?: boolean }) {
+export function Modal({ title, onClose, onBack, children, footer, wide, xl }: { title: string; onClose: () => void; onBack?: () => boolean; children: ReactNode; footer?: ReactNode; wide?: boolean; xl?: boolean }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onKey);
@@ -155,8 +158,10 @@ export function Modal({ title, onClose, children, footer, wide, xl }: { title: s
   // رجوع الموبايل (زرار/سحب) وفيه نافذة مفتوحة ← يقفل النافذة بس، مش يخرج من الصفحة
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
+  const backRef = useRef(onBack);
+  backRef.current = onBack;
   useEffect(() => {
-    const entry: ModalEntry = { close: () => closeRef.current() };
+    const entry: ModalEntry = { close: () => closeRef.current(), back: () => !!backRef.current?.() };
     modalStack.push(entry);
     ensureGuard();
     return () => { const i = modalStack.indexOf(entry); if (i >= 0) modalStack.splice(i, 1); };

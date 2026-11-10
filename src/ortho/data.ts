@@ -131,6 +131,8 @@ const snake = (k: string) => k.replace(/[A-Z]/g, (m) => '_' + m.toLowerCase());
 const fromRow = <T,>(r: Row) => Object.fromEntries(Object.entries(r).map(([k, v]) => [camel(k), v ?? ''])) as T;
 const toRow = (kind: Kind, o: object) => Object.fromEntries(Object.entries(o).map(([k, v]) => [snake(k), v]).filter(([k]) => COLUMNS[kind].includes(k as string)));
 const clean = (m: string) => m.replace(/^.*?ERROR:\s*/, '').replace(/new row violates row-level security policy.*/i, 'ليس لديك صلاحية لهذه العملية.')
+  // ملف المريض اتمسح من الخادم والشاشة لسه فاتحاه (أو مسودة قديمة عليه) — رسالة مفهومة بدل خطأ القاعدة
+  .replace(/.*violates foreign key constraint "[a-z_]*patient_id_fkey".*/i, 'ملف المريض ده مش موجود على الخادم (اتمسح) — اختار المريض الصح من خانة «المريض» وبعدين احفظ تاني. اللي اتكتب مش هيضيع.')
   .replace(/.*ortho_consultations_appointment_uq.*/i, 'الزيارة دي ليها تشخيص متسجّل بالفعل — افتحه من «مرضى بانتظار التشخيص» وكمّله.');
 
 const cache: Partial<Record<Kind, Row[]>> = {};          // المعروض = نسخة الخادم + التعديلات المعلّقة

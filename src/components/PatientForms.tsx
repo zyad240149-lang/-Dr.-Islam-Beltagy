@@ -10,7 +10,7 @@ import { useToast } from '../hooks/useToast';
 import { DiagnosisField } from './DiagnosisPicker';
 import { PatientFilesTab } from './PatientExtras';
 import { useCan } from './common';
-import { LinkedFiles } from './DetailsHost';
+import { LinkedFiles } from './DetailsModals';
 import { PhysioInlineSections, newPhysioInline, savePhysioInline, validatePhysioInline, type PhysioInline } from './PhysioTab';
 import { useAuth } from '../services/auth';
 import { TextPick } from './TextPick';

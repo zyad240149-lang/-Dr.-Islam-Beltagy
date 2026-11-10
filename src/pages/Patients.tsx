@@ -15,10 +15,7 @@ import { useToast } from '../hooks/useToast';
 import { useAuth } from '../services/auth';
 import { exportPatientsWorkbook } from '../utils/patientsWorkbook';
 import ImportPatientsModal from '../components/ImportPatientsModal';
-import { EditPatientModal, NewPatientModal, PlanModal } from '../components/PatientForms';
-import BookingWizard from '../components/BookingWizard';
-import { FollowUpsModal } from '../ortho/FollowUps';
-import { ortho, useOrthoVersion } from '../ortho/data';
+import { EditPatientModal, NewPatientModal } from '../components/PatientForms';
 import { patientGaps } from '../utils/patientGaps';
 
 const PAGE_SIZE = 15;
@@ -66,13 +63,7 @@ function PatientsList({ tabs }: { tabs: ReactNode }) {
   // ?new=1 (من زرار «إضافة مريض جديد» في الحجز) ← نافذة إضافة المريض بتفتح على طول
   const [adding, setAdding] = useState(params.get('new') === '1');
   const [editing, setEditing] = useState<PatientRow | null>(null);
-  const [fuFor, setFuFor] = useState<string | null>(null);
-  useOrthoVersion();
-  // عدد المتابعات القادمة لكل مريض (للزرار جنب كل مريض)
-  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' });
-  const nextFu = (pid: string) => ortho.list('follow_ups', pid).filter((f) => f.status === 'scheduled' && f.date >= today).length;
-  const [booking, setBooking] = useState<PatientRow | null>(null);
-  const [planning, setPlanning] = useState<PatientRow | null>(null);
+  // ١١/١١: «مواعيد المتابعة» و«إضافة موعد» و«خطة العلاج» اتشالوا من صف المريض (طلب الدكتور) — من ملف المريض نفسه
   const [deleting, setDeleting] = useState<PatientRow | null>(null);
   const [minSessions, setMinSessions] = useState('3');
 
@@ -143,10 +134,7 @@ function PatientsList({ tabs }: { tabs: ReactNode }) {
                         <td className="actions" onClick={(e) => e.stopPropagation()}>
                           <RowActions>
                             <IconAction icon="eye" label="عرض الملف" onClick={() => navigate(`/patients/${p.id}`)} />
-                            <Button size="sm" variant="outline" icon="calendar" onClick={() => setFuFor(p.id)}>مواعيد المتابعة{nextFu(p.id) > 0 && <span className="badge badge--brand num" style={{ marginInlineStart: 4 }}>{nextFu(p.id)}</span>}</Button>
                             {can('patients', 'edit') && <IconAction icon="edit" label="تعديل" onClick={() => setEditing(p)} />}
-                            {(can('booking', 'create') || can('appointments', 'create')) && p.active && <IconAction icon="calendarPlus" label="إضافة موعد" onClick={() => setBooking(p)} />}
-                            {can('plans', 'create') && <IconAction icon="target" label="خطة العلاج" onClick={() => setPlanning(p)} />}
                             {can('patients', 'edit') && <IconAction icon="lock" label={p.active ? 'تعطيل' : 'تفعيل'} onClick={() => toggleActive(p)} />}
                             {can('patients', 'delete') && <IconAction icon="trash" label="حذف المريض" danger onClick={() => setDeleting(p)} />}
                           </RowActions>
@@ -187,10 +175,7 @@ function PatientsList({ tabs }: { tabs: ReactNode }) {
       </div>
 
       {adding && <NewPatientModal onClose={() => setAdding(false)} onCreated={(id) => navigate(`/patients/${id}`)} />}
-      {fuFor && <FollowUpsModal patientId={fuFor} onClose={() => setFuFor(null)} />}
       {editing && <EditPatientModal patient={db.patient(editing.id) ?? editing} onClose={() => { setEditing(null); reload(); }} />}
-      {booking && <BookingWizard presetPatientId={booking.id} onClose={() => { setBooking(null); reload(); }} />}
-      {planning && <PlanModal patientId={planning.id} onClose={() => { setPlanning(null); reload(); }} />}
       {deleting && (
         <ConfirmDialog title="حذف ملف المريض" onClose={() => setDeleting(null)}
           message={<>سيتم حذف ملف <b>{deleting.fullName}</b> ({deleting.fileNo}) نهائيًا. ما يمكن حذف مريض عنده زيارات أو مدفوعات — استخدم «تعطيل» بدل الحذف للاحتفاظ بالسجلات.</>}

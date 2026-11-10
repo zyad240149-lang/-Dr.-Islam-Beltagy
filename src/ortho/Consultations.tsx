@@ -229,7 +229,11 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
               </section>
               </BoxOpenDefault.Provider>
   );
-  const goTab = (t: Tab) => { setTab(t); if (t === 'nursing') setNursingSeen(true); bodyRef.current?.closest('.modal__body')?.scrollTo({ top: 0 }); };
+  // التابات اللي اتفتحت بالترتيب — رجوع الموبايل بيرجّع للتاب اللي قبلها خطوة خطوة، ولما تخلص النافذة بتتقفل (طلب الدكتور ١١/١١)
+  const tabTrail = useRef<Tab[]>([]);
+  const showTab = (t: Tab) => { setTab(t); if (t === 'nursing') setNursingSeen(true); bodyRef.current?.closest('.modal__body')?.scrollTo({ top: 0 }); };
+  const goTab = (t: Tab) => { if (t !== tab) tabTrail.current.push(tab); showTab(t); };
+  const backTab = () => { const prev = tabTrail.current.pop(); if (!prev) return false; showTab(prev); return true; };
 
   // كشف جديد (مش تعديل كشف محفوظ): نحفظ مسودة محليًا أول بأول عشان لو المستخدم خرج من غير ما يحفظ، يقدر يستكمل بعدين
   useEffect(() => {
@@ -371,7 +375,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
   }
 
   return (
-    <Modal xl title={initial ? 'تعديل الكشف' : 'كشف جديد'} onClose={cancel} footer={<>
+    <Modal xl title={initial ? 'تعديل الكشف' : 'كشف جديد'} onClose={cancel} onBack={backTab} footer={<>
       <VoiceDictation />
       {(c.patientId || unlinked) && missing.length > 0 && <span className="sh-need">لسه ناقص: {missing.join('، ')}</span>}
       {unlinked && !ok && <span className="sh-need">اكتب اسم المريض الثلاثي في خانة 1</span>}
@@ -396,6 +400,10 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           <Field label="ميعاد المتابعة"><input type="date" className="input" value={c.followUp} min={c.date} onChange={(e) => set('followUp', e.target.value)} /></Field>
         </div>
 
+        {/* ملف المريض اتمسح من الخادم والنافذة لسه فاتحاه (أو مسودة قديمة) — الحفظ هيترفض، فبننبّه قبلها */}
+        {c.patientId && !db.patient(c.patientId) && db.patients().length > 0 && (
+          <div className="alert alert-danger" role="alert" style={{ marginBottom: 12 }}><Icon name="alert" size={16} /><div>ملف المريض ده مش موجود (اتمسح). اختار المريض الصح من خانة «المريض» فوق قبل الحفظ — اللي اتكتب مش هيضيع.</div></div>
+        )}
         {/* تشخيص بالاسم (من غير ملف): مفيش أي رسالة ربط — الخادم بيربطه بملف الاستقبال تلقائي بعد المزامنة */}
         {unlinked && !c.patientId && <div className="dx-unlinked" data-name={pendingInfo.name} hidden />}
         {visitAppt && (

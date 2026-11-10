@@ -20,7 +20,11 @@ function pwaBuildFiles(): Plugin {
       const walk = (d: string) => { for (const f of readdirSync(d)) { const p = join(d, f); if (statSync(p).isDirectory()) walk(p); else files.push(relative(outDir, p).replace(/\\/g, '/')); } };
       walk(outDir);
       // الصور الكبيرة بتاعة صفحة الهبوط مش لازمة للشغل بدون إنترنت — بتتخزّن لو اتفتحت
-      const precache = files.filter((f) => f !== 'sw.js' && f !== 'index.html' && !f.startsWith('landing/') && !f.endsWith('.map') && f !== '_headers');
+      // أيقونات التثبيت الكبيرة (512) والنسخ القديمة المكررة (icon-*، apple-touch-icon) مالهاش لازمة لشغل الشاشات — حوالي 800KB كانت بتتنزّل
+      // في الخلفية أول مرة. اللي بيظهر جوّه البرنامج (app.svg / app-192 / app-apple-180 / أيقونات الاختصارات) بيفضل متخزّن
+      const ICON_KEEP = new Set(['icons/app.svg', 'icons/app-192.png', 'icons/app-apple-180.png', 'icons/icon-appointments.svg', 'icons/icon-patients.svg']);
+      const precache = files.filter((f) => f !== 'sw.js' && f !== 'index.html' && !f.startsWith('landing/') && !f.endsWith('.map') && f !== '_headers'
+        && (!f.startsWith('icons/') || ICON_KEEP.has(f)));
       writeFileSync(join(outDir, 'precache-manifest.json'), JSON.stringify({ id: BUILD_ID, files: precache }));
       writeFileSync(join(outDir, 'version.json'), JSON.stringify({ id: BUILD_ID }));
       const sw = join(outDir, 'sw.js');

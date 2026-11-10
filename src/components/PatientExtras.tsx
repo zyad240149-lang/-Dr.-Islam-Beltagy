@@ -1,4 +1,5 @@
-import { FilePreviewModal, useDetails } from './DetailsHost';
+import { useDetails } from './DetailsHost';
+import { FilePreviewModal } from './DetailsModals';
 import { useEffect, useRef, useState } from 'react';
 import { db } from '../data/db';
 import { BODY_REGIONS, SIDE_LABEL, findCondition, mapRegions } from '../data/bodyRegions';

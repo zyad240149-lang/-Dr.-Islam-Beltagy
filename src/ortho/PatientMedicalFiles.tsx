@@ -7,7 +7,7 @@ import { useToast } from '../hooks/useToast';
 import { db } from '../data/db';
 import { Icon } from '../utils/icons';
 import { fmtDate, fmtDateTime, todayYmd } from '../utils/format';
-import { FilePreviewModal } from '../components/DetailsHost';
+import { FilePreviewModal } from '../components/DetailsModals';
 import { FILE_CATEGORY, downloadFile, fileTitle } from '../components/PatientExtras';
 import { ortho } from './data';
 import { usePatientFiles } from './files';

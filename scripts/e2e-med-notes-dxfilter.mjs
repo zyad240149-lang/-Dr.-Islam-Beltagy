@@ -67,13 +67,45 @@ try {
   check('التاب رقم 2 = «فحص سريع» وبعده «متابعة المريض» رقم 3', /^2\s*فحص سريع/.test(tabs[1] ?? '') && /^3\s*متابعة المريض/.test(tabs[2] ?? ''), tabs.slice(0, 4).join(' | '));
   await page.locator('.sh-tabs button', { hasText: 'فحص سريع' }).click();
   await page.waitForTimeout(500);
-  const titles = ['General Examination', 'Local Examination', 'Neurological Examination', 'Vascular Examination', 'Joint Stability', 'ROM & Muscle Examination', 'Pain Assessment', 'Clinical Impression'];
+  const titles = ['General Examination', 'Local Exam — Side', 'Shoulder', 'Elbow', 'Wrist & Hand', 'Cervical Spine', 'Lumbar Spine', 'Hip', 'Knee', 'Ankle & Foot', 'Neurological Examination', 'Vascular Examination', 'Joint Stability', 'ROM & Muscle Examination', 'Pain Assessment', 'Clinical Impression'];
   const missing = [];
   for (const t of titles) if (!(await page.locator('.modal', { hasText: t }).count())) missing.push(t);
-  check('الـ 8 أقسام بتاعة الورقة ظاهرين', missing.length === 0, missing.join(', '));
+  check('أقسام الورقة ظاهرين (وكل مفصل مربع لوحده)', missing.length === 0, missing.join(', '));
   const nav = await page.locator('.modal button', { hasText: 'التالي: متابعة المريض' }).count() + await page.locator('.modal button', { hasText: 'رجوع: الشيت العام' }).count();
   check('أزرار رجوع/التالي في «فحص سريع»', nav === 2);
   await page.screenshot({ path: shot('quick-exam'), fullPage: false });
+  // كل مفصل مربع لوحده بيتفتح ويتقفل
+  const knee = page.locator('.sh-box', { hasText: 'Knee' }).filter({ hasNotText: 'General' }).last();
+  await knee.getByRole('button', { name: 'فتح' }).click();
+  check('مربع «Knee» بيتفتح لوحده وفيه اختباراته', (await knee.getByText('McMurray').count()) === 1 && (await page.locator('.sh-box', { hasText: 'Shoulder' }).getByText('Neer').count()) === 0);
+  await page.screenshot({ path: shot('quick-exam-knee'), fullPage: false });
+  await knee.getByRole('button', { name: 'إغلاق' }).click();
+  // المربع بيفتح بعرض الشاشة كله (sh-box--wide) والاختيارات على أعمدة
+  await page.locator('.sh-box', { hasText: 'General Examination' }).getByRole('button', { name: 'فتح' }).click();
+  const box = page.locator('.sh-box', { hasText: 'General Examination' });
+  const boxW = await box.evaluate((el) => el.getBoundingClientRect().width);
+  const gridW = await box.evaluate((el) => el.parentElement.getBoundingClientRect().width);
+  check('«General Examination» بيفتح بعرض الشيت كله', boxW > gridW * 0.9, `${Math.round(boxW)} من ${Math.round(gridW)}`);
+  await box.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: shot('quick-exam-open'), fullPage: false });
+  await page.setViewportSize({ width: 412, height: 860 }); await page.waitForTimeout(400);
+  await box.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: shot('quick-exam-open-phone'), fullPage: false });
+  await page.setViewportSize({ width: 1366, height: 860 });
+  // رجوع المتصفح/الموبايل: خطوة واحدة لورا (التاب اللي قبلها) — مش يقفل الكشف كله
+  const sel = async () => (await page.locator('.sh-tabs button[aria-selected="true"]').innerText()).replace(/\s+/g, ' ').trim();
+  await page.locator('.sh-tabs button', { hasText: 'متابعة المريض' }).click(); await page.waitForTimeout(300);
+  await page.goBack(); await page.waitForTimeout(500);
+  const b1 = await page.locator('.modal').count() ? await sel() : 'اتقفل';
+  await page.locator('.sh-tabs button', { hasText: 'الشيت العام' }).click().catch(() => {}); await page.waitForTimeout(300);
+  await page.goBack(); await page.waitForTimeout(500);
+  const b2 = await page.locator('.modal').count() ? await sel() : 'اتقفل';
+  check('رجوع ← التاب اللي قبلها (متابعة المريض ← فحص سريع، الشيت العام ← فحص سريع)', /فحص سريع/.test(b1) && /فحص سريع/.test(b2), `${b1} | ${b2}`);
+  await page.goBack(); await page.waitForTimeout(500);
+  const b3 = await page.locator('.modal').count() ? await sel() : 'اتقفل';
+  check('رجوع تاني ← الشيت العام (أول تاب)', /الشيت العام/.test(b3), b3);
+  await page.goBack(); await page.waitForTimeout(600);
+  check('لما الخطوات تخلص الرجوع بيقفل الكشف ويفضل في نفس الصفحة', (await page.locator('.modal', { hasText: 'كشف جديد' }).count()) === 0 && page.url().includes('/diagnosis'), page.url());
   await page.locator('.modal__foot').getByRole('button', { name: 'إلغاء' }).click().catch(() => {});
   check('من غير أخطاء JavaScript', errors.length === 0, errors.join(' | ').slice(0, 300));
 } catch (e) {

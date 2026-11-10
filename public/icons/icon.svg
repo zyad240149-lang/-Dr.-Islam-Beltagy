@@ -1,7 +1,31 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#223468"/><stop offset="1" stop-color="#35509a"/></linearGradient></defs>
-  <rect width="64" height="64" rx="16" fill="url(#g)"/>
-  <g transform="translate(14 14) scale(1.5)" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M17 10c.7-.7 1.69 0 2.5 0a2.5 2.5 0 1 0 0-5 .5.5 0 0 1-.5-.5 2.5 2.5 0 1 0-5 0c0 .81.7 1.8 0 2.5l-7 7c-.7.7-1.69 0-2.5 0a2.5 2.5 0 0 0 0 5c.28 0 .5.22.5.5a2.5 2.5 0 1 0 5 0c0-.81-.7-1.8 0-2.5z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- أيقونة التطبيق: عضمة بيضا صلبة (جراحة العظام والكسور) + علامة طبية — بألوان هوية العيادة (كحلي) -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b2a57"/>
+      <stop offset="1" stop-color="#34509c"/>
+    </linearGradient>
+    <linearGradient id="bone" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e4eaf7"/>
+    </linearGradient>
+    <filter id="sh" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#0b1430" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="178" fill="#ffffff" opacity="0.06"/>
+  <g transform="rotate(-45 256 256)" filter="url(#sh)">
+    <g fill="url(#bone)">
+      <rect x="128" y="222" width="256" height="68" rx="26"/>
+      <circle cx="122" cy="226" r="46"/>
+      <circle cx="122" cy="286" r="46"/>
+      <circle cx="390" cy="226" r="46"/>
+      <circle cx="390" cy="286" r="46"/>
+    </g>
+  </g>
+  <g filter="url(#sh)">
+    <circle cx="384" cy="384" r="70" fill="#1b2a57"/><circle cx="384" cy="384" r="62" fill="#16b39a"/>
+    <path d="M384 350v68M350 384h68" stroke="#ffffff" stroke-width="20" stroke-linecap="round"/>
   </g>
 </svg>

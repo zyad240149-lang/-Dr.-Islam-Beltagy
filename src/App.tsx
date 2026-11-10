@@ -28,7 +28,6 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Booking = lazy(() => import('./pages/Booking'));
 const Patients = lazy(() => import('./pages/Patients'));
 const PatientProfile = lazy(() => import('./pages/PatientProfile'));
-const Appointments = lazy(() => import('./pages/Appointments'));
 const Sessions = lazy(() => import('./pages/Sessions'));
 const Services = lazy(() => import('./pages/Services'));
 const Staff = lazy(() => import('./pages/Staff'));
@@ -101,7 +100,7 @@ const ROUTES: { path: string; area: Area; anyOf?: Area[]; el: JSX.Element }[] = 
   { path: '/patients', area: 'patients', el: <Patients /> },
   { path: '/patients/:id', area: 'patients', el: <PatientProfile /> },
   { path: '/booking', area: 'booking', el: <Booking /> },
-  { path: '/appointments', area: 'appointments', el: <Appointments /> },
+  { path: '/appointments', area: 'appointments', el: <Navigate to="/follow-ups" replace /> }, // ١٠/١١: صفحة «المواعيد» اتشالت — الحجز والمواعيد من «حجز كشف ومتابعة»
   { path: '/sessions', area: 'sessions', el: <Sessions /> },
   { path: '/services', area: 'services', el: <Services /> },
   { path: '/diagnosis', area: 'diagnosis', el: <Diagnosis /> },

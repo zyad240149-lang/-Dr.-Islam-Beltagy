@@ -118,47 +118,7 @@ export default function Dashboard() {
       <DailySchedule onOpen={(a) => setDetail(a)} onBook={canBook ? setSlotBooking : undefined} onlyDoctorId={doctorId || undefined} />
 
       <div className="dash-cols">
-        <section className="card dash-col--wide">
-          <div className="card__head row-between" style={{ flexWrap: 'wrap' }}>
-            <h2>جدول اليوم</h2>
-            <div className="svc-tabs" style={{ marginBottom: 0 }}>
-              <button type="button" className={`svc-tab ${tab === 'all' ? 'active' : ''}`} onClick={() => setTab('all')}>الكل</button>
-              <button type="button" className={`svc-tab ${tab === 'confirmed' ? 'active' : ''}`} onClick={() => setTab('confirmed')}>مؤكد</button>
-              <button type="button" className={`svc-tab ${tab === 'pending' ? 'active' : ''}`} onClick={() => setTab('pending')}>قيد الانتظار</button>
-            </div>
-            <Link to="/appointments" className="link-more">عرض الكل <Icon name="chevron" size={15} /></Link>
-          </div>
-          <div className="card__body">
-            {loading ? <Skeleton h={140} /> : scheduleList.length === 0 ? (
-              <EmptyState icon="calendarPlus" title="ما فيه مواعيد في هذا التصنيف" text={tab === 'all' ? 'احجز موعد جديد وسيظهر هنا فورًا.' : undefined}
-                action={tab === 'all' && canBook ? <Button icon="calendarPlus" onClick={() => setBooking(true)}>حجز موعد جديد</Button> : undefined} />
-            ) : (
-              <div className="timeline">
-                {scheduleList.map((a) => {
-                  const p = db.patient(a.patientId); const svc = db.service(a.serviceId); const th = db.therapist(a.therapistId); const st = APPT_STATUS[a.status];
-                  return (
-                    <div className="tl-row" key={a.id}>
-                      <div className="tl-time num">{fmtTime(a.time)}</div>
-                      <div
-                        className={`tl-card st-${a.status} ${shown?.id === a.id ? 'tl-card--active' : ''}`}
-                        style={{ cursor: 'pointer' }}
-                        onClick={() => setSelected(a)}
-                      >
-                        <div className="tl-card__info">
-                          <strong>{p?.fullName}</strong>
-                          <span className="muted-sm">{svc?.name} · {th?.name}</span>
-                        </div>
-                        <StatusBadge label={st.label} tone={st.tone} />
-                        {CONFIRMABLE.includes(a.status) && attendanceOpen(a) && canConfirmAppt && <IconAction icon="check" label="تأكيد" onClick={() => confirmAppt(a)} />}
-                        <IconAction icon="edit" label="التفاصيل" onClick={() => setDetail(a)} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </section>
+        {/* ١٠/١١: «جدول اليوم» اتشال من الرئيسية (طلب الدكتور) */}
 
         <section className="card dash-col--narrow">
           <div className="card__head">

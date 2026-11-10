@@ -209,7 +209,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
       <Modal title="تم حجز الموعد" onClose={onClose} footer={
         <>
           <Button variant="outline" onClick={onClose}>إغلاق</Button>
-          <Button icon="calendar" variant={walkIn && (callFile !== null || db.patient(result.patientId)?.isGuest) ? 'outline' : undefined} onClick={() => { onClose(); navigate('/appointments'); }}>عرض تفاصيل الموعد</Button>
+          <Button icon="calendar" variant={walkIn && (callFile !== null || db.patient(result.patientId)?.isGuest) ? 'outline' : undefined} onClick={() => { onClose(); navigate('/follow-ups'); }}>عرض تفاصيل الموعد</Button>
         </>
       }>
         {completeData && db.patient(result.patientId) && <EditPatientModal patient={db.patient(result.patientId)!} onClose={() => setCompleteData(false)} />}

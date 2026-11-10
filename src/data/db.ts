@@ -1650,7 +1650,7 @@ function localSearch(q: string): SearchHit[] {
     .map((p) => ({ type: 'patient' as const, id: p.id, title: p.fullName, sub: [p.fileNo, p.phone].filter(Boolean).join(' · '), link: `/patients/${p.id}` }));
   const ids = new Set(pts.map((p) => p.id));
   const appts = d.appointments.filter((a) => ids.has(a.patientId) && a.date >= today && a.status !== 'cancelled').slice(0, 4)
-    .map((a) => ({ type: 'appointment' as const, id: a.id, title: `${d.patients.find((p) => p.id === a.patientId)?.fullName ?? ''} — ${a.date} ${a.time}`, sub: d.services.find((x) => x.id === a.serviceId)?.name ?? '', link: '/appointments' }));
+    .map((a) => ({ type: 'appointment' as const, id: a.id, title: `${d.patients.find((p) => p.id === a.patientId)?.fullName ?? ''} — ${a.date} ${a.time}`, sub: d.services.find((x) => x.id === a.serviceId)?.name ?? '', link: '/follow-ups' }));
   const docs = d.therapists.filter((t) => normalizeSearch(t.name).includes(normalizeSearch(s))).slice(0, 3)
     .map((t) => ({ type: 'doctor' as const, id: t.id, title: t.name, sub: t.title ?? '', link: '/employees' }));
   return [...pts, ...appts, ...docs];

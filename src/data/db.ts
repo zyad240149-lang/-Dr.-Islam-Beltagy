@@ -566,7 +566,7 @@ export const db = {
   // ---------- permissions ----------
   permissions: (): PermissionMatrix => {
     const m = load().permissions;
-    const FALLBACK: [PermArea, PermArea][] = [['pkg_checkin', 'appointments'], ['bodymap', 'plans'], ['marketing', 'reports'], ['pt_f_gender', 'patients'], ['pt_f_source', 'patients'], ['pt_f_doctor', 'patients'], ['pt_f_status', 'patients'], ['pt_f_sort', 'patients']];
+    const FALLBACK: [PermArea, PermArea][] = [['pkg_checkin', 'appointments'], ['bodymap', 'plans'], ['marketing', 'reports'], ['pt_f_gender', 'patients'], ['pt_f_sort', 'patients']];
     const out = { ...m } as PermissionMatrix;
     for (const role of Object.keys(out) as (keyof PermissionMatrix)[]) {
       const row = { ...out[role] };

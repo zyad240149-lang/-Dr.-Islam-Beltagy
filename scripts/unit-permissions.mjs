@@ -116,6 +116,13 @@ for (const r of ROLES) if (r !== 'system_admin') {
   check(`الافتراضي لدور ${r} = الموروث`, NEW_AREAS.every((a) => ops.every((o) => can(r, a, o) === !!want[a]?.includes(o))));
 }
 
+section('الصلاحيات اللي مالهاش قسم في البرنامج اتشالت');
+for (const a of P.REMOVED_AREAS) {
+  check(`«${a}» مش في شاشة الأدوار ولا في التعريفات`, !AREAS.includes(a) && !(a in AREA_LABEL) && !(a in AREA_HELP) && !inGroups.has(a), a);
+  check(`«${a}» مش مستخدمة في الكود`, !readdirSync(join(ROOT, 'src/pages')).some((f) => f.endsWith('.tsx') && src('src/pages/' + f).includes(`can('${a}'`)), a);
+}
+check('صفوف قديمة للصلاحيات دي بتتشال عند الحفظ', JSON.stringify(withLegacy({ patients: ['view'], online_accounts: ['view'], pt_f_doctor: ['view'] })).indexOf('online_accounts') < 0);
+
 section('شيل الصلاحية بيقفل القسم فعلًا');
 const base = { patients: ['view', 'create', 'edit'], sessions: ['view', 'create', 'edit', 'delete'], financial: ['view'] };
 state.m = { reception: base };

@@ -98,3 +98,8 @@ begin
     execute nd;
   end loop;
 end $$;
+
+-- 4) صلاحيات اتشالت من البرنامج (تبويب الحسابات الأونلاين، استيراد/تصدير Excel، فلاتر مصدر المعرفة/الطبيب/الحالة — كلها اتشالت من صفحة المرضى ٨/١١)
+delete from role_permissions where area in ('online_accounts', 'patient_import', 'patient_export', 'pt_f_source', 'pt_f_doctor', 'pt_f_status');
+update employees set perm_override = perm_override - array['online_accounts', 'patient_import', 'patient_export', 'pt_f_source', 'pt_f_doctor', 'pt_f_status']
+where perm_override ?| array['online_accounts', 'patient_import', 'patient_export', 'pt_f_source', 'pt_f_doctor', 'pt_f_status'];

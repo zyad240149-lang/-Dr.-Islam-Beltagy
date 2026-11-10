@@ -10,9 +10,9 @@ export const CLINICAL_AREAS: Area[] = ['diagnosis', 'imaging', 'injections', 'fr
 export const SECTION_AREAS: Area[] = ['follow_ups', ...CLINICAL_AREAS, 'expenses'];
 
 export const AREAS: Area[] = [
-  'dashboard', 'patients', 'online_accounts', 'patient_import', 'patient_export', 'booking', 'appointments', 'plans', 'sessions', 'services', 'therapists',
+  'dashboard', 'patients', 'booking', 'appointments', 'plans', 'sessions', 'services', 'therapists',
   ...SECTION_AREAS,
-  'employees', 'invoices', 'payments', 'packages', 'inventory', 'reports', 'notifications', 'roles', 'settings', 'workhours', 'requests', 'support', 'discounts', 'campaigns', 'financial', 'attendance', 'loyalty', 'whatsapp', 'products', 'installments', 'physio', 'payroll','pkg_checkin', 'bodymap', 'marketing', 'pt_f_gender', 'pt_f_source', 'pt_f_doctor', 'pt_f_status', 'pt_f_sort',
+  'employees', 'invoices', 'payments', 'packages', 'inventory', 'reports', 'notifications', 'roles', 'settings', 'workhours', 'requests', 'support', 'discounts', 'campaigns', 'financial', 'attendance', 'loyalty', 'whatsapp', 'products', 'installments', 'physio', 'payroll','pkg_checkin', 'bodymap', 'marketing', 'pt_f_gender', 'pt_f_sort',
   'inv_approve', 'inv_price', 'inv_cancel', 'inv_overdraw', 'appt_confirm', 'appt_cancel',
   ...ACC_AREAS,
 ];
@@ -37,8 +37,11 @@ export function opsOf(m: Partial<Record<Area, Op[]>> | undefined, area: Area): O
   return l ? OPS.filter((o) => l[o].some((src) => m[src]?.includes(o))) : [];
 }
 /** نفس المصفوفة + قيم الأقسام الجديدة المحسوبة (لشاشة الأدوار: الخانات تبان زي ما الصلاحية شغالة فعلًا) */
+// صلاحيات اتشالت من البرنامج (شاشتها أو زرارها مش موجود) — ممكن يكون ليها صفوف قديمة في قاعدة البيانات: بتتجاهل، وأول حفظ لشاشة الأدوار بيمسحها
+export const REMOVED_AREAS = ['online_accounts', 'patient_import', 'patient_export', 'pt_f_source', 'pt_f_doctor', 'pt_f_status'];
 export function withLegacy(m: Partial<Record<Area, Op[]>>): Partial<Record<Area, Op[]>> {
   const out = { ...m };
+  for (const a of REMOVED_AREAS) delete (out as Record<string, unknown>)[a];
   for (const a of Object.keys(LEGACY_AREAS) as Area[]) if (!(a in out)) out[a] = opsOf(m, a);
   return out;
 }

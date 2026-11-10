@@ -134,7 +134,7 @@ const ROUTES: { path: string; area: Area; anyOf?: Area[]; el: JSX.Element }[] = 
   { path: '/inventory', area: 'inventory', el: <Inventory /> },
   { path: '/reports', area: 'reports', el: <Reports /> },
   { path: '/marketing-report', area: 'marketing', el: <MarketingReport /> },
-  { path: '/online-accounts', area: 'online_accounts', el: <Navigate to="/patients?tab=online" replace /> },
+  { path: '/online-accounts', area: 'patients', el: <Navigate to="/patients" replace /> }, // تبويب الحسابات الأونلاين اتشال (٨/١١)
   { path: '/notifications', area: 'notifications', el: <Notifications /> },
   { path: '/roles', area: 'roles', el: <Roles /> },
   { path: '/settings', area: 'settings', el: <Settings /> },

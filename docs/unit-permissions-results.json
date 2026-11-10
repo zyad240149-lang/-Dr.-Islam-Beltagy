@@ -1,6 +1,6 @@
 {
-  "at": "2026-11-10T13:51:44.479Z",
-  "passed": 285,
+  "at": "2026-11-10T13:58:51.758Z",
+  "passed": 280,
   "failed": 0,
   "results": [
     {
@@ -559,9 +559,9 @@
       "detail": "marketing"
     },
     {
-      "name": "/online-accounts ← online_accounts",
+      "name": "/online-accounts ← patients",
       "ok": true,
-      "detail": "online_accounts"
+      "detail": "patients"
     },
     {
       "name": "/notifications ← notifications",
@@ -627,21 +627,6 @@
       "name": "patients: في مجموعة في شاشة الأدوار",
       "ok": true,
       "detail": "patients"
-    },
-    {
-      "name": "online_accounts: في مجموعة في شاشة الأدوار",
-      "ok": true,
-      "detail": "online_accounts"
-    },
-    {
-      "name": "patient_import: في مجموعة في شاشة الأدوار",
-      "ok": true,
-      "detail": "patient_import"
-    },
-    {
-      "name": "patient_export: في مجموعة في شاشة الأدوار",
-      "ok": true,
-      "detail": "patient_export"
     },
     {
       "name": "booking: في مجموعة في شاشة الأدوار",
@@ -794,21 +779,6 @@
       "detail": "pt_f_gender"
     },
     {
-      "name": "pt_f_source: في مجموعة في شاشة الأدوار",
-      "ok": true,
-      "detail": "pt_f_source"
-    },
-    {
-      "name": "pt_f_doctor: في مجموعة في شاشة الأدوار",
-      "ok": true,
-      "detail": "pt_f_doctor"
-    },
-    {
-      "name": "pt_f_status: في مجموعة في شاشة الأدوار",
-      "ok": true,
-      "detail": "pt_f_status"
-    },
-    {
       "name": "pt_f_sort: في مجموعة في شاشة الأدوار",
       "ok": true,
       "detail": "pt_f_sort"
@@ -867,36 +837,6 @@
       "name": "ترجمة شرح «المرضى»",
       "ok": true,
       "detail": "ملفات المرضى: البيانات الشخصية، التاريخ "
-    },
-    {
-      "name": "ترجمة اسم «المرضى: الحسابات الأونلاين وحجوزات المكالمات»",
-      "ok": true,
-      "detail": "online_accounts"
-    },
-    {
-      "name": "ترجمة شرح «المرضى: الحسابات الأونلاين وحجوزات المكالمات»",
-      "ok": true,
-      "detail": "تبويب «الحسابات الأونلاين» في صفحة المرض"
-    },
-    {
-      "name": "ترجمة اسم «المرضى: استيراد من Excel»",
-      "ok": true,
-      "detail": "patient_import"
-    },
-    {
-      "name": "ترجمة شرح «المرضى: استيراد من Excel»",
-      "ok": true,
-      "detail": "استيراد المرضى من ملف Excel (زر في صفحة "
-    },
-    {
-      "name": "ترجمة اسم «المرضى: تصدير Excel»",
-      "ok": true,
-      "detail": "patient_export"
-    },
-    {
-      "name": "ترجمة شرح «المرضى: تصدير Excel»",
-      "ok": true,
-      "detail": "زر «تصدير ملف المرضى (Excel)» في صفحة ال"
     },
     {
       "name": "ترجمة اسم «حجز موعد»",
@@ -1199,36 +1139,6 @@
       "detail": "فلتر «الجنس» (رجل/امرأة) في صفحة المرضى."
     },
     {
-      "name": "ترجمة اسم «المرضى: فلتر «مصدر المعرفة»»",
-      "ok": true,
-      "detail": "pt_f_source"
-    },
-    {
-      "name": "ترجمة شرح «المرضى: فلتر «مصدر المعرفة»»",
-      "ok": true,
-      "detail": "فلتر «مصدر المعرفة» (جوجل، سناب، ...) في"
-    },
-    {
-      "name": "ترجمة اسم «المرضى: فلتر «الطبيب»»",
-      "ok": true,
-      "detail": "pt_f_doctor"
-    },
-    {
-      "name": "ترجمة شرح «المرضى: فلتر «الطبيب»»",
-      "ok": true,
-      "detail": "فلتر «الطبيب» في صفحة المرضى (مرضى طبيب "
-    },
-    {
-      "name": "ترجمة اسم «المرضى: فلتر «الحالة»»",
-      "ok": true,
-      "detail": "pt_f_status"
-    },
-    {
-      "name": "ترجمة شرح «المرضى: فلتر «الحالة»»",
-      "ok": true,
-      "detail": "فلتر «الحالة» (نشط/معطّل) في صفحة المرضى"
-    },
-    {
       "name": "ترجمة اسم «المرضى: «الترتيب»»",
       "ok": true,
       "detail": "pt_f_sort"
@@ -1390,6 +1300,71 @@
     },
     {
       "name": "الافتراضي لدور accountant = الموروث",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "«online_accounts» مش في شاشة الأدوار ولا في التعريفات",
+      "ok": true,
+      "detail": "online_accounts"
+    },
+    {
+      "name": "«online_accounts» مش مستخدمة في الكود",
+      "ok": true,
+      "detail": "online_accounts"
+    },
+    {
+      "name": "«patient_import» مش في شاشة الأدوار ولا في التعريفات",
+      "ok": true,
+      "detail": "patient_import"
+    },
+    {
+      "name": "«patient_import» مش مستخدمة في الكود",
+      "ok": true,
+      "detail": "patient_import"
+    },
+    {
+      "name": "«patient_export» مش في شاشة الأدوار ولا في التعريفات",
+      "ok": true,
+      "detail": "patient_export"
+    },
+    {
+      "name": "«patient_export» مش مستخدمة في الكود",
+      "ok": true,
+      "detail": "patient_export"
+    },
+    {
+      "name": "«pt_f_source» مش في شاشة الأدوار ولا في التعريفات",
+      "ok": true,
+      "detail": "pt_f_source"
+    },
+    {
+      "name": "«pt_f_source» مش مستخدمة في الكود",
+      "ok": true,
+      "detail": "pt_f_source"
+    },
+    {
+      "name": "«pt_f_doctor» مش في شاشة الأدوار ولا في التعريفات",
+      "ok": true,
+      "detail": "pt_f_doctor"
+    },
+    {
+      "name": "«pt_f_doctor» مش مستخدمة في الكود",
+      "ok": true,
+      "detail": "pt_f_doctor"
+    },
+    {
+      "name": "«pt_f_status» مش في شاشة الأدوار ولا في التعريفات",
+      "ok": true,
+      "detail": "pt_f_status"
+    },
+    {
+      "name": "«pt_f_status» مش مستخدمة في الكود",
+      "ok": true,
+      "detail": "pt_f_status"
+    },
+    {
+      "name": "صفوف قديمة للصلاحيات دي بتتشال عند الحفظ",
       "ok": true,
       "detail": ""
     },

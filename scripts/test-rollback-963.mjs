@@ -20,6 +20,7 @@ for (const role of roles) for (const a of AREAS) {
   const exp = OPS.filter((o) => want(role, a, o)).sort().join(',');
   t.ok(`${role} / ${a} = {${exp}} زي ما كان`, `if (select coalesce(array_to_string(array(select unnest(ops) order by 1), ','), '') from role_permissions where role = '${role}' and area = '${a}') is distinct from '${exp}' then raise exception 'لقيت %', (select ops from role_permissions where role = '${role}' and area = '${a}'); end if`);
 }
+t.ok('الصلاحيات اللي اتشالت من البرنامج اتمسحت من الأدوار والموظفين', `if exists (select 1 from role_permissions where area in ('online_accounts','patient_import','patient_export','pt_f_source','pt_f_doctor','pt_f_status')) or exists (select 1 from employees where perm_override ?| array['online_accounts','patient_import','patient_export','pt_f_source','pt_f_doctor','pt_f_status']) then raise exception 'لسه موجودة'; end if`);
 // تقفيل فعلي على الخادم: الموظف (استقبال/سكرتير) بصلاحية الزيارات كاملة بس من غير «الأدوية» ← ممنوع يضيف دواء للبنك
 t.raw(`update role_permissions set ops = '{view,create,edit,delete}' where role = '${R}' and area = 'sessions';`)
   .raw(`insert into role_permissions (role, area, ops) values ('${R}', 'medications', '{view}'), ('${R}', 'exercises', '{view,create}'), ('${R}', 'expenses', '{}') on conflict (role, area) do update set ops = excluded.ops;`)

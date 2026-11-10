@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Patient, PaymentMethod, ReferralSource } from '../types';
 import { db, DOCTOR_DAY_LABEL } from '../data/db';
 import { branchForDate } from './WorkHoursEditor';
@@ -115,9 +115,16 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
     }
     return out;
   })();
+  const autoDay = useRef(false);
   useEffect(() => {
     if (step === 3 && walkIn && date !== todayYmd()) { setDate(todayYmd()); setTime(''); return; }
-    if (step === 3 && !date && quickDays.length) setDate(quickDays[0].date);
+    // ١٠/١١: أول ما خطوة التاريخ تفتح — لو اليوم المختار تلقائي (النهارده) مافيهوش مواعيد فاضية ← أقرب يوم متاح.
+    // مرة واحدة بس عند الدخول: اليوم اللي الموظف يختاره بإيده مابيتغيّرش، والوقت الجاي من الجدول (presetTime) مابيتلمسش
+    if (step !== 3) { autoDay.current = false; return; }
+    if (!autoDay.current && quickDays.length) {
+      autoDay.current = true;
+      if (!date || (!presetTime && !quickDays.some((q) => q.date === date))) { setDate(quickDays[0].date); setTime(''); }
+    }
   }, [step, date, walkIn, quickDays.length ? quickDays[0].date : '']);
   // وقت جاي من «جدول المواعيد اليومي»: لو بقى مش متاح للخدمة المختارة يتمسح (ويختار وقت تاني)
   // ⚠️ مش أثناء الحجز ولا بعده: الموعد اللي لسه اتسجّل بيشغل نفس الخانة، فكانت بتطلع «مش مناسبة» غلط بعد ما الحجز ينجح

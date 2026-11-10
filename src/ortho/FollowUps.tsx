@@ -20,7 +20,8 @@ import { normalizeSearch, phoneMatches } from '../utils/phoneUtils';
 import { FOLLOW_UP_KIND, addDays, ortho, useOrthoVersion, type FollowUp, type FollowUpKind } from './data';
 import { ExerciseSendModal, useCanSendExercises } from './ExerciseSend';
 import { Field, LoadState, PageHead, PatientSelect, SearchBox, patientFile, patientName, useRun } from './kit';
-import { PainCompare, PrevRx } from './history';
+import { PainCompare, PainHint, PrevRx } from './history';
+import { PatientMedicalFiles } from './PatientMedicalFiles';
 import { BookingWhatsapp } from '../components/BookingWhatsapp';
 
 export type FuState = 'upcoming' | 'today' | 'done' | 'missed' | 'cancelled';
@@ -368,10 +369,13 @@ export function FollowUpModal({ patientId, patientLabel, consultationId, initial
         <Field label="ملاحظات"><textarea className="input" rows={2} dir="auto" value={f.notes} disabled={!canSave} onChange={(e) => set('notes', e.target.value)} /></Field>
       </div>
 
-      {/* يوم المتابعة جه: درجة الألم دلوقتي مقارنة باللي فاتت + روشتة الزيارة اللي فاتت (هجرة 964) */}
-      {patientId && f.date <= t && <>
-        <PainCompare patientId={patientId} title="درجة الألم في المتابعة دي (من 10)" value={f.painScore ?? ''} excludeSourceId={saved?.id} date={f.date} disabled={!canSave} onChange={(v) => { painTouched.current = true; set('painScore', v); }} />
-        <PrevRx patientId={patientId} date={f.date} />
+      {/* درجة الألم: في يوم المتابعة بتتسجّل ومقارنة باللي فاتت؛ قبله بتظهر آخر درجة بس. وروشتة الزيارة اللي فاتت والأشعة والتحاليل المرفوعة دايمًا (+ رفع جديد) */}
+      {patientId && f.date <= t && <PainCompare patientId={patientId} title="درجة الألم في المتابعة دي (من 10)" value={f.painScore ?? ''} excludeSourceId={saved?.id} date={f.date} disabled={!canSave} onChange={(v) => { painTouched.current = true; set('painScore', v); }} />}
+      {patientId && f.date > t && <PainHint patientId={patientId} current="" />}
+      {patientId && <>
+        <PrevRx patientId={patientId} date={f.date > t ? t : f.date} />
+        <PatientMedicalFiles patientId={patientId} categories={['xray']} title="صور الأشعة / السونار" icon="camera" uploadCategory="xray" />
+        <PatientMedicalFiles patientId={patientId} categories={['lab']} title="ملفات ونتائج التحاليل" icon="doc" uploadCategory="lab" />
       </>}
 
       {saved && (

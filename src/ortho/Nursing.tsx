@@ -11,7 +11,8 @@ import { addDays, ortho, useOrthoVersion, type Nursing, type NursingSheet, type 
 import { FollowUpModal, fuWhen, useFuCan } from './FollowUps';
 import { RxEditor, cleanRx, hasRx, normRx, registerRxRequests } from './Rx';
 import { printRx } from './printRx';
-import { PAIN_TREND, PainCompare, PrevRx, painTrend, previousPain } from './history';
+import { PAIN_TREND, PainCompare, PainHint, PrevRx, painTrend, previousPain } from './history';
+import { PatientMedicalFiles } from './PatientMedicalFiles';
 import { Field, IconBtn, LoadState, confirmDelete, useClinicalCan, useRun } from './kit';
 
 const OPT = {
@@ -193,6 +194,11 @@ export function NursingModal({ patientId, appointmentId = null, initial, onClose
           onCopy={(meds, instructions) => setRx((x) => ({ ...x, medications: [...x.medications.filter((m) => m.name.trim()), ...meds.filter((m) => !x.medications.some((y) => y.name.trim().toLowerCase() === m.name.trim().toLowerCase()))], plan: x.plan.trim() ? x.plan : instructions }))} />
         <RxEditor rxOnly value={rx} onChange={setRx} patientId={patientId} region={ortho.list('consultations', patientId).sort((a, b) => b.date.localeCompare(a.date))[0]?.region} onUploading={setUploading} />
       </Box>
+      {/* شيت المتابعة لوحده (برّه التشخيص): الأشعة والتحاليل المرفوعة بتاريخها + رفع جديد — جوّه التشخيص بتظهر تحت الشيت في التبويب */}
+      {!embedded && <Box title="الأشعة والتحاليل المرفوعة">
+        <PatientMedicalFiles patientId={patientId} categories={['xray']} title="صور الأشعة / السونار" icon="camera" uploadCategory="xray" />
+        <PatientMedicalFiles patientId={patientId} categories={['lab']} title="ملفات ونتائج التحاليل" icon="doc" uploadCategory="lab" />
+      </Box>}
       {fuOpen && <FollowUpModal patientId={patientId} doctorHint={visitDoctor} presetDate={addDays(todayYmd(), FU_DAYS[pl.fu] ?? 7)} onClose={() => setFuOpen(false)} />}
     </>;
   if (embedded) return <div className="nu-inline">{body}<div className="sh-next">{foot}</div></div>;
@@ -209,6 +215,9 @@ export function NursingSheetTab({ patientId, appointmentId, startNew, onDirty, s
   return (
     <div>
       {perm.add && <div className="sh-next" style={{ marginBottom: 12 }}><Button icon="clipboard" onClick={() => setForm('new')}>متابعة جديدة</Button></div>}
+      {/* آخر درجة ألم وروشتة الزيارة اللي فاتت ظاهرين من أول ما التبويب يتفتح */}
+      <PainHint patientId={patientId} current="" />
+      <PrevRx patientId={patientId} />
       <LoadState kind="nursing"><NursingList items={items} onEdit={setForm} /></LoadState>
     </div>
   );

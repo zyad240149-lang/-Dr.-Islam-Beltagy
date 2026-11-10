@@ -522,6 +522,12 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
             <h3 className="plan-part__h">الأشعة والتحاليل المطلوبة</h3>
             {tab === 'nursing' && requestForms}
           </section>}
+          {/* الأشعة والتحاليل اللي اترفعت للمريض قبل كده (بتاريخ كل ملف) + رفع جديد — من ملف المريض نفسه (patient_files) فمفيش تكرار */}
+          {c.patientId && <section className="plan-part" data-testid="nu-files">
+            <h3 className="plan-part__h">الأشعة والتحاليل المرفوعة</h3>
+            <PatientMedicalFiles patientId={c.patientId} excludeConsultId={initial?.id} categories={['xray']} title="صور الأشعة / السونار" icon="camera" uploadCategory="xray" />
+            <PatientMedicalFiles patientId={c.patientId} excludeConsultId={initial?.id} categories={['lab']} title="ملفات ونتائج التحاليل" icon="doc" uploadCategory="lab" />
+          </section>}
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('nurse')}>رجوع: الشيت العام</Button>
             <Button icon="chevronLeft" onClick={() => goTab('doctor')}>التالي: كشف الطبيب</Button>

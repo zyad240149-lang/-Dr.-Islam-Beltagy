@@ -8,14 +8,15 @@ import { mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { launchEdge } from './_edge.mjs';
-import { allDayHours, api, cairoDate, cairoToday, deleteEmployee, loginAdmin, randomPassword, sql, suite } from './_harness.mjs';
+import { allDayHours, api, cairoDate, cairoToday, deleteEmployee, env, loginAdmin, randomPassword, sql, suite, URL_ } from './_harness.mjs';
+const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
 
 const { check, section, save } = suite();
 const PORT = 4698, BASE = `http://127.0.0.1:${PORT}`;
 const PW = randomPassword();
 const TAG = 'واجهة964';
-const STAFF = { phone: '01200000984', digits: '201200000984', name: `مدير ${TAG}` };
-const PHONE = '+201200000985';
+const STAFF = { phone: '01200000946', digits: '201200000946', name: `مدير ${TAG}` };
+const PHONE = '+201200000947';
 const SHOTS = new URL('../docs/ui-shots/', import.meta.url);
 const made = { employees: [], therapist: null, patient: null, item: null };
 const NOISE = /Notification|push|ServiceWorker|service worker|WebSocket|realtime|ERR_ABORTED|AbortError|Failed to load resource|Download the React DevTools|ERR_NAME_NOT_RESOLVED|wa\.me/i;
@@ -45,6 +46,9 @@ try {
   const [it] = await sql(`insert into inventory_items (sku, name, category, unit, quantity, min_quantity, cost_price, sale_price, supplier, active)
     values ('T964UI', 'جبس ${TAG}', 'مستلزمات', 'لفة', 6, 5, 10, 0, '', true) returning id`);
   made.item = it.id;
+  // أشعة مرفوعة قبل كده في ملف المريض (بتاريخها) — لازم تظهر في موعد المتابعة وشيت المتابعة
+  await sql(`insert into patient_files (patient_id, file_path, file_name, file_type, size_bytes, category, title, file_date, uploaded_by_name, note)
+    values ('${made.patient}', '${made.patient}/e2e-964-knee.png', 'knee.png', 'image/png', 68, 'xray', 'أشعة الركبة ${TAG}', '${before}', 'اختبار', '')`);
 
   server = await createServer({ configFile: fileURLToPath(new URL('../vite.config.ts', import.meta.url)), root: fileURLToPath(new URL('..', import.meta.url)), logLevel: 'error', server: { port: PORT, strictPort: true, host: '127.0.0.1' } });
   await server.listen();
@@ -90,6 +94,8 @@ try {
   await m.getByTestId('pain-compare').getByRole('radio', { name: '3', exact: true }).click();
   const rxText = await m.getByTestId('prev-rx').innerText();
   check('روشتة الزيارة اللي فاتت ظاهرة بالدواء والجرعة وملاحظته', /Brufen 600/.test(rxText) && /مرتين يوميًا/.test(rxText) && /بعد الأكل/.test(rxText) && /راحة نسبية/.test(rxText), rxText.slice(0, 160));
+  check('موعد المتابعة: الأشعة المرفوعة قبل كده ظاهرة باسمها وتاريخها', !!await waitFor(async () => { const t = await m.locator('.pmf').first().innerText(); return t.includes(`أشعة الركبة ${TAG}`) && /اترفع/.test(t); }), await m.locator('.pmf').first().innerText().catch(() => ''));
+  check('موعد المتابعة: زرار رفع أشعة وزرار رفع تحاليل', (await m.getByRole('button', { name: /^رفع / }).count()) === 2);
   await shot(pg, 'followup-pain');
   await m.getByRole('button', { name: 'حفظ', exact: true }).click();
   const saveToast = await waitFor(async () => (await pg.locator('.toast').allInnerTexts()).join(' | '), 5000);
@@ -107,7 +113,7 @@ try {
   await m.locator('.bk-wa__menu').getByRole('menuitem', { name: /تذكير بالموعد/ }).click();
   const url = decodeURIComponent(await waitFor(() => pg.evaluate(() => window.__opened.find((u) => u.includes('wa.me')) ?? ''), 8000) ?? '');
   for (const x of ctx.pages()) if (x !== pg) await x.close().catch(() => {});
-  check('التذكير بيفتح واتساب على رقم الموبايل المسجّل', url.includes('wa.me/201200000985'), url.slice(0, 120) + ' toasts: ' + (await pg.locator('.toast').allInnerTexts()).join(' | '));
+  check('التذكير بيفتح واتساب على رقم الموبايل المسجّل', url.includes('wa.me/201200000947'), url.slice(0, 120) + ' toasts: ' + (await pg.locator('.toast').allInnerTexts()).join(' | '));
   check('الرسالة فيها اسم المريض واسم الدكتور والتاريخ والوقت', url.includes(`مريض ${TAG}`) && url.includes(`د. ${TAG}`) && /الساعة/.test(url) && /\d{4}|نوفمبر|ديسمبر|يناير/.test(url), url.slice(0, 300));
   check('التذكير اتسجّل في سجل رسائل واتساب', !!await waitFor(async () => (await one(`select count(*)::int n from whatsapp_messages where patient_id = '${made.patient}' and message_type = 'reminder'`)).n === 1));
   await m.locator('.bk-wa__btn').first().click();
@@ -120,6 +126,8 @@ try {
   // مريض من غير رقم
   await sql(`update patients set phone = '', whatsapp_mode = 'phone' where id = '${made.patient}'`);
   await pg.reload(); await pg.waitForLoadState('domcontentloaded');
+  // الرقم اتمسح من الخادم مباشرة ← نستنى نسخة الجهاز تتحدّث من الخادم (الصفحة بتفتح الأول من النسخة المحفوظة)
+  await waitFor(() => pg.evaluate(async (id) => { const { db } = await import('/src/data/db.ts'); await db.refresh('patients'); return db.patient(id)?.phone === ''; }, made.patient), 20000);
   m = await openFollowUp(pg);
   await m.locator('.bk-wa__btn').first().click();
   await m.locator('.bk-wa__menu').getByRole('menuitem', { name: /تذكير بالموعد/ }).click();
@@ -129,7 +137,7 @@ try {
 
   section('3. شيت «متابعة المريض» جوّه التشخيص');
   await go(pg, '/diagnosis?tab=done');
-  await pg.getByPlaceholder(/ابحث باسم المريض/).fill('01200000985');
+  await pg.getByPlaceholder(/ابحث باسم المريض/).fill('01200000947');
   await pg.locator('.dx-pat', { hasText: `مريض ${TAG}` }).getByRole('button', { name: 'متابعة', exact: true }).click({ timeout: 20000 });
   const cm = pg.locator('.modal').last();
   const pc = cm.getByTestId('pain-compare');
@@ -138,12 +146,19 @@ try {
   check('المقارنة «ساء» (3 ← 5)', /ساء/.test(await pc.getByTestId('pain-trend').innerText()));
   check('«الألم مقارنة بآخر زيارة» اتعلّمت «أكثر» لوحدها', (await cm.getByRole('radio', { name: 'أكثر', exact: true }).getAttribute('aria-checked')) === 'true');
   check('روشتة الزيارة اللي فاتت ظاهرة في الشيت', /بعد الأكل/.test(await cm.getByTestId('prev-rx').innerText()));
+  const nf = cm.getByTestId('nu-files');
+  check('شيت المتابعة: الأشعة والتحاليل المرفوعة قبل كده ظاهرة بتاريخها', !!await waitFor(async () => (await nf.innerText()).includes(`أشعة الركبة ${TAG}`)), await nf.innerText().catch(() => ''));
+  // رفع تحليل جديد من شيت المتابعة ← بيتسجل في ملف المريض وبيظهر هنا على طول
+  await nf.locator('input[type=file]').nth(1).setInputFiles({ name: 'cbc-964.png', mimeType: 'image/png', buffer: PNG });
+  const up = await waitFor(async () => (await one(`select count(*)::int n from patient_files where patient_id = '${made.patient}' and category = 'lab'`)).n === 1);
+  check('شيت المتابعة: رفع تحليل جديد اتسجل في ملف المريض بتصنيف «تحاليل»', !!up);
+  check('التحليل الجديد ظاهر في الشيت', !!await waitFor(async () => (await nf.innerText()).includes('cbc-964')), await nf.innerText().catch(() => ''));
   await cm.getByTestId('prev-rx').getByRole('button', { name: 'نفس الأدوية في الروشتة الجديدة' }).click();
   const note = cm.getByLabel('ملاحظة الدواء 1');
   await note.fill('قبل النوم');
   await cm.locator('textarea.cx-rxnotes').fill('كمادات تلج');
   await shot(pg, 'nursing-pain-rx');
-  await cm.getByRole('button', { name: 'حفظ', exact: true }).last().click();
+  await cm.locator('.nu-inline').getByRole('button', { name: 'حفظ', exact: true }).last().click();
   const nu = await waitFor(async () => one(`select id, sheet from ortho_nursing where patient_id = '${made.patient}'`));
   check('الشيت اتحفظ بدرجة الألم 5 و«أكثر»', nu?.sheet?.pain === 5 && nu?.sheet?.vsLast === 'أكثر', JSON.stringify(nu?.sheet ?? {}).slice(0, 160));
   const rxs = await waitFor(async () => { const r = await sql(`select r.source, i.notes from ortho_prescriptions r join ortho_prescription_items i on i.prescription_id = r.id where r.patient_id = '${made.patient}' order by r.rx_date`); return r.length === 2 ? r : null; });
@@ -196,6 +211,7 @@ try {
   check('مفيش أخطاء JavaScript بعد الدخول تاني', errors.length === 0, errors.join(' | ').slice(0, 300));
   await ctx.close();
 } catch (e) {
+  console.log(e.message.split('\n').slice(0, 6).join('\n'));
   check('تنفيذ الاختبارات بدون أخطاء غير متوقعة', false, e.message.split('\n')[0]);
 } finally {
   await browser?.close().catch(() => {});
@@ -204,6 +220,11 @@ try {
   try {
     const emp = made.employees.map((x) => `'${x}'`).join(',') || 'null';
     if (made.item) await sql(`delete from stock_movements where item_id = '${made.item}'; delete from expenses where inventory_item_id = '${made.item}'; delete from notifications where ref_id = '${made.item}'; delete from inventory_items where id = '${made.item}'`);
+    if (made.patient) {
+      const fs = await sql(`select file_path from patient_files where patient_id = '${made.patient}'`);
+      if (fs.length) await fetch(`${URL_}/storage/v1/object/patient-files`, { method: 'DELETE', headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ prefixes: fs.map((f) => f.file_path) }) });
+      await sql(`delete from patient_files where patient_id = '${made.patient}'`);
+    }
     if (made.patient) await sql(`delete from whatsapp_messages where patient_id = '${made.patient}'; delete from ortho_exercise_plans where patient_id = '${made.patient}'; delete from ortho_follow_ups where patient_id = '${made.patient}'; delete from ortho_nursing where patient_id = '${made.patient}'; delete from ortho_consultations where patient_id = '${made.patient}'; delete from notifications where patient_id = '${made.patient}'; delete from appointments where patient_id = '${made.patient}'; delete from patients where id = '${made.patient}'`);
     await sql(`delete from activity_log where employee_id in (${emp})`);
     for (const id of made.employees) { await sql(`delete from attendance where employee_id = '${id}';`); await deleteEmployee(id); }

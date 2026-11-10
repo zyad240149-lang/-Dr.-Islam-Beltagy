@@ -86,6 +86,27 @@ try {
   await qo.enqueue({ kind: 'ortho.save', userId: 'u1', entityId: 'cX', label: '', dependsOn: 'pX', payload: { row: { patient_id: 'pX' } } });
   const order = []; await qo.run(async (op) => { order.push(op.kind); return op.kind === 'patient.create' ? { type: 'failed', error: 'x' } : { type: 'done' }; });
   check('إنشاء المريض فشل ← التشخيص المعتمد عليه مااتبعتش', order.join() === 'patient.create' && qo.pendingCount() === 2);
+  // موعد متابعة اتحفظ (من تبويب «موعد المتابعة») قبل التشخيص الجديد واتربط بيه بعدين ← أقدم في الطابور بس لازم يستنى التشخيص (غير كده FK)
+  const qf = new m.OfflineQueue(m.memoryStore(), { now: () => now }); await qf.load('u1');
+  const fuOp = await qf.enqueue({ kind: 'ortho.save', userId: 'u1', entityId: 'fu1', label: '', payload: { table: 'ortho_follow_ups', isNew: true, row: { patient_id: 'p9', consultation_id: null } } });
+  now += 1;
+  await qf.enqueue({ kind: 'ortho.save', userId: 'u1', entityId: 'c9', label: '', payload: { table: 'ortho_consultations', isNew: true, row: { patient_id: 'p9' } } });
+  await qf.editPayload(fuOp.id, { row: { patient_id: 'p9', consultation_id: 'c9' } }, { dependsOn: 'c9' });
+  const fOrder = []; s = await qf.run(async (op) => { fOrder.push(op.entityId); return { type: 'done' }; });
+  check('موعد المتابعة الأقدم بيستنى التشخيص الجديد وبيتبعت بعده في نفس المزامنة', fOrder.join() === 'c9,fu1' && s.done === 2 && qf.pendingCount() === 0, fOrder.join());
+  const qg = new m.OfflineQueue(m.memoryStore(), { now: () => now }); await qg.load('u1');
+  await qg.enqueue({ kind: 'ortho.save', userId: 'u1', entityId: 'fu2', label: '', dependsOn: 'c8', payload: { table: 'ortho_follow_ups', isNew: true, row: { consultation_id: 'c8' } } });
+  const c8 = await qg.enqueue({ kind: 'ortho.save', userId: 'u1', entityId: 'c8', label: '', payload: { table: 'ortho_consultations', isNew: true, row: {} } });
+  const gOrder = []; await qg.run(async (op) => { gOrder.push(op.entityId); return { type: 'failed', error: 'تحقق' }; });
+  check('التشخيص اترفض ← موعد المتابعة المربوط بيه مااتبعتش', gOrder.join() === 'c8' && qg.get(c8.id)?.status === 'failed', gOrder.join());
+  await qg.resolve(c8.id, { type: 'discard' });
+  check('إلغاء التشخيص ← موعد المتابعة المربوط بيه بيبان «فشل» برسالة واضحة', qg.list()[0]?.status === 'failed' && /اتلغى/.test(qg.list()[0]?.lastError ?? ''));
+  // نسخة قديمة: موعد متابعة علق «فشل» بـ FK لأنه اتبعت قبل التشخيص — بيتجرّب تاني لوحده
+  const qh = new m.OfflineQueue(m.memoryStore(), { now: () => now }); await qh.load('u1');
+  const old = await qh.enqueue({ kind: 'ortho.save', userId: 'u1', entityId: 'fu3', label: '', payload: { table: 'ortho_follow_ups', isNew: true, row: {} } });
+  Object.assign(qh.get(old.id), { status: 'failed', attempts: 1, lastError: 'insert or update on table "ortho_follow_ups" violates foreign key constraint "ortho_follow_ups_consultation_id_fkey"' });
+  s = await qh.run(async () => ({ type: 'done' }));
+  check('موعد متابعة عالق بـ FK من نسخة قديمة بيتبعت تاني لوحده', s.done === 1 && qh.pendingCount() === 0);
 
   // ============ التشفير ونسخة الجهاز ============
   section('تشفير البيانات على الجهاز');

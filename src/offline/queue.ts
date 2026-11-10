@@ -75,6 +75,9 @@ export function retargetValue<T>(v: T, from: string, to: string): T {
   return v;
 }
 
+/** عملية بتنشئ سجل جديد على الخادم (مريض/موعد بـ .create، أو سجل طبي جديد ortho.save) — العمليات اللي بتشاور عليه بـ dependsOn تستناها */
+export const isCreateOp = (o: OfflineOp) => o.kind.endsWith('.create') || (o.kind === 'ortho.save' && !!o.payload?.isNew);
+
 export interface QueueEvents { change: () => void; done: (op: OfflineOp) => void }
 
 export class OfflineQueue {
@@ -109,6 +112,8 @@ export class OfflineQueue {
   needsAttention(): number { return this.ops.filter((o) => o.status === 'failed' || o.status === 'conflict').length; }
   isRunning() { return this.running; }
   get(id: string) { return this.ops.find((o) => o.id === id); }
+  /** العملية مستنية إنشاء لسه في الطابور (مريض/موعد/سجل طبي جديد) */
+  private blocked(op: OfflineOp) { return !!op.dependsOn && this.ops.some((o) => o !== op && o.entityId === op.dependsOn && isCreateOp(o)); }
   hasPendingFor(entityId: string) { return this.ops.some((o) => o.entityId === entityId || o.dependsOn === entityId); }
 
   async enqueue(input: Omit<OfflineOp, 'id' | 'createdAt' | 'status' | 'attempts' | 'nextAttemptAt'> & { id?: string }): Promise<OfflineOp> {
@@ -129,46 +134,53 @@ export class OfflineQueue {
     if (this.running || !this.loaded) return summary;
     this.running = true; this.emit();
     const body = async () => {
-      // نمشي على نسخة؛ العمليات اللي بتتضاف أثناء التشغيل بتتاخد في الجولة اللي بعدها
-      const skipped = new Set<string>();
-      for (const op of this.ops.slice()) {
-        // سجلات علقت بسبب عمود ربط فاضي ('' بدل null) من نسخة قديمة — المنفّذ بيصلحها دلوقتي، فترجع تتبعت لوحدها
-        if (op.status === 'failed' && /invalid input syntax for type (uuid|date|smallint|integer|numeric|time[a-z ]*): ""/.test(op.lastError ?? '')) { op.status = 'pending'; op.nextAttemptAt = 0; await this.save(op); }
-        if (op.status === 'failed' || op.status === 'conflict') { skipped.add(op.entityId); continue; }
-        if (!opts.force && op.nextAttemptAt > this.now()) { skipped.add(op.entityId); summary.retry++; continue; }
-        // عملية معتمدة على إنشاء لسه ما خلصش (أو فشل/تعارض) تستنى
-        if (op.dependsOn && (skipped.has(op.dependsOn) || this.ops.some((o) => o !== op && o.entityId === op.dependsOn && o.kind.endsWith('.create')))) {
-          const blocker = this.ops.find((o) => o !== op && o.entityId === op.dependsOn && o.kind.endsWith('.create'));
-          if (blocker) { skipped.add(op.entityId); continue; }
+      // نمشي على نسخة؛ العمليات اللي بتتضاف أثناء التشغيل بتتاخد في الجولة اللي بعدها.
+      // عملية استنّت إنشاء في نفس الجولة (أقدم منه في الطابور) بتتبعت في لفّة تانية بعد ما الإنشاء ينجح، من غير ما تستنى المزامنة الجاية
+      let round = this.ops.slice();
+      for (let pass = 0; pass < 5 && round.length; pass++) {
+        const waiting: OfflineOp[] = [];
+        let progressed = false, stop = false;
+        for (const op of round) {
+          // سجلات علقت بسبب عمود ربط فاضي ('' بدل null) من نسخة قديمة — المنفّذ بيصلحها دلوقتي، فترجع تتبعت لوحدها
+          if (op.status === 'failed' && /invalid input syntax for type (uuid|date|smallint|integer|numeric|time[a-z ]*): ""/.test(op.lastError ?? '')) { op.status = 'pending'; op.nextAttemptAt = 0; await this.save(op); }
+          // سجل اتبعت قبل السجل اللي بيشاور عليه (نسخة قديمة كانت بتبعت موعد المتابعة قبل التشخيص ← FK) — بيتجرّب تاني كام مرة بعد ما الأصل يوصل
+          if (op.status === 'failed' && op.attempts < 5 && /violates foreign key constraint/i.test(op.lastError ?? '') && !this.blocked(op)) { op.status = 'pending'; op.nextAttemptAt = 0; await this.save(op); }
+          if (op.status === 'failed' || op.status === 'conflict') continue;
+          if (!opts.force && op.nextAttemptAt > this.now()) { if (pass === 0) summary.retry++; continue; }
+          // عملية معتمدة على إنشاء لسه ما خلصش (أو فشل/تعارض) تستنى
+          // (زي موعد متابعة اتحفظ من تبويب «موعد المتابعة» قبل التشخيص: العملية أقدم بس لازم تستنى إنشاء التشخيص ← غير كده الخادم بيرفضها FK)
+          if (this.blocked(op)) { waiting.push(op); continue; }
+          // لو فيه عملية أقدم على نفس العنصر لسه ما خلصتش، نحافظ على الترتيب
+          if (this.ops.some((o) => o !== op && o.entityId === op.entityId && o.createdAt < op.createdAt)) { waiting.push(op); continue; }
+          op.status = 'syncing'; op.attempts += 1; await this.save(op);
+          let r: ExecResult;
+          try { r = await exec(op); } catch (e) { r = { type: 'retry', error: e instanceof Error ? e.message : String(e) }; }
+          if (r.type === 'done') {
+            await this.remove(op); summary.done++; progressed = true;
+            this.doneListeners.forEach((l) => l(op));
+          } else if (r.type === 'merged') {
+            // نفس المريض موجود على الخادم ← كل اللي اتعمل على الملف المحلي (تشخيص/موعد/ملف/تعديل) بيتحوّل للملف الحقيقي تلقائي، من غير سؤال
+            await this.retarget(op.entityId, r.into);
+            await this.remove(op); summary.done++; progressed = true;
+            this.doneListeners.forEach((l) => l({ ...op, mergedInto: r.into } as OfflineOp));
+          } else if (r.type === 'retry') {
+            op.status = 'pending'; op.lastError = r.error; op.nextAttemptAt = this.now() + backoff(op.attempts); await this.save(op);
+            summary.retry++;
+            if (!r.soft) { stop = true; break; } // الشبكة/الخادم واقع — مفيش فايدة نكمّل؛ الجولة الجاية
+          } else if (r.type === 'auth') {
+            op.status = 'pending'; op.lastError = r.error; op.attempts -= 1; await this.save(op);
+            summary.authError = true;
+            stop = true; break; // الجلسة محتاجة تجديد/تسجيل دخول — ما نحرقش محاولات
+          } else if (r.type === 'conflict') {
+            op.status = 'conflict'; op.conflict = r.conflict; op.lastError = r.conflict.message; await this.save(op);
+            summary.conflicts++;
+          } else {
+            op.status = 'failed'; op.lastError = r.error; await this.save(op);
+            summary.failed++;
+          }
         }
-        // لو فيه عملية أقدم على نفس العنصر لسه ما خلصتش، نحافظ على الترتيب
-        if (this.ops.some((o) => o !== op && o.entityId === op.entityId && o.createdAt < op.createdAt)) { skipped.add(op.entityId); continue; }
-        op.status = 'syncing'; op.attempts += 1; await this.save(op);
-        let r: ExecResult;
-        try { r = await exec(op); } catch (e) { r = { type: 'retry', error: e instanceof Error ? e.message : String(e) }; }
-        if (r.type === 'done') {
-          await this.remove(op); summary.done++;
-          this.doneListeners.forEach((l) => l(op));
-        } else if (r.type === 'merged') {
-          // نفس المريض موجود على الخادم ← كل اللي اتعمل على الملف المحلي (تشخيص/موعد/ملف/تعديل) بيتحوّل للملف الحقيقي تلقائي، من غير سؤال
-          await this.retarget(op.entityId, r.into);
-          await this.remove(op); summary.done++;
-          this.doneListeners.forEach((l) => l({ ...op, mergedInto: r.into } as OfflineOp));
-        } else if (r.type === 'retry') {
-          op.status = 'pending'; op.lastError = r.error; op.nextAttemptAt = this.now() + backoff(op.attempts); await this.save(op);
-          summary.retry++; skipped.add(op.entityId);
-          if (!r.soft) break; // الشبكة/الخادم واقع — مفيش فايدة نكمّل؛ الجولة الجاية
-        } else if (r.type === 'auth') {
-          op.status = 'pending'; op.lastError = r.error; op.attempts -= 1; await this.save(op);
-          summary.authError = true;
-          break; // الجلسة محتاجة تجديد/تسجيل دخول — ما نحرقش محاولات
-        } else if (r.type === 'conflict') {
-          op.status = 'conflict'; op.conflict = r.conflict; op.lastError = r.conflict.message; await this.save(op);
-          summary.conflicts++; skipped.add(op.entityId);
-        } else {
-          op.status = 'failed'; op.lastError = r.error; await this.save(op);
-          summary.failed++; skipped.add(op.entityId);
-        }
+        if (stop || !progressed) break;
+        round = waiting.filter((o) => this.ops.includes(o));
       }
     };
     try {
@@ -192,8 +204,9 @@ export class OfflineQueue {
     const op = this.get(id); if (!op) return;
     if (res.type === 'discard' || res.type === 'keep-server') {
       // لو الملغي «إنشاء»، العمليات اللي معتمدة عليه (مواعيد المريض ده) ما ينفعش تكمّل — بتتحوّل لفشل واضح
-      if (op.kind.endsWith('.create')) {
-        for (const o of this.ops.slice()) if (o.dependsOn === op.entityId) { o.status = 'failed'; o.lastError = 'اتلغى المريض اللي مربوط بيه الموعد ده'; await this.save(o); }
+      if (isCreateOp(op)) {
+        const msg = op.kind === 'ortho.save' ? 'اتلغى السجل اللي مربوط بيه ده (التشخيص/السجل الأصلي ما اتحفظش)' : 'اتلغى المريض اللي مربوط بيه الموعد ده';
+        for (const o of this.ops.slice()) if (o.dependsOn === op.entityId) { o.status = 'failed'; o.lastError = msg; await this.save(o); }
       }
       await this.remove(op); return;
     }
@@ -218,7 +231,7 @@ export class OfflineQueue {
   /** المعرّف المحلي (مريض اتعمل من غير نت) ← المعرّف الحقيقي في كل العمليات اللي لسه مستنية (row.patient_id، p.patientId، مسارات الملفات…) */
   async retarget(from: string, to: string) {
     for (const o of this.ops.slice()) {
-      if (o.entityId === from && o.kind.endsWith('.create')) continue; // عملية الإنشاء نفسها (بتتشال)
+      if (o.entityId === from && isCreateOp(o)) continue; // عملية الإنشاء نفسها (بتتشال)
       const touches = o.dependsOn === from || o.entityId === from || JSON.stringify(o.payload, (_k, v) => (v instanceof ArrayBuffer ? undefined : v)).includes(from);
       if (!touches) continue;
       o.payload = retargetValue(o.payload, from, to);
@@ -232,9 +245,10 @@ export class OfflineQueue {
   }
 
   /** تعديل بيانات عملية فاشلة (تصحيح خطأ تحقق) وإعادة المحاولة */
-  async editPayload(id: string, patch: Record<string, unknown>) {
+  async editPayload(id: string, patch: Record<string, unknown>, opts: { dependsOn?: string } = {}) {
     const op = this.get(id); if (!op) return;
-    op.payload = { ...op.payload, ...patch }; op.status = 'pending'; op.lastError = undefined; op.nextAttemptAt = 0; await this.save(op);
+    op.payload = { ...op.payload, ...patch };
+    if ('dependsOn' in opts && opts.dependsOn !== op.entityId) op.dependsOn = opts.dependsOn; op.status = 'pending'; op.lastError = undefined; op.nextAttemptAt = 0; await this.save(op);
   }
 
   async clearAll() { this.ops = []; await this.store.clearAll(); this.emit(); }

@@ -211,6 +211,13 @@ const KIND_LABEL: Record<Kind, string> = { consultations: 'كشف', imaging: 'أ
  */
 const queuedFile = (path: string) => offline.queue.list().find((o) => o.kind === 'file.upload' && o.payload.path === path && o.payload.bytes instanceof ArrayBuffer);
 const pendingPatient = (id: string) => (id && offline.queue.list().some((o) => o.kind === 'patient.create' && o.entityId === id) ? id : undefined);
+/** سجل طبي لسه متعمل على الجهاز ومستني يوصل الخادم (تشخيص جديد…) — اللي بيشاور عليه (consultation_id…) لازم يستناه، غير كده الخادم بيرفضه (FK) */
+const pendingOrthoCreate = (id: unknown, self: string) => (typeof id === 'string' && id && id !== self && offline.queue.list().some((o) => o.kind === 'ortho.save' && o.payload.isNew && o.entityId === id) ? id : undefined);
+/** العملية تستنى إيه: سجل طبي جديد بتشاور عليه (هو نفسه بيستنى ملف المريض لو لسه متسجّل من غير نت)، وإلا ملف المريض */
+function waitFor(local: Row, eid: string): string | undefined {
+  for (const [k, v] of Object.entries(local)) if (k !== 'id' && k !== 'patient_id' && k.endsWith('_id')) { const d = pendingOrthoCreate(v, eid); if (d) return d; }
+  return pendingPatient(String(local.patient_id ?? ''));
+}
 async function saveOffline(kind: Kind, id: string | undefined, row: Record<string, unknown>, newId?: string): Promise<string> {
   if (!offline.userId) throw new Error('سجّل الدخول الأول.');
   const table = tableOf(kind);
@@ -219,11 +226,12 @@ async function saveOffline(kind: Kind, id: string | undefined, row: Record<strin
   const pending = offline.queue.list().find((o) => o.kind === 'ortho.save' && o.entityId === eid && (o.status === 'pending' || o.status === 'failed'));
   const local = { ...(prev ?? {}), ...((pending?.payload.local as Row) ?? {}), ...row, id: eid, created_at: prev?.created_at ?? (pending?.payload.local as Row | undefined)?.created_at ?? new Date().toISOString() };
   try {
-    if (pending) await offline.queue.editPayload(pending.id, { row: { ...(pending.payload.row as Row), ...row }, local });
+    // تعديل سجل لسه مستني (زي موعد متابعة اتحفظ قبل التشخيص وبعدين اتربط بيه) ← يستنى اللي بقى بيشاور عليه
+    if (pending) await offline.queue.editPayload(pending.id, { row: { ...(pending.payload.row as Row), ...row }, local }, { dependsOn: waitFor(local as Row, eid) ?? pending.dependsOn });
     else await offline.queue.enqueue({
       kind: 'ortho.save', userId: offline.userId, entityId: eid, label: `${KIND_LABEL[kind]} — حفظ بدون اتصال`,
       // سجل لمريض لسه متسجّل من غير نت ← يستنى ملف المريض يوصل الخادم الأول (ولو اتدمج في ملف موجود بيتحوّل له تلقائي)
-      dependsOn: pendingPatient(String((local as Row).patient_id ?? '')),
+      dependsOn: waitFor(local as Row, eid),
       payload: { table, row, isNew: !prev, local },
       base: prev ? Object.fromEntries(Object.keys(row).map((k) => [k, prev[k] ?? null])) : undefined,
     });

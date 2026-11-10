@@ -10,12 +10,12 @@
      بتتخزن في IndexedDB (src/offline/) مربوطة بالمستخدم وبتتمسح عند الخروج. */
 // رقم البناء بيتحط وقت البناء (vite.config.ts) — أي نشر جديد = SW جديد وكاش جديد للملفات (بيانات IndexedDB مابتتلمسش)
 const BUILD = 'dev';
-const VERSION = 'v6-' + BUILD;
+const VERSION = 'v7-' + BUILD;
 const SHELL = `ortho-shell-${VERSION}`;
 const ASSETS = `ortho-assets-${VERSION}`;
 const BASE = new URL(self.registration.scope).pathname; // '/' محليًا أو '/admin/' لما اللوحة تتنشر تحت مسار
 const P = (x) => BASE + x;
-const PRECACHE = [BASE, P('offline.html'), P('manifest.webmanifest'), P('icons/icon.svg'), P('icons/icon.svg'), P('brand/logo.svg')];
+const PRECACHE = [BASE, P('offline.html'), P('manifest.webmanifest'), P('icons/app.svg'), P('icons/app-apple-180.png'), P('brand/logo.svg')];
 
 self.addEventListener('install', (event) => {
   // Cloudflare بيحوّل offline.html لـ /offline (308) — الرد المحوَّل مايينفعش يترد على تنقّل (المتصفح بيرفضه)، فنخزّنه كرد عادي
@@ -101,7 +101,16 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (url.pathname.startsWith(P('icons/')) || url.pathname.startsWith(P('brand/')) || url.pathname === P('manifest.webmanifest')) {
+  // المانيفست: الشبكة أولًا (فيه أسماء الأيقونات — لو اتقدّم من الكاش الأول الموبايل بيفضل شايف الأيقونة القديمة)
+  if (url.pathname === P('manifest.webmanifest')) {
+    event.respondWith((async () => {
+      const cache = await caches.open(SHELL);
+      try { const res = await fetch(req, { cache: 'no-cache' }); if (res.ok) cache.put(req, res.clone()); return res; }
+      catch { return (await cache.match(req, { ignoreVary: true })) || Response.error(); }
+    })());
+    return;
+  }
+  if (url.pathname.startsWith(P('icons/')) || url.pathname.startsWith(P('brand/'))) {
     event.respondWith((async () => {
       const cache = await caches.open(SHELL);
       const hit = await cache.match(req, { ignoreVary: true });
@@ -122,8 +131,8 @@ self.addEventListener('push', (event) => {
     : Promise.resolve());
   event.waitUntil(Promise.all([receipt('delivered'), self.registration.showNotification(title, {
     body: data.body || '',
-    icon: P('icons/icon.svg'),
-    badge: P('icons/icon.svg'),
+    icon: P('icons/app.svg'),
+    badge: P('icons/app.svg'),
     tag: data.tag || undefined,
     lang: 'ar',
     dir: 'rtl',

@@ -51,7 +51,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
   const [payMethod, setPayMethod] = useState<PaymentMethod>('cash');
   // «المريض موجود» (في العيادة دلوقتي): الموعد بيتحجز النهارده في الوقت اللي تختاره، وحضوره بيتأكد على طول بعد الحجز
   const [walkIn, setWalkIn] = useState(false);
-  const [confirmed, setConfirmed] = useState(false);
+  const [confirmed, setConfirmed] = useState(true); // الحجز بيبدأ «مؤكد» تلقائي — والموظف يقدر يغيّره لـ«غير مؤكد»
   const [creating, setCreating] = useState(false);
   const [extra, setExtra] = useState<{ phone2: string; wa: string; e2: unknown; eWa: unknown }>({ phone2: '', wa: '', e2: null, eWa: null });
   // ٩/١١: مريض جديد من الحجز = ملف عادي في «المرضى» على طول

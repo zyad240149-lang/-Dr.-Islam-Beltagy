@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { db } from '../data/db';
+import { supabase } from '../lib/supabase';
 import { useDbVersion, useLoading } from '../hooks/useDb';
-import { Button, EmptyState, Input, Select, Skeleton, StatusBadge } from '../components/ui';
+import { Button, EmptyState, Input, Modal, Select, Skeleton, StatusBadge } from '../components/ui';
 import { ConfirmDialog, FilterBar, IconAction, RowActions, useCan } from '../components/common';
 import { ROLE_LABEL } from '../services/permissions';
 import { ROLES } from '../services/defaultPermissions';
@@ -14,6 +15,29 @@ import { EmployeeModal, staffCall } from './Employees';
 import { ScheduleModal, TherapistModal } from './Therapists';
 import { NewRequestModal } from './Requests';
 import { phoneMatches } from '../utils/phoneUtils';
+
+/** سجل مرات دخول موظف (الأحدث الأول) — كل دخول أو فتح للبرنامج بجلسة صالحة بيتسجّل مرة */
+function LoginHistoryModal({ employee, total, onClose }: { employee: Employee; total: number; onClose: () => void }) {
+  const [rows, setRows] = useState<number[] | null>(null);
+  const [err, setErr] = useState('');
+  useEffect(() => {
+    void supabase.rpc('employee_logins', { p_employee: employee.id, p_limit: 200 }).then(({ data, error }) => {
+      if (error) setErr(error.message); else setRows(((data ?? []) as { at: string }[]).map((x) => Date.parse(x.at)));
+    });
+  }, [employee.id]);
+  return (
+    <Modal title={`سجل الدخول — ${employee.name}`} onClose={onClose} footer={<Button onClick={onClose}>إغلاق</Button>}>
+      <p className="muted-sm" style={{ marginTop: 0 }}>إجمالي مرات الدخول: <span className="num">{total.toLocaleString('en')}</span> — كل دخول أو فتح للبرنامج بيتسجّل مرة. المعروض آخر <span className="num">200</span> مرة.</p>
+      {err ? <p className="field__err" style={{ display: 'block' }}>{err}</p>
+        : rows === null ? <Skeleton h={160} />
+        : !rows.length ? <EmptyState icon="user" title="مفيش مرات دخول مسجّلة" text="" />
+        : <div className="table-wrap" style={{ maxHeight: 420, overflow: 'auto' }}><table className="table">
+            <thead><tr><th>#</th><th>التاريخ والوقت</th></tr></thead>
+            <tbody>{rows.map((t, i) => <tr key={i}><td className="num">{i + 1}</td><td className="num" data-no-i18n>{fmtDateTime(t)}</td></tr>)}</tbody>
+          </table></div>}
+    </Modal>
+  );
+}
 
 // صفٌّ واحد يمثّل إما حساب موظف (مع ملفه السريري كمعالج إن وُجد) أو معالجًا بلا حساب دخول
 type Row = { id: string; name: string; phone: string; positionLabel: string; active: boolean; onLeave: boolean; createdAt: number | null; lastLogin: number | null; employee?: Employee; therapist?: Therapist };
@@ -33,6 +57,18 @@ export default function Staff({ embedded = false }: { embedded?: boolean }) {
   const [q, setQ] = useState('');
   const [role, setRole] = useState('');
   const [state, setState] = useState('');
+  const [historyOf, setHistoryOf] = useState<Employee | null>(null);
+  // عدد مرات الدخول وآخر دخول من سجل الدخول على الخادم (هجرة 965) — بيحتاج إنترنت؛ من غيره بيظهر «آخر دخول» المحفوظ بس
+  const [logins, setLogins] = useState<Record<string, { count: number; last: number | null }> | null>(null);
+  useEffect(() => {
+    if (!can('employees', 'view')) return;
+    let off = false;
+    void supabase.rpc('employee_login_stats').then(({ data, error }) => {
+      if (off || error || !data) return;
+      setLogins(Object.fromEntries((data as { employee_id: string; logins: number; last_login: string | null }[]).map((x) => [x.employee_id, { count: x.logins, last: x.last_login ? Date.parse(x.last_login) : null }])));
+    });
+    return () => { off = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // المدير واللي معاه صلاحية إضافة أو تعديل الموظفين بيشوفوا كل الحسابات — الباقي بيشوفوا حسابهم بس
   const canViewAll = ((can('employees', 'view') || can('therapists', 'view')) && (user?.role === 'system_admin' || user?.role === 'center_manager')) || can('employees', 'create') || can('employees', 'edit');
@@ -96,7 +132,18 @@ export default function Staff({ embedded = false }: { embedded?: boolean }) {
                   <td><span className="role-tag">{r.positionLabel}</span>{!r.employee && <div className="muted-sm" style={{ whiteSpace: 'nowrap', marginTop: 4 }}>بدون حساب دخول</div>}</td>
                   <td className="num" dir="ltr" style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>{r.phone || '—'}</td>
                   <td className="num" style={{ whiteSpace: 'nowrap' }}>{r.createdAt ? fmtDateTime(r.createdAt) : '—'}</td>
-                  <td className="num" style={{ whiteSpace: 'nowrap' }}>{r.lastLogin ? fmtDateTime(r.lastLogin) : '—'}</td>
+                  <td className="num" style={{ whiteSpace: 'nowrap' }}>
+                    {(() => {
+                      const st = r.employee ? logins?.[r.employee.id] : undefined;
+                      const last = st?.last ?? r.lastLogin;
+                      return <>
+                        {last ? fmtDateTime(last) : '—'}
+                        {r.employee && st && st.count > 0 && can('employees', 'view') && (
+                          <div><button type="button" className="link-btn muted-sm" onClick={() => setHistoryOf(r.employee!)}>{st.count.toLocaleString('en')} مرة دخول — عرض السجل</button></div>
+                        )}
+                      </>;
+                    })()}
+                  </td>
                   <td>{r.onLeave ? <StatusBadge label="في إجازة" tone="info" /> : <StatusBadge label={r.active ? 'نشط' : 'معطّل'} tone={r.active ? 'ok' : 'muted'} />}</td>
                   <td className="actions">
                     <RowActions>
@@ -128,6 +175,7 @@ export default function Staff({ embedded = false }: { embedded?: boolean }) {
       {editingTherapist && <TherapistModal therapist={editingTherapist === 'new' ? undefined : editingTherapist} onClose={() => setEditingTherapist(null)} />}
       {scheduling && <ScheduleModal therapist={scheduling} onClose={() => setScheduling(null)} />}
       {requesting && <NewRequestModal employeeId={requesting} onClose={() => setRequesting(null)} />}
+      {historyOf && <LoginHistoryModal employee={historyOf} total={logins?.[historyOf.id]?.count ?? 0} onClose={() => setHistoryOf(null)} />}
       {deletingEmployee && (
         <ConfirmDialog title="حذف حساب المستخدم" onClose={() => setDeletingEmployee(null)}
           message={`سيتم حذف حساب ${deletingEmployee.name} (${deletingEmployee.phone}) نهائيًا ولن يتمكن من الدخول. سجلات عملياته السابقة تبقى.`}

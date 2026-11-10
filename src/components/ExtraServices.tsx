@@ -7,6 +7,7 @@ import { useToast } from '../hooks/useToast';
 import { money } from '../utils/format';
 import { Button } from './ui';
 import { Icon } from '../utils/icons';
+import { useCan } from './common';
 import { InvoiceWhatsappButton, printInvoicePdf, saveInvoiceToDevice } from './InvoiceActions';
 
 type Item = { id: string; description: string; amount: number; service_id: string | null };
@@ -17,6 +18,8 @@ export default function ExtraServices({ appointmentId }: { appointmentId: string
   const inv = db.invoices().find((i) => i.appointmentId === appointmentId && i.status !== 'cancelled');
   const [items, setItems] = useState<Item[] | null>(null);
   const [pick, setPick] = useState('');
+  const can = useCan();
+  const [disc, setDisc] = useState('');
   const [busy, setBusy] = useState(false);
   const [fileBusy, setFileBusy] = useState<'' | 'print' | 'save'>('');
   const file = async (kind: 'print' | 'save') => {
@@ -68,6 +71,19 @@ export default function ExtraServices({ appointmentId }: { appointmentId: string
           </li>
         ))}
       </ul>
+      {/* ١٠/١١: مبلغ خصم على فاتورة الزيارة — صلاحية «الفواتير: تعديل السعر والخصم» وقبل أي دفع */}
+      {inv.status !== 'cancelled' && can('invoices', 'edit') && can('inv_price', 'view') && inv.paid <= 0 && (
+        <div className="xsvc__add">
+          <input className="input num" type="number" min={0} max={inv.price} inputMode="decimal" aria-label="مبلغ الخصم"
+            placeholder={inv.discount > 0 ? `الخصم الحالي ${money(inv.discount)}` : 'مبلغ الخصم (ج.م)'} value={disc} onChange={(e) => setDisc(e.target.value)} />
+          <Button variant="outline" icon="check" disabled={disc === ''} loading={busy} onClick={() => {
+            const d = Number(disc);
+            if (!Number.isFinite(d) || d < 0 || d > inv.price) { toast.error('الخصم لازم يكون بين 0 وإجمالي الخدمات.'); return; }
+            void call(() => db.updatePlanInvoice(inv.id, { price: inv.price, discount: d, note: inv.note ?? '' }, false), d > 0 ? `اتطبّق خصم ${money(d)}` : 'اتلغى الخصم').then(() => setDisc(''));
+          }}>تطبيق الخصم</Button>
+        </div>
+      )}
+      {inv.discount > 0 && <div className="xsvc__total"><span className="muted-sm">الخصم</span><b className="num">− {money(inv.discount)}</b></div>}
       <div className="xsvc__total"><span>الإجمالي</span><b className="num">{money(inv.total)}</b>{inv.paid > 0 && <span className="muted-sm">مدفوع {money(inv.paid)} · باقي {money(inv.remaining)}</span>}</div>
       {/* ٩/١١: نفس شكل «طباعة وإرسال» في التشخيص */}
       <div className="out-actions xsvc__out">

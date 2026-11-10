@@ -40,7 +40,7 @@ export default function Diagnosis() {
   const [pendingOpen, setPendingOpen] = useState<{ name: string; phone: string } | null>(null);
   const [unlinkedEdit, setUnlinkedEdit] = useState<Consultation | null>(null);
   const { online } = useOfflineState();
-  const pick = (id: string) => setParams(id ? { patient: id } : view !== 'waiting' ? { tab: view } : {}, { replace: true });
+  const pick = (id: string) => setParams(id ? { patient: id } : view !== 'waiting' ? { tab: view } : {});
   const setView = (v: View) => setParams(v !== 'waiting' ? { tab: v } : {}, { replace: true });
   // تشخيصات بدأت ولسه ما اتحفظتش (على الجهاز ده) — بنعيد قرايتها كل ما النافذة تتقفل عشان القايمة تفضل مظبوطة
   const drafts = !edit ? listConsultDrafts() : [];

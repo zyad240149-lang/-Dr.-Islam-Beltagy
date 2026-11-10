@@ -92,6 +92,22 @@ export default function Layout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  // رجوع الموبايل (الزرار أو السحب): بيرجّع للصفحة اللي قبلها. ولو دي أول صفحة اتفتحت (مفيش قبلها) كان بيقفل البرنامج —
+  // دلوقتي: أول صفحة غير الرئيسية ← الرئيسية، والرئيسية ← بيفضل فيها. بنحط «حارس» في السجل فوق أول صفحة.
+  useEffect(() => {
+    const atFirst = () => ((window.history.state as { idx?: number } | null)?.idx ?? 0) === 0;
+    const guard = () => window.history.pushState({ ...(window.history.state ?? {}), backGuard: true }, '', window.location.href);
+    if (atFirst()) guard();
+    const onPop = () => {
+      if ((window as { __skipPop?: boolean }).__skipPop) { (window as { __skipPop?: boolean }).__skipPop = false; return; } // قفل نافذة بالزرار
+      if (document.querySelector('.modal')) return; // النافذة المفتوحة هي اللي بتتقفل (ui.tsx Modal)
+      if (!atFirst()) return; // رجوع عادي لصفحة جوّه البرنامج
+      if (window.location.pathname.replace(import.meta.env.BASE_URL, '/') !== '/') navigate('/', { replace: true });
+      setTimeout(guard, 0);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const toast = useToast();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');

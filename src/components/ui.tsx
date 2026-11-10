@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode, type ButtonHTMLAttributes, type InputHTMLAttributes, type ChangeEvent } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type ButtonHTMLAttributes, type InputHTMLAttributes, type ChangeEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from '../utils/icons';
 import { toLatinDigits } from '../utils/format';
@@ -137,6 +137,21 @@ export function Modal({ title, onClose, children, footer, wide, xl }: { title: s
     document.addEventListener('focusin', onFocus);
     return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('focusin', onFocus); document.body.style.overflow = ''; };
   }, [onClose]);
+  // رجوع الموبايل (زرار/سحب) وفيه نافذة مفتوحة ← يقفل النافذة بس، مش يخرج من الصفحة
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  useEffect(() => {
+    const id = Math.random().toString(36).slice(2);
+    window.history.pushState({ ...(window.history.state ?? {}), modalGuard: id }, '', window.location.href);
+    let popped = false;
+    const onPop = () => { if ((window.history.state as { modalGuard?: string } | null)?.modalGuard !== id && !popped) { popped = true; closeRef.current(); } };
+    window.addEventListener('popstate', onPop);
+    return () => {
+      window.removeEventListener('popstate', onPop);
+      // اتقفلت بالزرار ← نشيل السطر بتاعها من السجل (لو لسه فوق)
+      if (!popped && (window.history.state as { modalGuard?: string } | null)?.modalGuard === id) { (window as { __skipPop?: boolean }).__skipPop = true; window.history.back(); }
+    };
+  }, []);
   // بيترسم في body: النافذة اللي بتتفتح من جوّه عنصر sticky (زي «حالة المزامنة» في القائمة الجانبية) كانت بتطلع ورا محتوى الصفحة ومابتتضغطش
   return createPortal(
     <div className="overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>

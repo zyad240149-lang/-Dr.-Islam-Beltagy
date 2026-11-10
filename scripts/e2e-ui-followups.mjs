@@ -85,8 +85,9 @@ try {
   const R = await open(STAFF.recep);
   let p = R.page;
   await go(p, '/patients?new=1');
-  await p.waitForSelector('#np-first', { timeout: 20000 });
-  await p.fill('#np-first', 'مريض'); await p.fill('#np-father', 'اختبار'); await p.fill('#np-family', 'المتابعات');
+  // ٨/١١ (1c470f7/ebb4d86): خانة اسم واحدة بدل الاسم/الأب/العيلة
+  await p.waitForSelector('#np-name', { timeout: 20000 });
+  await p.fill('#np-name', 'مريض اختبار المتابعات');
   await p.fill('#np-phone', PATIENT_PHONE);
   await p.getByLabel('الرقم الأساسي عليه واتساب').uncheck();
   check('خيار «إضافة رقم واتساب» بيظهر لما الأساسي مش عليه واتساب', await p.getByRole('button', { name: 'إضافة رقم واتساب' }).isVisible());

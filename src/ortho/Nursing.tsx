@@ -191,7 +191,7 @@ export function NursingModal({ patientId, appointmentId = null, initial, onClose
         {/* روشتة الزيارة اللي فاتت للرجوع ليها — الروشتة الجديدة بتتحفظ نسخة لوحدها ومابتمسحش القديمة */}
         <PrevRx patientId={patientId} excludeSourceId={initial?.id} date={date}
           onCopy={(meds, instructions) => setRx((x) => ({ ...x, medications: [...x.medications.filter((m) => m.name.trim()), ...meds.filter((m) => !x.medications.some((y) => y.name.trim().toLowerCase() === m.name.trim().toLowerCase()))], plan: x.plan.trim() ? x.plan : instructions }))} />
-        <RxEditor value={rx} onChange={setRx} patientId={patientId} region={ortho.list('consultations', patientId).sort((a, b) => b.date.localeCompare(a.date))[0]?.region} onUploading={setUploading} />
+        <RxEditor rxOnly value={rx} onChange={setRx} patientId={patientId} region={ortho.list('consultations', patientId).sort((a, b) => b.date.localeCompare(a.date))[0]?.region} onUploading={setUploading} />
       </Box>
       {fuOpen && <FollowUpModal patientId={patientId} doctorHint={visitDoctor} presetDate={addDays(todayYmd(), FU_DAYS[pl.fu] ?? 7)} onClose={() => setFuOpen(false)} />}
     </>;

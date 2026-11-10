@@ -29,7 +29,7 @@ function MedModal({ initial, groups, onClose }: { initial: Draft; groups: string
     </>}>
       <div className="grid-form grid-form--2">
         <Field label="اسم الدواء" className="span-2"><input className="input" dir="ltr" value={m.name} onChange={(e) => set('name', e.target.value)} placeholder="مثال: Diclofenac sodium 50mg" autoFocus /></Field>
-        <Field label="المجموعة" className="span-2">
+        <Field label="المجموعة (اختياري)" className="span-2">
           <select className="input" value={newGroup ? NEW_GROUP : m.group} onChange={(e) => {
             const isNew = e.target.value === NEW_GROUP;
             setNewGroup(isNew); set('group', isNew ? '' : e.target.value);
@@ -40,10 +40,10 @@ function MedModal({ initial, groups, onClose }: { initial: Draft; groups: string
           </select>
           {newGroup && <input className="input" style={{ marginTop: 8 }} value={m.group} onChange={(e) => set('group', e.target.value)} placeholder="اكتب اسم المجموعة الجديدة" autoFocus />}
         </Field>
-        <Field label="الجرعة"><input className="input" value={m.dose} onChange={(e) => set('dose', e.target.value)} placeholder="قرص" /></Field>
-        <Field label="التكرار"><input className="input" value={m.frequency} onChange={(e) => set('frequency', e.target.value)} placeholder="مرتين يوميًا بعد الأكل" /></Field>
-        <Field label="المدة"><input className="input" value={m.duration} onChange={(e) => set('duration', e.target.value)} placeholder="5 أيام" /></Field>
-        <Field label="ملاحظة" className="span-2"><textarea className="input" rows={2} value={m.notes ?? ''} onChange={(e) => set('notes', e.target.value)} placeholder="مثال: ممنوع النوم بعدها نص ساعة — بتظهر في خانة الملاحظات في الروشتة" /></Field>
+        <Field label="الجرعة (اختياري)"><input className="input" value={m.dose} onChange={(e) => set('dose', e.target.value)} placeholder="قرص" /></Field>
+        <Field label="التكرار (اختياري)"><input className="input" value={m.frequency} onChange={(e) => set('frequency', e.target.value)} placeholder="مرتين يوميًا بعد الأكل" /></Field>
+        <Field label="المدة (اختياري)"><input className="input" value={m.duration} onChange={(e) => set('duration', e.target.value)} placeholder="5 أيام" /></Field>
+        <Field label="ملاحظة (اختياري)" className="span-2"><textarea className="input" rows={2} value={m.notes ?? ''} onChange={(e) => set('notes', e.target.value)} placeholder="مثال: ممنوع النوم بعدها نص ساعة — بتظهر في خانة الملاحظات في الروشتة" /></Field>
         <label className="span-2" style={{ display: 'inline-flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}>
           <input type="checkbox" checked={isShown(m)} onChange={(e) => setM((x) => ({ ...x, shown: e.target.checked }))} /> يظهر قدامي في الروشتة
         </label>

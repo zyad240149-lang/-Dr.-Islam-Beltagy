@@ -14,7 +14,6 @@ import { useToast } from '../hooks/useToast';
 import { AppointmentDetailModal } from './Appointments';
 import { RescheduleModal, CancelModal, EditAppointmentModal, useConfirmAppointment, CONFIRMABLE, attendanceOpen } from '../components/AppointmentActions';
 import { PlanModal } from '../components/PatientForms';
-import DailySchedule from '../components/DailySchedule';
 import DoctorPatients, { dailyMotivation, dayGreeting, doctorTitle } from '../components/DoctorPatients';
 
 function Kpi({ icon, tone, value, label }: { icon: string; tone: string; value: string | number; label: string }) {
@@ -115,44 +114,7 @@ export default function Dashboard() {
         </>
       )}
 
-      <DailySchedule onOpen={(a) => setDetail(a)} onBook={canBook ? setSlotBooking : undefined} onlyDoctorId={doctorId || undefined} />
-
-      <div className="dash-cols">
-        {/* ١٠/١١: «جدول اليوم» اتشال من الرئيسية (طلب الدكتور) */}
-
-        <section className="card dash-col--narrow">
-          <div className="card__head">
-            <h2>{selected ? 'الموعد المحدّد' : 'أحدث حجز'}</h2>
-            {shown && shownStatus && <StatusBadge label={shown.status === 'new' ? 'بانتظار تأكيدك' : shownStatus.label} tone={shown.status === 'new' ? 'warn' : shownStatus.tone} />}
-          </div>
-          <div className="card__body">
-            {loading ? <Skeleton h={140} /> : !shown || !lp ? (
-              <EmptyState icon="calendarPlus" title="ما فيه حجوزات بانتظار التأكيد" />
-            ) : (
-              <>
-                {selected && <Button variant="ghost" size="sm" icon="close" onClick={() => setSelected(null)} style={{ marginBottom: 8 }}>رجوع لأحدث حجز</Button>}
-                <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 14 }}>
-                  <span className="avatar">{lp.p ? initials(lp.p.fullName) : '؟'}</span>
-                  <div style={{ minWidth: 0 }}>
-                    <strong style={{ display: 'block' }}>{lp.p?.fullName ?? '—'}</strong>
-                    <span className="muted num" style={{ fontSize: 13 }}>{lp.p?.phone}</span>
-                  </div>
-                </div>
-                <dl className="dl" style={{ marginBottom: 16 }}>
-                  <div><dt>الخدمة</dt><dd>{lp.svc?.name} ({APPT_TYPE_LABEL[shown.type]})</dd></div>
-                  <div><dt>المعالج</dt><dd>{lp.th?.name ?? '—'}</dd></div>
-                  <div><dt>التاريخ والوقت</dt><dd className="num date">{fmtDate(shown.date)} · {fmtTime(shown.time)}</dd></div>
-                </dl>
-                {CONFIRMABLE.includes(shown.status) && attendanceOpen(shown) && canConfirmAppt ? (
-                  <Button style={{ width: '100%' }} icon="check" onClick={() => confirmAppt(shown)}>تأكيد</Button>
-                ) : (
-                  <Button style={{ width: '100%' }} variant="outline" onClick={() => setDetail(shown)}>عرض التفاصيل</Button>
-                )}
-              </>
-            )}
-          </div>
-        </section>
-      </div>
+      {/* ١٠/١١: «جدول المواعيد اليومي» و«أحدث حجز» اتشالوا من الرئيسية (طلب الدكتور) — المواعيد من «حجز كشف ومتابعة» */}
 
       {booking && <BookingWizard onClose={() => setBooking(false)} />}
       {slotBooking && <BookingWizard presetTherapistId={slotBooking.therapistId} presetDate={slotBooking.date} presetTime={slotBooking.time} onClose={() => setSlotBooking(null)} />}

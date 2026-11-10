@@ -1,5 +1,6 @@
 import type { Area, Op, Role } from '../types';
 import { db } from '../data/db';
+import { opsOf } from './defaultPermissions';
 
 export type { Area, Op };
 
@@ -15,8 +16,10 @@ export function can(role: Role | undefined, area: Area, op: Op = 'view'): boolea
   if (myExtra[area]?.includes(op)) return true;
   if (role === 'system_admin' && area === 'employees') return true; // لا يُقفل مدير النظام خارج إدارة الموظفين
   if (role === 'system_admin' && (area === 'roles' || area === 'employees')) return true; // لا يُقفل مدير النظام خارج إدارة الصلاحيات
-  if (role !== 'system_admin' && myOverride && area in myOverride) return myOverride[area]?.includes(op) ?? false;
-  return db.permissions()[role]?.[area]?.includes(op) ?? false;
+  const roleM = db.permissions()[role];
+  // صلاحيات الموظف المخصّصة بتحل محل الدور في الأقسام الموجودة فيها — والأقسام الجديدة بتتحسب من الاتنين مع بعض
+  const m = role !== 'system_admin' && myOverride ? { ...roleM, ...myOverride } : roleM;
+  return opsOf(m, area).includes(op);
 }
 
 export const ROLE_LABEL: Record<Role, string> = {
@@ -25,21 +28,42 @@ export const ROLE_LABEL: Record<Role, string> = {
   secretary: 'سكرتير المدير',
   reception: 'استقبال',
   accountant: 'محاسب',
-  therapist: 'أخصائي علاج طبيعي',
+  therapist: 'دكتور',
 };
 
+// اسم كل صلاحية = اسم القسم في القائمة الجانبية بالظبط. الصلاحيات اللي بتتحكم في زرار أو فلتر جوّه قسم بتبدأ باسم القسم «القسم: …»
 export const AREA_LABEL: Record<Area, string> = {
-  dashboard: 'لوحة التحكم', patients: 'المرضى', booking: 'حجز موعد', appointments: 'المواعيد', plans: 'خطط العلاج',
-  sessions: 'الزيارات', services: 'الخدمات', therapists: 'المعالجون', employees: 'الموظفون',
-  invoices: 'الفواتير والمدفوعات', payments: 'عمليات الدفع (تعديل/حذف دفعة)', packages: 'الباقات', inventory: 'المخزون', reports: 'التقارير',
-  notifications: 'الإشعارات', roles: 'الأدوار والصلاحيات', settings: 'الإعدادات', workhours: 'مواعيد العمل', requests: 'طلبات الموظفين', support: 'الدعم الفني', discounts: 'أكواد الخصم', campaigns: 'إشعارات المرضى', financial: 'البيانات المالية (الإيرادات والتقارير المالية)', attendance: 'الحضور والانصراف', loyalty: 'نقاط الولاء', products: 'بيع المنتجات', installments: 'طلبات تقسيط الباقات (الموافقة = تعديل)', inv_approve: 'زر: اعتماد الفاتورة (اطلاع = مسموح)', inv_price: 'زر: تعديل سعر/خصم الفاتورة (اطلاع = مسموح)', inv_cancel: 'زر: إلغاء الفاتورة (اطلاع = مسموح)', inv_overdraw: 'صرف مخزون أكبر من المتاح', appt_confirm: 'زر: تأكيد حضور الموعد (اطلاع = مسموح)', appt_cancel: 'زر: إلغاء الموعد (اطلاع = مسموح)',
-  payroll: 'الرواتب والتارجت والفواتير الشاملة (للمدير العام فقط)',
-  whatsapp: 'إرسال رسائل واتساب للعملاء',
-  pkg_checkin: 'حضور مرضى الباقات', bodymap: 'جسم الإنسان', marketing: 'تقرير التسويق', online_accounts: 'حجز مكالمات وحسابات أونلاين',
-  pt_f_gender: 'صفحة المرضى: فلتر «الجنس» (اطلاع = يظهر)', pt_f_source: 'صفحة المرضى: فلتر «مصدر المعرفة» (اطلاع = يظهر)', pt_f_doctor: 'صفحة المرضى: فلتر «الطبيب» (اطلاع = يظهر)', pt_f_status: 'صفحة المرضى: فلتر «الحالة» نشط/معطّل (اطلاع = يظهر)', pt_f_sort: 'صفحة المرضى: «الترتيب» (اطلاع = يظهر)',
-  patient_import: 'استيراد المرضى من Excel (إضافة = تنفيذ الاستيراد)',
-  patient_export: 'تصدير ملف المرضى (Excel) (اطلاع = يظهر الزر ويُصدّر)',
-  physio: 'ملف العلاج الطبيعي (بيانات طبية: التقييم والخطة والأهداف وملاحظات التقدّم)',
+  dashboard: 'الرئيسية',
+  follow_ups: 'حجز كشف ومتابعة',
+  patients: 'المرضى',
+  online_accounts: 'المرضى: الحسابات الأونلاين وحجوزات المكالمات',
+  patient_import: 'المرضى: استيراد من Excel',
+  patient_export: 'المرضى: تصدير Excel',
+  pt_f_gender: 'المرضى: فلتر «الجنس»', pt_f_source: 'المرضى: فلتر «مصدر المعرفة»', pt_f_doctor: 'المرضى: فلتر «الطبيب»', pt_f_status: 'المرضى: فلتر «الحالة»', pt_f_sort: 'المرضى: «الترتيب»',
+  booking: 'حجز موعد', appointments: 'المواعيد',
+  appt_confirm: 'المواعيد: تأكيد حضور الموعد', appt_cancel: 'المواعيد: إلغاء الموعد',
+  services: 'الخدمات',
+  diagnosis: 'تشخيص المريض',
+  imaging: 'الأشعة والتحاليل',
+  injections: 'الحقن',
+  fractures: 'الكسور والجبس',
+  surgeries: 'العمليات الجراحية',
+  nursing: 'متابعة التمريض',
+  medications: 'الأدوية',
+  exercises: 'التمرينات العلاجية',
+  invoices: 'الفواتير والمدفوعات',
+  payments: 'المدفوعات (تسجيل الدفعات وتعديلها وحذفها)',
+  inv_approve: 'الفواتير: اعتماد الفاتورة', inv_price: 'الفواتير: تعديل السعر والخصم', inv_cancel: 'الفواتير: إلغاء الفاتورة',
+  expenses: 'المصروفات',
+  financial: 'الأرقام المالية (الإيرادات والإجماليات)',
+  payroll: 'الرواتب والفواتير والمدفوعات (المدير)',
+  employees: 'الموظفون', therapists: 'الأطباء', attendance: 'الحضور والانصراف', requests: 'طلبات الموظفين', workhours: 'مواعيد العمل',
+  inventory: 'المخزون', inv_overdraw: 'المخزون: صرف كمية أكبر من المتاح',
+  campaigns: 'إرسال إشعارات للمرضى', whatsapp: 'رسائل واتساب للمرضى', support: 'الدعم الفني',
+  reports: 'التقارير', marketing: 'تقرير التسويق', notifications: 'الإشعارات', roles: 'الأدوار والصلاحيات', settings: 'الإعدادات',
+  // من نظام العلاج الطبيعي القديم أو اتشالت من البرنامج — مابتظهرش في شاشة الأدوار
+  plans: 'خطط العلاج', sessions: 'الزيارات (النظام القديم)', packages: 'الباقات', pkg_checkin: 'حضور مرضى الباقات', physio: 'ملف العلاج الطبيعي',
+  installments: 'طلبات تقسيط الباقات', discounts: 'أكواد الخصم', loyalty: 'نقاط الولاء', products: 'بيع المنتجات', bodymap: 'جسم الإنسان',
   'accounting.access': 'النظام المحاسبي: الدخول',
   'accounting.expenses.create': 'المحاسبة: تسجيل المصروفات',
   'accounting.expenses.approve': 'المحاسبة: اعتماد/إلغاء المصروفات',
@@ -67,7 +91,7 @@ export const ROLE_DESC: Record<Role, string> = {
   secretary: 'يدير الحجز والمرضى والمواعيد، ويطّلع على التقارير والإشعارات.',
   reception: 'يدير استقبال المرضى والحجز والمواعيد والفواتير الأساسية.',
   accountant: 'يدير الفواتير والمدفوعات والمخزون والبيانات المالية والتقارير.',
-  therapist: 'يرى مرضاه ومواعيده الخاصة فقط.',
+  therapist: 'الدكتور: يرى مرضاه ومواعيده الخاصة فقط، ويكتب التشخيص والعمليات والأدوية والتمرينات.',
 };
 
 // المعالج يرى مرضاه ومواعيده فقط

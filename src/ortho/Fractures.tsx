@@ -38,7 +38,7 @@ export function FractureModal({ initial, patientId = '', onClose }: { initial?: 
 
 export function FractureCards({ items, onEdit }: { items: Fracture[]; onEdit: (f: Fracture) => void }) {
   const { run, busy } = useRun();
-  const perm = useClinicalCan();
+  const perm = useClinicalCan('fractures');
   const t = todayYmd();
   if (!items.length) return <EmptyState icon="bone" title="لا توجد حالات" />;
   return (
@@ -86,7 +86,7 @@ export function FractureCards({ items, onEdit }: { items: Fracture[]; onEdit: (f
 
 export default function Fractures() {
   useOrthoVersion();
-  const perm = useClinicalCan();
+  const perm = useClinicalCan('fractures');
   const [tab, setTab] = useState<'active' | 'due' | 'healed'>('active');
   const [edit, setEdit] = useState<Fracture | 'new' | null>(null);
   const t = todayYmd();

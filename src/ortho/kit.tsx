@@ -2,6 +2,7 @@
 import { useState, type ReactNode } from 'react';
 import { ErrorState, Skeleton } from '../components/ui';
 import { useCan } from '../components/common';
+import type { Area } from '../types';
 import { useToast } from '../hooks/useToast';
 import { ortho, useOrthoVersion, type Kind } from './data';
 import { Icon } from '../utils/icons';
@@ -105,8 +106,8 @@ export function LoadState({ kind, children }: { kind: Kind; children: ReactNode 
   return <>{children}</>;
 }
 
-/** الكتابة السريرية: صلاحية الزيارات (نفس سياسة RLS على الخادم) */
-export function useClinicalCan() {
+/** صلاحيات قسم من أقسام العظام (التشخيص، الأشعة، العمليات، الأدوية…) — كل قسم ليه صلاحية لوحده في «الأدوار والصلاحيات» */
+export function useClinicalCan(area: Area) {
   const can = useCan();
-  return { add: can('sessions', 'create'), edit: can('sessions', 'edit'), del: can('sessions', 'delete') };
+  return { view: can(area, 'view'), add: can(area, 'create'), edit: can(area, 'edit'), del: can(area, 'delete') };
 }

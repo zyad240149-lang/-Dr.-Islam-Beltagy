@@ -56,7 +56,7 @@ export function ImagingModal({ initial, patientId = '', defaultKind = 'xray', on
 
 export function ImagingTable({ items, onEdit, hidePatient }: { items: Imaging[]; onEdit: (m: Imaging) => void; hidePatient?: boolean }) {
   const { run } = useRun();
-  const perm = useClinicalCan();
+  const perm = useClinicalCan('imaging');
   if (!items.length) return <EmptyState icon="scan" title="لا توجد أشعة أو تحاليل" />;
   return (
     <div className="table-wrap">
@@ -86,7 +86,7 @@ export function ImagingTable({ items, onEdit, hidePatient }: { items: Imaging[];
 
 export default function ImagingPage() {
   useOrthoVersion();
-  const perm = useClinicalCan();
+  const perm = useClinicalCan('imaging');
   const [tab, setTab] = useState<ImagingStatus | 'all'>('all');
   const [edit, setEdit] = useState<Imaging | 'new' | null>(null);
   const all = ortho.list('imaging').sort((a, b) => b.requestedAt.localeCompare(a.requestedAt));

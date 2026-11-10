@@ -106,7 +106,7 @@ export default function ExpensesTab() {
         <Select id="exp-filter-cat" label="البند" value={category} onChange={(e) => setCategory(e.target.value)} options={[{ value: '', label: 'كل البنود' }, ...usedCategories.map((value) => ({ value, label: value }))]} />
         <div className="filter-bar__actions">
           <Button variant="outline" icon="doc" onClick={doExport}>تصدير Excel</Button>
-          {can('financial', 'create') && <Button icon="plus" onClick={() => setEdit({ category: '', amount: '', description: '', date: todayYmd(), method: 'cash' })}>إضافة مصروف</Button>}
+          {can('expenses', 'create') && <Button icon="plus" onClick={() => setEdit({ category: '', amount: '', description: '', date: todayYmd(), method: 'cash' })}>إضافة مصروف</Button>}
         </div>
       </FilterBar>
       <div className="card__body">
@@ -120,8 +120,8 @@ export default function ExpensesTab() {
                 <tr key={x.id}>
                   <td>{fmtDate(x.expense_date)}</td><td style={{ fontWeight: 600 }}>{x.category}</td><td>{x.description || '—'}</td><td>{methodLabel(x.payment_method)}</td><td className="num" style={{ fontWeight: 700 }}>{money(x.amount)}</td>
                   <td className="actions"><div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                    {can('financial', 'edit') && <IconAction icon="edit" label="تعديل" onClick={() => setEdit({ id: x.id, category: x.category, amount: String(x.amount), description: x.description, date: x.expense_date, method: x.payment_method })} />}
-                    {can('financial', 'delete') && <IconAction icon="trash" label="حذف" danger onClick={() => setDeleting(x)} />}
+                    {can('expenses', 'edit') && <IconAction icon="edit" label="تعديل" onClick={() => setEdit({ id: x.id, category: x.category, amount: String(x.amount), description: x.description, date: x.expense_date, method: x.payment_method })} />}
+                    {can('expenses', 'delete') && <IconAction icon="trash" label="حذف" danger onClick={() => setDeleting(x)} />}
                   </div></td>
                 </tr>
               ))}</tbody>

@@ -1,15 +1,16 @@
 // زرار واتساب جنب رقم المريض — بيفتح المحادثة مباشرة (التطبيق أو WhatsApp Web)
 import { useState } from 'react';
 import { waPhone } from '../utils/format';
-import { ExerciseSendModal } from '../ortho/ExerciseSend';
+import { ExerciseSendModal, useCanSendExercises } from '../ortho/ExerciseSend';
 
 export function WhatsappLink({ phone, patientId, label = false, button = false }: { phone: string; patientId?: string; label?: boolean; button?: boolean }) {
   const n = phone ? waPhone(phone) : '';
   const [menu, setMenu] = useState(false);
+  const canEx = useCanSendExercises(); // من غير صلاحية التمرينات: الزرار بيفتح الشات على طول
   if (!n) return null;
   const cls = button ? 'btn btn--outline btn--sm wa-btn' : 'wa-link';
   // مريض معروف: ضغطة واتساب بتفتح خيارات (صور تمرينات / فيديوهات / ملفات PDF / رابط / فتح شات فاضي)؛ من غيره بيفتح الشات على طول
-  const wrap = (children: React.ReactNode) => patientId
+  const wrap = (children: React.ReactNode) => patientId && canEx
     ? <>
       <button type="button" className={cls} title="واتساب" aria-label="واتساب" onClick={(e) => { e.stopPropagation(); setMenu(true); }}>{children}</button>
       {menu && <span onClick={(e) => e.stopPropagation()}><ExerciseSendModal patientId={patientId} onClose={() => setMenu(false)} /></span>}

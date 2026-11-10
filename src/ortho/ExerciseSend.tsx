@@ -8,6 +8,10 @@ import { waPhone } from '../utils/format';
 import { ortho, useOrthoVersion, type Exercise, type ExerciseMedia } from './data';
 import { MediaThumb } from './Exercises';
 import { Field, PatientSelect, SearchBox, useClinicalCan, useRun } from './kit';
+import { useCan } from '../components/common';
+
+/** زرار «إرسال تمرينات واتساب» بيظهر بس لمين عنده صلاحية «التمرينات العلاجية» */
+export function useCanSendExercises() { return useCan()('exercises', 'view'); }
 
 type Mode = 'images' | 'videos' | 'pdfs' | 'link' | 'open';
 const isPdf = (m: ExerciseMedia) => m.type === 'application/pdf';
@@ -32,7 +36,7 @@ export function ExerciseSendPickPatient({ exercise, onClose }: { exercise: Exerc
 export function ExerciseSendModal({ patientId, initialSel, onClose }: { patientId: string; initialSel?: string[]; onClose: () => void }) {
   useOrthoVersion();
   const toast = useToast();
-  const perm = useClinicalCan();
+  const perm = useClinicalCan('exercises');
   const { run, busy } = useRun();
   const phone = db.patient(patientId)?.phone ?? '';
   const exercises = ortho.list('exercises');

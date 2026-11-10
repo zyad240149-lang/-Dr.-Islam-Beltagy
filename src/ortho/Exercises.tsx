@@ -73,7 +73,7 @@ function ExerciseModal({ initial, groups, onClose }: { initial: Draft; groups: s
 
 export default function Exercises() {
   useOrthoVersion();
-  const perm = useClinicalCan();
+  const perm = useClinicalCan('exercises');
   const { run } = useRun();
   const [q, setQ] = useState('');
   const [edit, setEdit] = useState<Draft | null>(null);

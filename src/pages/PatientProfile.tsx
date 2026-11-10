@@ -33,7 +33,7 @@ import {
   age, fmtDate, fmtDateTime, fmtTime, initials, money, tsToYmd, waLink, whatsappNumber,
 } from '../utils/format';
 import { useToast } from '../hooks/useToast';
-import type { InitialAssessment, Package, TreatmentPlan, TreatmentSession } from '../types';
+import type { Area, InitialAssessment, Package, TreatmentPlan, TreatmentSession } from '../types';
 
 const TABS = ['بيانات المريض', 'المواعيد', 'الزيارات', 'التقييم', 'خطة العلاج', 'الباقات', 'الفواتير والمدفوعات', 'سجل المريض', 'الملفات والمرفقات', 'سجل الجسم', 'العلاج الطبيعي (Physiotherapy)', 'سجل الكشوفات', 'التشخيص', 'الأشعة والتحاليل', 'الكسور والجبس', 'العمليات الجراحية', 'متابعة التمريض', 'التحاليل', 'الحقن', 'مواعيد المتابعة'];
 // ترتيب العرض (الأرقام فوق ثابتة عشان tab === n). عيادة عظام: «التشخيص» تبويب واحد بالشيت زي ما اتكتب (بدل «الكشوفات والتشخيص»
@@ -44,6 +44,8 @@ const TAB_LABEL: Record<number, string> = { 8: 'ملفات الأشعة والت
 // كل البيانات الطبية جوّه «التشخيص» (صف تحت التبويب) — التشخيصات أولًا. المواعيد والفواتير وسجل المريض تبويبات لوحدها فوق
 const DX_SUB: [number, string][] = [[12, 'التشخيصات'], [13, 'الأشعة'], [17, 'التحاليل'], [18, 'الحقن'], [14, 'الكسور والجبس'], [15, 'العمليات الجراحية'], [16, 'متابعة التمريض']];
 const IN_DX = new Set(DX_SUB.map(([i]) => i));
+// تبويبات ليها صلاحية قسم لوحدها — بتختفي لو الدور مالوش «اطلاع» عليها
+const TAB_AREA: Partial<Record<number, Area>> = { 12: 'diagnosis', 13: 'imaging', 17: 'imaging', 18: 'injections', 14: 'fractures', 15: 'surgeries', 16: 'nursing', 19: 'follow_ups' };
 const PHYSIO_TAB = 10;
 
 /** تشخيص المريض = تشخيص آخر كشف ليه (الكشف بيتحفظ بالتشخيص؛ حقل التشخيص في ملف المريض كان بيفضل فاضي) — ولو مفيش كشف: اللي متسجّل في الملف */
@@ -101,6 +103,10 @@ export default function PatientProfile() {
   const activePlan = db.activePlan(id);
   const activeStats = activePlan ? db.planStats(activePlan.id) : null;
   const canEditPatient = can('patients', 'edit');
+  const tabAllowed = (i: number) => { const a = TAB_AREA[i]; return !a || can(a, 'view'); };
+  const dxSub = DX_SUB.filter(([i]) => tabAllowed(i));
+  const tabOrder = TAB_ORDER.filter((i) => (i === 12 ? dxSub.length > 0 : tabAllowed(i)));
+  const openTab = (i: number) => setTab(i === 12 && !tabAllowed(12) ? dxSub[0]?.[0] ?? 0 : i);
   const paidTotal = payments.reduce((s, p) => s + p.amount, 0);
   const dueTotal = invoices.filter((i) => i.status !== 'cancelled').reduce((s, i) => s + i.remaining, 0);
 
@@ -141,7 +147,7 @@ export default function PatientProfile() {
                   <b>التشخيص:</b> <span dir="auto" className="pp-dx__t">{text || 'لسه مفيش تشخيص'}</span>
                   {dx?.icd10 && <span className="badge badge--muted num" dir="ltr">{dx.icd10}</span>}
                   {dx && <span className="muted-sm"> — آخر كشف {fmtDate(dx.date)}</span>}
-                  <button type="button" className="link-more" style={{ border: 0, background: 'none', cursor: 'pointer', marginInlineStart: 8 }} onClick={() => setTab(12)}>كل التشخيصات</button>
+                  {dxSub.length > 0 && <button type="button" className="link-more" style={{ border: 0, background: 'none', cursor: 'pointer', marginInlineStart: 8 }} onClick={() => openTab(12)}>كل التشخيصات</button>}
                 </p>
               );
             })()}
@@ -162,10 +168,10 @@ export default function PatientProfile() {
       </section>
 
       <div className="card">
-        <div className="tabs" style={{ overflowX: 'auto' }}>{TAB_ORDER.map((i) => <button key={TABS[i]} className={`tab ${(i === 12 ? IN_DX.has(tab) : tab === i) ? 'active' : ''}`} onClick={() => setTab(i)}>{TAB_LABEL[i] ?? TABS[i]}</button>)}</div>
+        <div className="tabs" style={{ overflowX: 'auto' }}>{tabOrder.map((i) => <button key={TABS[i]} className={`tab ${(i === 12 ? IN_DX.has(tab) : tab === i) ? 'active' : ''}`} onClick={() => openTab(i)}>{TAB_LABEL[i] ?? TABS[i]}</button>)}</div>
         {IN_DX.has(tab) && (
           <div className="cx-chips dx-subnav" role="tablist" aria-label="أقسام التشخيص">
-            {DX_SUB.map(([i, label]) => <button key={i} type="button" role="tab" aria-selected={tab === i} className={`cx-chip ${tab === i ? 'is-on' : ''}`} onClick={() => setTab(i)}>{label}</button>)}
+            {dxSub.map(([i, label]) => <button key={i} type="button" role="tab" aria-selected={tab === i} className={`cx-chip ${tab === i ? 'is-on' : ''}`} onClick={() => setTab(i)}>{label}</button>)}
           </div>
         )}
         <div className="card__body">
@@ -207,9 +213,9 @@ export default function PatientProfile() {
           )}
 
           {tab === 8 && <PatientFilesTab patientId={id} />}
-          {tab === 19 && <PatientFollowUps patientId={id} />}
+          {tab === 19 && tabAllowed(19) && <PatientFollowUps patientId={id} />}
           {tab === 11 && <ExamsTab patientId={id} />}
-          {tab === 12 && <DiagnosisTab patientId={id} />}
+          {tab === 12 && tabAllowed(12) && <DiagnosisTab patientId={id} />}
           {tab === 13 && <OrthoPatientTab kind="imaging" patientId={id} />}
           {tab === 14 && <OrthoPatientTab kind="fractures" patientId={id} />}
           {tab === 15 && <OrthoPatientTab kind="surgeries" patientId={id} />}

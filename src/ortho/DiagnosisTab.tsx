@@ -47,7 +47,7 @@ function SheetPreview({ c, visitNo }: { c: Consultation; visitNo: number }) {
 // embedded = جوّه صفحة التشخيص: زرار «تشخيص» والمسودة فوق في الصفحة نفسها، والتشخيصات كلها مفتوحة بالتفصيل
 export function DiagnosisTab({ patientId, embedded }: { patientId: string; embedded?: boolean }) {
   useOrthoVersion();
-  const perm = useClinicalCan();
+  const perm = useClinicalCan('diagnosis');
   const { run } = useRun();
   const [edit, setEdit] = useState<Consultation | 'new' | null>(null);
   const [resume, setResume] = useState(false);

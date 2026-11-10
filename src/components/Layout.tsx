@@ -25,18 +25,18 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     { to: '/', label: 'الرئيسية', icon: 'grid', area: 'dashboard', end: true },
   ] },
   { title: 'المرضى والمواعيد', items: [
-    { to: '/follow-ups', label: 'حجز كشف ومتابعة', icon: 'calendarPlus', area: 'patients' }, // ٩/١١: قسم لوحده — أول حاجة في القائمة
+    { to: '/follow-ups', label: 'حجز كشف ومتابعة', icon: 'calendarPlus', area: 'follow_ups' }, // ٩/١١: قسم لوحده — أول حاجة في القائمة
     { to: '/patients', label: 'المرضى', icon: 'users', area: 'patients' },
     // «حجز موعد» اتشال من القائمة (٨/١١) — الحجز من «المواعيد» وملف المريض
     // «المواعيد» اتشالت من القائمة (٩/١١) — الحجز من «المرضى ← حجز كشف ومتابعة»
     { to: '/services', label: 'الخدمات', icon: 'spark', area: 'services' },
   ] },
   { title: 'العظام والكسور', items: [
-    { to: '/diagnosis', label: 'تشخيص المريض', icon: 'stethoscope', area: 'patients' },
+    { to: '/diagnosis', label: 'تشخيص المريض', icon: 'stethoscope', area: 'diagnosis' },
     // «متابعات المرضى» اتشالت من القائمة (٩/١١) — نفس الجدول في «المرضى ← حجز كشف ومتابعة»
-    { to: '/surgeries', label: 'العمليات الجراحية', icon: 'scalpel', area: 'patients' },
-    { to: '/medications', label: 'الأدوية', icon: 'pill', area: 'patients' },
-    { to: '/exercises', label: 'التمرينات العلاجية', icon: 'bone', area: 'patients' },
+    { to: '/surgeries', label: 'العمليات الجراحية', icon: 'scalpel', area: 'surgeries' },
+    { to: '/medications', label: 'الأدوية', icon: 'pill', area: 'medications' },
+    { to: '/exercises', label: 'التمرينات العلاجية', icon: 'bone', area: 'exercises' },
   ] },
   { title: 'المالية', items: [
     { to: '/invoices', label: 'الفواتير والمدفوعات', icon: 'receipt', area: 'invoices' },

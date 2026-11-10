@@ -200,7 +200,7 @@ export function NursingModal({ patientId, appointmentId = null, initial, onClose
 // تاب «متابعة المريض» جوّه نموذج التشخيص: كل شيتات المتابعة بتاعت المريض + متابعة جديدة/تعديل في نفس المكان
 export function NursingSheetTab({ patientId, appointmentId, startNew, onDirty }: { patientId: string; appointmentId: string | null; startNew?: boolean; onDirty: (dirty: boolean) => void }) {
   useOrthoVersion();
-  const perm = useClinicalCan();
+  const perm = useClinicalCan('nursing');
   const [form, setForm] = useState<Nursing | 'new' | null>(startNew && perm.add ? 'new' : null);
   const items = ortho.list('nursing', patientId).sort((a, b) => b.date.localeCompare(a.date));
   if (form) return <NursingModal embedded key={form === 'new' ? 'new' : form.id} patientId={patientId} appointmentId={form === 'new' ? appointmentId : form.appointmentId ?? null} initial={form === 'new' ? undefined : form} onDirty={onDirty} onClose={() => setForm(null)} />;
@@ -227,7 +227,7 @@ const summary = (s: NursingSheet) => [
 
 export function NursingList({ items, onEdit }: { items: Nursing[]; onEdit: (n: Nursing) => void }) {
   const { run } = useRun();
-  const perm = useClinicalCan();
+  const perm = useClinicalCan('nursing');
   if (!items.length) return <EmptyState icon="clipboard" title="لا توجد شيتات متابعة" text="شيت متابعة التمريض بيتملى في كل زيارة متابعة." />;
   return (
     <div className="dx-queue">

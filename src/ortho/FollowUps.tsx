@@ -18,7 +18,7 @@ import { APPT_STATUS, fmtDate, fmtTime, riyadhNow, todayYmd, waLink, whatsappNum
 import type { Appointment } from '../types';
 import { normalizeSearch, phoneMatches } from '../utils/phoneUtils';
 import { FOLLOW_UP_KIND, addDays, ortho, useOrthoVersion, type FollowUp, type FollowUpKind } from './data';
-import { ExerciseSendModal } from './ExerciseSend';
+import { ExerciseSendModal, useCanSendExercises } from './ExerciseSend';
 import { Field, LoadState, PageHead, PatientSelect, SearchBox, patientFile, patientName, useRun } from './kit';
 
 export type FuState = 'upcoming' | 'today' | 'done' | 'missed' | 'cancelled';
@@ -34,13 +34,14 @@ const hhmm = (t?: string) => (t ? String(t).slice(0, 5) : '');
 const byWhen = (a: FollowUp, b: FollowUp) => a.date.localeCompare(b.date) || hhmm(a.time).localeCompare(hhmm(b.time));
 export const fuWhen = (f: Pick<FollowUp, 'date' | 'time'>) => `${fmtDate(f.date)}${f.time ? ` — ${fmtTime(hhmm(f.time))}` : ''}`;
 
-/** الإضافة/التعديل: الطبيب (sessions) أو الاستقبال (appointments) — نفس سياسات الخادم */
+/** صلاحية «حجز كشف ومتابعة» (follow_ups) — والحجز الفعلي في جدول المواعيد بصلاحية «حجز موعد»/«المواعيد» */
 export function useFuCan() {
   const can = useCan();
   return {
-    add: can('sessions', 'create') || can('appointments', 'create'),
-    edit: can('sessions', 'edit') || can('appointments', 'edit'),
-    del: can('sessions', 'delete'),
+    view: can('follow_ups', 'view'),
+    add: can('follow_ups', 'create'),
+    edit: can('follow_ups', 'edit'),
+    del: can('follow_ups', 'delete'),
     book: can('booking', 'create') || can('appointments', 'create'),
   };
 }
@@ -141,6 +142,7 @@ export function FollowUpModal({ patientId, patientLabel, consultationId, initial
   const createdId = useRef<string | undefined>(undefined); // لو الحجز فشل بعد حفظ المتابعة، إعادة المحاولة ماتكررهاش
   const [checkIn, setCheckIn] = useState(false);
   const [exSend, setExSend] = useState(false);
+  const canExSend = useCanSendExercises();
   const set = <K extends keyof FuDraft>(k: K, v: FuDraft[K]) => setF((x) => ({ ...x, [k]: v }));
   const canSave = !!f.date && (saved ? perm.edit : perm.add);
   const t = todayYmd();
@@ -272,7 +274,7 @@ export function FollowUpModal({ patientId, patientLabel, consultationId, initial
         {saved && <FuBadge f={saved} />}
         {appt && <span className="badge badge--info">حجز <span className="num">{appt.no}</span></span>}
         {appt && <ApptBadge a={appt} />}
-        {patientId && <Button size="sm" variant="outline" icon="share" onClick={() => setExSend(true)}>إرسال تمرينات واتساب</Button>}
+        {patientId && canExSend && <Button size="sm" variant="outline" icon="share" onClick={() => setExSend(true)}>إرسال تمرينات واتساب</Button>}
       </div>
       {exSend && patientId && <ExerciseSendModal patientId={patientId} onClose={() => setExSend(false)} />}
 
@@ -389,6 +391,7 @@ function FuWhatsapp({ f }: { f: FollowUp }) {
 /** إرسال تمرينات للمريض من صف المتابعة */
 function FuExercises({ patientId }: { patientId: string }) {
   const [open, setOpen] = useState(false);
+  if (!useCanSendExercises()) return null;
   return <>
     <Button size="sm" variant="outline" icon="share" onClick={() => setOpen(true)}>إرسال تمرينات</Button>
     {open && <ExerciseSendModal patientId={patientId} onClose={() => setOpen(false)} />}

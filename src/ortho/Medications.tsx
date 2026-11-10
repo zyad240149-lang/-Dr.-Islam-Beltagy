@@ -101,7 +101,7 @@ function GroupModal({ initialName, meds, toRow, onClose }: { initialName: string
 
 export default function Medications() {
   useOrthoVersion();
-  const perm = useClinicalCan();
+  const perm = useClinicalCan('medications');
   const { run, busy } = useRun();
   const [view, setView] = useState<'shown' | 'bank'>('shown');
   const [q, setQ] = useState('');

@@ -4,13 +4,15 @@ import { useDbVersion } from '../hooks/useDb';
 import { Button, Select, StatusBadge } from '../components/ui';
 import { ConfirmDialog, useCan } from '../components/common';
 import { AREA_LABEL, OP_DESC, OP_LABEL, ROLE_DESC, ROLE_ICON, ROLE_LABEL } from '../services/permissions';
-import { AREAS, OPS, ROLES } from '../services/defaultPermissions';
+import { AREAS, OPS, ROLES, withLegacy, withLegacyMatrix } from '../services/defaultPermissions';
 import { AREA_GROUPS, AREA_HELP } from '../services/permissionHelp';
 
 // أقسام مش موجودة في نظام العيادة (من نظام العلاج الطبيعي القديم أو اتشالت) — مابتظهرش في صفحة الصلاحيات
-const HIDDEN = new Set<Area>(['sessions', 'plans', 'therapists', 'packages', 'pkg_checkin', 'physio', 'installments', 'discounts', 'loyalty', 'products', 'bodymap',
+const HIDDEN = new Set<Area>(['sessions', 'plans', 'packages', 'pkg_checkin', 'physio', 'installments', 'discounts', 'loyalty', 'products', 'bodymap',
   'accounting.access', 'accounting.expenses.create', 'accounting.expenses.approve', 'accounting.purchases.manage', 'accounting.payroll.view', 'accounting.payroll.manage', 'accounting.journals.create', 'accounting.journals.post', 'accounting.reports.view', 'accounting.settings.manage', 'accounting.periods.close']);
 const shown = (a: Area) => a !== 'roles' && a !== 'payroll' && !HIDDEN.has(a);
+// الأقسام الجديدة اللي لسه ما اتحفظتش بتظهر بقيمتها الفعلية (المحسوبة من الصلاحيات القديمة) — والحفظ بيسجّلها صريحة
+const current = (): PermissionMatrix => withLegacyMatrix(JSON.parse(JSON.stringify(db.permissions())));
 const GROUPS = AREA_GROUPS.map((g) => ({ ...g, areas: g.areas.filter((a) => shown(a) && AREAS.includes(a)) })).filter((g) => g.areas.length > 0);
 import { useToast } from '../hooks/useToast';
 import { Icon } from '../utils/icons';
@@ -21,20 +23,21 @@ export default function Roles() {
   const toast = useToast();
   const can = useCan();
   const [role, setRole] = useState<Role>('secretary');
-  const [draft, setDraft] = useState<PermissionMatrix>(() => JSON.parse(JSON.stringify(db.permissions())));
+  const [draft, setDraft] = useState<PermissionMatrix>(current);
   const [resetting, setResetting] = useState(false);
   // موظف محدد (اختياري): صلاحياته الخاصة بتحل محل صلاحيات دوره
   const [empId, setEmpId] = useState('');
   const emp = empId ? db.employees().find((e) => e.id === empId) : undefined;
-  const baseEmp = (): Partial<Record<Area, Op[]>> => { const r = JSON.parse(JSON.stringify(db.permissions()[role] ?? {})); return { ...r, ...(emp?.permOverride ?? {}) }; };
+  const empMatrix = (e?: { permOverride?: Partial<Record<Area, Op[]>> | null }) => withLegacy({ ...JSON.parse(JSON.stringify(db.permissions()[role] ?? {})), ...(e?.permOverride ?? {}) });
+  const baseEmp = (): Partial<Record<Area, Op[]>> => empMatrix(emp);
   const [empDraft, setEmpDraft] = useState<Partial<Record<Area, Op[]>>>({});
   const pickEmp = (id: string) => {
     setEmpId(id);
     const e = db.employees().find((x) => x.id === id);
-    setEmpDraft(e ? { ...JSON.parse(JSON.stringify(db.permissions()[role] ?? {})), ...(e.permOverride ?? {}) } : {});
+    setEmpDraft(e ? empMatrix(e) : {});
   };
   const editable = can('roles', 'edit') && role !== 'system_admin';
-  const dirty = emp ? JSON.stringify(empDraft) !== JSON.stringify(baseEmp()) : JSON.stringify(draft) !== JSON.stringify(db.permissions());
+  const dirty = emp ? JSON.stringify(empDraft) !== JSON.stringify(baseEmp()) : JSON.stringify(draft) !== JSON.stringify(current());
 
   const has = (r: Role, a: Area, o: Op) => (emp ? empDraft[a] : draft[r]?.[a])?.includes(o) ?? false;
   const toggle = (a: Area, o: Op) => {
@@ -63,7 +66,7 @@ export default function Roles() {
             <Button icon="check" disabled={!dirty} onClick={async () => {
               if (emp) {
                 // بنحفظ بس الأقسام اللي مختلفة عن الدور — عشان أي تعديل بعدين على الدور يوصل للموظف في باقي الأقسام
-                const roleM = db.permissions()[role] ?? {}; const norm = (x?: Op[]) => JSON.stringify([...(x ?? [])].sort());
+                const roleM = withLegacy(db.permissions()[role] ?? {}); const norm = (x?: Op[]) => JSON.stringify([...(x ?? [])].sort());
                 const diff = Object.fromEntries(Object.entries(empDraft).filter(([k, ops]) => norm(ops as Op[]) !== norm(roleM[k as Area])));
                 const r = await db.setEmployeePermissions(emp.id, Object.keys(diff).length ? diff : null); if (r.ok) toast.success(`تم حفظ صلاحيات ${emp.name}.`); else toast.error(r.error); return; }
               await db.updatePermissions(draft); toast.success('تم حفظ الصلاحيات.');
@@ -102,7 +105,7 @@ export default function Roles() {
             <div style={{ minWidth: 260 }}>
               <Select id="rl-emp" label="اختر موظف (اختياري)" value={empId} onChange={(e) => pickEmp(e.target.value)}
                 options={[{ value: '', label: `كل موظفي «${ROLE_LABEL[role]}» (صلاحيات الدور)` }, ...db.employees().filter((e) => e.role === role).map((e) => ({ value: e.id, label: `${e.name}${e.permOverride ? ' — صلاحيات مخصّصة' : ''}${e.active ? '' : ' (معطّل)'}` }))]} />
-              {emp?.permOverride && editable && <Button size="sm" variant="ghost" onClick={async () => { const r = await db.setEmployeePermissions(emp.id, null); if (r.ok) { toast.success(`${emp.name} رجع لصلاحيات دوره.`); setEmpDraft(JSON.parse(JSON.stringify(db.permissions()[role] ?? {}))); } else toast.error(r.error); }}>رجوع لصلاحيات الدور</Button>}
+              {emp?.permOverride && editable && <Button size="sm" variant="ghost" onClick={async () => { const r = await db.setEmployeePermissions(emp.id, null); if (r.ok) { toast.success(`${emp.name} رجع لصلاحيات دوره.`); setEmpDraft(empMatrix()); } else toast.error(r.error); }}>رجوع لصلاحيات الدور</Button>}
             </div>
           )}
         </div>
@@ -166,7 +169,7 @@ export default function Roles() {
 
       {resetting && <ConfirmDialog title="استعادة الصلاحيات الافتراضية" danger={false} confirmLabel="استعادة" onClose={() => setResetting(false)}
         message="سيتم استبدال كل الصلاحيات الحالية لكل الأدوار بالإعداد الافتراضي للنظام."
-        onConfirm={async () => { await db.resetPermissions(); setDraft(JSON.parse(JSON.stringify(db.permissions()))); toast.success('تمت استعادة الصلاحيات الافتراضية.'); }} />}
+        onConfirm={async () => { await db.resetPermissions(); setDraft(current()); toast.success('تمت استعادة الصلاحيات الافتراضية.'); }} />}
     </div>
   );
 }

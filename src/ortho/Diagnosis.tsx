@@ -13,7 +13,7 @@ import { db } from '../data/db';
 import { useDbVersion } from '../hooks/useDb';
 import { APPT_STATUS, fmtDate, fmtTime, todayYmd, whatsappNumber } from '../utils/format';
 import { normalizeSearch, patientMatches } from '../utils/phoneUtils';
-import { ExerciseSendModal } from './ExerciseSend';
+import { ExerciseSendModal, useCanSendExercises } from './ExerciseSend';
 import { WhatsappLink } from '../components/WhatsappLink';
 import { isTripleName } from './ExamSheet';
 import { useOfflineState } from '../offline';
@@ -21,7 +21,7 @@ import { useOfflineState } from '../offline';
 export default function Diagnosis() {
   useOrthoVersion();
   useDbVersion();
-  const perm = useClinicalCan();
+  const perm = useClinicalCan('diagnosis');
   const [params, setParams] = useSearchParams();
   const patientId = params.get('patient') ?? '';
   type View = 'waiting' | 'done';
@@ -33,6 +33,7 @@ export default function Diagnosis() {
   const [fromQueue, setFromQueue] = useState(false); // اتفتح من «بانتظار التشخيص» ← بعد القفل يرجع للقايمة على المريض اللي بعده
   const [q, setQ] = useState('');
   const [exSend, setExSend] = useState(false);
+  const canExSend = useCanSendExercises();
   const [, setDraftsVersion] = useState(0);
   // «فتح ملف تشخيص جديد» بالاسم الثلاثي (المريض مش ظاهر في القايمة — غالبًا النت فاصل والاستقبال لسه ما رفعش ملفه)
   const [newFile, setNewFile] = useState<{ name: string; phone: string } | null>(null);
@@ -111,7 +112,7 @@ export default function Diagnosis() {
           </div>
           <div className="dx-patbar__act">
             <Link to={`/patients/${patientId}`} className="btn btn--outline btn--sm">ملف المريض</Link>
-            <Button size="sm" variant="outline" icon="share" onClick={() => setExSend(true)}>إرسال التمرينات عبر واتساب</Button>
+            {canExSend && <Button size="sm" variant="outline" icon="share" onClick={() => setExSend(true)}>إرسال التمرينات عبر واتساب</Button>}
             {perm.add && draft && <Button size="sm" icon="refresh" variant="outline" onClick={() => resumeDraft(patientId)}>استكمال التشخيص</Button>}
             {perm.add && <Button size="sm" icon="stethoscope" onClick={() => {
               if (draft && !window.confirm('فيه تشخيص لم يكتمل للمريض ده — بدء تشخيص جديد هيستبدله. تكمل؟')) return;

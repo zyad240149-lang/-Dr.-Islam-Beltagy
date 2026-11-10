@@ -1,6 +1,7 @@
 // تبويبات العظام داخل ملف المريض
 import { useState } from 'react';
-import { Button } from '../components/ui';
+import { Button, EmptyState } from '../components/ui';
+import type { Area } from '../types';
 import { ortho, useOrthoVersion, type Consultation, type Fracture, type Imaging, type Injection, type Nursing, type Surgery } from './data';
 import { InjectionList, InjectionModal } from './Injections';
 import { LoadState, useClinicalCan } from './kit';
@@ -12,6 +13,8 @@ import { NursingList, NursingModal } from './Nursing';
 
 // labs = طلبات التحاليل بس، imaging = الأشعة بس (نفس الجدول ortho_imaging)
 export type OrthoKind = 'consultations' | 'imaging' | 'labs' | 'fractures' | 'surgeries' | 'nursing' | 'injections';
+// صلاحية كل تبويب (التحاليل نفس جدول الأشعة)
+export const ORTHO_KIND_AREA: Record<OrthoKind, Area> = { consultations: 'diagnosis', imaging: 'imaging', labs: 'imaging', fractures: 'fractures', surgeries: 'surgeries', nursing: 'nursing', injections: 'injections' };
 const ADD: Record<OrthoKind, string> = { consultations: 'كشف جديد', imaging: 'طلب أشعة', labs: 'طلب تحليل', fractures: 'تسجيل كسر', surgeries: 'عملية جديدة', nursing: 'شيت متابعة', injections: 'سجل حقن' };
 
 export function OrthoPatientTab({ kind, patientId }: { kind: OrthoKind; patientId: string }) {
@@ -19,7 +22,8 @@ export function OrthoPatientTab({ kind, patientId }: { kind: OrthoKind; patientI
   const [edit, setEdit] = useState<object | 'new' | null>(null);
   const init = (edit === 'new' ? undefined : edit) as never;
   const close = () => setEdit(null);
-  const perm = useClinicalCan();
+  const perm = useClinicalCan(ORTHO_KIND_AREA[kind]);
+  if (!perm.view) return <EmptyState icon="alert" title="ما فيه صلاحية" text="لا تملك صلاحية الاطلاع على هذا القسم." />;
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}>

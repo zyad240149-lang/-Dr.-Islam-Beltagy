@@ -167,7 +167,7 @@ const summary = (s: InjectionSheet) => [
 
 export function InjectionList({ items, onEdit, showPatient }: { items: Injection[]; onEdit: (n: Injection) => void; showPatient?: boolean }) {
   const { run } = useRun();
-  const perm = useClinicalCan();
+  const perm = useClinicalCan('injections');
   if (!items.length) return <EmptyState icon="target" title="لا توجد سجلات حقن" text="سجل الحقن بيتملى مع كل حقنة (مكانها ونوع المادة والتقنية والمتابعة)." />;
   return (
     <div className="dx-queue">

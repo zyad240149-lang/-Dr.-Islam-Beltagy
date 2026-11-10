@@ -21,7 +21,7 @@ import { openPrintWindow, printHtml } from '../utils/printDoc';
 import { RequestForms } from './RequestForms';
 import { applyRequestForms, deliverRequestImage, labOthers, prepareRequestImage, readyRequestImage, requestHtml } from './requestData';
 import { DiagnosisOutput } from './DiagnosisOutput';
-import { ExerciseSendModal } from './ExerciseSend';
+import { ExerciseSendModal, useCanSendExercises } from './ExerciseSend';
 import { InjectionList, InjectionModal } from './Injections';
 import { PatientMedicalFiles } from './PatientMedicalFiles';
 import { RxEditor } from './Rx';
@@ -151,6 +151,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
   const [opened] = useState(() => ({ patientId: c.patientId, sheet: normSheet(c.sheet) }));
   const [mapOpen, setMapOpen] = useState(false);
   const [exSend, setExSend] = useState(false); // «إرسال تمرينات واتساب» من الشيت العام / كشف الطبيب
+  const canExSend = useCanSendExercises();
   const [out, setOut] = useState<DxPart[] | null>(null); // نافذة «طباعة وإرسال» بالأجزاء المختارة مبدئيًا
   const bodyRef = useRef<HTMLDivElement>(null);
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setC((x) => ({ ...x, [k]: v }));
@@ -405,7 +406,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
             </section>
           )}
           <div className="sh-next">
-            <Button variant="outline" icon="share" disabled={!c.patientId} title={c.patientId ? '' : 'اختار المريض الأول'} onClick={() => setExSend(true)}>إرسال تمرينات واتساب</Button>
+            {canExSend && <Button variant="outline" icon="share" disabled={!c.patientId} title={c.patientId ? '' : 'اختار المريض الأول'} onClick={() => setExSend(true)}>إرسال تمرينات واتساب</Button>}
             <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => setOut(['nurse'])}>طباعة / إرسال الشيت العام</Button>
             <Button icon="chevronLeft" onClick={() => goTab('appt')}>التالي: موعد المتابعة</Button>
           </div>
@@ -423,7 +424,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           </>
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('appt')}>رجوع: موعد المتابعة</Button>
-            <Button variant="outline" icon="share" disabled={!c.patientId} title={c.patientId ? '' : 'اختار المريض الأول'} onClick={() => setExSend(true)}>إرسال تمرينات واتساب</Button>
+            {canExSend && <Button variant="outline" icon="share" disabled={!c.patientId} title={c.patientId ? '' : 'اختار المريض الأول'} onClick={() => setExSend(true)}>إرسال تمرينات واتساب</Button>}
             <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => setOut(['doctor'])}>طباعة / إرسال كشف الطبيب</Button>
             <Button icon="chevronLeft" onClick={() => goTab('files')}>التالي: الأشعة والتحاليل</Button>
           </div>
@@ -739,7 +740,7 @@ export function LinkBadge({ c }: { c: Consultation & { pendingSync?: boolean } }
 
 export function ConsultList({ items, onEdit, hidePatient }: { items: Consultation[]; onEdit: (c: Consultation) => void; hidePatient?: boolean }) {
   const { run } = useRun();
-  const perm = useClinicalCan();
+  const perm = useClinicalCan('diagnosis');
   const [out, setOut] = useState<Consultation | null>(null);
   if (!items.length) return <EmptyState icon="stethoscope" title="لا توجد كشوفات" />;
   return (
@@ -794,7 +795,7 @@ export function ConsultList({ items, onEdit, hidePatient }: { items: Consultatio
 
 export default function Consultations() {
   useOrthoVersion();
-  const perm = useClinicalCan();
+  const perm = useClinicalCan('diagnosis');
   const [q, setQ] = useState('');
   const [edit, setEdit] = useState<Consultation | 'new' | null>(null);
   const term = q.trim();

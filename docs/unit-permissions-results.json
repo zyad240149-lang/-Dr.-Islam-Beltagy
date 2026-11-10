@@ -1,0 +1,1432 @@
+{
+  "at": "2026-11-10T13:51:44.479Z",
+  "passed": 285,
+  "failed": 0,
+  "results": [
+    {
+      "name": "القائمة اتقرت",
+      "ok": true,
+      "detail": "24"
+    },
+    {
+      "name": "«الرئيسية» (/): الصلاحية «dashboard» معرّفة",
+      "ok": true,
+      "detail": "dashboard"
+    },
+    {
+      "name": "«الرئيسية»: ظاهرة في شاشة الأدوار",
+      "ok": true,
+      "detail": "dashboard"
+    },
+    {
+      "name": "«حجز كشف ومتابعة» (/follow-ups): الصلاحية «follow_ups» معرّفة",
+      "ok": true,
+      "detail": "follow_ups"
+    },
+    {
+      "name": "«حجز كشف ومتابعة»: ظاهرة في شاشة الأدوار",
+      "ok": true,
+      "detail": "follow_ups"
+    },
+    {
+      "name": "«حجز كشف ومتابعة»: اسم الصلاحية = اسم القسم",
+      "ok": true,
+      "detail": "حجز كشف ومتابعة"
+    },
+    {
+      "name": "«المرضى» (/patients): الصلاحية «patients» معرّفة",
+      "ok": true,
+      "detail": "patients"
+    },
+    {
+      "name": "«المرضى»: ظاهرة في شاشة الأدوار",
+      "ok": true,
+      "detail": "patients"
+    },
+    {
+      "name": "«المرضى»: اسم الصلاحية = اسم القسم",
+      "ok": true,
+      "detail": "المرضى"
+    },
+    {
+      "name": "«الخدمات» (/services): الصلاحية «services» معرّفة",
+      "ok": true,
+      "detail": "services"
+    },
+    {
+      "name": "«الخدمات»: ظاهرة في شاشة الأدوار",
+      "ok": true,
+      "detail": "services"
+    },
+    {
+      "name": "«الخدمات»: اسم الصلاحية = اسم القسم",
+      "ok": true,
+      "detail": "الخدمات"
+    },
+    {
+      "name": "«تشخيص المريض» (/diagnosis): الصلاحية «diagnosis» معرّفة",
+      "ok": true,
+      "detail": "diagnosis"
+    },
+    {
+      "name": "«تشخيص المريض»: ظاهرة في شاشة الأدوار",
+      "ok": true,
+      "detail": "diagnosis"
+    },
+    {
+      "name": "«تشخيص المريض»: اسم الصلاحية = اسم القسم",
+      "ok": true,
+      "detail": "تشخيص المريض"
+    },
+    {
+      "name": "«العمليات الجراحية» (/surgeries): الصلاحية «surgeries» معرّفة",
+      "ok": true,
+      "detail": "surgeries"
+    },
+    {
+      "name": "«العمليات الجراحية»: ظاهرة في شاشة الأدوار",
+      "ok": true,
+      "detail": "surgeries"
+    },
+    {
+      "name": "«العمليات الجراحية»: اسم الصلاحية = اسم القسم",
+      "ok": true,
+      "detail": "العمليات الجراحية"
+    },
+    {
+      "name": "«الأدوية» (/medications): الصلاحية «medications» معرّفة",
+      "ok": true,
+      "detail": "medications"
+    },
+    {
+      "name": "«الأدوية»: ظاهرة في شاشة الأدوار",
+      "ok": true,
+      "detail": "medications"
+    },
+    {
+      "name": "«الأدوية»: اسم الصلاحية = اسم القسم",
+      "ok": true,
+      "detail": "الأدوية"
+    },
+    {
+      "name": "«التمرينات العلاجية» (/exercises): الصلاحية «exercises» معرّفة",
+      "ok": true,
+      "detail": "exercises"
+    },
+    {
+      "name": "«التمرينات العلاجية»: ظاهرة في شاشة الأدوار",
+      "ok": true,
+      "detail": "exercises"
+    },
+    {
+      "name": "«التمرينات العلاجية»: اسم الصلاحية = اسم القسم",
+      "ok": true,
+      "detail": "التمرينات العلاجية"
+    },
+    {
+      "name": "«الفواتير والمدفوعات» (/invoices): الصلاحية «invoices» معرّفة",
+      "ok": true,
+      "detail": "invoices"
+    },
+    {
+      "name": "«الفواتير والمدفوعات»: ظاهرة في شاشة الأدوار",
+      "ok": true,
+      "detail": "invoices"
+    },
+    {
+      "name": "«الفواتير والمدفوعات»: اسم الصلاحية = اسم القسم",
+      "ok": true,
+      "detail": "الفواتير والمدفوعات"
+    },
+    {
+      "name": "«الفواتير والمدفوعات (المدير)» (/finance): الصلاحية «payroll» معرّفة",
+      "ok": true,
+      "detail": "payroll"
+    },
+    {
+      "name": "«الرواتب» (/payroll): الصلاحية «payroll» معرّفة",
+      "ok": true,
+      "detail": "payroll"
+    },
+    {
+      "name": "«الموظفون» (/employees): الصلاحية «employees» معرّفة",
+      "ok": true,
+      "detail": "employees"
+    },
+    {
+      "name": "«الموظفون»: ظاهرة في شاشة الأدوار",
+      "ok": true,
+      "detail": "employees"
+    },
+    {
+      "name": "«الموظفون»: اسم الصلاحية = اسم القسم",
+      "ok": true,
+      "detail": "الموظفون"
+    },
+    {
+      "name": "«الحضور والانصراف» (/attendance): الصلاحية «attendance» معرّفة",
+      "ok": true,
+      "detail": "attendance"
+    },
+    {
+      "name": "«الحضور والانصراف»: ظاهرة في شاشة الأدوار",
+      "ok": true,
+      "detail": "attendance"
+    },
+    {
+      "name": "«الحضور والانصراف»: اسم الصلاحية = اسم القسم",
+      "ok": true,
+      "detail": "الحضور والانصراف"
+    },
+    {
+      "name": "«طلبات الموظفين» (/requests): الصلاحية «requests» معرّفة",
+      "ok": true,
+      "detail": "requests"
+    },
+    {
+      "name": "«طلبات الموظفين»: ظاهرة في شاشة الأدوار",
+      "ok": true,
+      "detail": "requests"
+    },
+    {
+      "name": "«طلبات الموظفين»: اسم الصلاحية = اسم القسم",
+      "ok": true,
+      "detail": "طلبات الموظفين"
+    },
+    {
+      "name": "«مواعيد العمل» (/work-hours): الصلاحية «workhours» معرّفة",
+      "ok": true,
+      "detail": "workhours"
+    },
+    {
+      "name": "«مواعيد العمل»: ظاهرة في شاشة الأدوار",
+      "ok": true,
+      "detail": "workhours"
+    },
+    {
+      "name": "«مواعيد العمل»: اسم الصلاحية = اسم القسم",
+      "ok": true,
+      "detail": "مواعيد العمل"
+    },
+    {
+      "name": "«المخزون» (/inventory): الصلاحية «inventory» معرّفة",
+      "ok": true,
+      "detail": "inventory"
+    },
+    {
+      "name": "«المخزون»: ظاهرة في شاشة الأدوار",
+      "ok": true,
+      "detail": "inventory"
+    },
+    {
+      "name": "«المخزون»: اسم الصلاحية = اسم القسم",
+      "ok": true,
+      "detail": "المخزون"
+    },
+    {
+      "name": "«إرسال إشعارات للمرضى» (/campaigns): الصلاحية «campaigns» معرّفة",
+      "ok": true,
+      "detail": "campaigns"
+    },
+    {
+      "name": "«إرسال إشعارات للمرضى»: ظاهرة في شاشة الأدوار",
+      "ok": true,
+      "detail": "campaigns"
+    },
+    {
+      "name": "«إرسال إشعارات للمرضى»: اسم الصلاحية = اسم القسم",
+      "ok": true,
+      "detail": "إرسال إشعارات للمرضى"
+    },
+    {
+      "name": "«الدعم الفني» (/support): الصلاحية «support» معرّفة",
+      "ok": true,
+      "detail": "support"
+    },
+    {
+      "name": "«الدعم الفني»: ظاهرة في شاشة الأدوار",
+      "ok": true,
+      "detail": "support"
+    },
+    {
+      "name": "«الدعم الفني»: اسم الصلاحية = اسم القسم",
+      "ok": true,
+      "detail": "الدعم الفني"
+    },
+    {
+      "name": "«التقارير» (/reports): الصلاحية «reports» معرّفة",
+      "ok": true,
+      "detail": "reports"
+    },
+    {
+      "name": "«التقارير»: ظاهرة في شاشة الأدوار",
+      "ok": true,
+      "detail": "reports"
+    },
+    {
+      "name": "«التقارير»: اسم الصلاحية = اسم القسم",
+      "ok": true,
+      "detail": "التقارير"
+    },
+    {
+      "name": "«تقرير التسويق» (/marketing-report): الصلاحية «marketing» معرّفة",
+      "ok": true,
+      "detail": "marketing"
+    },
+    {
+      "name": "«تقرير التسويق»: ظاهرة في شاشة الأدوار",
+      "ok": true,
+      "detail": "marketing"
+    },
+    {
+      "name": "«تقرير التسويق»: اسم الصلاحية = اسم القسم",
+      "ok": true,
+      "detail": "تقرير التسويق"
+    },
+    {
+      "name": "«الإشعارات» (/notifications): الصلاحية «notifications» معرّفة",
+      "ok": true,
+      "detail": "notifications"
+    },
+    {
+      "name": "«الإشعارات»: ظاهرة في شاشة الأدوار",
+      "ok": true,
+      "detail": "notifications"
+    },
+    {
+      "name": "«الإشعارات»: اسم الصلاحية = اسم القسم",
+      "ok": true,
+      "detail": "الإشعارات"
+    },
+    {
+      "name": "«الأدوار والصلاحيات» (/roles): الصلاحية «roles» معرّفة",
+      "ok": true,
+      "detail": "roles"
+    },
+    {
+      "name": "«الأدوار والصلاحيات»: اسم الصلاحية = اسم القسم",
+      "ok": true,
+      "detail": "الأدوار والصلاحيات"
+    },
+    {
+      "name": "«الإعدادات» (/settings): الصلاحية «settings» معرّفة",
+      "ok": true,
+      "detail": "settings"
+    },
+    {
+      "name": "«الإعدادات»: ظاهرة في شاشة الأدوار",
+      "ok": true,
+      "detail": "settings"
+    },
+    {
+      "name": "«الإعدادات»: اسم الصلاحية = اسم القسم",
+      "ok": true,
+      "detail": "الإعدادات"
+    },
+    {
+      "name": "قسم «تشخيص المريض» ليه صلاحية لوحده",
+      "ok": true,
+      "detail": "diagnosis"
+    },
+    {
+      "name": "قسم «العمليات الجراحية» ليه صلاحية لوحده",
+      "ok": true,
+      "detail": "surgeries"
+    },
+    {
+      "name": "قسم «الأدوية» ليه صلاحية لوحده",
+      "ok": true,
+      "detail": "medications"
+    },
+    {
+      "name": "قسم «التمرينات العلاجية» ليه صلاحية لوحده",
+      "ok": true,
+      "detail": "exercises"
+    },
+    {
+      "name": "قسم «حجز كشف ومتابعة» ليه صلاحية لوحده",
+      "ok": true,
+      "detail": "follow_ups"
+    },
+    {
+      "name": "قسم «المصروفات» ليه صلاحية لوحده",
+      "ok": true,
+      "detail": "expenses"
+    },
+    {
+      "name": "قسم «الأشعة والتحاليل» ليه صلاحية لوحده",
+      "ok": true,
+      "detail": "imaging"
+    },
+    {
+      "name": "قسم «الحقن» ليه صلاحية لوحده",
+      "ok": true,
+      "detail": "injections"
+    },
+    {
+      "name": "قسم «الكسور والجبس» ليه صلاحية لوحده",
+      "ok": true,
+      "detail": "fractures"
+    },
+    {
+      "name": "قسم «متابعة التمريض» ليه صلاحية لوحده",
+      "ok": true,
+      "detail": "nursing"
+    },
+    {
+      "name": "قسم «المخزون» ليه صلاحية لوحده",
+      "ok": true,
+      "detail": "inventory"
+    },
+    {
+      "name": "/ ← dashboard",
+      "ok": true,
+      "detail": "dashboard"
+    },
+    {
+      "name": "/patients ← patients",
+      "ok": true,
+      "detail": "patients"
+    },
+    {
+      "name": "/patients/:id ← patients",
+      "ok": true,
+      "detail": "patients"
+    },
+    {
+      "name": "/booking ← booking",
+      "ok": true,
+      "detail": "booking"
+    },
+    {
+      "name": "/appointments ← appointments",
+      "ok": true,
+      "detail": "appointments"
+    },
+    {
+      "name": "/sessions ← sessions",
+      "ok": true,
+      "detail": "sessions"
+    },
+    {
+      "name": "/services ← services",
+      "ok": true,
+      "detail": "services"
+    },
+    {
+      "name": "/diagnosis ← diagnosis",
+      "ok": true,
+      "detail": "diagnosis"
+    },
+    {
+      "name": "/consultations ← diagnosis",
+      "ok": true,
+      "detail": "diagnosis"
+    },
+    {
+      "name": "/follow-ups ← follow_ups",
+      "ok": true,
+      "detail": "follow_ups"
+    },
+    {
+      "name": "/imaging ← imaging",
+      "ok": true,
+      "detail": "imaging"
+    },
+    {
+      "name": "/fractures ← fractures",
+      "ok": true,
+      "detail": "fractures"
+    },
+    {
+      "name": "/surgeries ← surgeries",
+      "ok": true,
+      "detail": "surgeries"
+    },
+    {
+      "name": "/medications ← medications",
+      "ok": true,
+      "detail": "medications"
+    },
+    {
+      "name": "/exercises ← exercises",
+      "ok": true,
+      "detail": "exercises"
+    },
+    {
+      "name": "/employees ← employees",
+      "ok": true,
+      "detail": "employees"
+    },
+    {
+      "name": "/work-hours ← workhours",
+      "ok": true,
+      "detail": "workhours"
+    },
+    {
+      "name": "/my-hours ← dashboard",
+      "ok": true,
+      "detail": "dashboard"
+    },
+    {
+      "name": "/requests ← requests",
+      "ok": true,
+      "detail": "requests"
+    },
+    {
+      "name": "/attendance ← attendance",
+      "ok": true,
+      "detail": "attendance"
+    },
+    {
+      "name": "/loyalty ← loyalty",
+      "ok": true,
+      "detail": "loyalty"
+    },
+    {
+      "name": "/support ← support",
+      "ok": true,
+      "detail": "support"
+    },
+    {
+      "name": "/discounts ← discounts",
+      "ok": true,
+      "detail": "discounts"
+    },
+    {
+      "name": "/campaigns ← campaigns",
+      "ok": true,
+      "detail": "campaigns"
+    },
+    {
+      "name": "/therapists ← therapists",
+      "ok": true,
+      "detail": "therapists"
+    },
+    {
+      "name": "/invoices ← invoices",
+      "ok": true,
+      "detail": "invoices"
+    },
+    {
+      "name": "/finance ← payroll",
+      "ok": true,
+      "detail": "payroll"
+    },
+    {
+      "name": "/payroll ← payroll",
+      "ok": true,
+      "detail": "payroll"
+    },
+    {
+      "name": "/payroll/staff ← payroll",
+      "ok": true,
+      "detail": "payroll"
+    },
+    {
+      "name": "/payroll/reports ← payroll",
+      "ok": true,
+      "detail": "payroll"
+    },
+    {
+      "name": "/payments ← invoices",
+      "ok": true,
+      "detail": "invoices"
+    },
+    {
+      "name": "/product-sales ← products",
+      "ok": true,
+      "detail": "products"
+    },
+    {
+      "name": "/installments ← installments",
+      "ok": true,
+      "detail": "installments"
+    },
+    {
+      "name": "/inventory ← inventory",
+      "ok": true,
+      "detail": "inventory"
+    },
+    {
+      "name": "/reports ← reports",
+      "ok": true,
+      "detail": "reports"
+    },
+    {
+      "name": "/marketing-report ← marketing",
+      "ok": true,
+      "detail": "marketing"
+    },
+    {
+      "name": "/online-accounts ← online_accounts",
+      "ok": true,
+      "detail": "online_accounts"
+    },
+    {
+      "name": "/notifications ← notifications",
+      "ok": true,
+      "detail": "notifications"
+    },
+    {
+      "name": "/roles ← roles",
+      "ok": true,
+      "detail": "roles"
+    },
+    {
+      "name": "/settings ← settings",
+      "ok": true,
+      "detail": "settings"
+    },
+    {
+      "name": "/diagnosis بيتقفل بصلاحية «تشخيص المريض»",
+      "ok": true,
+      "detail": "diagnosis"
+    },
+    {
+      "name": "/consultations بيتقفل بصلاحية «تشخيص المريض»",
+      "ok": true,
+      "detail": "diagnosis"
+    },
+    {
+      "name": "/follow-ups بيتقفل بصلاحية «حجز كشف ومتابعة»",
+      "ok": true,
+      "detail": "follow_ups"
+    },
+    {
+      "name": "/surgeries بيتقفل بصلاحية «العمليات الجراحية»",
+      "ok": true,
+      "detail": "surgeries"
+    },
+    {
+      "name": "/medications بيتقفل بصلاحية «الأدوية»",
+      "ok": true,
+      "detail": "medications"
+    },
+    {
+      "name": "/exercises بيتقفل بصلاحية «التمرينات العلاجية»",
+      "ok": true,
+      "detail": "exercises"
+    },
+    {
+      "name": "/imaging بيتقفل بصلاحية «الأشعة والتحاليل»",
+      "ok": true,
+      "detail": "imaging"
+    },
+    {
+      "name": "/fractures بيتقفل بصلاحية «الكسور والجبس»",
+      "ok": true,
+      "detail": "fractures"
+    },
+    {
+      "name": "dashboard: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "dashboard"
+    },
+    {
+      "name": "patients: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "patients"
+    },
+    {
+      "name": "online_accounts: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "online_accounts"
+    },
+    {
+      "name": "patient_import: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "patient_import"
+    },
+    {
+      "name": "patient_export: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "patient_export"
+    },
+    {
+      "name": "booking: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "booking"
+    },
+    {
+      "name": "appointments: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "appointments"
+    },
+    {
+      "name": "services: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "services"
+    },
+    {
+      "name": "therapists: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "therapists"
+    },
+    {
+      "name": "follow_ups: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "follow_ups"
+    },
+    {
+      "name": "diagnosis: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "diagnosis"
+    },
+    {
+      "name": "imaging: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "imaging"
+    },
+    {
+      "name": "injections: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "injections"
+    },
+    {
+      "name": "fractures: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "fractures"
+    },
+    {
+      "name": "surgeries: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "surgeries"
+    },
+    {
+      "name": "nursing: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "nursing"
+    },
+    {
+      "name": "medications: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "medications"
+    },
+    {
+      "name": "exercises: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "exercises"
+    },
+    {
+      "name": "expenses: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "expenses"
+    },
+    {
+      "name": "employees: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "employees"
+    },
+    {
+      "name": "invoices: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "invoices"
+    },
+    {
+      "name": "payments: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "payments"
+    },
+    {
+      "name": "inventory: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "inventory"
+    },
+    {
+      "name": "reports: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "reports"
+    },
+    {
+      "name": "notifications: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "notifications"
+    },
+    {
+      "name": "settings: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "settings"
+    },
+    {
+      "name": "workhours: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "workhours"
+    },
+    {
+      "name": "requests: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "requests"
+    },
+    {
+      "name": "support: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "support"
+    },
+    {
+      "name": "campaigns: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "campaigns"
+    },
+    {
+      "name": "financial: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "financial"
+    },
+    {
+      "name": "attendance: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "attendance"
+    },
+    {
+      "name": "whatsapp: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "whatsapp"
+    },
+    {
+      "name": "marketing: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "marketing"
+    },
+    {
+      "name": "pt_f_gender: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "pt_f_gender"
+    },
+    {
+      "name": "pt_f_source: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "pt_f_source"
+    },
+    {
+      "name": "pt_f_doctor: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "pt_f_doctor"
+    },
+    {
+      "name": "pt_f_status: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "pt_f_status"
+    },
+    {
+      "name": "pt_f_sort: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "pt_f_sort"
+    },
+    {
+      "name": "inv_approve: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "inv_approve"
+    },
+    {
+      "name": "inv_price: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "inv_price"
+    },
+    {
+      "name": "inv_cancel: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "inv_cancel"
+    },
+    {
+      "name": "inv_overdraw: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "inv_overdraw"
+    },
+    {
+      "name": "appt_confirm: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "appt_confirm"
+    },
+    {
+      "name": "appt_cancel: في مجموعة في شاشة الأدوار",
+      "ok": true,
+      "detail": "appt_cancel"
+    },
+    {
+      "name": "مفيش اسمين صلاحية متكررين",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "ترجمة اسم «الرئيسية»",
+      "ok": true,
+      "detail": "dashboard"
+    },
+    {
+      "name": "ترجمة شرح «الرئيسية»",
+      "ok": true,
+      "detail": "قسم «الرئيسية»: مواعيد اليوم وعدّادات ال"
+    },
+    {
+      "name": "ترجمة اسم «المرضى»",
+      "ok": true,
+      "detail": "patients"
+    },
+    {
+      "name": "ترجمة شرح «المرضى»",
+      "ok": true,
+      "detail": "ملفات المرضى: البيانات الشخصية، التاريخ "
+    },
+    {
+      "name": "ترجمة اسم «المرضى: الحسابات الأونلاين وحجوزات المكالمات»",
+      "ok": true,
+      "detail": "online_accounts"
+    },
+    {
+      "name": "ترجمة شرح «المرضى: الحسابات الأونلاين وحجوزات المكالمات»",
+      "ok": true,
+      "detail": "تبويب «الحسابات الأونلاين» في صفحة المرض"
+    },
+    {
+      "name": "ترجمة اسم «المرضى: استيراد من Excel»",
+      "ok": true,
+      "detail": "patient_import"
+    },
+    {
+      "name": "ترجمة شرح «المرضى: استيراد من Excel»",
+      "ok": true,
+      "detail": "استيراد المرضى من ملف Excel (زر في صفحة "
+    },
+    {
+      "name": "ترجمة اسم «المرضى: تصدير Excel»",
+      "ok": true,
+      "detail": "patient_export"
+    },
+    {
+      "name": "ترجمة شرح «المرضى: تصدير Excel»",
+      "ok": true,
+      "detail": "زر «تصدير ملف المرضى (Excel)» في صفحة ال"
+    },
+    {
+      "name": "ترجمة اسم «حجز موعد»",
+      "ok": true,
+      "detail": "booking"
+    },
+    {
+      "name": "ترجمة شرح «حجز موعد»",
+      "ok": true,
+      "detail": "شاشة «حجز موعد» وإنشاء المواعيد الجديدة "
+    },
+    {
+      "name": "ترجمة اسم «المواعيد»",
+      "ok": true,
+      "detail": "appointments"
+    },
+    {
+      "name": "ترجمة شرح «المواعيد»",
+      "ok": true,
+      "detail": "جدول المواعيد: عرض اليومي والأسبوعي وتفا"
+    },
+    {
+      "name": "ترجمة اسم «الخدمات»",
+      "ok": true,
+      "detail": "services"
+    },
+    {
+      "name": "ترجمة شرح «الخدمات»",
+      "ok": true,
+      "detail": "الخدمات والأسعار والمدد وربطها بالأطباء."
+    },
+    {
+      "name": "ترجمة اسم «الأطباء»",
+      "ok": true,
+      "detail": "therapists"
+    },
+    {
+      "name": "ترجمة شرح «الأطباء»",
+      "ok": true,
+      "detail": "الأطباء في صفحة «الموظفون»: الملف السرير"
+    },
+    {
+      "name": "ترجمة اسم «حجز كشف ومتابعة»",
+      "ok": true,
+      "detail": "follow_ups"
+    },
+    {
+      "name": "ترجمة شرح «حجز كشف ومتابعة»",
+      "ok": true,
+      "detail": "قسم «حجز كشف ومتابعة»: جدول مواعيد المتا"
+    },
+    {
+      "name": "ترجمة اسم «تشخيص المريض»",
+      "ok": true,
+      "detail": "diagnosis"
+    },
+    {
+      "name": "ترجمة شرح «تشخيص المريض»",
+      "ok": true,
+      "detail": "قسم «تشخيص المريض»: فتح ملف تشخيص، شيت ا"
+    },
+    {
+      "name": "ترجمة اسم «الأشعة والتحاليل»",
+      "ok": true,
+      "detail": "imaging"
+    },
+    {
+      "name": "ترجمة شرح «الأشعة والتحاليل»",
+      "ok": true,
+      "detail": "الأشعة والتحاليل في ملف المريض (جوّه «ال"
+    },
+    {
+      "name": "ترجمة اسم «الحقن»",
+      "ok": true,
+      "detail": "injections"
+    },
+    {
+      "name": "ترجمة شرح «الحقن»",
+      "ok": true,
+      "detail": "سجلات الحقن في ملف المريض (جوّه «التشخيص"
+    },
+    {
+      "name": "ترجمة اسم «الكسور والجبس»",
+      "ok": true,
+      "detail": "fractures"
+    },
+    {
+      "name": "ترجمة شرح «الكسور والجبس»",
+      "ok": true,
+      "detail": "الكسور والجبس في ملف المريض: نوع الكسر و"
+    },
+    {
+      "name": "ترجمة اسم «العمليات الجراحية»",
+      "ok": true,
+      "detail": "surgeries"
+    },
+    {
+      "name": "ترجمة شرح «العمليات الجراحية»",
+      "ok": true,
+      "detail": "قسم «العمليات الجراحية»: العمليات ومراحل"
+    },
+    {
+      "name": "ترجمة اسم «متابعة التمريض»",
+      "ok": true,
+      "detail": "nursing"
+    },
+    {
+      "name": "ترجمة شرح «متابعة التمريض»",
+      "ok": true,
+      "detail": "شيتات متابعة التمريض في ملف المريض (جوّه"
+    },
+    {
+      "name": "ترجمة اسم «الأدوية»",
+      "ok": true,
+      "detail": "medications"
+    },
+    {
+      "name": "ترجمة شرح «الأدوية»",
+      "ok": true,
+      "detail": "قسم «الأدوية»: بنك الأدوية ومجموعاتها وا"
+    },
+    {
+      "name": "ترجمة اسم «التمرينات العلاجية»",
+      "ok": true,
+      "detail": "exercises"
+    },
+    {
+      "name": "ترجمة شرح «التمرينات العلاجية»",
+      "ok": true,
+      "detail": "قسم «التمرينات العلاجية»: بنك التمرينات "
+    },
+    {
+      "name": "ترجمة اسم «المصروفات»",
+      "ok": true,
+      "detail": "expenses"
+    },
+    {
+      "name": "ترجمة شرح «المصروفات»",
+      "ok": true,
+      "detail": "تبويب «المصروفات» في «الفواتير والمدفوعا"
+    },
+    {
+      "name": "ترجمة اسم «الموظفون»",
+      "ok": true,
+      "detail": "employees"
+    },
+    {
+      "name": "ترجمة شرح «الموظفون»",
+      "ok": true,
+      "detail": "حسابات الموظفين والأطباء. غير المدير يرى"
+    },
+    {
+      "name": "ترجمة اسم «الفواتير والمدفوعات»",
+      "ok": true,
+      "detail": "invoices"
+    },
+    {
+      "name": "ترجمة شرح «الفواتير والمدفوعات»",
+      "ok": true,
+      "detail": "فواتير الخدمات والخطط: عرض، تعديل، مراجع"
+    },
+    {
+      "name": "ترجمة اسم «المدفوعات (تسجيل الدفعات وتعديلها وحذفها)»",
+      "ok": true,
+      "detail": "payments"
+    },
+    {
+      "name": "ترجمة شرح «المدفوعات (تسجيل الدفعات وتعديلها وحذفها)»",
+      "ok": true,
+      "detail": "الدفعات على الفواتير: تسجيل دفعة بكاش/بط"
+    },
+    {
+      "name": "ترجمة اسم «المخزون»",
+      "ok": true,
+      "detail": "inventory"
+    },
+    {
+      "name": "ترجمة شرح «المخزون»",
+      "ok": true,
+      "detail": "قسم «المخزون»: أصناف العيادة (مستلزمات) "
+    },
+    {
+      "name": "ترجمة اسم «التقارير»",
+      "ok": true,
+      "detail": "reports"
+    },
+    {
+      "name": "ترجمة شرح «التقارير»",
+      "ok": true,
+      "detail": "التقارير التشغيلية (مرضى، مواعيد، خدمات،"
+    },
+    {
+      "name": "ترجمة اسم «الإشعارات»",
+      "ok": true,
+      "detail": "notifications"
+    },
+    {
+      "name": "ترجمة شرح «الإشعارات»",
+      "ok": true,
+      "detail": "إشعارات الموظفين داخل النظام."
+    },
+    {
+      "name": "ترجمة اسم «الإعدادات»",
+      "ok": true,
+      "detail": "settings"
+    },
+    {
+      "name": "ترجمة شرح «الإعدادات»",
+      "ok": true,
+      "detail": "قسم «الإعدادات»: بيانات العيادة والمواعي"
+    },
+    {
+      "name": "ترجمة اسم «مواعيد العمل»",
+      "ok": true,
+      "detail": "workhours"
+    },
+    {
+      "name": "ترجمة شرح «مواعيد العمل»",
+      "ok": true,
+      "detail": "مواعيد عمل المركز والعطلات."
+    },
+    {
+      "name": "ترجمة اسم «طلبات الموظفين»",
+      "ok": true,
+      "detail": "requests"
+    },
+    {
+      "name": "ترجمة شرح «طلبات الموظفين»",
+      "ok": true,
+      "detail": "طلبات الموظفين: إجازة واستئذان، وقبولها "
+    },
+    {
+      "name": "ترجمة اسم «الدعم الفني»",
+      "ok": true,
+      "detail": "support"
+    },
+    {
+      "name": "ترجمة شرح «الدعم الفني»",
+      "ok": true,
+      "detail": "الدعم الفني: تذاكر وإعادة تعيين كلمة مرو"
+    },
+    {
+      "name": "ترجمة اسم «إرسال إشعارات للمرضى»",
+      "ok": true,
+      "detail": "campaigns"
+    },
+    {
+      "name": "ترجمة شرح «إرسال إشعارات للمرضى»",
+      "ok": true,
+      "detail": "قسم «إرسال إشعارات للمرضى»: حملات الإشعا"
+    },
+    {
+      "name": "ترجمة اسم «الأرقام المالية (الإيرادات والإجماليات)»",
+      "ok": true,
+      "detail": "financial"
+    },
+    {
+      "name": "ترجمة شرح «الأرقام المالية (الإيرادات والإجماليات)»",
+      "ok": true,
+      "detail": "الأرقام المالية الإجمالية: إيرادات اليوم"
+    },
+    {
+      "name": "ترجمة اسم «الحضور والانصراف»",
+      "ok": true,
+      "detail": "attendance"
+    },
+    {
+      "name": "ترجمة شرح «الحضور والانصراف»",
+      "ok": true,
+      "detail": "حضور وانصراف الموظفين (وليس حضور المرضى)"
+    },
+    {
+      "name": "ترجمة اسم «رسائل واتساب للمرضى»",
+      "ok": true,
+      "detail": "whatsapp"
+    },
+    {
+      "name": "ترجمة شرح «رسائل واتساب للمرضى»",
+      "ok": true,
+      "detail": "إرسال رسائل واتساب للعملاء (تذكير موعد، "
+    },
+    {
+      "name": "ترجمة اسم «تقرير التسويق»",
+      "ok": true,
+      "detail": "marketing"
+    },
+    {
+      "name": "ترجمة شرح «تقرير التسويق»",
+      "ok": true,
+      "detail": "صفحة «تقرير التسويق»: مصادر المرضى والتص"
+    },
+    {
+      "name": "ترجمة اسم «المرضى: فلتر «الجنس»»",
+      "ok": true,
+      "detail": "pt_f_gender"
+    },
+    {
+      "name": "ترجمة شرح «المرضى: فلتر «الجنس»»",
+      "ok": true,
+      "detail": "فلتر «الجنس» (رجل/امرأة) في صفحة المرضى."
+    },
+    {
+      "name": "ترجمة اسم «المرضى: فلتر «مصدر المعرفة»»",
+      "ok": true,
+      "detail": "pt_f_source"
+    },
+    {
+      "name": "ترجمة شرح «المرضى: فلتر «مصدر المعرفة»»",
+      "ok": true,
+      "detail": "فلتر «مصدر المعرفة» (جوجل، سناب، ...) في"
+    },
+    {
+      "name": "ترجمة اسم «المرضى: فلتر «الطبيب»»",
+      "ok": true,
+      "detail": "pt_f_doctor"
+    },
+    {
+      "name": "ترجمة شرح «المرضى: فلتر «الطبيب»»",
+      "ok": true,
+      "detail": "فلتر «الطبيب» في صفحة المرضى (مرضى طبيب "
+    },
+    {
+      "name": "ترجمة اسم «المرضى: فلتر «الحالة»»",
+      "ok": true,
+      "detail": "pt_f_status"
+    },
+    {
+      "name": "ترجمة شرح «المرضى: فلتر «الحالة»»",
+      "ok": true,
+      "detail": "فلتر «الحالة» (نشط/معطّل) في صفحة المرضى"
+    },
+    {
+      "name": "ترجمة اسم «المرضى: «الترتيب»»",
+      "ok": true,
+      "detail": "pt_f_sort"
+    },
+    {
+      "name": "ترجمة شرح «المرضى: «الترتيب»»",
+      "ok": true,
+      "detail": "«الترتيب» في صفحة المرضى (الأحدث، الاسم،"
+    },
+    {
+      "name": "ترجمة اسم «الفواتير: اعتماد الفاتورة»",
+      "ok": true,
+      "detail": "inv_approve"
+    },
+    {
+      "name": "ترجمة شرح «الفواتير: اعتماد الفاتورة»",
+      "ok": true,
+      "detail": "زر «حفظ واعتماد الفاتورة» (فاتورة الخطة "
+    },
+    {
+      "name": "ترجمة اسم «الفواتير: تعديل السعر والخصم»",
+      "ok": true,
+      "detail": "inv_price"
+    },
+    {
+      "name": "ترجمة شرح «الفواتير: تعديل السعر والخصم»",
+      "ok": true,
+      "detail": "تعديل السعر والخصم على الفاتورة وتطبيق خ"
+    },
+    {
+      "name": "ترجمة اسم «الفواتير: إلغاء الفاتورة»",
+      "ok": true,
+      "detail": "inv_cancel"
+    },
+    {
+      "name": "ترجمة شرح «الفواتير: إلغاء الفاتورة»",
+      "ok": true,
+      "detail": "زر «إلغاء الفاتورة» (يحتفظ بالأثر، وليس "
+    },
+    {
+      "name": "ترجمة اسم «المخزون: صرف كمية أكبر من المتاح»",
+      "ok": true,
+      "detail": "inv_overdraw"
+    },
+    {
+      "name": "ترجمة شرح «المخزون: صرف كمية أكبر من المتاح»",
+      "ok": true,
+      "detail": "صرف كمية من المخزون أكبر من الرصيد المتا"
+    },
+    {
+      "name": "ترجمة اسم «المواعيد: تأكيد حضور الموعد»",
+      "ok": true,
+      "detail": "appt_confirm"
+    },
+    {
+      "name": "ترجمة شرح «المواعيد: تأكيد حضور الموعد»",
+      "ok": true,
+      "detail": "زر «تأكيد» على الموعد (حضر + شاشة الدفع)"
+    },
+    {
+      "name": "ترجمة اسم «المواعيد: إلغاء الموعد»",
+      "ok": true,
+      "detail": "appt_cancel"
+    },
+    {
+      "name": "ترجمة شرح «المواعيد: إلغاء الموعد»",
+      "ok": true,
+      "detail": "إلغاء موعد (بسبب)."
+    },
+    {
+      "name": "ترجمة مجموعة «الرئيسية»",
+      "ok": true,
+      "detail": "الرئيسية"
+    },
+    {
+      "name": "ترجمة مجموعة «المرضى والمواعيد»",
+      "ok": true,
+      "detail": "المرضى والمواعيد"
+    },
+    {
+      "name": "ترجمة مجموعة «العظام والكسور»",
+      "ok": true,
+      "detail": "العظام والكسور"
+    },
+    {
+      "name": "ترجمة مجموعة «المالية»",
+      "ok": true,
+      "detail": "المالية"
+    },
+    {
+      "name": "ترجمة مجموعة «الموظفون»",
+      "ok": true,
+      "detail": "الموظفون"
+    },
+    {
+      "name": "ترجمة مجموعة «المخزون والتواصل»",
+      "ok": true,
+      "detail": "المخزون والتواصل"
+    },
+    {
+      "name": "ترجمة مجموعة «الإدارة»",
+      "ok": true,
+      "detail": "الإدارة"
+    },
+    {
+      "name": "ترجمة مجموعة «النظام المحاسبي (صلاحية واحدة لكل وظيفة — «اطلاع» = مسموح)»",
+      "ok": true,
+      "detail": "النظام المحاسبي (صلاحية واحدة لكل وظيفة — «اطلاع» = مسموح)"
+    },
+    {
+      "name": "دور center_manager (قاعدة البيانات): كل الأقسام الجديدة زي ما كانت",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "دور system_admin (قاعدة البيانات): كل الأقسام الجديدة زي ما كانت",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "دور accountant (قاعدة البيانات): كل الأقسام الجديدة زي ما كانت",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "دور reception (قاعدة البيانات): كل الأقسام الجديدة زي ما كانت",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "دور secretary (قاعدة البيانات): كل الأقسام الجديدة زي ما كانت",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "دور therapist (قاعدة البيانات): كل الأقسام الجديدة زي ما كانت",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "موظف مخصّص «اسراء خاطر»: نفس الصلاحيات",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الافتراضي لدور center_manager = الموروث",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الافتراضي لدور secretary = الموروث",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الافتراضي لدور reception = الموروث",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "الافتراضي لدور accountant = الموروث",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "من غير قيمة محفوظة: التشخيص مفتوح (موروث)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "التشخيص اتشال: مقفول رغم صلاحية المرضى",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "التمرينات اطلاع بس: مفيش إضافة",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "المصروفات اتشالت: مقفولة رغم الأرقام المالية",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "باقي الأقسام زي ما هي",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "موظف مخصّص: التشخيص اطلاع بس",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "موظف مخصّص شايل المرضى: الأقسام اللي مالهاش قيمة بتورث من المخصّص",
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}

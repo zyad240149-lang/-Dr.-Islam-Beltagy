@@ -234,7 +234,7 @@ export default function Invoices() {
       </div>
 
       <div className="card">
-        <div className="tabs"><button className={`tab ${tab === 'invoices' ? 'active' : ''}`} onClick={() => setTab('invoices')}>الفواتير</button><button className={`tab ${tab === 'payments' ? 'active' : ''}`} onClick={() => setTab('payments')}>المدفوعات</button>{can('financial', 'view') && <button className={`tab ${tab === 'expenses' ? 'active' : ''}`} onClick={() => setTab('expenses')}>المصروفات</button>}</div>
+        <div className="tabs"><button className={`tab ${tab === 'invoices' ? 'active' : ''}`} onClick={() => setTab('invoices')}>الفواتير</button><button className={`tab ${tab === 'payments' ? 'active' : ''}`} onClick={() => setTab('payments')}>المدفوعات</button>{can('expenses', 'view') && <button className={`tab ${tab === 'expenses' ? 'active' : ''}`} onClick={() => setTab('expenses')}>المصروفات</button>}</div>
 
         {tab === 'expenses' ? <ExpensesTab /> : tab === 'installments' ? <InstallmentPatientsTab onOpenInvoice={setCurrentId} onReviewPlanInvoice={setEditingPlanInv} /> : tab === 'plans' ? (
           <>

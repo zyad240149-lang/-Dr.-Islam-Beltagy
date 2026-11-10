@@ -22,7 +22,7 @@ export function SurgeryModal({ initial, patientId = '', onClose }: { initial?: S
   const [s, setS] = useState<Omit<Surgery, 'id'> & { id?: string }>(initial ?? { patientId, procedure: '', region: REGIONS[0], side: 'right', hospital: '', date: addDays(todayYmd(), 7), implant: '', status: 'planned', notes: '' });
   const set = <K extends keyof Surgery>(k: K, v: Surgery[K]) => setS((x) => ({ ...x, [k]: v }));
   const locked = s.status === 'done';
-  const perm = useClinicalCan();
+  const perm = useClinicalCan('surgeries');
   const [totalPrice, setTotalPrice] = useState(String(initial?.totalPrice || initial?.price || ''));
   const [discount, setDiscount] = useState(String(initial?.discount || ''));
   const nTotal = amount(totalPrice), nDiscount = amount(discount), net = Math.max(nTotal - nDiscount, 0);
@@ -124,7 +124,7 @@ export function SurgeryModal({ initial, patientId = '', onClose }: { initial?: S
 function StagesModal({ surgery, onClose }: { surgery: Surgery; onClose: () => void }) {
   useOrthoVersion();
   const { run, busy } = useRun();
-  const perm = useClinicalCan();
+  const perm = useClinicalCan('surgeries');
   const stages = stagesOf(surgery.id);
   const plan = paymentsOf(surgery.id);
   const [name, setName] = useState('');
@@ -298,7 +298,7 @@ function FinishModal({ surgery, onClose, onDone }: { surgery: Surgery; onClose: 
 export function SurgeryCards({ items, onEdit }: { items: Surgery[]; onEdit: (s: Surgery) => void }) {
   useOrthoVersion();
   const { run } = useRun();
-  const perm = useClinicalCan();
+  const perm = useClinicalCan('surgeries');
   const [stagesFor, setStagesFor] = useState<string | null>(null);
   const t = todayYmd();
   const open = items.find((x) => x.id === stagesFor);
@@ -342,7 +342,7 @@ export function SurgeryCards({ items, onEdit }: { items: Surgery[]; onEdit: (s: 
 
 export default function Surgeries() {
   useOrthoVersion();
-  const perm = useClinicalCan();
+  const perm = useClinicalCan('surgeries');
   const [tab, setTab] = useState<SurgeryStatus | 'all'>('all');
   const [edit, setEdit] = useState<Surgery | 'new' | null>(null);
   const all = ortho.list('surgeries').sort((a, b) => a.date.localeCompare(b.date));

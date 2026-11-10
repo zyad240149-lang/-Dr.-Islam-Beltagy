@@ -5,13 +5,46 @@ export const ACC_AREAS: Area[] = ['accounting.access', 'accounting.expenses.crea
 const ACC_MANAGER: Area[] = ['accounting.access', 'accounting.expenses.create', 'accounting.expenses.approve', 'accounting.purchases.manage', 'accounting.journals.create', 'accounting.journals.post', 'accounting.reports.view'];
 const ACC_ACCOUNTANT: Area[] = ['accounting.access', 'accounting.expenses.create', 'accounting.purchases.manage', 'accounting.journals.create', 'accounting.journals.post', 'accounting.reports.view'];
 
+// أقسام العظام والمصروفات: كل قسم ليه صلاحية لوحده (قبل كده كانوا كلهم تحت «المرضى» للعرض و«الزيارات» للإضافة والتعديل والحذف)
+export const CLINICAL_AREAS: Area[] = ['diagnosis', 'imaging', 'injections', 'fractures', 'surgeries', 'nursing', 'medications', 'exercises'];
+export const SECTION_AREAS: Area[] = ['follow_ups', ...CLINICAL_AREAS, 'expenses'];
+
 export const AREAS: Area[] = [
-  'dashboard', 'patients', 'booking', 'appointments', 'plans', 'sessions', 'services', 'therapists',
+  'dashboard', 'patients', 'online_accounts', 'patient_import', 'patient_export', 'booking', 'appointments', 'plans', 'sessions', 'services', 'therapists',
+  ...SECTION_AREAS,
   'employees', 'invoices', 'payments', 'packages', 'inventory', 'reports', 'notifications', 'roles', 'settings', 'workhours', 'requests', 'support', 'discounts', 'campaigns', 'financial', 'attendance', 'loyalty', 'whatsapp', 'products', 'installments', 'physio', 'payroll','pkg_checkin', 'bodymap', 'marketing', 'pt_f_gender', 'pt_f_source', 'pt_f_doctor', 'pt_f_status', 'pt_f_sort',
   'inv_approve', 'inv_price', 'inv_cancel', 'inv_overdraw', 'appt_confirm', 'appt_cancel',
   ...ACC_AREAS,
 ];
 export const OPS: Op[] = ['view', 'create', 'edit', 'delete'];
+
+// الأقسام الجديدة: لو الدور (أو الموظف) ما اتحفظلوش قيمة ليها لسه، بتتحسب من الصلاحيات اللي كانت بتتحكم فيها قبل كده —
+// عشان أي دور كان بيفتح القسم يفضل يفتحه بعد التحديث. أول ما المدير يحفظ شاشة الأدوار القيمة بتتسجّل صريحة.
+// لكل عملية: الأقسام القديمة اللي لو أي واحد منها فيه نفس العملية تبقى مسموحة (نفس منطق هجرة 963 على الخادم)
+type Legacy = Record<Op, Area[]>;
+const CLINICAL_LEGACY: Legacy = { view: ['patients'], create: ['sessions'], edit: ['sessions'], delete: ['sessions'] };
+export const LEGACY_AREAS: Partial<Record<Area, Legacy>> = {
+  ...Object.fromEntries(CLINICAL_AREAS.map((a) => [a, CLINICAL_LEGACY])),
+  follow_ups: { view: ['patients'], create: ['sessions', 'appointments'], edit: ['sessions', 'appointments'], delete: ['sessions'] },
+  expenses: { view: ['financial'], create: ['financial'], edit: ['financial'], delete: ['financial'] },
+};
+
+/** عمليات قسم معيّن من مصفوفة دور/موظف — وللأقسام الجديدة اللي مالهاش قيمة محفوظة: من الأقسام القديمة */
+export function opsOf(m: Partial<Record<Area, Op[]>> | undefined, area: Area): Op[] {
+  if (!m) return [];
+  if (area in m) return m[area] ?? [];
+  const l = LEGACY_AREAS[area];
+  return l ? OPS.filter((o) => l[o].some((src) => m[src]?.includes(o))) : [];
+}
+/** نفس المصفوفة + قيم الأقسام الجديدة المحسوبة (لشاشة الأدوار: الخانات تبان زي ما الصلاحية شغالة فعلًا) */
+export function withLegacy(m: Partial<Record<Area, Op[]>>): Partial<Record<Area, Op[]>> {
+  const out = { ...m };
+  for (const a of Object.keys(LEGACY_AREAS) as Area[]) if (!(a in out)) out[a] = opsOf(m, a);
+  return out;
+}
+export function withLegacyMatrix(m: PermissionMatrix): PermissionMatrix {
+  return Object.fromEntries(Object.entries(m).map(([r, x]) => [r, withLegacy(x ?? {})])) as PermissionMatrix;
+}
 
 const ALL: Op[] = ['view', 'create', 'edit', 'delete'];
 const VIEW: Op[] = ['view'];
@@ -46,11 +79,16 @@ export function defaultPermissions(): PermissionMatrix {
     }
   m.secretary = sec;
   for (const a of ACC_ACCOUNTANT) m.accountant[a] = VIEW;
+  // الدكتور: كل أقسام العظام كاملة ما عدا الحذف — ومواعيد المتابعة إضافة وتعديل
+  for (const a of CLINICAL_AREAS) m.therapist[a] = ['view', 'create', 'edit'];
+  m.therapist.follow_ups = ['view', 'create', 'edit'];
   // الصلاحيات التفصيلية: كل دور عنده الصلاحية العامة الأصلية ياخدها افتراضيًا (المدير بيحدد بعد كده من شاشة الأدوار)
   for (const r of ROLES) {
     if (r === 'system_admin') continue;
     for (const [a, base] of [['inv_approve', 'invoices'], ['inv_price', 'invoices'], ['inv_cancel', 'invoices'], ['appt_confirm', 'appointments'], ['appt_cancel', 'appointments']] as const)
       if (m[r][base]?.includes('edit')) m[r][a] = ['view'];
   }
+  // باقي الأقسام الجديدة (للاستقبال والمحاسب والسكرتير) بنفس اللي كانوا بيقدروا عليه قبل الفصل
+  for (const r of ROLES) if (r !== 'system_admin') m[r] = withLegacy(m[r]);
   return m;
 }

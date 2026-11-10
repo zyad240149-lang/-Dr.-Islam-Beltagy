@@ -52,6 +52,12 @@
  "التطبيق يحتاج اتصالًا بالإنترنت أول مرة": "The app needs an internet connection the first time",
  "لم يُحمَّل التطبيق على هذا الجهاز بعد. افتحه مرة واحدة وأنت متصل بالإنترنت ليعمل بعدها بدون اتصال، ثم أعد المحاولة.": "The app has not been loaded on this device yet. Open it once while connected to the internet so it works offline afterwards, then try again.",
  "التطبيق يعمل من نسخة محفوظة": "The app is running from a saved copy",
+ "جاري تجهيز الشغل بدون إنترنت…": "Preparing offline mode…",
+ "متصل · جاهز بدون إنترنت": "Online · ready offline",
+ "البرنامج متخزّن على الجهاز ويفتح بدون إنترنت": "The app is stored on this device and opens offline",
+ "البرنامج متخزّن على الجهاز ويفتح بدون إنترنت.": "The app is stored on this device and opens offline.",
+ "البرنامج لسه بيتخزّن على الجهاز — سيب الصفحة مفتوحة وأنت متصل لحد ما يظهر «جاهز بدون إنترنت»، وإلا مش هيفتح من غير نت.": "The app is still being stored on this device — keep this page open while online until «ready offline» appears, otherwise it will not open without internet.",
+ " على الآيفون: أضف البرنامج للشاشة الرئيسية (مشاركة ← إضافة إلى الشاشة الرئيسية) واشتغل منها — سفاري بيمسح النسخة المتخزنة لو الموقع ما اتفتحش من التاب ٧ أيام.": " On iPhone: add the app to the Home Screen (Share → Add to Home Screen) and use it from there — Safari deletes the stored copy if the site is not opened from the tab for 7 days.",
  "المريض حضر/اتنفّذت الزيارة على الخادم بعد ما سجّلت الإلغاء محليًا.": "The patient attended / the visit was done on the server after you recorded the cancellation locally.",
  "يمكنك عرض المرضى والمواعيد، وإضافة/تعديل المرضى والتشخيص، وحجز المواعيد وتغييرها وإلغائها — وتُرسل للخادم تلقائيًا عند عودة الاتصال. باقي العمليات (الفواتير، تأكيد الحضور، إنهاء الزيارة…) تحتاج اتصالًا.": "You can view patients and appointments, add/edit patients and diagnoses, and book, change and cancel appointments — they are sent to the server automatically when the connection returns. Other operations (invoices, confirming attendance, ending a visit…) need a connection."
 }

@@ -8,6 +8,7 @@ import { useAuth } from '../services/auth';
 import { db } from '../data/db';
 import { useDownloadState } from '../data/download';
 import type { SnapMeta } from '../offline/session';
+import { isIOS, usePwa } from '../pwa/pwa';
 
 const STATUS: Record<OfflineOp['status'], { label: string; tone: string }> = {
   pending: { label: 'بانتظار المزامنة', tone: 'warn' },
@@ -37,18 +38,21 @@ export function OfflineBadge({ block }: { block?: boolean }) {
   const bad = st.attention > 0;
   const retrying = st.online && st.pending > 0 && !st.syncing && !!offline.queue.list().find((o) => o.status === 'pending' && o.lastError);
   const incomplete = data.tables.some((t) => t.info && !t.info.complete);
-  const tone = !st.online ? 'warn' : bad || retrying ? 'danger' : st.pending || dl.active || incomplete ? 'info' : 'ok';
+  const app = useAppCache();
+  const tone = !st.online ? 'warn' : bad || retrying ? 'danger' : st.pending || dl.active || incomplete || app === 'preparing' ? 'info' : 'ok';
   const text = !st.online ? (st.pending ? 'غير متصل — محفوظ على الجهاز' : 'غير متصل')
     : st.syncing ? 'جاري المزامنة…'
     : dl.active ? `جاري تنزيل ${dl.label}…`
     : bad ? `${st.attention} تحتاج مراجعة`
     : retrying ? 'فشلت المزامنة — ستُعاد المحاولة'
     : st.pending ? `${st.pending} بانتظار المزامنة`
-    : incomplete ? 'بيانات لم تكتمل على الجهاز' : 'متصل بالسيرفر';
+    : incomplete ? 'بيانات لم تكتمل على الجهاز'
+    : app === 'preparing' ? 'جاري تجهيز الشغل بدون إنترنت…'
+    : app === 'ready' ? 'متصل · جاهز بدون إنترنت' : 'متصل بالسيرفر';
   return (
     <>
       <button type="button" className={`offline-badge offline-badge--${tone} ${block ? 'offline-badge--block' : ''}`} onClick={() => setOpen(true)}
-        title={!st.online ? 'أنت غير متصل بالإنترنت — التغييرات المدعومة تُحفظ على الجهاز وتُرسل عند عودة الاتصال.' : 'حالة المزامنة'} aria-live="polite">
+        title={!st.online ? 'أنت غير متصل بالإنترنت — التغييرات المدعومة تُحفظ على الجهاز وتُرسل عند عودة الاتصال.' : app === 'ready' ? 'البرنامج متخزّن على الجهاز ويفتح بدون إنترنت' : 'حالة المزامنة'} aria-live="polite">
         <span className="offline-badge__dot" aria-hidden />
         <span>{text}</span>
         {!st.online && st.pending > 0 && <span className="num offline-badge__n">{st.pending}</span>}
@@ -81,6 +85,7 @@ function SyncPanel({ onClose, offlineSession }: { onClose: () => void; offlineSe
           {!st.online && 'يمكنك عرض المرضى والمواعيد، وإضافة/تعديل المرضى والتشخيص، وحجز المواعيد وتغييرها وإلغائها — وتُرسل للخادم تلقائيًا عند عودة الاتصال. باقي العمليات (الفواتير، تأكيد الحضور، إنهاء الزيارة…) تحتاج اتصالًا.'}
         </div>
       </div>
+      <AppCacheNote />
       {!st.persistent && <div className="alert alert-warn" style={{ marginBottom: 12 }}><Icon name="alert" size={17} /><div>التخزين المحلي غير متاح في هذا المتصفح (ربما وضع التصفح الخاص): التغييرات المعلّقة <strong>ستضيع إن أغلقت التطبيق</strong> قبل المزامنة.</div></div>}
       <DeviceData online={st.online} />
       <div className="section-title" style={{ margin: '16px 0 8px' }}>التغييرات اللي على الجهاز</div>
@@ -130,6 +135,32 @@ function SyncPanel({ onClose, offlineSession }: { onClose: () => void; offlineSe
         </div></div>
       )}
     </Modal>
+  );
+}
+
+// نسخة البرنامج نفسه على الجهاز (ملفات الـ Service Worker) — منفصلة عن بيانات المرضى.
+// الـ SW مابيبقاش «active» غير لما يخزّن كل ملفات البرنامج (لو ملف فشل التثبيت كله بيفشل — public/sw.js)،
+// فـ swActive = البرنامج هيفتح بدون إنترنت. من غيرها سفاري بيعرض «غير متصل بالإنترنت» ومايفتحش البرنامج خالص.
+const swSupported = typeof navigator !== 'undefined' && 'serviceWorker' in navigator && !import.meta.env.DEV;
+function useAppCache(): 'ready' | 'preparing' | 'unsupported' {
+  const pwa = usePwa();
+  return !swSupported ? 'unsupported' : pwa.swActive ? 'ready' : 'preparing';
+}
+
+function AppCacheNote() {
+  const app = useAppCache();
+  const pwa = usePwa();
+  if (app === 'unsupported') return null;
+  return (
+    <div className={`alert ${app === 'ready' ? 'alert-info' : 'alert-warn'}`} style={{ marginBottom: 12 }}>
+      <Icon name="alert" size={17} />
+      <div>
+        {app === 'ready'
+          ? 'البرنامج متخزّن على الجهاز ويفتح بدون إنترنت.'
+          : 'البرنامج لسه بيتخزّن على الجهاز — سيب الصفحة مفتوحة وأنت متصل لحد ما يظهر «جاهز بدون إنترنت»، وإلا مش هيفتح من غير نت.'}
+        {isIOS && !pwa.standalone && ' على الآيفون: أضف البرنامج للشاشة الرئيسية (مشاركة ← إضافة إلى الشاشة الرئيسية) واشتغل منها — سفاري بيمسح النسخة المتخزنة لو الموقع ما اتفتحش من التاب ٧ أيام.'}
+      </div>
+    </div>
   );
 }
 

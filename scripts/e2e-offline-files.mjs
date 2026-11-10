@@ -84,6 +84,8 @@ try {
     const offline = async (on) => { await ctx.setOffline(on); await page.evaluate((o) => window.dispatchEvent(new Event(o ? 'offline' : 'online')), on); };
     return { edge, ctx, page, errors, offline };
   };
+  // ملفات الأشعة/التحاليل في التشخيص بقت جوّه تبويب «الأشعة والتحاليل» (Consultations.tsx) — بنروح له ونفتح المربعات
+  const showFiles = async (page) => { await page.locator('.sh-tabs button', { hasText: 'الأشعة والتحاليل' }).first().click().catch(() => {}); await page.waitForSelector('.pmf__head', { timeout: 10000 }).catch(() => {}); await sleep(500); for (const h of await page.locator('.pmf__head[aria-expanded=false]').all()) await h.click().catch(() => {}); };
   const go = (page, path) => page.evaluate((x) => { window.history.pushState({}, '', x); window.dispatchEvent(new PopStateEvent('popstate')); }, path);
   const R = await device(STAFF.recep);
   const D = await device(STAFF.doc);
@@ -95,13 +97,14 @@ try {
   await D.page.locator('.tabs').getByRole('button', { name: 'التشخيص', exact: true }).click();
   await D.page.getByRole('button', { name: 'تشخيص جديد' }).first().click();
   await D.page.waitForSelector('#cx-visit-reason', { timeout: 20000 });
-  check('التشخيص الجديد مفتوح عند الدكتور ومفيش ملفات', await until(async () => (await D.page.locator('.pmf').innerText()).includes('مفيش أشعة')));
+  await showFiles(D.page);
+  check('التشخيص الجديد مفتوح عند الدكتور ومفيش ملفات', await until(async () => (await D.page.locator('.modal .pmf').count()) > 0 && (await D.page.locator('.modal .pmf__tile').count()) === 0));
   await go(R.page, `/patients/${made.patient}`);
   await R.page.getByRole('button', { name: 'ملفات الأشعة والتحاليل' }).click();
   await R.page.fill('#pf-title', 'أشعة الركبة أونلاين');
   await R.page.locator('input[type=file][multiple]').setInputFiles([{ name: 'knee.png', mimeType: 'image/png', buffer: PNG }]);
   check('الأشعة وصلت الخادم', !!(await until(async () => (await files()).length === 1)));
-  const live = await until(async () => (await D.page.locator('.pmf__tile', { hasText: 'أشعة الركبة أونلاين' }).count()) === 1, 20000);
+  const live = await until(async () => (await D.page.locator('.modal .pmf__tile', { hasText: 'أشعة الركبة أونلاين' }).count()) === 1, 20000);
   check('ظهرت عند الدكتور جوّه التشخيص المفتوح من غير إعادة تحميل (Realtime)', !!live);
   await D.page.locator('.modal').getByRole('button', { name: 'إلغاء' }).first().click();
 
@@ -123,7 +126,7 @@ try {
   await go(R.page, `/patients/${made.patient}`);
   await R.page.getByRole('button', { name: 'ملفات الأشعة والتحاليل' }).click().catch(() => {});
   check('بعد إعادة فتح الصفحة من غير إنترنت: الملف لسه موجود «بانتظار الرفع»', !!(await until(async () => (await R.page.locator('tr', { hasText: 'صورة دم كاملة أوفلاين' }).count()) === 1, 15000)));
-  check('والأشعة اللي اترفعت قبل كده ظاهرة من نسخة الجهاز', (await R.page.locator('tr', { hasText: 'أشعة الركبة أونلاين' }).count()) === 1);
+  check('والأشعة اللي اترفعت قبل كده ظاهرة من نسخة الجهاز', !!(await until(async () => (await R.page.locator('tr', { hasText: 'أشعة الركبة أونلاين' }).count()) === 1, 10000)));
 
   // ===== 3) الرد بيضيع: الملف اترفع والسجل لأ ← إعادة المحاولة من غير تكرار =====
   section('3) النت يرجع والرد بيضيع في النص ← إعادة المحاولة من غير تكرار');
@@ -159,16 +162,17 @@ try {
   await D.offline(true);
   await D.page.getByRole('button', { name: 'تشخيص جديد' }).first().click();
   await D.page.waitForSelector('#cx-visit-reason', { timeout: 20000 });
-  check('من غير إنترنت: الأشعة والتحاليل ظاهرة في التشخيص من نسخة الجهاز', !!(await until(async () => (await D.page.locator('.pmf__tile').count()) === 2, 15000)), await D.page.locator('.pmf').innerText().catch(() => ''));
+  await showFiles(D.page);
+  check('من غير إنترنت: الأشعة والتحاليل ظاهرة في التشخيص من نسخة الجهاز', !!(await until(async () => (await D.page.locator('.modal .pmf__tile').count()) === 2, 15000)), await D.page.locator('.pmf').innerText().catch(() => ''));
   await D.page.fill('#cx-visit-reason', 'متابعة بعد الأشعة — من غير إنترنت');
-  await D.page.getByRole('tab', { name: /تحديد موعد متابعة/ }).click();
+  await D.page.locator('.sh-tabs button', { hasText: 'موعد المتابعة' }).first().click(); // تبويب «موعد المتابعة» (رقم ٢) في التشخيص
   await D.page.getByRole('button', { name: 'إضافة موعد متابعة' }).click();
   const m = D.page.locator('.modal', { hasText: 'تحديد موعد متابعة' }).last();
-  await m.locator('.fu-day--pick input').fill(cairoDate(10));
+  await m.locator('.fu-datepick input').fill(cairoDate(10)); // اختيار اليوم من التقويم (FollowUps.tsx)
   await m.locator('input.fu-slots__time').fill('12:00');
   await m.locator('textarea').first().fill('متابعة أوفلاين');
-  await m.getByRole('button', { name: 'إضافة للتشخيص' }).click();
-  await D.page.locator('.sh-next').getByRole('button', { name: 'حفظ الكشف' }).click();
+  await m.locator('.modal__foot').getByRole('button', { name: /^(إضافة للتشخيص|حفظ)$/ }).click();
+  await D.page.locator('.modal__foot').getByRole('button', { name: 'حفظ الكشف' }).last().click();
   await D.page.getByRole('button', { name: 'حفظ — استكمال بعدين' }).click().catch(() => {});
   const dOps = await until(async () => { const o = await rawOps(D.page); return o.length >= 2 ? o : null; }, 15000);
   check('التشخيص وموعد المتابعة اتحفظوا في طابور الجهاز (متشفّرين)', !!dOps && dOps.every((o) => o.hasSealed && !o.plain), JSON.stringify(dOps));

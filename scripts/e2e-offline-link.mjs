@@ -23,6 +23,13 @@ const NAME = `${P.first} ${P.father} ${P.family}`;
 const TWIN = 'تامر نبيل مراجعةاختبار'; // ملفين بنفس الاسم ← مراجعة
 const made = { employees: [] };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// مربعات كشف الطبيب بتبدأ مقفولة في الكشف الجديد (src/ortho/ExamSheet.tsx BoxOpenDefault) — بنفتح اللي محتاجينه
+let docPage;
+const openBox = async (t) => {
+  const h = docPage.locator('.modal .sh-box.is-closed .sh-box__h', { hasText: t });
+  if (await h.count()) { await h.locator('.sh-box__t').click(); await sleep(300); }
+};
+const openDx = () => openBox('Diagnosis Sheet');
 const until = async (f, ms = 60000, every = 700) => { const t = Date.now(); for (;;) { const v = await f().catch(() => null); if (v) return v; if (Date.now() - t > ms) return null; await sleep(every); } };
 const q1 = (s) => sql(s).then((r) => r[0]);
 const cleanup = async () => {
@@ -136,7 +143,10 @@ try {
   check('نموذج التشخيص اتفتح باسم المريض في خانة 1 (من غير رسالة ربط)', (await D.page.locator('.modal .dx-unlinked').getAttribute('data-name'))?.replace(/\s+/g, ' ').trim() === NAME && !/ربط/.test(await D.page.locator('.modal .sh-visitlink').allInnerTexts().then((x) => x.join(' '))));
   await D.page.locator('.sh-tabs button', { hasText: 'كشف الطبيب' }).click();
   await D.page.locator('.sh-region__pick', { hasText: 'الكاحل والقدم' }).click();
+  docPage = D.page;
+  await openBox('Chief Complaint');
   await D.page.locator('.sh-ck', { hasText: 'Ankle pain' }).first().locator('input').check();
+  await openDx();
   await D.page.locator('.modal .sh-line', { hasText: 'Primary Diagnosis' }).locator('input').fill('Lateral ankle sprain offline test');
   await D.page.locator('.modal__foot button', { hasText: 'حفظ الكشف' }).click();
   const ask = D.page.locator('.modal__foot button', { hasText: 'التشخيص اكتمل' });
@@ -168,7 +178,9 @@ try {
   section('5) التشخيص ظاهر في ملف المريض وفي «المرضى اللي اتشخصوا»');
   await D.page.goto(BASE + `/diagnosis?patient=${pat?.id}`);
   check('ملف المريض الأساسي فيه التشخيص (جهاز الدكتور)', !!(await until(async () => (await D.page.locator('.page', { hasText: 'Lateral ankle sprain offline test' }).count()) > 0, 30000)));
-  const bar = await D.page.locator('.dx-patbar').innerText().catch(() => '');
+  const fileNo = String(pat?.file_no ?? '###').replace(/^TM-/, '');
+  let bar = '';
+  await until(async () => (bar = await D.page.locator('.dx-patbar').innerText().catch(() => '')).replace(/\s+/g, ' ').includes(fileNo), 20000);
   check('برقم ملف الاستقبال', bar.replace(/\s+/g, ' ').includes(String(pat?.file_no ?? '###').replace(/^TM-/, '')), `${bar.replace(/\s+/g, ' ')} / ${pat?.file_no}`);
   await R.page.goto(BASE + `/diagnosis?tab=done`);
   check('ظاهر في «المرضى اللي اتشخصوا» (جهاز الاستقبال)', !!(await until(async () => (await R.page.locator('.page', { hasText: NAME }).count()) > 0, 30000)));
@@ -185,6 +197,7 @@ try {
   await D.page.waitForSelector('.modal .dx-unlinked', { state: 'attached', timeout: 10000 });
   await D.page.locator('.sh-tabs button', { hasText: 'كشف الطبيب' }).click();
   await D.page.locator('.sh-region__pick', { hasText: 'الكاحل والقدم' }).click();
+  await openDx();
   await D.page.locator('.modal .sh-line', { hasText: 'Primary Diagnosis' }).locator('input').fill('Twin review test');
   await D.page.locator('.modal__foot button', { hasText: 'حفظ الكشف' }).click();
   if (await D.page.locator('.modal__foot button', { hasText: 'التشخيص اكتمل' }).count()) await D.page.locator('.modal__foot button', { hasText: 'التشخيص اكتمل' }).click();

@@ -12,15 +12,15 @@ const { check, section, save } = suite();
 const PORT = 4691, BASE = `http://127.0.0.1:${PORT}`;
 const PW = randomPassword();
 const STAFF = {
-  admin: { phone: '01200000981', digits: '201200000981', name: 'مدير تشخيص اختبار', role: 'system_admin' },
-  doc: { phone: '01200000982', digits: '201200000982', name: 'طبيب تشخيص اختبار', role: 'therapist' },
-  recep: { phone: '01200000983', digits: '201200000983', name: 'استقبال تشخيص اختبار', role: 'reception' },
+  admin: { phone: '01200000914', digits: '201200000914', name: 'مدير تشخيص اختبار', role: 'system_admin' },
+  doc: { phone: '01200000915', digits: '201200000915', name: 'طبيب تشخيص اختبار', role: 'therapist' },
+  recep: { phone: '01200000916', digits: '201200000916', name: 'استقبال تشخيص اختبار', role: 'reception' },
 };
 // مريض «أ» عنده تشخيصين قدام + زيارة النهارده، مريض «ب» أول زيارة النهارده
-const PA = { first: 'سامح', father: 'عادل', family: 'تشخيصاختبار', phone: '+201200000984', local: '01200000984' };
-const PB = { first: 'منى', father: 'كمال', family: 'تشخيصاختبار', phone: '+201200000985', local: '01200000985' };
+const PA = { first: 'سامح', father: 'عادل', family: 'تشخيصاختبار', phone: '+201200000917', local: '01200000917' };
+const PB = { first: 'منى', father: 'كمال', family: 'تشخيصاختبار', phone: '+201200000918', local: '01200000918' };
 // مريض «ج» اتشخّص قبل كده ومالوش زيارة النهارده — لازم يبان في «المرضى اللي اتشخصوا» ويتعمله شيت متابعة من غير زيارة
-const PC = { first: 'هاني', father: 'رشاد', family: 'تشخيصاختبار', phone: '+201200000986', local: '01200000986' };
+const PC = { first: 'هاني', father: 'رشاد', family: 'تشخيصاختبار', phone: '+201200000919', local: '01200000919' };
 const made = { employees: [], therapist: null, patients: [], appts: [] };
 const NOISE = /Notification|push|ServiceWorker|service worker|WebSocket|realtime|ERR_ABORTED|AbortError|Failed to load resource.*(favicon|manifest)|Download the React DevTools/i;
 const today = cairoToday();
@@ -131,7 +131,8 @@ try {
   const tick = async (page, text) => { await openBoxes(page); await page.locator('.sh-ck', { hasText: text }).first().locator('input').check(); };
   const saveAnswer = async (page, answer) => {
     await page.locator('.modal__foot button', { hasText: 'حفظ الكشف' }).click();
-    if (answer) await page.locator('.modal__foot button', { hasText: answer }).click();
+    // ١٠/١١: مفيش سؤال «فيه حاجات ناقصة» تاني — الحفظ على طول، والناقص بيتعلّم «يحتاج استكمال» لوحده
+    void answer;
     await page.waitForFunction(() => !document.querySelector('.modal'), null, { timeout: 20000 });
     await page.waitForTimeout(1200);
   };
@@ -144,7 +145,7 @@ try {
   check('مريض «ب» اللي اتعمله حضور ظاهر في «بانتظار التشخيص»', await rowB.count() === 1);
   const apA = await q1(`select no from appointments where id = '${PA.appt}'`);
   const rowText = (await rowA.textContent()) ?? '';
-  check('الصف فيه الموبايل ورقم الملف ورقم الزيارة والطبيب', rowText.includes('1200000984') && rowText.includes(PA.fileNo.replace(/\D/g, '')) && rowText.includes(apA.no) && rowText.includes('د. تشخيص اختبار'), rowText.slice(0, 200));
+  check('الصف فيه الموبايل ورقم الملف ورقم الزيارة والطبيب', rowText.includes(PA.local.slice(1)) && rowText.includes(PA.fileNo.replace(/\D/g, '')) && rowText.includes(apA.no) && rowText.includes('د. تشخيص اختبار'), rowText.slice(0, 200));
 
   // تشخيص مريض «أ» كامل ← يتربط بزيارته، ويختفي من الانتظار، والقديم يفضل
   await rowA.locator('button', { hasText: 'تشخيص' }).click();
@@ -193,7 +194,7 @@ try {
   await A.page.locator('.sh-region__x[aria-label="إلغاء كشف الرقبة والكتف"]').click();
   check('إلغاء منطقة من الاتنين بـ ✕ (التانية فاضلة مفتوحة)', await A.page.locator('.sh-region.is-on').count() === 1 && await A.page.locator('.sh-stack[data-sheet="ankle"]').count() === 1 && await A.page.locator('.sh-stack').count() === 1);
   await A.page.locator('.sh-region__pick', { hasText: 'الكاحل والقدم' }).click();
-  check('زرار «رجوع: موعد المتابعة» موجود في كشف الطبيب', await A.page.locator('.modal button', { hasText: 'رجوع: موعد المتابعة' }).count() === 1);
+  check('زرار «رجوع: متابعة المريض» موجود في كشف الطبيب (التاب 2 بقى «متابعة المريض»)', await A.page.locator('.modal button', { hasText: 'رجوع: متابعة المريض' }).count() === 1);
   await tick(A.page, 'Ankle pain');
   await tick(A.page, 'Anterior talofibular ligament (ATFL)');
   check('شيت تشخيص الكاحل: 7 أقسام ملوّنة + التشخيص النهائي', await A.page.locator('.modal .dxg:not(.dxg--final)').count() === 7 && await A.page.locator('.modal .dxg--final', { hasText: 'Final Diagnosis' }).count() === 1);
@@ -327,7 +328,8 @@ try {
   const R = await open(STAFF.recep);
   await goto(R.page, '/diagnosis');
   const denied = await R.page.locator('text=ما فيه صلاحية').count();
-  const btns = await R.page.locator('.dx-queue__act button').count();
+  // زرار واتساب و«فتح ملف التشخيص» (عرض) مسموحين للاستقبال — الممنوع أزرار التسجيل بس (صلاحية «تشخيص المريض» عرض فقط، هجرة 963)
+  const btns = await R.page.locator('.dx-queue__act button').filter({ hasText: /^\s*(تشخيص|استكمال|إضافة شيت( أو استكمال)?|متابعة)\s*$/ }).count();
   check('الاستقبال: مفيش زرار تشخيص/استكمال لو مالوش صلاحية تسجيل', denied > 0 || btns === 0, `buttons ${btns}`);
   await R.ctx.close();
 } catch (e) {

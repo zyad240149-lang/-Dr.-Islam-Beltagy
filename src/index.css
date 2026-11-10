@@ -1960,6 +1960,10 @@ button.dsch__who small { white-space: nowrap; font-size: 12.5px; color: var(--mu
 .xsvc__total b { font-size: 18px; color: var(--brand-700); }
 .xsvc__add { display: flex; gap: 8px; margin-top: 8px; }
 .xsvc__add .input { flex: 1; min-width: 0; }
+.xsvc__add--top { margin: 0 0 10px; padding-bottom: 10px; border-bottom: 1px dashed var(--line); }
+.bk-wa-btns { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
+.bk-wa-btns .btn { flex: 1 1 180px; justify-content: center; }
+.pain-cmp__sheet { display: inline-flex; align-items: center; gap: 6px; }
 /* ٨/١١: أزرار أسفل النوافذ على الموبايل — اتنين جنب بعض بدل عمود طويل بياكل الشاشة */
 @media screen and (max-width: 640px) {
   .modal__foot { flex-direction: row; flex-wrap: wrap; gap: 8px; }

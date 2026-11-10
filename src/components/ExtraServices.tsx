@@ -48,6 +48,16 @@ export default function ExtraServices({ appointmentId }: { appointmentId: string
   return (
     <div className="xsvc">
       <div className="xsvc__head"><Icon name="receipt" size={17} /><strong>خدمات الزيارة</strong><span className="muted-sm">فاتورة {inv.no}</span></div>
+      {/* ١٠/١١: «إضافة خدمة» فوق وظاهرة على طول (طلب الدكتور) */}
+      {inv.status !== 'cancelled' && (
+        <div className="xsvc__add xsvc__add--top">
+          <select className="input" value={pick} onChange={(e) => setPick(e.target.value)} aria-label="اختار خدمة">
+            <option value="">+ إضافة خدمة (جبس، أشعة، …)</option>
+            {services.map((s) => <option key={s.id} value={s.id}>{s.name} — {money(s.price)}</option>)}
+          </select>
+          <Button icon="plus" disabled={!pick} loading={busy} onClick={() => void call(() => db.addInvoiceService(inv.id, pick), 'اتضافت الخدمة والفاتورة اتحدثت')}>إضافة</Button>
+        </div>
+      )}
       <ul className="xsvc__list">
         {list.map((it, i) => (
           <li key={it.id || i}>
@@ -69,15 +79,6 @@ export default function ExtraServices({ appointmentId }: { appointmentId: string
         </button>
       </div>
       <div className="xsvc__files"><InvoiceWhatsappButton invoice={inv} /></div>
-      {inv.status !== 'cancelled' && (
-        <div className="xsvc__add">
-          <select className="input" value={pick} onChange={(e) => setPick(e.target.value)} aria-label="اختار خدمة">
-            <option value="">+ إضافة خدمة (جبس، أشعة، …)</option>
-            {services.map((s) => <option key={s.id} value={s.id}>{s.name} — {money(s.price)}</option>)}
-          </select>
-          <Button icon="plus" disabled={!pick} loading={busy} onClick={() => void call(() => db.addInvoiceService(inv.id, pick), 'اتضافت الخدمة والفاتورة اتحدثت')}>إضافة</Button>
-        </div>
-      )}
     </div>
   );
 }

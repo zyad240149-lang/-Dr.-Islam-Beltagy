@@ -299,6 +299,8 @@ function VisitDetailsModal({ apptId, onClose, onBack }: { apptId: string; onClos
       {/* رفع أشعة/تحاليل للمريض من الزيارة نفسها — فوق «خدمات الزيارة» */}
       {a.status !== 'cancelled' && <FileUploadBox patientId={a.patientId} appointmentId={a.id} />}
       {a.status !== 'cancelled' && <ExtraServices appointmentId={a.id} />}
+      {/* ١٠/١١: واتساب المريض من الزيارة — تذكير بموعد المتابعة الجاي + إرسال التمرينات */}
+      {a.status !== 'cancelled' && <BookingWhatsapp patientId={a.patientId} appointmentId={a.id} layout="buttons" />}
       <dl className="review-list" style={{ marginBottom: 14 }}>
         <div><dt>المريض</dt><dd>{patient?.fullName} · <span className="num">{patient?.fileNo}</span></dd></div>
         <div><dt>التاريخ والوقت</dt><dd>{fmtDate(a.date)} — <span className="num">{fmtTime(a.time)}</span>{a.status !== 'cancelled' && <BookingWhatsapp patientId={a.patientId} appointmentId={a.id} />}</dd></div>

@@ -50,8 +50,10 @@ export const painTrend = (prev: number | null | undefined, cur: number | '' | nu
 const level = (n: number) => (n <= 3 ? 'lo' : n <= 6 ? 'mid' : 'hi');
 
 /** درجة الألم الحالية + السابقة + المقارنة (تحسّن / ساء / ثابت) + سجل الدرجات */
-export function PainCompare({ patientId, value, onChange, excludeSourceId, date, disabled, title = 'درجة الألم حاليًا (من 10)' }: {
+export function PainCompare({ patientId, value, onChange, excludeSourceId, date, disabled, title = 'درجة الألم حاليًا (من 10)', sheetPain }: {
   patientId: string; value: number | ''; onChange: (v: number | '') => void; excludeSourceId?: string | null; date?: string; disabled?: boolean; title?: string;
+  /** الدرجة اللي اتكتبت في «الشيت العام» للكشف المفتوح (لسه ممكن ما اتحفظتش) */
+  sheetPain?: number | '' | null;
 }) {
   useOrthoVersion();
   const [showAll, setShowAll] = useState(false);
@@ -65,6 +67,10 @@ export function PainCompare({ patientId, value, onChange, excludeSourceId, date,
         {prev
           ? <>الزيارة اللي فاتت: <b className={`pain-cmp__n pain-cmp__n--${level(prev.score)} num`} data-testid="pain-prev">{prev.score}/10</b> <span className="muted-sm">— {PAIN_SOURCE[prev.source]} {fmtDate(prev.date)}</span></>
           : <span className="muted-sm" data-testid="pain-prev-none">مفيش درجة ألم مسجلة قبل كده للمريض.</span>}
+        {sheetPain !== undefined && sheetPain !== null && sheetPain !== '' && <span className="pain-cmp__sheet" data-testid="pain-sheet">
+          في الشيت العام: <b className={`pain-cmp__n pain-cmp__n--${level(sheetPain)} num`}>{sheetPain}/10</b>
+          {value !== sheetPain && !disabled && <> <button type="button" className="link-btn" onClick={() => onChange(sheetPain)}>استخدمها</button></>}
+        </span>}
         {trend && <span className={`badge badge--${PAIN_TREND[trend].tone} pain-cmp__trend`} data-testid="pain-trend">{PAIN_TREND[trend].label}{prev ? ` (${prev.score} ← ${value})` : ''}</span>}
       </div>
       <div className="cx-chips pain-cmp__pick" role="radiogroup" aria-label="درجة الألم الحالية">

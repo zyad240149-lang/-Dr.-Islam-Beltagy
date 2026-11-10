@@ -38,8 +38,9 @@ try {
   section('إنشاء حساب من الموقع');
   const bad1 = await register({ name: 'محمد', phone: P1.phone, password: PW, confirm: PW });
   check('اسم مش ثلاثي مرفوض', bad1.status === 400, JSON.stringify(bad1.body));
-  const bad2 = await register({ name: 'Mohamed Ahmed Ali', phone: P1.phone, password: PW, confirm: PW });
-  check('اسم بحروف إنجليزي مرفوض', bad2.status === 400, JSON.stringify(bad2.body));
+  // ٨/١١ (ebb4d86 / هجرة 955): الاسم بالإنجليزي بقى مقبول — الاسم + الموبايل كفاية. الفاضي بس اللي مرفوض
+  const bad2 = await register({ name: '   ', phone: P1.phone, password: PW, confirm: PW });
+  check('اسم فاضي مرفوض', bad2.status === 400, JSON.stringify(bad2.body));
   const bad3 = await register({ name: P1.name, phone: P1.phone, password: '123', confirm: '123' });
   check('كلمة مرور قصيرة مرفوضة', bad3.status === 400, JSON.stringify(bad3.body));
   const bad4 = await register({ name: P1.name, phone: P1.phone, password: PW, confirm: PW + 'x' });

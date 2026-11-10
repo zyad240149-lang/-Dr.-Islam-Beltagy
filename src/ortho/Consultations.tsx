@@ -96,7 +96,8 @@ function Section({ icon, title, children, aside }: { icon: string; title: string
 
 // الكشف = الشيتين بالترتيب (التمريض قبل دخول المريض ← كشف الطبيب) وبعدهم الحقن — الروشتة والأشعة والتحاليل اتنقلت لشيت المتابعة
 // «كشف الطبيب» بيتسمى بالمنطقة: شيت الطبيب بيتحدد من مكان الألم في الشيت العام (regionSheets)
-const TABS = [['nurse', 'الشيت العام'], ['appt', 'موعد المتابعة'], ['doctor', 'كشف الطبيب'], ['files', 'الأشعة والتحاليل'], ['inj', 'الحقن'], ['plan', 'الخطة العلاجية'], ['rx', 'الأدوية والروشتة'], ['nursing', 'متابعة المريض']] as const;
+// ١٠/١١: «متابعة المريض» بقت رقم 2 و«موعد المتابعة» رقم 8 (طلب الدكتور)
+const TABS = [['nurse', 'الشيت العام'], ['nursing', 'متابعة المريض'], ['doctor', 'كشف الطبيب'], ['files', 'الأشعة والتحاليل'], ['inj', 'الحقن'], ['plan', 'الخطة العلاجية'], ['rx', 'الأدوية والروشتة'], ['appt', 'موعد المتابعة']] as const;
 type Tab = typeof TABS[number][0];
 
 // appointmentId = الزيارة اللي التشخيص الجديد بيتربط بيها (من «بانتظار التشخيص»)؛ من غيرها بيتربط بزيارة النهارده المفتوحة للمريض لو فيه
@@ -211,7 +212,6 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
     !sum.complaint && 'الشكوى',
     !sum.diagnosis && 'التشخيص',
   ].filter(Boolean) as string[];
-  const [ask, setAsk] = useState<{ thenPrint: boolean } | null>(null);
   const patientConsults = c.patientId ? ortho.list('consultations', c.patientId).sort((a, b) => a.date.localeCompare(b.date)) : [];
   const visitNo = initial ? Math.max(1, patientConsults.findIndex((x) => x.id === initial.id) + 1) : patientConsults.length + 1;
   const [inj, setInj] = useState<Injection | 'new' | null>(null);
@@ -290,13 +290,44 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
     } catch (e) { toast.error((e as Error).message); return false; }
     finally { savingRef.current = false; setRxSaving(false); }
   }
+  // طلب الأشعة والتحاليل: نفس الخانات والأزرار في «الأشعة والتحاليل» وفي «متابعة المريض» (١٠/١١) — بيتحفظ في الكشف ده وفي ملف المريض
+  const requestForms = (
+    <RequestForms sheet={sheet} onChange={changeSheet} busy={rxSaving} disabled={!c.patientId && !unlinked}
+      onSave={() => void saveReq()}
+      onPrint={async (kind) => {
+        const win = openPrintWindow();
+        if (await saveReq()) void printHtml(requestHtml(kind, sheet, patientOf(), c.date), win); else win?.close();
+      }}
+      onWhatsapp={async (kind) => {
+        // التابة بتتفتح وقت الضغطة (وإلا المتصفح يحجبها)، وبعد الحفظ بتروح لمحادثة المريض
+        const win = window.open('', '_blank');
+        if (!(await saveReq())) { win?.close(); return; }
+        const pt = c.patientId ? db.patient(c.patientId) : null;
+        // محادثة فاضية مع المريض — الطبيب بيرفع صورة الطلب ويبعتها بنفسه (٨/١١)
+        void kind;
+        const url = `https://wa.me/${waPhone(pt ? whatsappNumber(pt) : (pendingInfo.phone ?? ''))}`;
+        if (win && !win.closed) win.location.href = url; else window.location.href = url;
+      }}
+      prepare={(kind) => { void prepareRequestImage(kind, sheet, patientOf(), c.date).catch(() => undefined); }}
+      onImage={async (kind) => {
+        // الصورة جاهزة مقدمًا ← بتتحفظ في نفس الضغطة؛ مش جاهزة لسه ← بنجهزها (والحفظ ممكن يطلب ضغطة كمان)
+        const say = (r: string) => {
+          if (r === 'saved') toast.success(/Android/i.test(navigator.userAgent) ? 'اتحفظت الصورة في معرض الصور — ألبوم «Download» (التنزيلات)' : 'اتحفظت الصورة على الجهاز');
+        };
+        const ready = readyRequestImage(kind, sheet, patientOf(), c.date);
+        if (ready) { say(deliverRequestImage(ready)); void saveReq(); return; }
+        if (!(await saveReq())) return;
+        try { const img = await prepareRequestImage(kind, sheet, patientOf(), c.date); say(deliverRequestImage(img)); }
+        catch (e) { toast.error((e as Error).message); }
+      }} />
+  );
 
   function save(thenPrint: boolean, complete?: boolean) {
     if (savingRef.current) return;
     if (complete === undefined && !leaveNursing()) return;
-    if (complete === undefined && missing.length) { setAsk({ thenPrint }); return; }
+    // ١٠/١١: مفيش سؤال «فيه حاجات ناقصة» — «حفظ» بيحفظ على طول كتشخيص عادي. لو مفيش أي بيانات طبية خالص بيتعلّم «يحتاج استكمال» ويفضل زرار «استكمال»
     if (complete === true && nothingEntered) { toast.error('التشخيص فاضي — اكتب بياناته الأول.'); return; }
-    const done = complete ?? true;
+    const done = complete ?? !nothingEntered;
     const meds = c.medications.filter((m) => m.name.trim());
     const reqs = c.imagingRequests.filter((r) => r.region.trim());
     // الملخص النصي من الشيت ← حقول الكشف (القوايم والروشتة وسجل المريض)
@@ -410,7 +441,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           <div className="sh-next">
             {canExSend && <Button variant="outline" icon="share" disabled={!c.patientId} title={c.patientId ? '' : 'اختار المريض الأول'} onClick={() => setExSend(true)}>إرسال تمرينات واتساب</Button>}
             <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => setOut(['nurse'])}>طباعة / إرسال الشيت العام</Button>
-            <Button icon="chevronLeft" onClick={() => goTab('appt')}>التالي: موعد المتابعة</Button>
+            <Button icon="chevronLeft" onClick={() => goTab('nursing')}>التالي: متابعة المريض</Button>
           </div>
         </BoxOpenDefault.Provider>}
 
@@ -425,7 +456,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
             {/* اختياري: تقييم الروماتويد ACR/EULAR 2010 — مش جزء إجباري من الكشف */}
           </>
           <div className="sh-next">
-            <Button variant="outline" icon="chevron" onClick={() => goTab('appt')}>رجوع: موعد المتابعة</Button>
+            <Button variant="outline" icon="chevron" onClick={() => goTab('nursing')}>رجوع: متابعة المريض</Button>
             {canExSend && <Button variant="outline" icon="share" disabled={!c.patientId} title={c.patientId ? '' : 'اختار المريض الأول'} onClick={() => setExSend(true)}>إرسال تمرينات واتساب</Button>}
             <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => setOut(['doctor'])}>طباعة / إرسال كشف الطبيب</Button>
             <Button icon="chevronLeft" onClick={() => goTab('files')}>التالي: الأشعة والتحاليل</Button>
@@ -453,7 +484,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           </section>
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('plan')}>رجوع: الخطة العلاجية</Button>
-            <Button variant="outline" icon="clipboard" onClick={() => goTab('nursing')}>متابعة المريض</Button>
+            <Button variant="outline" icon="chevronLeft" onClick={() => goTab('appt')}>التالي: موعد المتابعة</Button>
             <Button icon="check" loading={busy} disabled={!ok} onClick={() => save(false)}>حفظ الكشف</Button>
           </div>
         </>}
@@ -476,17 +507,25 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
             </div>
           </section>
           <div className="sh-next">
-            <Button variant="outline" icon="chevron" onClick={() => goTab('nurse')}>رجوع: الشيت العام</Button>
-            <Button icon="chevronLeft" onClick={() => goTab('doctor')}>التالي: كشف الطبيب</Button>
+            <Button variant="outline" icon="chevron" onClick={() => goTab('rx')}>رجوع: الأدوية والروشتة</Button>
+            <Button icon="check" loading={busy} disabled={!ok} onClick={() => save(false)}>حفظ الكشف</Button>
           </div>
         </>}
 
         {/* «متابعة المرضى» بقت شيت جوّه التشخيص (٩/١١) — بتتحفظ لوحدها في ortho_nursing ومحتاجة ملف مريض */}
         {nursingSeen && <div hidden={tab !== 'nursing'}>
           {c.patientId
-            ? <NursingSheetTab key={c.patientId} patientId={c.patientId} startNew={openFollowUp} onDirty={setNursingDirty}
+            ? <NursingSheetTab key={c.patientId} patientId={c.patientId} startNew={openFollowUp} onDirty={setNursingDirty} sheetPain={c.painScore}
               appointmentId={todaysFollowUps().find((a) => a.patientId === c.patientId)?.id ?? (visitAppt?.date === todayYmd() ? visitAppt.id : null)} />
             : <p className="sh-pickfirst">شيت المتابعة بيتحفظ في ملف المريض — اختار المريض الأول.</p>}
+          {c.patientId && <section className="plan-part" style={{ marginTop: 16 }}>
+            <h3 className="plan-part__h">الأشعة والتحاليل المطلوبة</h3>
+            {tab === 'nursing' && requestForms}
+          </section>}
+          <div className="sh-next">
+            <Button variant="outline" icon="chevron" onClick={() => goTab('nurse')}>رجوع: الشيت العام</Button>
+            <Button icon="chevronLeft" onClick={() => goTab('doctor')}>التالي: كشف الطبيب</Button>
+          </div>
         </div>}
 
         {/* الأشعة والتحاليل: قسم لوحده قبل الحقن (طلب الدكتور ٨/١١) */}
@@ -494,34 +533,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           {/* طلب أشعة وطلب تحاليل (ورق الدكتور): اختيار + حفظ + طباعة + حفظ كصورة — أسماء المطلوب بالإنجليزي */}
           <section className="plan-part">
             <h3 className="plan-part__h"><span className="plan-part__n num">1</span>الأشعة والتحاليل المطلوبة</h3>
-            <RequestForms sheet={sheet} onChange={changeSheet} busy={rxSaving} disabled={!c.patientId && !unlinked}
-              onSave={() => void saveReq()}
-              onPrint={async (kind) => {
-                const win = openPrintWindow();
-                if (await saveReq()) void printHtml(requestHtml(kind, sheet, patientOf(), c.date), win); else win?.close();
-              }}
-              onWhatsapp={async (kind) => {
-                // التابة بتتفتح وقت الضغطة (وإلا المتصفح يحجبها)، وبعد الحفظ بتروح لمحادثة المريض
-                const win = window.open('', '_blank');
-                if (!(await saveReq())) { win?.close(); return; }
-                const pt = c.patientId ? db.patient(c.patientId) : null;
-                // محادثة فاضية مع المريض — الطبيب بيرفع صورة الطلب ويبعتها بنفسه (٨/١١)
-                void kind;
-                const url = `https://wa.me/${waPhone(pt ? whatsappNumber(pt) : (pendingInfo.phone ?? ''))}`;
-                if (win && !win.closed) win.location.href = url; else window.location.href = url;
-              }}
-              prepare={(kind) => { void prepareRequestImage(kind, sheet, patientOf(), c.date).catch(() => undefined); }}
-              onImage={async (kind) => {
-                // الصورة جاهزة مقدمًا ← بتتحفظ في نفس الضغطة؛ مش جاهزة لسه ← بنجهزها (والحفظ ممكن يطلب ضغطة كمان)
-                const say = (r: string) => {
-                  if (r === 'saved') toast.success(/Android/i.test(navigator.userAgent) ? 'اتحفظت الصورة في معرض الصور — ألبوم «Download» (التنزيلات)' : 'اتحفظت الصورة على الجهاز');
-                };
-                const ready = readyRequestImage(kind, sheet, patientOf(), c.date);
-                if (ready) { say(deliverRequestImage(ready)); void saveReq(); return; }
-                if (!(await saveReq())) return;
-                try { const img = await prepareRequestImage(kind, sheet, patientOf(), c.date); say(deliverRequestImage(img)); }
-                catch (e) { toast.error((e as Error).message); }
-              }} />
+            {requestForms}
           </section>
 
           <section className="plan-part">
@@ -603,16 +615,6 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
       {exSend && c.patientId && <ExerciseSendModal patientId={c.patientId} onClose={() => setExSend(false)} />}
       {out && <DiagnosisOutput initial={out} patient={patientOf()} visitNo={visitNo} onClose={() => setOut(null)}
         c={{ ...c, ...sum, plan: c.plan, sheet, medications: c.medications.filter((m) => m.name.trim()), imagingRequests: c.imagingRequests.filter((r) => r.region.trim()) }} />}
-      {ask && (
-        <Modal title="فيه حاجات لسه ناقصة" onClose={() => setAsk(null)} footer={<>
-          <Button variant="outline" onClick={() => setAsk(null)}>رجوع للكشف</Button>
-          <Button variant="outline" icon="refresh" onClick={() => { const t = ask.thenPrint; setAsk(null); save(t, false); }}>حفظ — استكمال بعدين</Button>
-          <Button icon="check" disabled={nothingEntered} title={nothingEntered ? 'التشخيص فاضي — اكتب بياناته الأول' : ''} onClick={() => { const t = ask.thenPrint; setAsk(null); save(t, true); }}>التشخيص اكتمل</Button>
-        </>}>
-          <p style={{ marginTop: 0 }}>لسه ما اتملاش: <b>{missing.join('، ')}</b>.</p>
-          <p className="muted" style={{ marginBottom: 0 }}>«حفظ — استكمال بعدين» بيحفظه ويفضل ظاهر بزرار «استكمال» لحد ما يخلص. {nothingEntered ? 'التشخيص فاضي، فمايتحفظش كتشخيص مكتمل.' : '«التشخيص اكتمل» بيحفظه تشخيص نهائي كده.'}</p>
-        </Modal>
-      )}
       {/* خريطة الجسم من خانة التشخيص (10): الحالة بتتضاف في «Others» + الكود والمنطقة والجهة */}
       {mapOpen && <DiagnosisPicker onClose={() => setMapOpen(false)} onPick={(text, ref) => {
         const p = pickedToConsult(text, ref);

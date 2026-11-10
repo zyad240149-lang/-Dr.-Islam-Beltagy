@@ -48,7 +48,8 @@ export function bookingReminderText(x: { patientId: string; date: string; time?:
   ].join('\n');
 }
 
-export function BookingWhatsapp({ patientId, appointmentId, followUp }: { patientId: string; appointmentId?: string | null; followUp?: FollowUp | null }) {
+/** layout="buttons": زرارين ظاهرين («إرسال تذكير متابعة» · «إرسال تمرينات») — في تفاصيل الزيارة (١٠/١١). التذكير بيبقى بأقرب موعد متابعة جاي للمريض */
+export function BookingWhatsapp({ patientId, appointmentId, followUp, layout = 'menu' }: { patientId: string; appointmentId?: string | null; followUp?: FollowUp | null; layout?: 'menu' | 'buttons' }) {
   useDbVersion();
   const can = useCan();
   const toast = useToast();
@@ -86,6 +87,16 @@ export function BookingWhatsapp({ patientId, appointmentId, followUp }: { patien
     f();
   };
 
+  const nextFu = layout === 'buttons' ? ortho.list('follow_ups', patientId).filter((f) => f.status === 'scheduled' && f.date >= new Date().toLocaleDateString('en-CA')).sort((a, b) => (a.date + (a.time ?? '')).localeCompare(b.date + (b.time ?? '')))[0] : undefined;
+  const remindFu = guard(() => {
+    const fu = followUp ?? nextFu;
+    const fuAppt = fu?.appointmentId ? db.appointment(fu.appointmentId) : undefined;
+    const when = fu ? { date: fu.date, time: fu.time || fuAppt?.time, doctorId: fu.doctorId || fuAppt?.therapistId, kind: 'المتابعة' } : null;
+    if (!when) { toast.error('مفيش موعد متابعة جاي للمريض — احجز موعد المتابعة الأول.'); return; }
+    const w = sendWhatsApp({ phone: patientWaNumber(patientId)!, text: bookingReminderText({ patientId, ...when }), patientId, type: 'reminder' });
+    if (!w) toast.error(WA_BOOKING_MSG.blocked);
+    else toast.success('اتفتح واتساب على رقم المريض وتذكير المتابعة جاهز — اضغط «إرسال».');
+  });
   const remind = guard(() => {
     const when = live ? { date: live.date, time: live.time, doctorId: live.therapistId, kind: live.type === 'followup' || followUp ? 'المتابعة' : 'الكشف' }
       : followUp ? { date: followUp.date, time: followUp.time, doctorId: followUp.doctorId, kind: 'المتابعة' } : null;
@@ -106,6 +117,17 @@ export function BookingWhatsapp({ patientId, appointmentId, followUp }: { patien
     if (!invoice || invoice.status === 'cancelled') { toast.error(WA_BOOKING_MSG.noInvoice); return; }
     void inv.send();
   });
+
+  if (layout === 'buttons') {
+    if (!canRemind && !canEx) return null;
+    return (
+      <div className="bk-wa-btns" onClick={(e) => e.stopPropagation()}>
+        {canRemind && <button type="button" className="btn btn--outline" data-testid="visit-fu-remind" onClick={remindFu} title={nextFu || followUp ? `متابعة ${(followUp ?? nextFu)!.date}` : 'مفيش موعد متابعة جاي'}><Icon name="calendar" size={16} /> إرسال تذكير متابعة</button>}
+        {canEx && <button type="button" className="btn btn--outline" data-testid="visit-send-ex" onClick={exercises}><Icon name="share" size={16} /> إرسال تمرينات</button>}
+        {ex && <ExerciseSendModal patientId={patientId} initialSel={ex.sel} onClose={() => setEx(null)} />}
+      </div>
+    );
+  }
 
   return (
     <span className="bk-wa" ref={box} onClick={(e) => e.stopPropagation()}>

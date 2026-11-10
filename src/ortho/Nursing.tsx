@@ -66,14 +66,15 @@ const Box = ({ title, children, on, onToggle }: { title: string; children: React
 );
 
 // embedded = الشيت جوّه تاب «متابعة المريض» في نموذج التشخيص بدل نافذة لوحدها؛ onDirty بيبلّغ التشخيص إن فيه كلام لسه ما اتحفظش
-export function NursingModal({ patientId, appointmentId = null, initial, onClose, embedded, onDirty }: { patientId: string; appointmentId?: string | null; initial?: Nursing; onClose: () => void; embedded?: boolean; onDirty?: (dirty: boolean) => void }) {
+export function NursingModal({ patientId, appointmentId = null, initial, onClose, embedded, onDirty, sheetPain = '' }: { patientId: string; appointmentId?: string | null; initial?: Nursing; onClose: () => void; embedded?: boolean; onDirty?: (dirty: boolean) => void; sheetPain?: number | '' | null }) {
   useOrthoVersion();
   const { run, busy } = useRun();
   const fuPerm = useFuCan();
   const [fuOpen, setFuOpen] = useState(false);
   const visitNo = appointmentId ? String(db.appointments().find((a) => a.id === appointmentId)?.no ?? '') : '';
   const [date, setDate] = useState(initial?.date ?? todayYmd());
-  const [s, setS] = useState<NursingSheet>(() => initial ? norm(initial.sheet) : { ...emptyNursing(), visitNo });
+  // شيت جديد جوّه التشخيص: درجة الألم اللي اتكتبت في «الشيت العام» بتتنقل هنا على طول (١٠/١١)
+  const [s, setS] = useState<NursingSheet>(() => initial ? norm(initial.sheet) : withPain({ ...emptyNursing(), visitNo }, sheetPain, patientId, todayYmd()));
   const set = <K extends keyof NursingSheet>(k: K, v: NursingSheet[K]) => setS((x) => ({ ...x, [k]: v }));
   const setCast = (k: keyof NursingSheet['cast'], v: string | boolean) => setS((x) => ({ ...x, cast: { ...x.cast, [k]: v } }));
   const setSurg = (k: keyof NursingSheet['surgery'], v: string | boolean) => setS((x) => ({ ...x, surgery: { ...x.surgery, [k]: v } }));
@@ -132,10 +133,8 @@ export function NursingModal({ patientId, appointmentId = null, initial, onClose
       </div>
 
       {/* الألم: آخر درجة مسجلة للمريض + الحالية + المقارنة — «مقارنة بآخر زيارة» بتتعلّم لوحدها من الفرق (وتقدر تغيّرها) */}
-      <PainCompare patientId={patientId} value={s.pain} excludeSourceId={initial?.id} date={date} onChange={(v) => setS((x) => {
-        const t = painTrend(previousPain(patientId, { excludeSourceId: initial?.id, date })?.score, v);
-        return { ...x, pain: v, vsLast: t ? PAIN_TREND[t].vsLast : x.vsLast };
-      })} />
+      <PainCompare patientId={patientId} value={s.pain} excludeSourceId={initial?.id} date={date} onChange={(v) => setS((x) => withPain(x, v, patientId, date, initial?.id))}
+        sheetPain={sheetPain} />
       <div className="grid-form grid-form--3">
         <Field label="الالتزام بالعلاج"><Pick options={OPT.adherence} value={s.adherence} onChange={(v) => set('adherence', v)} /></Field>
         <Field label="الحركة / الوظيفة"><Pick options={OPT.mobility} value={s.mobility} onChange={(v) => set('mobility', v)} /></Field>
@@ -201,18 +200,25 @@ export function NursingModal({ patientId, appointmentId = null, initial, onClose
 }
 
 // تاب «متابعة المريض» جوّه نموذج التشخيص: كل شيتات المتابعة بتاعت المريض + متابعة جديدة/تعديل في نفس المكان
-export function NursingSheetTab({ patientId, appointmentId, startNew, onDirty }: { patientId: string; appointmentId: string | null; startNew?: boolean; onDirty: (dirty: boolean) => void }) {
+export function NursingSheetTab({ patientId, appointmentId, startNew, onDirty, sheetPain }: { patientId: string; appointmentId: string | null; startNew?: boolean; onDirty: (dirty: boolean) => void; sheetPain?: number | '' | null }) {
   useOrthoVersion();
   const perm = useClinicalCan('nursing');
   const [form, setForm] = useState<Nursing | 'new' | null>(startNew && perm.add ? 'new' : null);
   const items = ortho.list('nursing', patientId).sort((a, b) => b.date.localeCompare(a.date));
-  if (form) return <NursingModal embedded key={form === 'new' ? 'new' : form.id} patientId={patientId} appointmentId={form === 'new' ? appointmentId : form.appointmentId ?? null} initial={form === 'new' ? undefined : form} onDirty={onDirty} onClose={() => setForm(null)} />;
+  if (form) return <NursingModal embedded key={form === 'new' ? 'new' : form.id} patientId={patientId} appointmentId={form === 'new' ? appointmentId : form.appointmentId ?? null} initial={form === 'new' ? undefined : form} onDirty={onDirty} onClose={() => setForm(null)} sheetPain={sheetPain} />;
   return (
     <div>
       {perm.add && <div className="sh-next" style={{ marginBottom: 12 }}><Button icon="clipboard" onClick={() => setForm('new')}>متابعة جديدة</Button></div>}
       <LoadState kind="nursing"><NursingList items={items} onEdit={setForm} /></LoadState>
     </div>
   );
+}
+
+/** درجة الألم + «مقارنة بآخر زيارة» بتتعلّم لوحدها من الفرق */
+function withPain(x: NursingSheet, v: number | '' | null | undefined, patientId: string, date: string, excludeSourceId?: string): NursingSheet {
+  if (v === '' || v === null || v === undefined) return x.pain === '' ? x : { ...x, pain: '' };
+  const t = painTrend(previousPain(patientId, { excludeSourceId, date })?.score, v);
+  return { ...x, pain: v, vsLast: t ? PAIN_TREND[t].vsLast : x.vsLast };
 }
 
 // الروشتة بتاخد التشخيص من آخر كشف للمريض

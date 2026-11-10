@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase';
 import { api } from '../lib/api';
 import { map } from '../data/remote';
 import { parseStoredPhone, phoneLookupCandidates } from '../utils/phoneUtils';
-import { offline } from '../offline';
+import { offline, markLoggedOut } from '../offline';
 import { net, isNetworkError } from '../offline/net';
 
 const AUTH_DOMAIN = '@clinic.local'; // نفس الدومين اللي الخادم والسكريبتات بينشئوا بيه الحسابات
@@ -112,10 +112,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if ('employee' in s) {
       const blocked = leaveMessage(s.employee.id);
       if (blocked) { signingOut.current = true; await supabase.auth.signOut(); db.clear(); await offline.wipeAll(); signingOut.current = false; throw new Error(blocked); }
-      setPatient(null); setUser(s.employee); setOfflineSession(false); db.recordLogin();
+      setPatient(null); setUser(s.employee); setOfflineSession(false); db.recordLogin(); markLoggedOut(false);
       return 'staff';
     }
-    setUser(null); setPatient(s.patient); db.recordLogin();
+    setUser(null); setPatient(s.patient); db.recordLogin(); markLoggedOut(false);
     return 'patient';
   };
 
@@ -131,7 +131,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         window.history.replaceState(null, '', window.location.pathname);
       }
       await offline.init();
-      const { data } = await supabase.auth.getSession();
+      // التوكن منتهي (البرنامج اتقفل أكتر من ساعة) ومفيش نت: supabase بيحاول يجدده ويعيد المحاولة ~30 ثانية أو أكتر،
+      // والشاشة كانت بتفضل «بتحمّل». لو الموظف ليه نسخة على الجهاز ومستنيناش أكتر من كده ← نفتح منها فورًا،
+      // ولما الجلسة توصل (النت رجع) نتحقق منها ونكمّل أونلاين.
+      const sessP = supabase.auth.getSession();
+      const wait = navigator.onLine === false ? 400 : 4000;
+      const first = await Promise.race([sessP, new Promise<'slow'>((ok) => setTimeout(() => ok('slow'), wait))]);
+      // بس لو فيه جلسة دخول محفوظة فعلًا — بعد «تسجيل الخروج» supabase بيمسحها، فمابنفتحش بيانات المرضى من غير دخول
+      const hasStoredSession = (() => { try { return Object.keys(localStorage).some((k) => /^sb-.*-auth-token$/.test(k) && !!JSON.parse(localStorage.getItem(k) || 'null')?.refresh_token); } catch { return false; } })();
+      if (first === 'slow' && hasStoredSession && offline.storedUserId() && (await restoreOffline())) {
+        setLoading(false);
+        void sessP.then(async ({ data: late }) => {
+          if (!late.session || !net.isOnline()) return;
+          const s = await applyCloudSession();
+          if (s && s !== 'network' && 'employee' in s) { setUser(s.employee); setOfflineSession(false); }
+          else if (s === null) window.dispatchEvent(new CustomEvent('session-expired'));
+        }).catch(() => {});
+        return;
+      }
+      const { data } = first === 'slow' ? await sessP : first;
       if (data.session) {
         try {
           const s = await applyCloudSession();
@@ -148,6 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // سحب الجلسة من الخادم (توكن التجديد اتلغى/الحساب اتعطّل) ← خروج فوري. العمليات المعلّقة بتفضل محفوظة لنفس المستخدم بس.
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT' && !signingOut.current) {
+        markLoggedOut(true);
         setMyExtraPerms(undefined); setMyPermOverride(null); db.setActor(null); db.clear(); offline.stop();
         setUser(null); setPatient(null); setPendingProfile(null); setOfflineSession(false);
       }
@@ -190,6 +209,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout: AuthState['logout'] = (opts) => {
+    markLoggedOut(true); // قبل أي حاجة: لو الصفحة اتقفلت قبل ما supabase يمسح الجلسة، البرنامج مايفتحش أوفلاين
     signingOut.current = true;
     supabase.auth.signOut().catch(() => {}).finally(() => { signingOut.current = false; });
     setMyExtraPerms(undefined);

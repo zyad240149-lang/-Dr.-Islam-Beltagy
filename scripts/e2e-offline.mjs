@@ -147,6 +147,26 @@ try {
   const unvisited = await until(async () => (await page.locator('.page h1', { hasText: 'مواعيد العمل' }).count()) > 0, 20000);
   check('صفحة ما اتفتحتش قبل كده بتفتح بدون إنترنت (ملفاتها متخزّنة مسبقًا)', !!unvisited);
 
+  // ============ 2ب) صلاحية الدخول (access token) خلصت — البرنامج اتفتح بعد أكتر من ساعة من غير نت ============
+  // supabase بيحاول يجدد التوكن من الخادم ويعيد المحاولة ~30 ثانية أو أكتر ← كانت الشاشة بتفضل «بتحمّل»
+  section('2ب) فتح البرنامج من غير نت بعد ما صلاحية الدخول خلصت (أكتر من ساعة)');
+  const expired = await page.evaluate(() => {
+    const k = Object.keys(localStorage).find((x) => /^sb-.*-auth-token$/.test(x));
+    if (!k) return false;
+    const s = JSON.parse(localStorage.getItem(k));
+    s.expires_at = Math.floor(Date.now() / 1000) - 7200;
+    localStorage.setItem(k, JSON.stringify(s));
+    return true;
+  });
+  check('التوكن المحفوظ اتعلّم إنه منتهي', expired);
+  const tExp = Date.now();
+  await page.reload().catch(() => {});
+  await page.goto(BASE + '/patients').catch(() => {});
+  const shownExpired = await until(async () => (await page.locator('text=بدون اتصال بالخادم').count()) > 0, 45000, 300);
+  const openMs = Date.now() - tExp;
+  check(`البرنامج فتح من غير نت والتوكن منتهي في أقل من 10 ثواني (${(openMs / 1000).toFixed(1)} ث)`, !!shownExpired && openMs < 10000, (await page.locator('body').innerText().catch(() => '')).slice(0, 150));
+  await nav(page, '/work-hours'); // الخطوة الجاية بتفتح /patients?new=1 — لازم تكون جاية من صفحة تانية
+
   // ============ 3) إضافة وتعديل بدون إنترنت ============
   section('3) إضافة مريض وتعديل مرضى بدون إنترنت');
   // «فتح ملف مريض جديد» اتشال من صفحة المرضى (٩/١١ — المريض الجديد من الحجز)؛ نفس النموذج لسه بيفتح بـ /patients?new=1

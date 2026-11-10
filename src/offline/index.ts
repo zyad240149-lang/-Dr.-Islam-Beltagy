@@ -18,6 +18,9 @@ export interface OfflineHooks {
 }
 
 let store: KV = memoryStore();
+const LOGGED_OUT_KEY = 'ortho_logged_out';
+/** تسجيل خروج ← علامة على الجهاز تمنع الفتح من النسخة المحلية؛ أي دخول ناجح بالإنترنت بيشيلها */
+export function markLoggedOut(v: boolean) { try { if (v) localStorage.setItem(LOGGED_OUT_KEY, '1'); else localStorage.removeItem(LOGGED_OUT_KEY); } catch { /* ignore */ } }
 let queue = new OfflineQueue(store);
 let session = new OfflineSession(store);
 let hooks: OfflineHooks | null = null;
@@ -107,6 +110,8 @@ export const offline = {
   /** قراءة معرّف المستخدم من جلسة Supabase المحفوظة (من غير شبكة) */
   storedUserId(): string | null {
     try {
+      // «تسجيل الخروج» بيتسجّل فورًا (قبل ما supabase يمسح الجلسة من التخزين — ممكن الصفحة تتقفل قبلها) ← مفيش فتح أوفلاين لحد دخول جديد
+      if (localStorage.getItem(LOGGED_OUT_KEY)) return null;
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i)!;
         if (/^sb-.*-auth-token$/.test(k)) {

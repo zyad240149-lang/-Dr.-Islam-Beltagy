@@ -13,7 +13,7 @@ import { useToast } from '../hooks/useToast';
 import { prefetchRoute } from '../routeImports';
 import { PwaControls, PwaUpdateBanner, RefreshButton } from '../pwa/PwaControls';
 import { OfflineBadge } from './OfflineStatus';
-import { offline } from '../offline';
+import { offline, markLoggedOut } from '../offline';
 import { isNetworkError } from '../offline/net';
 import { DetailsProvider } from './DetailsHost';
 import { ortho, useOrthoVersion } from '../ortho/data';
@@ -150,7 +150,9 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   const doLogout = async () => {
     // تغييرات سُجّلت بدون إنترنت: نحاول نزامنها الأول. اللي ما اتبعتش بيفضل محفوظ وبيتبعت أول ما نفس الموظف يدخل تاني
-    if (offline.queue.pendingCount()) await offline.syncNow(true).catch(() => {});
+    // الخروج بيتسجّل فورًا، والمزامنة ليها 5 ثواني بس — كانت ممكن تفضل مستنية للأبد (نت ضعيف/عملية بتفشل) فالخروج مايحصلش خالص
+    markLoggedOut(true);
+    if (offline.queue.pendingCount()) await Promise.race([offline.syncNow(true).catch(() => {}), new Promise((ok) => setTimeout(ok, 5000))]);
     logout(); toast.info('تم تسجيل الخروج'); navigate('/login');
   };
   const goHit = (h: SearchHit) => { setSearchOpen(false); setQ(''); setHits(null); navigate(h.link); };

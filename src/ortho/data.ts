@@ -66,7 +66,7 @@ export interface InjectionSheet {
 }
 export interface Injection { id: string; patientId: string; appointmentId?: string | null; date: string; sheet: InjectionSheet; createdBy?: string | null }
 // قايمة أسامي الأدوية (قسم «الأدوية» — مش مخزون): اقتراحات الروشتة
-export interface MedItem { id: string; name: string; group: string; dose: string; frequency: string; duration: string; shown: boolean; scientificName?: string }
+export interface MedItem { id: string; name: string; group: string; dose: string; frequency: string; duration: string; notes?: string; shown: boolean; scientificName?: string }
 // التمرينات العلاجية: مكتبة تمرينات (اسم + وصف + صور/فيديوهات) وخطة تمرينات لكل مريض مربوطة بتشخيصه
 export interface ExerciseMedia { path: string; url: string; type: string; name: string }
 export interface Exercise { id: string; name: string; group: string; description: string; media: ExerciseMedia[] }
@@ -111,7 +111,7 @@ const COLUMNS: Record<Kind, string[]> = {
   fractures: ['patient_id', 'bone', 'side', 'kind', 'injury_date', 'cast_date', 'removal_due', 'status'],
   nursing: ['patient_id', 'appointment_id', 'date', 'sheet'],
   injections: ['patient_id', 'appointment_id', 'date', 'sheet'],
-  medications: ['name', 'group', 'dose', 'frequency', 'duration', 'shown'],
+  medications: ['name', 'group', 'dose', 'frequency', 'duration', 'notes', 'shown'],
   exercises: ['name', 'group', 'description', 'media'],
   exercise_plans: ['patient_id', 'consultation_id', 'date', 'exercise_ids', 'notes', 'share_token'],
   follow_ups: ['patient_id', 'consultation_id', 'doctor_id', 'date', 'time', 'reason', 'notes', 'status', 'appointment_id', 'kind', 'pain_score'],

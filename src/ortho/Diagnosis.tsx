@@ -3,7 +3,7 @@
 // و«المرضى اللي اتشخصوا» (شيت متابعة التمريض بقى تاب «متابعة المريض» جوّه نموذج التشخيص — بحث بالاسم أو جزء منه أو الموبايل أو رقم الملف). مريض مختار ← ملف تشخيصاته كله + تشخيص جديد.
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { isIncomplete, isUnlinked, ortho, useOrthoVersion, type Consultation } from './data';
+import { addDays, isIncomplete, isUnlinked, ortho, useOrthoVersion, type Consultation } from './data';
 import { LoadState, PageHead, SearchBox, patientFile, patientName, useClinicalCan } from './kit';
 import { ConsultModal, DraftCard, LinkBadge, clearConsultDraft, listConsultDrafts } from './Consultations';
 import { DiagnosisTab } from './DiagnosisTab';
@@ -32,6 +32,11 @@ export default function Diagnosis() {
   const [newVisit, setNewVisit] = useState<string | null>(null); // الزيارة اللي التشخيص الجديد بيتربط بيها (من قايمة الانتظار)
   const [fromQueue, setFromQueue] = useState(false); // اتفتح من «بانتظار التشخيص» ← بعد القفل يرجع للقايمة على المريض اللي بعده
   const [q, setQ] = useState('');
+  // فلتر التاريخ في «اتشخصوا» (على تاريخ آخر تشخيص): الكل / النهارده / امبارح / آخر 3 أيام / آخر أسبوع / من يوم لـ يوم
+  type Range = 'all' | 'today' | 'yesterday' | '3d' | 'week' | 'custom';
+  const [range, setRange] = useState<Range>('all');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
   const [exSend, setExSend] = useState(false);
   const canExSend = useCanSendExercises();
   const [, setDraftsVersion] = useState(0);
@@ -86,13 +91,18 @@ export default function Diagnosis() {
     return [...by.entries()].map(([id, x]) => ({ id, ...x, p: db.patient(id) })).sort((a, b) => b.last.date.localeCompare(a.last.date));
   })();
   const term = q.trim();
-  const found = term ? diagnosed.filter((x) => patientMatches(x.p ?? { fullName: patientName(x.id) }, term)) : diagnosed; // كلهم ظاهرين (البحث بيفلتر)
+  const today = todayYmd();
+  const [rFrom, rTo] = range === 'today' ? [today, today] : range === 'yesterday' ? [addDays(today, -1), addDays(today, -1)]
+    : range === '3d' ? [addDays(today, -2), today] : range === 'week' ? [addDays(today, -6), today]
+    : range === 'custom' ? [from <= to || !to ? from : to, from <= to || !from ? to : from] : ['', ''];
+  const inRange = (d: string) => (!rFrom || d >= rFrom) && (!rTo || d <= rTo);
+  const found = diagnosed.filter((x) => inRange(x.last.date) && (!term || patientMatches(x.p ?? { fullName: patientName(x.id) }, term))); // كلهم ظاهرين (البحث والتاريخ بيفلتروا)
 
   const selected = patientId ? db.patient(patientId) : undefined;
   // تشخيصات اتعملت بالاسم من غير ملف (غالبًا من غير نت): بتظهر عادي في «اتشخصوا» بالاسم المكتوب — الربط بملف الاستقبال
   // بيحصل تلقائي على الخادم، ومفيش أي رسالة «محتاج ربط» للدكتور (اللي فيه شك بيروح لقايمة مراجعة داخلية في الإعدادات)
   const unlinked = consults.filter(isUnlinked).sort((a, b) => b.date.localeCompare(a.date));
-  const unlinkedFound = term ? unlinked.filter((c) => patientMatches({ fullName: c.pendingPatient?.name ?? '', phone: c.pendingPatient?.phone ?? '' } as never, term)) : unlinked;
+  const unlinkedFound = unlinked.filter((c) => inRange(c.date) && (!term || patientMatches({ fullName: c.pendingPatient?.name ?? '', phone: c.pendingPatient?.phone ?? '' } as never, term)));
   const [regQ, setRegQ] = useState(''); // بحث عن مريض متسجل بالفعل (اسم/موبايل/رقم ملف) — محتاج نت
   const regHits = newFile && online && regQ.trim().length >= 2 ? db.patients().filter((p) => patientMatches(p, regQ)).slice(0, 8) : [];
   const nameHits = newFile && newFile.name.trim().length >= 2 ? db.patients().filter((p) => patientMatches(p, newFile.name)).slice(0, 6) : [];
@@ -225,10 +235,24 @@ export default function Diagnosis() {
       {!patientId && view === 'done' && (
         <section className="card">
           <div className="filter-bar"><div className="field"><SearchBox value={q} onChange={setQ} placeholder="ابحث باسم المريض (أو جزء منه) أو رقم الموبايل أو رقم الملف" /></div></div>
+          <div className="filter-bar" style={{ flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+            <div className="seg" role="group" aria-label="فلتر بتاريخ التشخيص" style={{ display: 'flex', flexWrap: 'wrap', flex: '1 1 100%' }}>
+              {([['all', 'الكل'], ['today', 'النهارده'], ['yesterday', 'امبارح'], ['3d', 'آخر 3 أيام'], ['week', 'آخر أسبوع'], ['custom', 'من يوم لـ يوم']] as [Range, string][]).map(([k, label]) => (
+                <button key={k} type="button" aria-pressed={range === k} className={`seg__btn ${range === k ? 'active' : ''}`} style={{ padding: '0 14px', flex: '1 0 auto' }} onClick={() => setRange(k)}>{label}</button>
+              ))}
+            </div>
+            {range === 'custom' && (
+              <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                من <input type="date" className="input" style={{ width: 'auto' }} value={from} max={today} onChange={(e) => setFrom(e.target.value)} aria-label="من يوم" />
+                لـ <input type="date" className="input" style={{ width: 'auto' }} value={to} max={today} onChange={(e) => setTo(e.target.value)} aria-label="لحد يوم" />
+              </span>
+            )}
+            {range !== 'all' && <span className="muted"><span className="num">{found.length + unlinkedFound.length}</span> مريض</span>}
+          </div>
           <div className="card__body">
             <LoadState kind="consultations">
               {diagnosed.length + unlinked.length === 0 ? <EmptyState icon="stethoscope" title="لا يوجد مرضى متشخّصون بعد" />
-                : found.length + unlinkedFound.length === 0 ? <EmptyState icon="search" title="مفيش مريض متشخّص بالاسم أو الرقم ده" text="جرّب جزء تاني من الاسم أو الرقم من غير مسافات." />
+                : found.length + unlinkedFound.length === 0 ? <EmptyState icon="search" title={term ? 'مفيش مريض متشخّص بالاسم أو الرقم ده' : 'مفيش مرضى اتشخصوا في الفترة دي'} text={term ? 'جرّب جزء تاني من الاسم أو الرقم من غير مسافات.' : 'جرّب فترة تانية أو اختار «الكل».'} />
                 : (
                   <div className="dx-queue">
                     {found.map((x) => (

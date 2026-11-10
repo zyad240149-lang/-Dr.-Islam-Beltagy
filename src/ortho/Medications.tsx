@@ -10,7 +10,7 @@ import { useMedBank } from './medBank';
 
 type Draft = MedPreset & { id?: string };
 type Row = Omit<MedItem, 'id'> & { id?: string };
-const emptyMed = (): Draft => ({ name: '', group: '', dose: '', frequency: '', duration: '', shown: true });
+const emptyMed = (): Draft => ({ name: '', group: '', dose: '', frequency: '', duration: '', notes: '', shown: true });
 const keyOf = (name: string) => name.trim().toLowerCase();
 const isShown = (m: MedPreset) => m.shown !== false;
 const NEW_GROUP = '__new_group__';
@@ -19,7 +19,7 @@ function MedModal({ initial, groups, onClose }: { initial: Draft; groups: string
   const { run, busy } = useRun();
   const [m, setM] = useState<Draft>(initial);
   const [newGroup, setNewGroup] = useState(false);
-  const set = (k: 'name' | 'group' | 'dose' | 'frequency' | 'duration', v: string) => setM((x) => ({ ...x, [k]: v }));
+  const set = (k: 'name' | 'group' | 'dose' | 'frequency' | 'duration' | 'notes', v: string) => setM((x) => ({ ...x, [k]: v }));
   const dup = !m.id && ortho.list('medications').some((x) => keyOf(x.name) === keyOf(m.name));
   return (
     <Modal title={initial.id ? 'تعديل الدواء' : 'إضافة دواء للبنك'} onClose={onClose} footer={<>
@@ -43,6 +43,7 @@ function MedModal({ initial, groups, onClose }: { initial: Draft; groups: string
         <Field label="الجرعة"><input className="input" value={m.dose} onChange={(e) => set('dose', e.target.value)} placeholder="قرص" /></Field>
         <Field label="التكرار"><input className="input" value={m.frequency} onChange={(e) => set('frequency', e.target.value)} placeholder="مرتين يوميًا بعد الأكل" /></Field>
         <Field label="المدة"><input className="input" value={m.duration} onChange={(e) => set('duration', e.target.value)} placeholder="5 أيام" /></Field>
+        <Field label="ملاحظة" className="span-2"><textarea className="input" rows={2} value={m.notes ?? ''} onChange={(e) => set('notes', e.target.value)} placeholder="مثال: ممنوع النوم بعدها نص ساعة — بتظهر في خانة الملاحظات في الروشتة" /></Field>
         <label className="span-2" style={{ display: 'inline-flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}>
           <input type="checkbox" checked={isShown(m)} onChange={(e) => setM((x) => ({ ...x, shown: e.target.checked }))} /> يظهر قدامي في الروشتة
         </label>
@@ -130,7 +131,7 @@ export default function Medications() {
   const remove = (s: MedItem) => confirmDelete(`«${s.name}»`) && run(() => ortho.remove('medications', s.id), isBase(s.name) ? 'اتشال التعديل — رجع للقايمة الأساسية' : 'تم الحذف');
   const toRow = (m: Draft, patch: Partial<MedPreset> = {}): Row => {
     const id = m.id ?? savedBy.get(keyOf(m.name))?.id;
-    return { ...(id ? { id } : {}), name: m.name, group: m.group, dose: m.dose, frequency: m.frequency, duration: m.duration, shown: isShown(m), ...patch } as Row;
+    return { ...(id ? { id } : {}), name: m.name, group: m.group, dose: m.dose, frequency: m.frequency, duration: m.duration, notes: m.notes ?? '', shown: isShown(m), ...patch } as Row;
   };
   const bank = useMedBank(view === 'bank' ? q : '');
   const bankHits = bank.rows.filter((m) => !known.has(keyOf(m.name)));
@@ -168,6 +169,7 @@ export default function Medications() {
                       <div>
                         <b dir="ltr">{m.name}</b>{isBase(m.name) && <span className="badge badge--muted" style={{ marginInlineStart: 8 }}>أساسي</span>}
                         <div className="ortho-sub">{[m.dose, m.frequency, m.duration].filter(Boolean).join(' — ') || '—'}</div>
+                        {m.notes?.trim() && <div className="ortho-sub">ملاحظة: {m.notes.trim()}</div>}
                       </div>
                       <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                         <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center', cursor: 'pointer', whiteSpace: 'nowrap' }}>

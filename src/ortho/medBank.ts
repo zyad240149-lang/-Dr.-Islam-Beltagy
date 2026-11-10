@@ -7,7 +7,7 @@ import type { MedItem } from './data';
 const pattern = (term: string) => `%${term.replace(/["\\%_*]/g, ' ').trim().replace(/\s+/g, '%')}%`;
 
 async function fetchPage(term: string, offset: number, limit: number) {
-  let q = supabase.from('ortho_medications').select('id,name,group,dose,frequency,duration,shown,scientific_name', { count: 'exact' }).order('name').range(offset, offset + limit - 1);
+  let q = supabase.from('ortho_medications').select('id,name,group,dose,frequency,duration,notes,shown,scientific_name', { count: 'exact' }).order('name').range(offset, offset + limit - 1);
   const p = pattern(term);
   if (p !== '%%') q = q.or(`name.ilike."${p}",scientific_name.ilike."${p}"`); // بالاسم التجاري أو المادة الفعالة
   const { data, error, count } = await q;

@@ -73,14 +73,14 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
   const pickMedName = (i: number, name: string) => {
     const p = medCatalog().find((x) => x.name === name);
     const cur = c.medications[i];
-    setMed(i, p ? { name, dose: cur.dose || p.dose, frequency: cur.frequency || p.frequency, duration: cur.duration || p.duration } : { name });
+    setMed(i, p ? { name, dose: cur.dose || p.dose, frequency: cur.frequency || p.frequency, duration: cur.duration || p.duration, notes: cur.notes || p.notes || '' } : { name });
   };
   const [medQ, setMedQ] = useState('');
   const norm = (s: string) => s.trim().toLowerCase();
   const hasMed = (name: string) => c.medications.some((m) => norm(m.name) === norm(name));
   const toggleMed = (p: MedPreset) => set('medications', hasMed(p.name)
     ? c.medications.filter((m) => norm(m.name) !== norm(p.name))
-    : [...c.medications.filter((m) => m.name.trim()), { ...emptyMed(), name: p.name, dose: p.dose, frequency: p.frequency, duration: p.duration }]);
+    : [...c.medications.filter((m) => m.name.trim()), { ...emptyMed(), name: p.name, dose: p.dose, frequency: p.frequency, duration: p.duration, notes: p.notes ?? '' }]);
   const medGroups = new Map<string, MedPreset[]>();
   for (const p of medCatalog()) {
     // من غير بحث: اللي الطبيب اختاره يظهر قدامه بس — البحث بيدور في البنك كله

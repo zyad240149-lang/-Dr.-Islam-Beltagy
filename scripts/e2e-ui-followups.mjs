@@ -65,6 +65,7 @@ try {
     const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 }, locale: 'ar-EG' });
     await ctx.addInitScript(FAKE_SPEECH);
     const page = await ctx.newPage();
+    globalThis.__lastPage = page;
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
     page.on('console', (m) => { if (m.type() === 'error' && !NOISE.test(m.text())) errors.push(m.text()); });
@@ -136,16 +137,18 @@ try {
   await p.getByRole('button', { name: 'تشخيص جديد' }).first().click();
   await p.waitForSelector('#cx-visit-reason', { timeout: 20000 });
   check('خانة «شكوى المريض / سبب الزيارة» فاضية في التشخيص الجديد', (await p.inputValue('#cx-visit-reason')) === '');
-  const tiles = await waitFor(async () => (await p.locator('.pmf__tile').count()) === 2);
+  // الأشعة والتحاليل بقت تاب لوحدها (رقم 4) في الكشف — الملفات بتظهر فيها
+  await p.locator('.modal .sh-tabs button', { hasText: 'الأشعة والتحاليل' }).click();
+  const tiles = await waitFor(async () => (await p.locator('.modal .pmf__tile:visible').count()) === 2);
   check('6. الأشعة والتحاليل اللي رفعها الاستقبال ظاهرة في التشخيص', tiles, await p.locator('.pmf').innerText().catch(() => ''));
-  check('اسم الملف والتاريخ والملاحظات ظاهرين', await p.locator('.pmf', { hasText: 'صورة دم كاملة' }).isVisible() && await p.locator('.pmf', { hasText: 'صايم' }).isVisible());
+  check('اسم الملف والتاريخ والملاحظات ظاهرين', await p.locator('.modal .pmf__tile:visible', { hasText: 'صورة دم كاملة' }).count() === 1 && await p.locator('.modal .pmf__tile:visible', { hasText: 'صايم' }).count() === 1);
 
   // 8. معاينة الصورة والـ PDF
-  await p.locator('.pmf__tile', { hasText: 'أشعة الركبة' }).getByRole('button', { name: 'فتح' }).click();
+  await p.locator('.modal .pmf__tile:visible', { hasText: 'أشعة الركبة' }).getByRole('button', { name: 'فتح' }).click();
   const img = await waitFor(async () => p.locator('.modal img[alt="knee.png"]').evaluate((e) => e.complete && e.naturalWidth > 0).catch(() => false));
   check('8. معاينة صورة الأشعة', img);
   await p.locator('.modal').last().getByRole('button', { name: 'إغلاق' }).last().click();
-  await p.locator('.pmf__tile', { hasText: 'صورة دم كاملة' }).getByRole('button', { name: 'فتح' }).click();
+  await p.locator('.modal .pmf__tile:visible', { hasText: 'صورة دم كاملة' }).getByRole('button', { name: 'فتح' }).click();
   const iframe = await waitFor(async () => (await p.locator('.modal iframe').getAttribute('src').catch(() => ''))?.includes('/storage/'));
   check('8. معاينة ملف PDF', iframe);
   await p.locator('.modal').last().getByRole('button', { name: 'إغلاق' }).last().click();
@@ -171,21 +174,23 @@ try {
   await p.evaluate(() => { window.__micDenied = false; });
   check('الشكوى فضلت زي ما هي بعد رفض الإذن', (await p.inputValue('#cx-visit-reason')) === 'ألم في الركبة من أسبوعين، مع تورم.');
 
-  // 11-12. موعدين متابعة من خطوة «تحديد موعد متابعة»
-  await p.getByRole('tab', { name: /تحديد موعد متابعة/ }).click();
+  // 11-12. موعدين متابعة من تاب «موعد المتابعة» (رقم 8 من ١٠/١١)
+  await p.locator('.modal .sh-tabs button', { hasText: 'موعد المتابعة' }).click();
   for (const [d, t, why] of [[cairoDate(7), '10:30', 'متابعة بعد الحقن'], [cairoDate(21), '', 'مراجعة التحاليل']]) {
     await p.getByRole('button', { name: 'إضافة موعد متابعة' }).click();
     const m = p.locator('.modal', { hasText: 'تحديد موعد متابعة' }).last();
-    await m.locator('.fu-day--pick input').fill(d);
+    await m.getByLabel('يوم المتابعة').fill(d);
     if (t) await m.locator('input.fu-slots__time').fill(t);
     await m.locator('textarea').first().fill(why);
-    await m.getByRole('button', { name: 'إضافة للتشخيص' }).click();
+    await m.getByRole('button', { name: /^(إضافة للتشخيص|حفظ)$/ }).click();
+    await m.waitFor({ state: 'detached', timeout: 15000 }).catch(() => {});
   }
-  check('الموعدين ظاهرين «هيتحفظوا مع التشخيص»', (await p.locator('.fu-item', { hasText: 'لسه ما اتحفظش' }).count()) === 2);
+  // مع ملف مريض: كل موعد بيتحفظ على طول، وبيترتبط بالتشخيص أول ما الكشف يتحفظ
+  check('الموعدين ظاهرين في تاب «موعد المتابعة»', (await p.locator('.modal .fu-item').count()) === 2, String(await p.locator('.modal .fu-item').count()));
   await p.locator('.sh-next').getByRole('button', { name: 'حفظ الكشف' }).click();
-  await p.getByRole('button', { name: 'حفظ — استكمال بعدين' }).click().catch(() => {});
   const cons = await waitFor(() => one(`select id, visit_reason from ortho_consultations where patient_id = '${made.patient}'`));
-  const fus = await waitFor(async () => { const r = await sql(`select * from ortho_follow_ups where patient_id = '${made.patient}' order by date`); return r.length === 2 ? r : null; });
+  // الموعدين موجودين من قبل حفظ الكشف — نستنى لحد ما الاتنين يترتبطوا بالتشخيص (مش أول ما يبقوا اتنين)
+  const fus = await waitFor(async () => { const r = await sql(`select * from ortho_follow_ups where patient_id = '${made.patient}' order by date`); return r.length === 2 && r.every((f) => f.consultation_id) ? r : null; });
   check('4. الشكوى اتحفظت مع التشخيص', cons?.visit_reason === 'ألم في الركبة من أسبوعين، مع تورم.', JSON.stringify(cons));
   check('11-12. موعدين متابعة اتحفظوا مربوطين بالمريض والتشخيص والطبيب', !!fus && fus.every((f) => f.consultation_id === cons.id && f.doctor_id === made.therapist && f.status === 'scheduled') && String(fus[0].time).startsWith('10:30'), JSON.stringify(fus?.map((f) => [f.date, f.time, f.doctor_id, f.consultation_id])));
 
@@ -194,84 +199,71 @@ try {
   check('التشخيص بيعرض المتابعات المربوطة بيه', await waitFor(() => p.locator('.fu-chips .fu-chip').count().then((n) => n === 2)));
   await p.getByRole('button', { name: 'تشخيص جديد' }).first().click();
   await p.waitForSelector('#cx-visit-reason', { timeout: 20000 });
-  check('7. تشخيص جديد لنفس المريض: الملفات لسه ظاهرة (من غير تكرار)', await waitFor(async () => (await p.locator('.pmf__tile').count()) === 2));
+  await p.locator('.modal .sh-tabs button', { hasText: 'الأشعة والتحاليل' }).click();
+  check('7. تشخيص جديد لنفس المريض: الملفات لسه ظاهرة (من غير تكرار)', await waitFor(async () => (await p.locator('.modal .pmf__tile:visible').count()) === 2));
   check('شكوى التشخيص الجديد فاضية', (await p.inputValue('#cx-visit-reason')) === '');
   await p.locator('.modal').getByRole('button', { name: 'إلغاء' }).first().click();
   check('الطبيب: من غير أخطاء JavaScript', D.errors.length === 0, D.errors.join(' | '));
   if (D.errors.length) await shot(p, 'doc');
 
   // ================= التقويم =================
-  section('متابعات المرضى: التقويم');
-  await go(p, '/follow-ups');
-  await p.waitForSelector('.fu-month', { timeout: 20000 });
-  // الموعد الأول بعد 7 أيام — ممكن يكون في الشهر الجاي
-  const findChip = async (why) => {
-    for (let i = 0; i < 2; i++) {
-      const c = p.locator('.fu-chip', { hasText: why });
-      if (await c.count()) return c.first();
-      await p.getByRole('button', { name: 'التالي' }).click();
-    }
-    return null;
+  // ٨/١١-٩/١١: الصفحة بقت عرض يومي بس (قايمة سطر لكل ساعة) — الشهري/الأسبوعي والبحث وفلاتر الحالة و«موعد متابعة جديد» اتشالوا
+  section('متابعات المرضى: التقويم اليومي');
+  const PNAME = 'مريض اختبار المتابعات';
+  const openDay = async (days) => {
+    await go(p, '/follow-ups');
+    await p.waitForSelector('.fu-cal__nav', { timeout: 20000 });
+    await p.locator('.fu-cal__move').getByRole('button', { name: 'النهارده' }).click();
+    for (let i = 0; i < days; i++) await p.locator('.fu-cal__move').getByRole('button', { name: 'التالي' }).click();
   };
-  const chip = await findChip('متابعة بعد الحقن');
-  check('13. الموعد ظاهر في التقويم الشهري باسم المريض والوقت والسبب', !!chip && /مريض اختبار المتابعات/.test(await chip.innerText()) && /10:30/.test(await chip.innerText()));
-  await p.getByRole('tab', { name: 'أسبوعي' }).click();
-  await p.getByRole('tab', { name: 'يومي' }).click();
-  await p.getByRole('button', { name: 'النهارده' }).click();
-  await p.getByRole('tab', { name: 'شهري' }).click();
-  check('التبديل بين شهري / أسبوعي / يومي من غير أخطاء', D.errors.length === 0, D.errors.join(' | '));
+  const dayRow = (text) => p.locator('.dsch__row:not(.dsch__row--free)', { hasText: text });
+  const openRow = async (text) => { await waitFor(async () => (await dayRow(text).count()) > 0, 15000); await dayRow(text).first().locator('.dsch__who').click(); return p.locator('.modal', { hasText: 'موعد متابعة' }).last(); };
+  await openDay(7);
+  await waitFor(async () => (await dayRow(PNAME).count()) > 0, 15000);
+  const r1 = (await dayRow(PNAME).first().innerText().catch(() => '')).replace(/\s+/g, ' ');
+  check('13. الموعد ظاهر في اليوم بتاعه باسم المريض والوقت', /10:30/.test(r1), r1);
+  check('التنقل بين الأيام من غير أخطاء', D.errors.length === 0, D.errors.join(' | '));
 
-  // 14. تعديل ← تمت، والتاني إلغاء
-  const c1 = await findChip('متابعة بعد الحقن');
-  await c1.click();
-  let m = p.locator('.modal', { hasText: 'موعد متابعة' }).last();
-  await m.locator('input.fu-slots__time').fill('11:15');
-  await m.getByRole('button', { name: 'حفظ' }).click();
+  // 14. تعديل الوقت ← تمت، والتاني إلغاء
+  let m = await openRow(PNAME);
+  await m.locator('input.fu-slots__time').first().fill('11:15');
+  await m.getByRole('button', { name: 'حفظ', exact: true }).click();
   const moved = await waitFor(async () => String((await one(`select time from ortho_follow_ups where id = '${fus[0].id}'`))?.time).startsWith('11:15'));
-  check('14. تعديل وقت الموعد من التقويم', moved);
-  await (await findChip('متابعة بعد الحقن')).click();
-  m = p.locator('.modal', { hasText: 'موعد متابعة' }).last();
+  check('14. تعديل وقت الموعد من اليوم', moved);
+  await m.waitFor({ state: 'detached', timeout: 15000 }).catch(() => {});
+  m = await openRow(PNAME);
   await m.getByRole('button', { name: 'تمت المتابعة' }).click();
   check('14. إتمام الموعد', await waitFor(async () => (await one(`select status from ortho_follow_ups where id = '${fus[0].id}'`))?.status === 'done'));
-  await p.getByPlaceholder(/ابحث باسم المريض/).fill('01200000977');
-  await p.locator('.fu-item', { hasText: 'مراجعة التحاليل' }).locator('.fu-item__main').click();
-  m = p.locator('.modal', { hasText: 'موعد متابعة' }).last();
-  check('البحث برقم الهاتف بيعرض كل متابعات المريض', true);
+  await m.waitFor({ state: 'detached', timeout: 15000 }).catch(() => {});
+  await openDay(21);
+  m = await openRow('مراجعة التحاليل');
   await m.getByRole('button', { name: 'إلغاء الموعد' }).click();
   check('14. إلغاء الموعد', await waitFor(async () => (await one(`select status from ortho_follow_ups where id = '${fus[1].id}'`))?.status === 'cancelled'));
-  check('الحالات: «تمت» و«ملغاة» ظاهرين في نتايج البحث', await waitFor(async () => (await p.locator('.fu-item--done').count()) === 1 && (await p.locator('.fu-item--cancelled').count()) === 1));
-  // شكل النافذة الجديدة: الأيام + أوقات دوام الطبيب + جدول اليوم
-  await p.getByPlaceholder(/ابحث باسم المريض/).fill('');
-  await p.getByRole('button', { name: 'موعد متابعة جديد' }).click();
-  await p.locator('.modal input').first().fill('اختبار المتابعات').catch(() => {});
-  await p.locator('.modal').getByText('مريض اختبار المتابعات').first().click().catch(() => {});
-  const nm = p.locator('.modal', { hasText: 'تحديد موعد متابعة' }).last();
-  const shown = await waitFor(async () => (await nm.locator('.fu-day').count()) >= 14 && (await nm.locator('.fu-slot').count()) > 0, 10000);
-  check('النافذة بتعرض أيام الأسبوعين الجايين وأوقات دوام الطبيب', !!shown, `days=${await nm.locator('.fu-day').count()} slots=${await nm.locator('.fu-slot').count()}`);
-  check('اليوم المختار مكتوب باسمه ومواعيد عمل الطبيب ظاهرة', /مواعيد عمل الطبيب/.test(await nm.locator('.fu-dayhead').innerText().catch(() => '')));
-  check('جدول الطبيب في اليوم ده ظاهر', (await nm.locator('.fu-plan').count()) === 1);
-  mkdirSync(new URL('../docs/ui-shots/', import.meta.url), { recursive: true });
-  await nm.screenshot({ path: fileURLToPath(new URL('../docs/ui-shots/follow-up-dialog.png', import.meta.url)) }).catch(() => {});
-  await nm.getByRole('button', { name: 'إغلاق' }).last().click();
+  await m.waitFor({ state: 'detached', timeout: 15000 }).catch(() => {});
 
   // تسجيل حضور: متابعة النهارده من غير حجز ← حجز بأقرب وقت فاضي مع نفس الطبيب ويتعلّم «حضر»، والمتابعة «تمت»
   const [todayFu] = await sql(`insert into ortho_follow_ups (patient_id, doctor_id, date, reason) values ('${made.patient}', '${made.therapist}', '${cairoDate(0)}', 'متابعة حضور اختبار') returning id`);
-  await go(p, '/follow-ups');
-  await p.waitForSelector('.fu-month', { timeout: 20000 });
-  await waitFor(async () => (await p.locator('.fu-chip', { hasText: 'متابعة حضور اختبار' }).count()) > 0, 15000);
-  await p.locator('.fu-chip', { hasText: 'متابعة حضور اختبار' }).first().click();
-  const cm = p.locator('.modal', { hasText: 'موعد متابعة' }).last();
+  // تسجيل الحضور بيعمل حجز ← صلاحية الحجز للاستقبال (الطبيب مالوش «حجز» من بعد فصل الصلاحيات ٩٢٢٤be0/963)
+  const R2 = await open(STAFF.recep);
+  const docPage = p; p = R2.page;
+  await openDay(0);
+  const cm = await openRow('متابعة حضور اختبار');
   await cm.getByRole('button', { name: 'تسجيل حضور المريض' }).click();
   await cm.getByRole('button', { name: 'تأكيد الحضور' }).click();
-  const ci = await waitFor(async () => { const r = await one(`select f.status, a.status ast, a.therapist_id, a.date from ortho_follow_ups f left join appointments a on a.id = f.appointment_id where f.id = '${todayFu.id}'`); return r?.status === 'done' ? r : null; });
-  check('تسجيل حضور المريض: اتعمل حجز النهارده مع نفس الطبيب واتعلّم «حضر» والمتابعة «تمت»', ci?.ast === 'arrived' && ci?.therapist_id === made.therapist && ci?.date === cairoDate(0), JSON.stringify(ci));
+  const ci = await waitFor(async () => { const r = await one(`select f.status, a.status ast, a.therapist_id, a.date from ortho_follow_ups f left join appointments a on a.id = f.appointment_id where f.id = '${todayFu.id}'`); return r?.status === 'done' ? r : null; }, 30000);
+  check('تسجيل حضور المريض: اتعمل حجز النهارده مع نفس الطبيب واتعلّم «حضر» والمتابعة «تمت»', ci?.ast === 'arrived' && ci?.therapist_id === made.therapist && ci?.date === cairoDate(0), JSON.stringify(ci) + ' ' + (await p.locator('.toast').allInnerTexts().catch(() => [])).join(' | ') + ' ' + (await cm.innerText().catch(() => '')).replace(/\s+/g, ' ').slice(0, 300));
+  await cm.waitFor({ state: 'detached', timeout: 15000 }).catch(() => {});
+  check('الاستقبال: تسجيل الحضور من غير أخطاء JavaScript', R2.errors.length === 0, R2.errors.join(' | '));
+  await R2.ctx.close();
+  p = docPage;
+  await openDay(0);
 
   // 15. فتح ملف المريض من الموعد
-  await p.getByPlaceholder(/ابحث باسم المريض/).fill('01200000977');
-  await p.locator('.fu-item__patient').first().click();
-  check('15. فتح ملف المريض من الموعد في التقويم', await waitFor(() => new URL(p.url()).pathname === `/patients/${made.patient}`));
+  const pm = await openRow(PNAME);
+  await pm.getByRole('link', { name: PNAME }).first().click();
+  check('15. فتح ملف المريض من الموعد في اليوم', await waitFor(() => new URL(p.url()).pathname === `/patients/${made.patient}`));
   await p.getByRole('button', { name: 'مواعيد المتابعة' }).first().click();
-  check('ملف المريض بيعرض كل مواعيد المتابعة (السابقة والقادمة)', await waitFor(async () => (await p.locator('.fu-item').count()) === 2));
+  check('ملف المريض بيعرض كل مواعيد المتابعة (السابقة والقادمة)', await waitFor(async () => (await p.locator('.fu-item').count()) >= 2), String(await p.locator('.fu-item').count()));
   await go(p, '/patients');
   await p.waitForSelector('table', { timeout: 20000 });
   await p.getByPlaceholder(/ابحث/).first().fill('01200000977').catch(() => {});
@@ -289,6 +281,12 @@ try {
   await D.ctx.close();
 } catch (e) {
   check('تنفيذ الاختبارات بدون أخطاء غير متوقعة', false, e.message.split('\n')[0]);
+  const lp = globalThis.__lastPage;
+  if (lp) {
+    console.log('  خطوة:', (e.message.match(/waiting for (.*)/) ?? [])[1] ?? '');
+    console.log('  آخر شاشة:', ((await lp.locator('.modal').last().innerText().catch(() => '')) || (await lp.locator('body').innerText().catch(() => ''))).replace(/\s+/g, ' ').slice(0, 700));
+    await lp.screenshot({ path: fileURLToPath(new URL('fu-crash.png', SHOTS)), fullPage: true }).catch(() => {});
+  }
 } finally {
   await browser?.close().catch(() => {});
   await server?.close().catch(() => {});

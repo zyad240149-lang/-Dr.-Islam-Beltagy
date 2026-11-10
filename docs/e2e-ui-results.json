@@ -1,32 +1,32 @@
 {
-  "at": "2026-11-10T17:36:54.109Z",
-  "passed": 226,
+  "at": "2026-11-10T21:54:20.171Z",
+  "passed": 215,
   "failed": 0,
   "results": [
     {
       "name": "حساب مدير واجهة اختبار",
       "ok": true,
-      "detail": "{\"id\":\"43d5d49f-0b59-497c-82a3-f0a0b36b5703\",\"name\":\"مدير واجهة اختبار\",\"username\":\"201200000961\",\"role\":\"system_admin\","
+      "detail": "{\"id\":\"d96a1180-e70d-4d1b-9c17-cd0e0dc4c471\",\"name\":\"مدير واجهة اختبار\",\"username\":\"201200000961\",\"role\":\"system_admin\","
     },
     {
       "name": "حساب استقبال واجهة اختبار",
       "ok": true,
-      "detail": "{\"id\":\"4a232bf9-a1b3-4771-b63b-631bde2676c9\",\"name\":\"استقبال واجهة اختبار\",\"username\":\"201200000962\",\"role\":\"reception\","
+      "detail": "{\"id\":\"70e6a15e-7a28-4658-93db-8c4438d85881\",\"name\":\"استقبال واجهة اختبار\",\"username\":\"201200000962\",\"role\":\"reception\","
     },
     {
       "name": "حساب محاسب واجهة اختبار",
       "ok": true,
-      "detail": "{\"id\":\"7246c23c-9cb9-4911-886c-8335432f1ebb\",\"name\":\"محاسب واجهة اختبار\",\"username\":\"201200000963\",\"role\":\"accountant\",\""
+      "detail": "{\"id\":\"2fccf337-c169-4d5e-a1c0-0c9c75cb858a\",\"name\":\"محاسب واجهة اختبار\",\"username\":\"201200000963\",\"role\":\"accountant\",\""
     },
     {
       "name": "حساب طبيب واجهة اختبار",
       "ok": true,
-      "detail": "{\"id\":\"cb2edee1-3612-4bcc-bb69-b6358f230abb\",\"name\":\"طبيب واجهة اختبار\",\"username\":\"201200000964\",\"role\":\"therapist\",\"ph"
+      "detail": "{\"id\":\"02149c4b-345f-4ddc-bffa-e7f9056b3fd0\",\"name\":\"طبيب واجهة اختبار\",\"username\":\"201200000964\",\"role\":\"therapist\",\"ph"
     },
     {
       "name": "حساب مريض الاختبار",
       "ok": true,
-      "detail": "{\"ok\":true,\"patientId\":\"681e6dd5-b632-49d5-976b-dc9ee5271026\",\"customerId\":\"35b84d42-08aa-4d11-950e-cf134f3f4251\"}"
+      "detail": "{\"ok\":true,\"patientId\":\"6134e739-9da4-42db-9019-28b28f149309\",\"customerId\":\"98fdd2f9-9a34-43a3-b3c4-8ba21ad4ec11\"}"
     },
     {
       "name": "موعد للمريض",
@@ -49,7 +49,7 @@
       "detail": "أعرض من الشاشة بـ -15px — "
     },
     {
-      "name": "المدير: /patients «مرحبًا، مدير»",
+      "name": "المدير: /patients «المرضى»",
       "ok": true,
       "detail": ""
     },
@@ -59,24 +59,24 @@
       "detail": "أعرض من الشاشة بـ -15px — "
     },
     {
-      "name": "المدير: /booking «مرحبًا، مدير»",
+      "name": "المدير: /booking «حجز موعد جديد»",
       "ok": true,
       "detail": ""
     },
     {
       "name": "المدير: /booking على الموبايل بدون سكرول عرضي",
       "ok": true,
-      "detail": "أعرض من الشاشة بـ -15px — "
+      "detail": "أعرض من الشاشة بـ 0px — "
     },
     {
-      "name": "المدير: /appointments «مرحبًا، مدير»",
+      "name": "المدير: /appointments «حجز كشف ومتابعة»",
       "ok": true,
       "detail": ""
     },
     {
       "name": "المدير: /appointments على الموبايل بدون سكرول عرضي",
       "ok": true,
-      "detail": "أعرض من الشاشة بـ -15px — "
+      "detail": "أعرض من الشاشة بـ 0px — "
     },
     {
       "name": "المدير: /body-map «مرحبًا، مدير»",
@@ -84,17 +84,17 @@
       "detail": ""
     },
     {
-      "name": "المدير: /sessions «مرحبًا، مدير»",
+      "name": "المدير: /sessions «الزيارات»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المدير: /services «مرحبًا، مدير»",
+      "name": "المدير: /services «الخدمات والأسعار»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المدير: /diagnosis «مرحبًا، مدير»",
+      "name": "المدير: /diagnosis «تشخيص المريض»",
       "ok": true,
       "detail": ""
     },
@@ -104,17 +104,17 @@
       "detail": "أعرض من الشاشة بـ -15px — "
     },
     {
-      "name": "المدير: /follow-ups «مرحبًا، مدير»",
+      "name": "المدير: /follow-ups «حجز كشف ومتابعة»",
       "ok": true,
       "detail": ""
     },
     {
       "name": "المدير: /follow-ups على الموبايل بدون سكرول عرضي",
       "ok": true,
-      "detail": "أعرض من الشاشة بـ -15px — "
+      "detail": "أعرض من الشاشة بـ 0px — "
     },
     {
-      "name": "المدير: /consultations «مرحبًا، مدير»",
+      "name": "المدير: /consultations «الكشوفات والتشخيص»",
       "ok": true,
       "detail": ""
     },
@@ -124,27 +124,27 @@
       "detail": "أعرض من الشاشة بـ -15px — "
     },
     {
-      "name": "المدير: /imaging «مرحبًا، مدير»",
+      "name": "المدير: /imaging «الأشعة والتحاليل»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المدير: /fractures «مرحبًا، مدير»",
+      "name": "المدير: /fractures «الكسور والجبس»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المدير: /surgeries «مرحبًا، مدير»",
+      "name": "المدير: /surgeries «العمليات الجراحية»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المدير: /employees «مرحبًا، مدير»",
+      "name": "المدير: /employees «الموظفون»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المدير: /work-hours «مرحبًا، مدير»",
+      "name": "المدير: /work-hours «مواعيد العمل»",
       "ok": true,
       "detail": ""
     },
@@ -154,12 +154,12 @@
       "detail": "أعرض من الشاشة بـ -15px — "
     },
     {
-      "name": "المدير: /requests «مرحبًا، مدير»",
+      "name": "المدير: /requests «طلبات الموظفين»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المدير: /attendance «مرحبًا، مدير»",
+      "name": "المدير: /attendance «الحضور والانصراف»",
       "ok": true,
       "detail": ""
     },
@@ -169,7 +169,7 @@
       "detail": ""
     },
     {
-      "name": "المدير: /support «مرحبًا، مدير»",
+      "name": "المدير: /support «الدعم الفني»",
       "ok": true,
       "detail": ""
     },
@@ -179,12 +179,12 @@
       "detail": ""
     },
     {
-      "name": "المدير: /campaigns «مرحبًا، مدير»",
+      "name": "المدير: /campaigns «إشعارات المرضى»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المدير: /invoices «مرحبًا، مدير»",
+      "name": "المدير: /invoices «الفواتير والمدفوعات»",
       "ok": true,
       "detail": ""
     },
@@ -194,12 +194,12 @@
       "detail": "أعرض من الشاشة بـ -15px — "
     },
     {
-      "name": "المدير: /finance «مرحبًا، مدير»",
+      "name": "المدير: /finance «الفواتير والمدفوعات (المدير)»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المدير: /payroll «مرحبًا، مدير»",
+      "name": "المدير: /payroll «الرواتب»",
       "ok": true,
       "detail": ""
     },
@@ -209,12 +209,12 @@
       "detail": "أعرض من الشاشة بـ -15px — "
     },
     {
-      "name": "المدير: /payroll/staff «مرحبًا، مدير»",
+      "name": "المدير: /payroll/staff «الرواتب»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المدير: /payroll/reports «مرحبًا، مدير»",
+      "name": "المدير: /payroll/reports «الرواتب»",
       "ok": true,
       "detail": ""
     },
@@ -229,7 +229,7 @@
       "detail": ""
     },
     {
-      "name": "المدير: /inventory «مرحبًا، مدير»",
+      "name": "المدير: /inventory «المخزون»",
       "ok": true,
       "detail": ""
     },
@@ -239,49 +239,44 @@
       "detail": "أعرض من الشاشة بـ -15px — "
     },
     {
-      "name": "المدير: /reports «مرحبًا، مدير»",
+      "name": "المدير: /reports «التقارير»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المدير: /marketing-report «مرحبًا، مدير»",
+      "name": "المدير: /marketing-report «تقرير التسويق»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المدير: /notifications «مرحبًا، مدير»",
+      "name": "المدير: /notifications «الإشعارات»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المدير: /roles «مرحبًا، مدير»",
+      "name": "المدير: /roles «الأدوار والصلاحيات»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المدير: /settings «مرحبًا، مدير»",
+      "name": "المدير: /settings «الإعدادات»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المدير: /account «مرحبًا، مدير»",
+      "name": "المدير: /account «حسابي»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المدير: /patients/681e6dd5-b632-49d5-976b-dc9ee5271026 «مرحبًا، مدير»",
+      "name": "المدير: /patients/6134e739-9da4-42db-9019-28b28f149309 «مريض واجهة اختبار»",
       "ok": true,
       "detail": ""
     },
     {
       "name": "المدير: خط IBM Plex Sans Arabic متحمّل",
       "ok": true,
-      "detail": "{\"loaded\":true,\"body\":\"\\\"IBM Plex Sans Arabic\\\", \\\"Segoe UI\\\", Tahoma, system-ui, sans-serif\",\"field\":\"\\\"IBM Plex Sans Arabic\\\", \\\"Segoe UI\\\", Tahoma, system-ui, sans-serif\"}"
-    },
-    {
-      "name": "المدير: الحقول بنفس خط النظام",
-      "ok": true,
-      "detail": "{\"loaded\":true,\"body\":\"\\\"IBM Plex Sans Arabic\\\", \\\"Segoe UI\\\", Tahoma, system-ui, sans-serif\",\"field\":\"\\\"IBM Plex Sans Arabic\\\", \\\"Segoe UI\\\", Tahoma, system-ui, sans-serif\"}"
+      "detail": "{\"loaded\":true,\"body\":\"\\\"IBM Plex Sans Arabic\\\", \\\"Segoe UI\\\", Tahoma, system-ui, sans-serif\",\"field\":null}"
     },
     {
       "name": "الاستقبال: الدخول من شاشة الدخول",
@@ -296,10 +291,10 @@
     {
       "name": "الاستقبال: / على الموبايل بدون سكرول عرضي",
       "ok": true,
-      "detail": "أعرض من الشاشة بـ -15px — "
+      "detail": "أعرض من الشاشة بـ 0px — "
     },
     {
-      "name": "الاستقبال: /patients «مرحبًا، استقبال»",
+      "name": "الاستقبال: /patients «المرضى»",
       "ok": true,
       "detail": ""
     },
@@ -309,24 +304,24 @@
       "detail": "أعرض من الشاشة بـ -15px — "
     },
     {
-      "name": "الاستقبال: /booking «مرحبًا، استقبال»",
+      "name": "الاستقبال: /booking «حجز موعد جديد»",
       "ok": true,
       "detail": ""
     },
     {
       "name": "الاستقبال: /booking على الموبايل بدون سكرول عرضي",
       "ok": true,
-      "detail": "أعرض من الشاشة بـ -15px — "
+      "detail": "أعرض من الشاشة بـ 0px — "
     },
     {
-      "name": "الاستقبال: /appointments «مرحبًا، استقبال»",
+      "name": "الاستقبال: /appointments «حجز كشف ومتابعة»",
       "ok": true,
       "detail": ""
     },
     {
       "name": "الاستقبال: /appointments على الموبايل بدون سكرول عرضي",
       "ok": true,
-      "detail": "أعرض من الشاشة بـ -15px — "
+      "detail": "أعرض من الشاشة بـ 0px — "
     },
     {
       "name": "الاستقبال: /body-map «مرحبًا، استقبال»",
@@ -334,17 +329,17 @@
       "detail": ""
     },
     {
-      "name": "الاستقبال: /sessions «مرحبًا، استقبال»",
+      "name": "الاستقبال: /sessions «الزيارات»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الاستقبال: /services «مرحبًا، استقبال»",
+      "name": "الاستقبال: /services «الخدمات والأسعار»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الاستقبال: /diagnosis «مرحبًا، استقبال»",
+      "name": "الاستقبال: /diagnosis «تشخيص المريض»",
       "ok": true,
       "detail": ""
     },
@@ -354,17 +349,17 @@
       "detail": "أعرض من الشاشة بـ -15px — "
     },
     {
-      "name": "الاستقبال: /follow-ups «مرحبًا، استقبال»",
+      "name": "الاستقبال: /follow-ups «حجز كشف ومتابعة»",
       "ok": true,
       "detail": ""
     },
     {
       "name": "الاستقبال: /follow-ups على الموبايل بدون سكرول عرضي",
       "ok": true,
-      "detail": "أعرض من الشاشة بـ -15px — "
+      "detail": "أعرض من الشاشة بـ 0px — "
     },
     {
-      "name": "الاستقبال: /consultations «مرحبًا، استقبال»",
+      "name": "الاستقبال: /consultations «الكشوفات والتشخيص»",
       "ok": true,
       "detail": ""
     },
@@ -374,27 +369,27 @@
       "detail": "أعرض من الشاشة بـ -15px — "
     },
     {
-      "name": "الاستقبال: /imaging «مرحبًا، استقبال»",
+      "name": "الاستقبال: /imaging «الأشعة والتحاليل»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الاستقبال: /fractures «مرحبًا، استقبال»",
+      "name": "الاستقبال: /fractures «الكسور والجبس»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الاستقبال: /surgeries «مرحبًا، استقبال»",
+      "name": "الاستقبال: /surgeries «العمليات الجراحية»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الاستقبال: /employees «مرحبًا، استقبال»",
+      "name": "الاستقبال: /employees «الموظفون»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الاستقبال: /work-hours «مرحبًا، استقبال»",
+      "name": "الاستقبال: /work-hours «مواعيد العمل»",
       "ok": true,
       "detail": ""
     },
@@ -404,12 +399,12 @@
       "detail": "أعرض من الشاشة بـ -15px — "
     },
     {
-      "name": "الاستقبال: /requests «مرحبًا، استقبال»",
+      "name": "الاستقبال: /requests «طلبات الموظفين»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الاستقبال: /attendance «مرحبًا، استقبال»",
+      "name": "الاستقبال: /attendance «الحضور والانصراف»",
       "ok": true,
       "detail": ""
     },
@@ -419,7 +414,7 @@
       "detail": ""
     },
     {
-      "name": "الاستقبال: /support «مرحبًا، استقبال»",
+      "name": "الاستقبال: /support «الدعم الفني»",
       "ok": true,
       "detail": ""
     },
@@ -429,12 +424,12 @@
       "detail": ""
     },
     {
-      "name": "الاستقبال: /campaigns «مرحبًا، استقبال»",
+      "name": "الاستقبال: /campaigns «إشعارات المرضى»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الاستقبال: /invoices «مرحبًا، استقبال»",
+      "name": "الاستقبال: /invoices «الفواتير والمدفوعات»",
       "ok": true,
       "detail": ""
     },
@@ -444,27 +439,22 @@
       "detail": "أعرض من الشاشة بـ -15px — "
     },
     {
-      "name": "الاستقبال: /finance «مرحبًا، استقبال»",
+      "name": "الاستقبال: /finance (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الاستقبال: /payroll «مرحبًا، استقبال»",
+      "name": "الاستقبال: /payroll (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الاستقبال: /payroll على الموبايل بدون سكرول عرضي",
-      "ok": true,
-      "detail": "أعرض من الشاشة بـ -15px — "
-    },
-    {
-      "name": "الاستقبال: /payroll/staff «مرحبًا، استقبال»",
+      "name": "الاستقبال: /payroll/staff (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الاستقبال: /payroll/reports «مرحبًا، استقبال»",
+      "name": "الاستقبال: /payroll/reports (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
@@ -479,7 +469,7 @@
       "detail": ""
     },
     {
-      "name": "الاستقبال: /inventory «مرحبًا، استقبال»",
+      "name": "الاستقبال: /inventory «المخزون»",
       "ok": true,
       "detail": ""
     },
@@ -489,49 +479,44 @@
       "detail": "أعرض من الشاشة بـ -15px — "
     },
     {
-      "name": "الاستقبال: /reports «مرحبًا، استقبال»",
+      "name": "الاستقبال: /reports «التقارير»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الاستقبال: /marketing-report «مرحبًا، استقبال»",
+      "name": "الاستقبال: /marketing-report «تقرير التسويق»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الاستقبال: /notifications «مرحبًا، استقبال»",
+      "name": "الاستقبال: /notifications «الإشعارات»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الاستقبال: /roles «مرحبًا، استقبال»",
+      "name": "الاستقبال: /roles (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الاستقبال: /settings «مرحبًا، استقبال»",
+      "name": "الاستقبال: /settings «الإعدادات»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الاستقبال: /account «مرحبًا، استقبال»",
+      "name": "الاستقبال: /account «حسابي»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الاستقبال: /patients/681e6dd5-b632-49d5-976b-dc9ee5271026 «مرحبًا، استقبال»",
+      "name": "الاستقبال: /patients/6134e739-9da4-42db-9019-28b28f149309 «مريض واجهة اختبار»",
       "ok": true,
       "detail": ""
     },
     {
       "name": "الاستقبال: خط IBM Plex Sans Arabic متحمّل",
       "ok": true,
-      "detail": "{\"loaded\":true,\"body\":\"\\\"IBM Plex Sans Arabic\\\", \\\"Segoe UI\\\", Tahoma, system-ui, sans-serif\",\"field\":\"\\\"IBM Plex Sans Arabic\\\", \\\"Segoe UI\\\", Tahoma, system-ui, sans-serif\"}"
-    },
-    {
-      "name": "الاستقبال: الحقول بنفس خط النظام",
-      "ok": true,
-      "detail": "{\"loaded\":true,\"body\":\"\\\"IBM Plex Sans Arabic\\\", \\\"Segoe UI\\\", Tahoma, system-ui, sans-serif\",\"field\":\"\\\"IBM Plex Sans Arabic\\\", \\\"Segoe UI\\\", Tahoma, system-ui, sans-serif\"}"
+      "detail": "{\"loaded\":true,\"body\":\"\\\"IBM Plex Sans Arabic\\\", \\\"Segoe UI\\\", Tahoma, system-ui, sans-serif\",\"field\":null}"
     },
     {
       "name": "المحاسب: الدخول من شاشة الدخول",
@@ -546,10 +531,10 @@
     {
       "name": "المحاسب: / على الموبايل بدون سكرول عرضي",
       "ok": true,
-      "detail": "أعرض من الشاشة بـ -15px — "
+      "detail": "أعرض من الشاشة بـ 0px — "
     },
     {
-      "name": "المحاسب: /patients «مرحبًا، محاسب»",
+      "name": "المحاسب: /patients «المرضى»",
       "ok": true,
       "detail": ""
     },
@@ -559,24 +544,14 @@
       "detail": "أعرض من الشاشة بـ -15px — "
     },
     {
-      "name": "المحاسب: /booking «مرحبًا، محاسب»",
+      "name": "المحاسب: /booking (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المحاسب: /booking على الموبايل بدون سكرول عرضي",
-      "ok": true,
-      "detail": "أعرض من الشاشة بـ -15px — "
-    },
-    {
-      "name": "المحاسب: /appointments «مرحبًا، محاسب»",
+      "name": "المحاسب: /appointments (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
-    },
-    {
-      "name": "المحاسب: /appointments على الموبايل بدون سكرول عرضي",
-      "ok": true,
-      "detail": "أعرض من الشاشة بـ -15px — "
     },
     {
       "name": "المحاسب: /body-map «مرحبًا، محاسب»",
@@ -584,17 +559,17 @@
       "detail": ""
     },
     {
-      "name": "المحاسب: /sessions «مرحبًا، محاسب»",
+      "name": "المحاسب: /sessions (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المحاسب: /services «مرحبًا، محاسب»",
+      "name": "المحاسب: /services (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المحاسب: /diagnosis «مرحبًا، محاسب»",
+      "name": "المحاسب: /diagnosis «تشخيص المريض»",
       "ok": true,
       "detail": ""
     },
@@ -604,17 +579,17 @@
       "detail": "أعرض من الشاشة بـ -15px — "
     },
     {
-      "name": "المحاسب: /follow-ups «مرحبًا، محاسب»",
+      "name": "المحاسب: /follow-ups «حجز كشف ومتابعة»",
       "ok": true,
       "detail": ""
     },
     {
       "name": "المحاسب: /follow-ups على الموبايل بدون سكرول عرضي",
       "ok": true,
-      "detail": "أعرض من الشاشة بـ -15px — "
+      "detail": "أعرض من الشاشة بـ 0px — "
     },
     {
-      "name": "المحاسب: /consultations «مرحبًا، محاسب»",
+      "name": "المحاسب: /consultations «الكشوفات والتشخيص»",
       "ok": true,
       "detail": ""
     },
@@ -624,42 +599,37 @@
       "detail": "أعرض من الشاشة بـ -15px — "
     },
     {
-      "name": "المحاسب: /imaging «مرحبًا، محاسب»",
+      "name": "المحاسب: /imaging «الأشعة والتحاليل»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المحاسب: /fractures «مرحبًا، محاسب»",
+      "name": "المحاسب: /fractures «الكسور والجبس»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المحاسب: /surgeries «مرحبًا، محاسب»",
+      "name": "المحاسب: /surgeries «العمليات الجراحية»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المحاسب: /employees «مرحبًا، محاسب»",
+      "name": "المحاسب: /employees (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المحاسب: /work-hours «مرحبًا، محاسب»",
+      "name": "المحاسب: /work-hours (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المحاسب: /work-hours على الموبايل بدون سكرول عرضي",
-      "ok": true,
-      "detail": "أعرض من الشاشة بـ -15px — "
-    },
-    {
-      "name": "المحاسب: /requests «مرحبًا، محاسب»",
+      "name": "المحاسب: /requests «طلبات الموظفين»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المحاسب: /attendance «مرحبًا، محاسب»",
+      "name": "المحاسب: /attendance «الحضور والانصراف»",
       "ok": true,
       "detail": ""
     },
@@ -669,7 +639,7 @@
       "detail": ""
     },
     {
-      "name": "المحاسب: /support «مرحبًا، محاسب»",
+      "name": "المحاسب: /support (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
@@ -679,12 +649,12 @@
       "detail": ""
     },
     {
-      "name": "المحاسب: /campaigns «مرحبًا، محاسب»",
+      "name": "المحاسب: /campaigns (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المحاسب: /invoices «مرحبًا، محاسب»",
+      "name": "المحاسب: /invoices «الفواتير والمدفوعات»",
       "ok": true,
       "detail": ""
     },
@@ -694,27 +664,22 @@
       "detail": "أعرض من الشاشة بـ -15px — "
     },
     {
-      "name": "المحاسب: /finance «مرحبًا، محاسب»",
+      "name": "المحاسب: /finance (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المحاسب: /payroll «مرحبًا، محاسب»",
+      "name": "المحاسب: /payroll (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المحاسب: /payroll على الموبايل بدون سكرول عرضي",
-      "ok": true,
-      "detail": "أعرض من الشاشة بـ -15px — "
-    },
-    {
-      "name": "المحاسب: /payroll/staff «مرحبًا، محاسب»",
+      "name": "المحاسب: /payroll/staff (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المحاسب: /payroll/reports «مرحبًا، محاسب»",
+      "name": "المحاسب: /payroll/reports (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
@@ -729,7 +694,7 @@
       "detail": ""
     },
     {
-      "name": "المحاسب: /inventory «مرحبًا، محاسب»",
+      "name": "المحاسب: /inventory «المخزون»",
       "ok": true,
       "detail": ""
     },
@@ -739,32 +704,32 @@
       "detail": "أعرض من الشاشة بـ -15px — "
     },
     {
-      "name": "المحاسب: /reports «مرحبًا، محاسب»",
+      "name": "المحاسب: /reports «التقارير»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المحاسب: /marketing-report «مرحبًا، محاسب»",
+      "name": "المحاسب: /marketing-report «تقرير التسويق»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المحاسب: /notifications «مرحبًا، محاسب»",
+      "name": "المحاسب: /notifications «الإشعارات»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المحاسب: /roles «مرحبًا، محاسب»",
+      "name": "المحاسب: /roles (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المحاسب: /settings «مرحبًا، محاسب»",
+      "name": "المحاسب: /settings (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "المحاسب: /account «مرحبًا، محاسب»",
+      "name": "المحاسب: /account «حسابي»",
       "ok": true,
       "detail": ""
     },
@@ -791,10 +756,10 @@
     {
       "name": "الطبيب: / على الموبايل بدون سكرول عرضي",
       "ok": true,
-      "detail": "أعرض من الشاشة بـ -15px — "
+      "detail": "أعرض من الشاشة بـ 0px — "
     },
     {
-      "name": "الطبيب: /patients «دكتور اختبار واجهة»",
+      "name": "الطبيب: /patients «المرضى»",
       "ok": true,
       "detail": ""
     },
@@ -804,24 +769,19 @@
       "detail": "أعرض من الشاشة بـ -15px — "
     },
     {
-      "name": "الطبيب: /booking «دكتور اختبار واجهة»",
+      "name": "الطبيب: /booking (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الطبيب: /booking على الموبايل بدون سكرول عرضي",
-      "ok": true,
-      "detail": "أعرض من الشاشة بـ -15px — "
-    },
-    {
-      "name": "الطبيب: /appointments «دكتور اختبار واجهة»",
+      "name": "الطبيب: /appointments «حجز كشف ومتابعة»",
       "ok": true,
       "detail": ""
     },
     {
       "name": "الطبيب: /appointments على الموبايل بدون سكرول عرضي",
       "ok": true,
-      "detail": "أعرض من الشاشة بـ -15px — "
+      "detail": "أعرض من الشاشة بـ 0px — "
     },
     {
       "name": "الطبيب: /body-map «دكتور اختبار واجهة»",
@@ -829,17 +789,17 @@
       "detail": ""
     },
     {
-      "name": "الطبيب: /sessions «دكتور اختبار واجهة»",
+      "name": "الطبيب: /sessions «الزيارات»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الطبيب: /services «دكتور اختبار واجهة»",
+      "name": "الطبيب: /services (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الطبيب: /diagnosis «دكتور اختبار واجهة»",
+      "name": "الطبيب: /diagnosis «تشخيص المريض»",
       "ok": true,
       "detail": ""
     },
@@ -849,17 +809,17 @@
       "detail": "أعرض من الشاشة بـ -15px — "
     },
     {
-      "name": "الطبيب: /follow-ups «دكتور اختبار واجهة»",
+      "name": "الطبيب: /follow-ups «حجز كشف ومتابعة»",
       "ok": true,
       "detail": ""
     },
     {
       "name": "الطبيب: /follow-ups على الموبايل بدون سكرول عرضي",
       "ok": true,
-      "detail": "أعرض من الشاشة بـ -15px — "
+      "detail": "أعرض من الشاشة بـ 0px — "
     },
     {
-      "name": "الطبيب: /consultations «دكتور اختبار واجهة»",
+      "name": "الطبيب: /consultations «الكشوفات والتشخيص»",
       "ok": true,
       "detail": ""
     },
@@ -869,27 +829,27 @@
       "detail": "أعرض من الشاشة بـ -15px — "
     },
     {
-      "name": "الطبيب: /imaging «دكتور اختبار واجهة»",
+      "name": "الطبيب: /imaging «الأشعة والتحاليل»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الطبيب: /fractures «دكتور اختبار واجهة»",
+      "name": "الطبيب: /fractures «الكسور والجبس»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الطبيب: /surgeries «دكتور اختبار واجهة»",
+      "name": "الطبيب: /surgeries «العمليات الجراحية»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الطبيب: /employees «دكتور اختبار واجهة»",
+      "name": "الطبيب: /employees (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الطبيب: /work-hours «دكتور اختبار واجهة»",
+      "name": "الطبيب: /work-hours «مواعيد العمل»",
       "ok": true,
       "detail": ""
     },
@@ -899,134 +859,119 @@
       "detail": "أعرض من الشاشة بـ -15px — "
     },
     {
-      "name": "الطبيب: /requests «دكتور اختبار واجهة»",
+      "name": "الطبيب: /requests «طلبات الموظفين»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الطبيب: /attendance «دكتور اختبار واجهة»",
+      "name": "الطبيب: /attendance «الحضور والانصراف»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الطبيب: /loyalty «دكتور اختبار واجهة»",
+      "name": "الطبيب: /loyalty (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الطبيب: /support «دكتور اختبار واجهة»",
+      "name": "الطبيب: /support (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الطبيب: /discounts «دكتور اختبار واجهة»",
+      "name": "الطبيب: /discounts (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الطبيب: /campaigns «دكتور اختبار واجهة»",
+      "name": "الطبيب: /campaigns (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الطبيب: /invoices «دكتور اختبار واجهة»",
+      "name": "الطبيب: /invoices (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الطبيب: /invoices على الموبايل بدون سكرول عرضي",
-      "ok": true,
-      "detail": "أعرض من الشاشة بـ -15px — "
-    },
-    {
-      "name": "الطبيب: /finance «دكتور اختبار واجهة»",
+      "name": "الطبيب: /finance (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الطبيب: /payroll «دكتور اختبار واجهة»",
+      "name": "الطبيب: /payroll (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الطبيب: /payroll على الموبايل بدون سكرول عرضي",
-      "ok": true,
-      "detail": "أعرض من الشاشة بـ -15px — "
-    },
-    {
-      "name": "الطبيب: /payroll/staff «دكتور اختبار واجهة»",
+      "name": "الطبيب: /payroll/staff (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الطبيب: /payroll/reports «دكتور اختبار واجهة»",
+      "name": "الطبيب: /payroll/reports (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الطبيب: /product-sales «دكتور اختبار واجهة»",
+      "name": "الطبيب: /product-sales (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الطبيب: /installments «دكتور اختبار واجهة»",
+      "name": "الطبيب: /installments (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الطبيب: /inventory «دكتور اختبار واجهة»",
+      "name": "الطبيب: /inventory «المخزون»",
       "ok": true,
       "detail": ""
     },
     {
       "name": "الطبيب: /inventory على الموبايل بدون سكرول عرضي",
       "ok": true,
-      "detail": "أعرض من الشاشة بـ -15px — "
+      "detail": "أعرض من الشاشة بـ 0px — "
     },
     {
-      "name": "الطبيب: /reports «دكتور اختبار واجهة»",
+      "name": "الطبيب: /reports (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الطبيب: /marketing-report «دكتور اختبار واجهة»",
+      "name": "الطبيب: /marketing-report (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الطبيب: /notifications «دكتور اختبار واجهة»",
+      "name": "الطبيب: /notifications «الإشعارات»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الطبيب: /roles «دكتور اختبار واجهة»",
+      "name": "الطبيب: /roles (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الطبيب: /settings «دكتور اختبار واجهة»",
+      "name": "الطبيب: /settings (ما فيه صلاحية)",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الطبيب: /account «دكتور اختبار واجهة»",
+      "name": "الطبيب: /account «حسابي»",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "الطبيب: /patients/681e6dd5-b632-49d5-976b-dc9ee5271026 «دكتور اختبار واجهة»",
+      "name": "الطبيب: /patients/6134e739-9da4-42db-9019-28b28f149309 «مريض واجهة اختبار»",
       "ok": true,
       "detail": ""
     },
     {
       "name": "الطبيب: خط IBM Plex Sans Arabic متحمّل",
       "ok": true,
-      "detail": "{\"loaded\":true,\"body\":\"\\\"IBM Plex Sans Arabic\\\", \\\"Segoe UI\\\", Tahoma, system-ui, sans-serif\",\"field\":\"\\\"IBM Plex Sans Arabic\\\", \\\"Segoe UI\\\", Tahoma, system-ui, sans-serif\"}"
-    },
-    {
-      "name": "الطبيب: الحقول بنفس خط النظام",
-      "ok": true,
-      "detail": "{\"loaded\":true,\"body\":\"\\\"IBM Plex Sans Arabic\\\", \\\"Segoe UI\\\", Tahoma, system-ui, sans-serif\",\"field\":\"\\\"IBM Plex Sans Arabic\\\", \\\"Segoe UI\\\", Tahoma, system-ui, sans-serif\"}"
+      "detail": "{\"loaded\":true,\"body\":\"\\\"IBM Plex Sans Arabic\\\", \\\"Segoe UI\\\", Tahoma, system-ui, sans-serif\",\"field\":null}"
     },
     {
       "name": "المريض: الدخول من شاشة الدخول",

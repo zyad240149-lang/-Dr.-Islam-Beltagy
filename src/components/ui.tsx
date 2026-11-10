@@ -127,6 +127,21 @@ export function Skeleton({ h = 16, w = '100%', r = 8, style }: { h?: number; w?:
 }
 
 /* ---------- Modal ---------- */
+// رجوع الموبايل بيقفل آخر نافذة مفتوحة بس. ليستة واحدة لكل النوافذ + عدّاد للرجوع اللي البرنامج نفسه عمله (بعد قفل نافذة بالزرار)
+// البرنامج عمره ما بيرجع في السجل بنفسه (كان بيعمل history.back لما نافذة تتقفل بالزرار — ولما نافذة تتبدّل بنافذة زي
+// «تغيير الموعد» كان الرجوع ده بيقفل الجديدة أو يوصل لأول صفحة ويرجّع للرئيسية). النافذة بتحط سطر واحد في السجل لو مفيش،
+// والنوافذ اللي بعدها بتستخدم نفس السطر.
+type ModalEntry = { close: () => void };
+const modalStack: ModalEntry[] = [];
+const ensureGuard = () => {
+  if (!(window.history.state as { modalGuard?: boolean } | null)?.modalGuard) window.history.pushState({ ...(window.history.state ?? {}), modalGuard: true }, '', window.location.href);
+};
+if (typeof window !== 'undefined') window.addEventListener('popstate', () => {
+  const top = modalStack.pop();
+  if (!top) return;
+  top.close();
+  if (modalStack.length) ensureGuard(); // لسه فيه نافذة تحتها ← سطر جديد عشان الرجوع الجاي يقفلها هي كمان
+});
 export function Modal({ title, onClose, children, footer, wide, xl }: { title: string; onClose: () => void; children: ReactNode; footer?: ReactNode; wide?: boolean; xl?: boolean }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -141,16 +156,10 @@ export function Modal({ title, onClose, children, footer, wide, xl }: { title: s
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   useEffect(() => {
-    const id = Math.random().toString(36).slice(2);
-    window.history.pushState({ ...(window.history.state ?? {}), modalGuard: id }, '', window.location.href);
-    let popped = false;
-    const onPop = () => { if ((window.history.state as { modalGuard?: string } | null)?.modalGuard !== id && !popped) { popped = true; closeRef.current(); } };
-    window.addEventListener('popstate', onPop);
-    return () => {
-      window.removeEventListener('popstate', onPop);
-      // اتقفلت بالزرار ← نشيل السطر بتاعها من السجل (لو لسه فوق)
-      if (!popped && (window.history.state as { modalGuard?: string } | null)?.modalGuard === id) { (window as { __skipPop?: boolean }).__skipPop = true; window.history.back(); }
-    };
+    const entry: ModalEntry = { close: () => closeRef.current() };
+    modalStack.push(entry);
+    ensureGuard();
+    return () => { const i = modalStack.indexOf(entry); if (i >= 0) modalStack.splice(i, 1); };
   }, []);
   // بيترسم في body: النافذة اللي بتتفتح من جوّه عنصر sticky (زي «حالة المزامنة» في القائمة الجانبية) كانت بتطلع ورا محتوى الصفحة ومابتتضغطش
   return createPortal(

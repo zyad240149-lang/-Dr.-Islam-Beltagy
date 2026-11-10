@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-10T14:59:43.169Z",
+  "at": "2026-11-10T21:58:56.132Z",
   "passed": 80,
   "failed": 0,
   "results": [
@@ -11,12 +11,12 @@
     {
       "name": "حساب استقبال اختبار أقسام",
       "ok": true,
-      "detail": "{\"id\":\"e3bef2d1-be90-4444-a6b5-604a9f05ef17\",\"name\":\"استقبال اختبار أقسام\",\"username\":\"201200000951\",\"role\":\"reception\","
+      "detail": "{\"id\":\"682de846-2218-4f18-a100-82c74072c61e\",\"name\":\"استقبال اختبار أقسام\",\"username\":\"201200000951\",\"role\":\"reception\","
     },
     {
       "name": "حساب طبيب اختبار أقسام",
       "ok": true,
-      "detail": "{\"id\":\"3bbeaf44-180f-43c7-8647-55472cb073bd\",\"name\":\"طبيب اختبار أقسام\",\"username\":\"201200000952\",\"role\":\"therapist\",\"ph"
+      "detail": "{\"id\":\"ed9bee41-1ccf-4e7f-baf4-a9f4458b31c8\",\"name\":\"طبيب اختبار أقسام\",\"username\":\"201200000952\",\"role\":\"therapist\",\"ph"
     },
     {
       "name": "حجز المريض مع الدكتور الأول 17:00 (كشف 15 دقيقة)",
@@ -219,9 +219,9 @@
       "detail": ""
     },
     {
-      "name": "الاستقبال ما يطلبش أشعة",
+      "name": "الاستقبال يقدر يطلب أشعة (متظبط كده في الأدوار)",
       "ok": true,
-      "detail": "new row violates row-level security policy for table \"ortho_imaging\""
+      "detail": ""
     },
     {
       "name": "نوع أشعة مش من القائمة مرفوض",
@@ -296,7 +296,7 @@
     {
       "name": "لوحة المدير فيها الإيراد",
       "ok": true,
-      "detail": "{\"openTickets\":0,\"outstanding\":4250,\"monthRevenue\":0,\"totalPatients\":842,\"completedToday\":0,\"pending"
+      "detail": "{\"openTickets\":0,\"outstanding\":2000,\"monthRevenue\":0,\"totalPatients\":841,\"completedToday\":0,\"pending"
     },
     {
       "name": "تقرير التسويق يفتح",
@@ -306,7 +306,7 @@
     {
       "name": "البحث العام بيلاقي المريض",
       "ok": true,
-      "detail": "[{\"id\":\"5d7658f7-7091-4ee6-a6fe-1510290c9db7\",\"sub\":\"TM-856 · +201201673809\",\"link\":\"/patients/5d765"
+      "detail": "[{\"id\":\"e02f63f6-f51d-42a9-8998-b240105368d3\",\"sub\":\"TM-856 · +201229704191\",\"link\":\"/patients/e02f6"
     },
     {
       "name": "دليل الموظفين بالأسماء بس (من غير موبايلات)",
@@ -316,7 +316,7 @@
     {
       "name": "إنشاء حساب مريض من الموقع",
       "ok": true,
-      "detail": "{\"ok\":true,\"patientId\":\"fcd89c1b-ccba-4620-8e03-18245d1b0604\",\"customerId\":\"9a2e777f-637f-4605-b720-905634e966e3\"}"
+      "detail": "{\"ok\":true,\"patientId\":\"cc363c5a-6328-436b-84dc-5e65e19aa760\",\"customerId\":\"0bc65413-2aab-4893-b294-ef64dbac6b50\"}"
     },
     {
       "name": "سجل طبي فاضي قبل الكشف",
@@ -331,7 +331,7 @@
     {
       "name": "المريض يشوف التشخيص والروشتة في «سجلي الطبي»",
       "ok": true,
-      "detail": "{\"id\":\"c42a50ff-63d0-4cc4-b839-083937340ae5\",\"date\":\"2026-11-10\",\"labs\":[\"CBC\"],\"plan\":\"راحة وثلج\",\"side\":\"right\",\"icd10\":\"M75.1\",\"doctor\":\"طبيب اختبا"
+      "detail": "{\"id\":\"796b6d10-d42f-4370-ad04-b2d0d900e360\",\"date\":\"2026-11-10\",\"labs\":[\"CBC\"],\"plan\":\"راحة وثلج\",\"side\":\"right\",\"icd10\":\"M75.1\",\"doctor\":\"طبيب اختبا"
     },
     {
       "name": "اسم الطبيب وميعاد المتابعة ظاهرين",
@@ -346,7 +346,7 @@
     {
       "name": "طلب الأشعة ظاهر في سجله",
       "ok": true,
-      "detail": "[{\"id\":\"d793550a-1bfb-44ec-9781-ce0db367c2f9\",\"kind\":\"xray\",\"region\":\"الكتف\",\"status\":\"requested\",\"finding\":\"\",\"requestedAt\":\"2026-11-10\"}]"
+      "detail": "[{\"id\":\"9fc142fe-c18c-488d-9c7e-858950477c08\",\"kind\":\"xray\",\"region\":\"الكتف\",\"status\":\"requested\",\"finding\":\"\",\"requestedAt\":\"2026-11-10\"}]"
     },
     {
       "name": "المريض مايشوفش سجل مريض تاني",
@@ -366,7 +366,7 @@
     {
       "name": "إشعار لمريض محدد بيوصل لحسابه",
       "ok": true,
-      "detail": "{\"id\":\"ad66cdcb-c308-4290-b0c3-f9105affa955\",\"delivered\":1,\"recipients\":1}"
+      "detail": "{\"id\":\"2497a1bc-597e-454d-a1f8-ec6850e972ad\",\"delivered\":1,\"recipients\":1}"
     },
     {
       "name": "المريض شايف الإشعار في بوابته",
@@ -391,7 +391,7 @@
     {
       "name": "المريض يغيّر موعده بنفسه",
       "ok": true,
-      "detail": "{\"id\":\"aff3ddc9-6078-41a7-a418-f3f40e09c290\",\"no\":\"MV-1523\",\"date\":\"2026-11-21\",\"time\":\"19:00\",\"notes\":\"\",\"price\":200,\"doctor\":\"د. اختبار أقسام أول\",\"status\":\"rescheduled\",\"service\":\"كشف\",\"service_id\""
+      "detail": "{\"id\":\"2686f13f-8546-4974-8a20-a6981b414615\",\"no\":\"MV-1700\",\"date\":\"2026-11-21\",\"time\":\"19:00\",\"notes\":\"\",\"price\":200,\"doctor\":\"د. اختبار أقسام أول\",\"status\":\"rescheduled\",\"service\":\"كشف\",\"service_id\""
     },
     {
       "name": "المريض يلغي موعده",

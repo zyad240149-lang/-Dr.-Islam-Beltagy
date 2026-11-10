@@ -10,7 +10,7 @@ import type { DiagnosisRef } from '../types';
 import { fmtDate, fmtDateTime, fmtTime, todayYmd, waPhone, whatsappNumber } from '../utils/format';
 import { openVisitFor, todaysFollowUps } from './visits';
 import { NursingSheetTab } from './Nursing';
-import { SHEET_ORDER, SHEET_TAB, TREATMENT, activeSheets, regionSheet, removeSheet, sheetFilled, type SheetId } from './regionSheets';
+import { QUICK_EXAM, SHEET_ORDER, SHEET_TAB, TREATMENT, activeSheets, regionSheet, removeSheet, sheetFilled, type SheetId } from './regionSheets';
 import { US_SHEETS, usFilled, usImage } from './ultrasoundSheets';
 import { VoiceDictation } from '../components/VoiceDictation';
 import { RegionSheetForm, SheetSwitch } from './RegionSheet';
@@ -96,8 +96,8 @@ function Section({ icon, title, children, aside }: { icon: string; title: string
 
 // الكشف = الشيتين بالترتيب (التمريض قبل دخول المريض ← كشف الطبيب) وبعدهم الحقن — الروشتة والأشعة والتحاليل اتنقلت لشيت المتابعة
 // «كشف الطبيب» بيتسمى بالمنطقة: شيت الطبيب بيتحدد من مكان الألم في الشيت العام (regionSheets)
-// ١٠/١١: «متابعة المريض» بقت رقم 2 و«موعد المتابعة» رقم 8 (طلب الدكتور)
-const TABS = [['nurse', 'الشيت العام'], ['nursing', 'متابعة المريض'], ['doctor', 'كشف الطبيب'], ['files', 'الأشعة والتحاليل'], ['inj', 'الحقن'], ['plan', 'الخطة العلاجية'], ['rx', 'الأدوية والروشتة'], ['appt', 'موعد المتابعة']] as const;
+// ١٠/١١: «فحص سريع» رقم 2 قبل «متابعة المريض» (3)، و«موعد المتابعة» الأخير (طلب الدكتور)
+const TABS = [['nurse', 'الشيت العام'], ['quick', 'فحص سريع'], ['nursing', 'متابعة المريض'], ['doctor', 'كشف الطبيب'], ['files', 'الأشعة والتحاليل'], ['inj', 'الحقن'], ['plan', 'الخطة العلاجية'], ['rx', 'الأدوية والروشتة'], ['appt', 'موعد المتابعة']] as const;
 type Tab = typeof TABS[number][0];
 
 // appointmentId = الزيارة اللي التشخيص الجديد بيتربط بيها (من «بانتظار التشخيص»)؛ من غيرها بيتربط بزيارة النهارده المفتوحة للمريض لو فيه
@@ -441,9 +441,21 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           <div className="sh-next">
             {canExSend && <Button variant="outline" icon="share" disabled={!c.patientId} title={c.patientId ? '' : 'اختار المريض الأول'} onClick={() => setExSend(true)}>إرسال تمرينات واتساب</Button>}
             <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => setOut(['nurse'])}>طباعة / إرسال الشيت العام</Button>
-            <Button icon="chevronLeft" onClick={() => goTab('nursing')}>التالي: متابعة المريض</Button>
+            <Button icon="chevronLeft" onClick={() => goTab('quick')}>التالي: فحص سريع</Button>
           </div>
         </BoxOpenDefault.Provider>}
+
+        {/* «فحص سريع» (Orthopedic Clinical Examination Sheet) — بيتحفظ مع الكشف (مفاتيح qe.*) */}
+        {tab === 'quick' && <>
+          <section className="sh-stack" dir="ltr">
+            <RegionSheetForm def={QUICK_EXAM} sheet={sheet} onChange={changeSheet} side={c.side} onSide={(v) => set('side', v)}
+              icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap('qe.pdx')} />
+          </section>
+          <div className="sh-next">
+            <Button variant="outline" icon="chevron" onClick={() => goTab('nurse')}>رجوع: الشيت العام</Button>
+            <Button icon="chevronLeft" onClick={() => goTab('nursing')}>التالي: متابعة المريض</Button>
+          </div>
+        </>}
 
         {tab === 'doctor' && <>
           {/* ملفات المريض اللي مش أشعة ولا تحاليل */}
@@ -529,7 +541,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
             <PatientMedicalFiles patientId={c.patientId} excludeConsultId={initial?.id} categories={['lab']} title="ملفات ونتائج التحاليل" icon="doc" uploadCategory="lab" />
           </section>}
           <div className="sh-next">
-            <Button variant="outline" icon="chevron" onClick={() => goTab('nurse')}>رجوع: الشيت العام</Button>
+            <Button variant="outline" icon="chevron" onClick={() => goTab('quick')}>رجوع: فحص سريع</Button>
             <Button icon="chevronLeft" onClick={() => goTab('doctor')}>التالي: كشف الطبيب</Button>
           </div>
         </div>}

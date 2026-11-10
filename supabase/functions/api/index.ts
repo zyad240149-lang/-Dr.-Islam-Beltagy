@@ -68,10 +68,12 @@ function json(body: unknown, status = 200) {
   });
 }
 
-// السعودية بدون توقيت صيفي — UTC+3 ثابتة طوال السنة.
+// الوقت بتوقيت مصر (Africa/Cairo — فيه توقيت صيفي، فمش إزاحة ثابتة) = نفس todayYmd/riyadhNow في الواجهة.
+// (كان UTC+3 ثابت ← في الشتا الإجازة/الاستئذان كان بيتحسب بساعة غلط)
 function riyadhNow(): { date: string; time: string } {
-  const d = new Date(Date.now() + 3 * 3600 * 1000);
-  return { date: d.toISOString().slice(0, 10), time: d.toISOString().slice(11, 16) };
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Cairo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+    .formatToParts(new Date()).map((x) => [x.type, x.value]));
+  return { date: `${p.year}-${p.month}-${p.day}`, time: `${p.hour}:${p.minute}` };
 }
 
 // يطابق منطق is_on_leave() على الخادم (003/024) — الموظف أثناء إجازة/استئذان معتمد
@@ -398,11 +400,13 @@ Deno.serve(async (req) => {
     if (!SHARED_TABLES.includes(table) && table !== "services" && table !== "therapists" && table !== "customers") {
       return json({ error: "ما فيه صلاحية" }, 403);
     }
-    if (req.method !== "GET" && table !== "appointments") {
-      return json({ error: "يمكن للعميل فقط حجز موعد أو الاطلاع على بياناته" }, 403);
+    // الحجز من هنا كان بيتخطى book_appointment (مواعيد الطبيب، الإجازات، التداخل، المواعيد اللي فاتت، الخدمة الموقوفة)
+    // — البوابة بتحجز بـ RPC book_appointment، فالمسار ده بقى قراية بس
+    if (req.method !== "GET") {
+      return json({ error: "الحجز من شاشة الحجز في التطبيق — هنا الاطلاع على بياناتك بس" }, 403);
     }
 
-    if (req.method === "GET") {
+    {
       let q = admin.from(table).select("*");
       if (table === "appointments") q = q.eq("customer_id", c.id);
       else if (table === "invoices" || table === "payments") q = q.eq("patient_id", c.patient_id);
@@ -413,37 +417,6 @@ Deno.serve(async (req) => {
       if (error) return json({ error: error.message }, 400);
       return json(data);
     }
-
-    if (req.method === "POST" && table === "appointments") {
-      const body = await req.json();
-      const no = await admin.rpc("next_counter", { p_name: "appointment", p_prefix: "AP-" });
-      const { data: svc } = await admin.from("services").select("*").eq("id", body.serviceId).single();
-      if (!svc) return json({ error: "خدمة غير موجودة" }, 400);
-
-      const { data: conflict } = await admin.from("appointments")
-        .select("id").eq("therapist_id", body.therapistId).eq("date", body.date).eq("time", body.time)
-        .not("status", "in", "(cancelled,rescheduled)").maybeSingle();
-      if (conflict) return json({ error: "هذا الموعد محجوز بالفعل" }, 409);
-
-      const { data: appt, error } = await admin.from("appointments").insert({
-        no: no.data, patient_id: c.patient_id, customer_id: c.id, type: "session",
-        service_id: body.serviceId, therapist_id: body.therapistId, date: body.date, time: body.time,
-        duration_min: svc.duration_min, price: svc.price, status: "new",
-      }).select().single();
-      if (error) return json({ error: error.message }, 400);
-
-      const invNo = await admin.rpc("next_counter", { p_name: "invoice", p_prefix: "INV-" });
-      await admin.from("invoices").insert({
-        no: invNo.data, patient_id: c.patient_id, appointment_id: appt.id,
-        service_name: svc.name, price: svc.price, total: svc.price, remaining: svc.price, status: "due",
-      });
-      await admin.from("notifications").insert({
-        audience: "staff", kind: "appointment_new", title: "حجز جديد", body: `حجز جديد من ${c.name}`, ref_id: appt.id,
-      });
-      return json(appt, 201);
-    }
-
-    return json({ error: "عملية غير مدعومة" }, 405);
   }
 
   // ===== نطاق الموظف (staff) — يمر عبر RBAC role_permissions =====
@@ -452,20 +425,13 @@ Deno.serve(async (req) => {
   const op = opMap[req.method];
   if (!op || !(await employeeCan(caller.employee, area, op))) return json({ error: "ما فيه صلاحية" }, 403);
 
-  // هذا المسار العام (insert/update/delete خام بدون أي تحقق على مستوى الحقول) بيستخدم مفتاح service_role
-  // فبيتخطى RLS بالكامل — والجداول دي مقصود إنها RPC-only بالضبط عشان الكتابة المباشرة فيها بتتخطى منطق
-  // العمل الحقيقي (إعادة احتساب الفواتير، منع تعارض الحجز، سجل العمليات، قواعد ترقية الأدوار...) اللي
-  // موجود في الدوال المخصصة (book_appointment/record_payment/apply_discount_code/... أو /api/staff).
-  // فسمحنا بالقراءة (GET) بس، ومنعنا أي كتابة مباشرة هنا حتى لو الدور عنده صلاحية "تعديل/إضافة" على القسم.
-  const RPC_ONLY_TABLES = new Set([
-    "appointments", "employees", "treatment_sessions", "treatment_plans", "packages",
-    "stock_movements", "inventory_items", "payments", "invoices", "customers",
-  ]);
-  if (req.method !== "GET" && RPC_ONLY_TABLES.has(table)) {
+  // الواجهة مش بتكتب عن طريق المسار العام خالص (بتستخدم RPC/RLS بصلاحيات المستخدم نفسه) — فالكتابة الخام بمفتاح الخدمة
+  // اتقفلت على كل الجداول (كانت مفتوحة على patients/role_permissions/activity_log/center_info... من غير أي تحقق)
+  if (req.method !== "GET") {
     return json({ error: "الكتابة المباشرة على هذا الجدول غير مسموحة — استخدم شاشة النظام المخصصة لهذا الإجراء." }, 403);
   }
 
-  if (req.method === "GET") {
+  {
     let q = admin.from(table).select("*");
     if (id) q = q.eq("id", id);
     const phoneFilter = url.searchParams.get("phone");
@@ -477,26 +443,4 @@ Deno.serve(async (req) => {
     if (error) return json({ error: error.message }, 400);
     return json(data);
   }
-
-  if (req.method === "POST") {
-    const body = await req.json();
-    const { data, error } = await admin.from(table).insert(body).select().single();
-    if (error) return json({ error: error.message }, 400);
-    return json(data, 201);
-  }
-
-  if (req.method === "PATCH" && id) {
-    const body = await req.json();
-    const { data, error } = await admin.from(table).update(body).eq("id", id).select().single();
-    if (error) return json({ error: error.message }, 400);
-    return json(data);
-  }
-
-  if (req.method === "DELETE" && id) {
-    const { error } = await admin.from(table).delete().eq("id", id);
-    if (error) return json({ error: error.message }, 400);
-    return json({ ok: true });
-  }
-
-  return json({ error: "طلب غير صالح" }, 400);
 });

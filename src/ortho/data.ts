@@ -136,6 +136,8 @@ const clean = (m: string) => m.replace(/^.*?ERROR:\s*/, '').replace(/new row vio
 const cache: Partial<Record<Kind, Row[]>> = {};          // المعروض = نسخة الخادم + التعديلات المعلّقة
 const server: Partial<Record<Kind, Row[]>> = {};         // نسخة الخادم بس (اللي بتتحفظ على الجهاز)
 const loading = new Set<Kind>();
+// التحميل الشغال لكل نوع — ortho.ready بتستناه بحد أقصى للوقت (load نفسها زي ما هي: مابتستناش تحميل شغال)
+const inflight = new Map<Kind, Promise<void>>();
 const errors: Partial<Record<Kind, string>> = {};
 let version = 0;
 const subs = new Set<() => void>();
@@ -171,8 +173,13 @@ function overlay(kind: Kind, rows: Row[]): Row[] {
 }
 const byCreatedDesc = (a: Row, b: Row) => String(b.created_at ?? '').localeCompare(String(a.created_at ?? ''));
 
-async function load(kind: Kind) {
-  if (loading.has(kind)) return;
+function load(kind: Kind): Promise<void> {
+  if (loading.has(kind)) return Promise.resolve();
+  const p = loadNow(kind);
+  if (loading.has(kind)) { inflight.set(kind, p); void p.finally(() => inflight.delete(kind)); }
+  return p;
+}
+async function loadNow(kind: Kind) {
   // بدون إنترنت: النسخة المحفوظة على الجهاز هي المرجع (لو مفيش نسخة بنعرض «محتاج اتصال» بدل قائمة فاضية كأن مفيش بيانات)
   // (bump مؤجّل: load بتتنادى من جوّه list وقت الرسم — إشعار متزامن كان بيعمل رسم تاني ← حلقة لا نهائية وشاشة معلّقة)
   if (!net.isOnline()) { if (!cache[kind]) errors[kind] = 'البيانات دي لسه ما اتنزّلتش على الجهاز — محتاجة اتصال بالإنترنت مرة.'; queueMicrotask(bump); return; }
@@ -279,6 +286,8 @@ export const ortho = {
   },
   error: (kind: Kind) => errors[kind] ?? null,
   reload: (kind: Kind) => load(kind),
+  /** يستنى التحميل الشغال (أو يبدأ واحد) — بحد أقصى ms عشان شبكة واقعة ماتعلّقش الشاشة */
+  ready: (kind: Kind, ms = 8000) => Promise.race([inflight.get(kind) ?? load(kind), new Promise<void>((r) => setTimeout(r, ms))]),
   async save<K extends Kind>(kind: K, item: Omit<Of<K>, 'id'> & { id?: string }): Promise<string> {
     const row: Record<string, unknown> = toRow(kind, item);
     // تشخيص من غير ملف مريض: يتبعت null وقت الإنشاء بس — التعديل مايبعتش patient_id عشان مايفكّش ربط عمله الخادم

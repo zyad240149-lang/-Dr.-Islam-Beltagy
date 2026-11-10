@@ -80,7 +80,8 @@ const OLD = {
 const NEW_AREAS = ['follow_ups', 'diagnosis', 'imaging', 'injections', 'fractures', 'surgeries', 'nursing', 'medications', 'exercises', 'expenses'];
 function sameAsBefore(label, m, who) {
   state.m = { [who]: m };
-  for (const a of NEW_AREAS) for (const o of ops) {
+  // القسم اللي اتحفظله صف صريح (من شاشة الأدوار) مابيورثش — بيتقارن بس اللي لسه موروث
+  for (const a of NEW_AREAS.filter((x) => !(x in m))) for (const o of ops) {
     const before = !!(o === 'view' ? OLD.view(m, a) : OLD.op(m, a, o));
     const after = can(who, a, o);
     if (before !== after) return check(`${label}: ${AREA_LABEL[a]} / ${o} زي ما كانت`, false, `قبل ${before} بعد ${after}`);
@@ -101,7 +102,7 @@ if (existsSync(join(ROOT, '.env'))) {
       setMyPermOverride(e.perm_override); state.m = { [e.role]: live[e.role] ?? {} };
       const merged = { ...(live[e.role] ?? {}), ...e.perm_override };
       let ok = true;
-      for (const a of NEW_AREAS) for (const o of ops) if (!!(o === 'view' ? OLD.view(merged, a) : OLD.op(merged, a, o)) !== can(e.role, a, o)) ok = false;
+      for (const a of NEW_AREAS.filter((x) => !(x in merged))) for (const o of ops) if (!!(o === 'view' ? OLD.view(merged, a) : OLD.op(merged, a, o)) !== can(e.role, a, o)) ok = false;
       check(`موظف مخصّص «${e.name}»: نفس الصلاحيات`, ok);
       setMyPermOverride(null);
     }

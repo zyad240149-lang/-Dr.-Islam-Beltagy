@@ -25,7 +25,7 @@ export type Field =
   | { t: 'slot' }; // مكان لحاجة من الشاشة (زي «تحديد موعد متابعة» في الخطة العلاجية)
 export type BoxRole = 'cc' | 'hx' | 'rf' | 'exam' | 'dx' | 'plan' | 'notes';
 export interface BoxDef { title: string; role: BoxRole; tone?: 'red'; wide?: boolean; f: Field[] }
-export interface RegionSheetDef { id: Exclude<SheetId, 'hipknee'> | 'treatment'; prefix: string; tab: string; title: string; boxes: BoxDef[] }
+export interface RegionSheetDef { id: Exclude<SheetId, 'hipknee'> | 'treatment' | 'quick'; prefix: string; tab: string; title: string; boxes: BoxDef[] }
 
 // ---------- بنود مشتركة (نفس شيت الورك والركبة) ----------
 const DUR = ['Acute (< 6 weeks)', 'Subacute (6-12 weeks)', 'Chronic (> 12 weeks)'];
@@ -382,6 +382,89 @@ export const TREATMENT: RegionSheetDef = {
   ] }] }],
 };
 export const treatmentFilled = (s: ExamSheet) => s.on.some((o) => o.startsWith('tp.')) || Object.entries(s.txt).some(([k, v]) => k.startsWith('tp.') && v.trim());
+// «فحص سريع» (Orthopedic Clinical Examination Sheet — ١٠/١١): تاب 2 في التشخيص، قبل «متابعة المريض». مفاتيح qe.* جوّه شيت الكشف
+const joint = (name: string, g: string, special: string[]): { title: string; f: Field[] } => ({ title: name, f: [
+  { t: 'checks', g: `${g}.insp`, items: ['N', 'Sw', 'Deformity'], label: 'Inspection:' },
+  { t: 'checks', g: `${g}.palp`, items: ['NT', 'Mild', 'Mod', 'Sev'], label: 'Palpation:' },
+  { t: 'checks', g: `${g}.rom`, items: ['Full', 'Limited', 'Painful'], label: 'ROM:' },
+  { t: 'checks', g: `${g}.st`, items: special, label: 'Special tests:' },
+] });
+const MOVES: [string, string][] = [['Flexion', ''], ['Extension', ''], ['Abduction', ''], ['Adduction', ''], ['Internal Rotation', ''], ['External Rotation', '']];
+export const QUICK_EXAM: RegionSheetDef = {
+  id: 'quick', prefix: 'qe', tab: 'فحص سريع', title: 'ORTHOPEDIC CLINICAL EXAMINATION SHEET',
+  boxes: [
+    { title: 'General Examination', role: 'exam', f: [
+      { t: 'pick', g: 'gen', items: ['Good', 'Fair', 'Poor'], label: 'General condition:' },
+      { t: 'checks', g: 'gait', items: ['Normal', 'Antalgic', 'Limping', 'Trendelenburg', 'Foot drop', 'Unable to walk'], label: 'Gait:', none: 'Normal' },
+      { t: 'checks', g: 'posture', items: ['Normal', 'Forward head', '↑ Kyphosis', '↑ Lordosis', 'Scoliosis', 'Pelvic tilt'], label: 'Posture:', none: 'Normal' },
+      { t: 'pick', g: 'nutr', items: ['Normal', 'Underweight', 'Overweight', 'Obese'], label: 'Nutritional status:' },
+      { t: 'checks', g: 'deform', items: ['No deformity', 'Varus', 'Valgus', 'Flexion deformity', 'Rotational deformity', 'Limb length discrepancy'], label: 'Visible deformity:', none: 'No deformity' },
+      { t: 'checks', g: 'aids', items: ['None', 'Walking stick', 'Crutches', 'Walker', 'Wheelchair'], label: 'Walking aids:', none: 'None' },
+    ] },
+    { title: 'Local Examination', role: 'exam', wide: true, f: [
+      { t: 'side' },
+      { t: 'cols', cols: [
+        joint('Shoulder', 'sh', ['Neer', 'Hawkins', 'Jobe (Empty can)', 'Drop arm', "Speed's", "Yergason's", 'Cross-body']),
+        joint('Elbow', 'el', ["Cozen's", "Mill's", "Tinel's", 'Moving valgus stress']),
+        joint('Wrist & Hand', 'wh', ["Phalen's", "Reverse Phalen's", "Tinel's", 'Finkelstein', "Durkan's"]),
+      ] },
+      { t: 'cols', cols: [
+        joint('Cervical Spine', 'cs', ['Spurling', 'Cervical distraction', 'Shoulder abduction relief', "Hoffmann's"]),
+        joint('Lumbar Spine', 'ls', ['SLR', 'Crossed SLR', 'Slump test', 'Femoral stretch']),
+        joint('Hip', 'hp', ['FABER', 'FADIR', 'Trendelenburg', 'Thomas', "Ober's"]),
+      ] },
+      { t: 'cols', cols: [
+        joint('Knee', 'kn', ['McMurray', 'Thessaly', 'Lachman', 'Ant. drawer', 'Post. drawer', 'Patellar grind', 'Patellar apprehension']),
+        joint('Ankle & Foot', 'af', ['Ant. drawer', 'Talar tilt', 'Thompson', 'Squeeze', 'External rotation stress', 'Windlass']),
+      ] },
+    ] },
+    { title: 'Neurological Examination', role: 'exam', wide: true, f: [
+      { t: 'checks', g: 'sens', items: ['Normal sensation', 'Hypoesthesia', 'Hyperesthesia', 'Paresthesia', 'Anesthesia'], label: 'Sensory:', none: 'Normal sensation' },
+      { t: 'cols', cols: [
+        { f: [{ t: 'ticks', g: 'derm.ul', title: 'Upper Limb Dermatomes', note: 'Tick the side with abnormal sensation.', rows: [['C5', 'Lateral shoulder'], ['C6', 'Thumb'], ['C7', 'Middle finger'], ['C8', 'Little finger'], ['T1', 'Medial forearm']] }] },
+        { f: [{ t: 'ticks', g: 'derm.ll', title: 'Lower Limb Dermatomes', rows: [['L1', 'Inguinal region'], ['L2', 'Mid anterior thigh'], ['L3', 'Medial knee'], ['L4', 'Medial leg & medial ankle'], ['L5', 'Dorsum of foot & great toe'], ['S1', 'Lateral foot & little toe'], ['S2', 'Posterior thigh'], ['S3', 'Buttock region'], ['S4-S5', 'Perineal region']] }] },
+      ] },
+      { t: 'pick', g: 'derm.as', items: ['Normal', 'Decreased', 'Absent', 'Increased'], label: 'Dermatome assessment (R/L):' },
+      { t: 'pick', g: 'motor', items: ['Normal motor function', 'Motor weakness', 'Complete paralysis'], label: 'Motor:' },
+      { t: 'grade', k: 'dtr', title: 'Deep Tendon Reflexes', opts: 'reflex4', rows: [['Biceps', 'C5-C6'], ['Brachioradialis', 'C5-C6'], ['Triceps', 'C7-C8'], ['Patellar', 'L3-L4'], ['Achilles', 'S1-S2']] },
+      { t: 'checks', g: 'tension', items: ['SLR', 'Crossed SLR', 'Slump test', 'Femoral nerve stretch test', "Tinel's sign", "Phalen's test"], label: 'Nerve tension tests (+ve):' },
+    ] },
+    { title: 'Vascular Examination', role: 'exam', f: [
+      { t: 'pick', g: 'pulse', items: ['Normal', 'Weak', 'Absent'], label: 'Peripheral pulses:' },
+      { t: 'pick', g: 'crt', items: ['Normal', 'Delayed'], label: 'Capillary refill:' },
+      { t: 'pick', g: 'temp', items: ['Normal', 'Cold extremity'], label: 'Skin temperature:' },
+      { t: 'pick', g: 'color', items: ['Normal', 'Pallor', 'Cyanosis'], label: 'Skin color:' },
+      { t: 'pick', g: 'edema', items: ['Absent', 'Present'], label: 'Peripheral edema:' },
+    ] },
+    { title: 'Joint Stability', role: 'exam', f: [
+      { t: 'pick', g: 'stab', items: ['Stable', 'Mild instability', 'Moderate instability', 'Severe instability'], label: 'Joint stability:' },
+      { t: 'checks', g: 'stabt', items: ['Anterior drawer', 'Posterior drawer', 'Lachman test', 'Varus stress test', 'Valgus stress test', 'Apprehension test', 'Sulcus sign'], label: 'Stability tests (+ve):' },
+    ] },
+    { title: 'ROM & Muscle Examination', role: 'exam', wide: true, f: [
+      { t: 'cols', cols: [
+        { f: [{ t: 'rom', k: 'rom.a', title: 'Active ROM (°)', rows: MOVES, noNormal: true }] },
+        { f: [{ t: 'rom', k: 'rom.p', title: 'Passive ROM (°)', rows: MOVES, noNormal: true }] },
+      ] },
+      { t: 'checks', g: 'romc', items: ['Pain at end range', 'Pain throughout movement', 'Stiffness', 'Mechanical restriction', 'Crepitus', 'Capsular pattern', 'Non-capsular pattern'], label: 'ROM characteristics:' },
+      { t: 'pick', g: 'power', items: ['0/5', '1/5', '2/5', '3/5', '4/5', '5/5'], label: 'Muscle power grade:' },
+      { t: 'pick', g: 'sidecmp', items: ['Equal power', 'Right weaker', 'Left weaker', 'Bilateral weakness'], label: 'Side comparison:' },
+      { t: 'checks', g: 'tone', items: ['Normal', 'Increased', 'Decreased', 'Muscle spasm', 'Muscle wasting'], label: 'Muscle tone:', none: 'Normal' },
+    ] },
+    { title: 'Pain Assessment', role: 'exam', f: [
+      { t: 'pick', g: 'vas', items: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'], label: 'Pain score (VAS 0–10):' },
+      { t: 'pick', g: 'sev', items: ['0 (No pain)', '1–3 (Mild)', '4–6 (Moderate)', '7–10 (Severe)'], label: 'Pain severity:' },
+      { t: 'checks', g: 'char', items: ['Sharp', 'Dull', 'Aching', 'Burning', 'Shooting', 'Throbbing', 'Numbness / Tingling'], label: 'Pain character:' },
+      { t: 'checks', g: 'pattern', items: ['Constant', 'Intermittent', 'Activity-related', 'Night pain', 'Rest pain'], label: 'Pain pattern:' },
+    ] },
+    { title: 'Clinical Impression', role: 'dx', wide: true, f: [
+      { t: 'checks', g: 'find', items: ['Findings suggestive of ligament injury', 'Findings suggestive of tendon injury', 'Findings suggestive of nerve compression', 'Findings suggestive of radiculopathy', 'Findings suggestive of joint degeneration', 'Findings suggestive of fracture', 'Findings suggestive of instability'], label: 'Clinical findings:' },
+      { t: 'text', k: 'pdx', label: 'Provisional diagnosis:', stack: true },
+      { t: 'text', k: 'ddx', label: 'Differential diagnosis:', stack: true },
+      { t: 'notes', k: 'notes' },
+    ] },
+  ],
+};
+export const quickFilled = (s: ExamSheet) => s.on.some((o) => o.startsWith('qe.')) || Object.entries(s.txt).some(([k, v]) => k.startsWith('qe.') && v.trim());
 // أي مربع كله اختيارات (مفيش فيه خانة كتابة) بيتضافله «ملاحظات» في آخره (طلب ٨/١١) — المفتاح ثابت من عنوان المربع
 // كل مربع (طلب ٨/١١) ما عدا مربع Notes نفسه أو اللي فيه خانة ملاحظات أصلًا
 export const boxNeedsNotes = (b: BoxDef) => b.role !== 'notes' && !b.f.some((f) => f.t === 'notes');

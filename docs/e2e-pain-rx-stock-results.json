@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-10T14:49:24.230Z",
+  "at": "2026-11-10T21:01:50.584Z",
   "passed": 32,
   "failed": 0,
   "results": [
@@ -46,12 +46,12 @@
     {
       "name": "روشتة التشخيص وروشتة شيت المتابعة اتسجلوا",
       "ok": true,
-      "detail": "[{\"id\":\"234e2f22-3ffe-48d7-8a7e-11be9bc8d475\",\"source\":\"consultation\",\"version\":1,\"instructions\":\"راحة نسبية\"},{\"id\":\"0a3879e4-a3a0-47b9-8018-2e0bc626b932\",\"source\":\"nursing\",\"version\":1,\"instructions"
+      "detail": "[{\"id\":\"35da0f8a-37b0-44b3-acb5-2c81a8af7d2f\",\"source\":\"consultation\",\"version\":1,\"instructions\":\"راحة نسبية\"},{\"id\":\"2d8367d6-80a6-48bc-b44d-9d2e585eae2a\",\"source\":\"nursing\",\"version\":1,\"instructions"
     },
     {
       "name": "ملاحظة كل دواء محفوظة في عمودها (بعد الأكل / قبل النوم)",
       "ok": true,
-      "detail": "[{\"name\":\"Brufen 600\",\"notes\":\"بعد الأكل\",\"prescription_id\":\"234e2f22-3ffe-48d7-8a7e-11be9bc8d475\"},{\"name\":\"Myolgin\",\"notes\":\"قبل النوم\",\"prescription_id\":\"234e2f22-3ffe-48d7-8a7e-11be9bc8d475\"}]"
+      "detail": "[{\"name\":\"Brufen 600\",\"notes\":\"بعد الأكل\",\"prescription_id\":\"35da0f8a-37b0-44b3-acb5-2c81a8af7d2f\"},{\"name\":\"Myolgin\",\"notes\":\"قبل النوم\",\"prescription_id\":\"35da0f8a-37b0-44b3-acb5-2c81a8af7d2f\"}]"
     },
     {
       "name": "تعديل الروشتة = نسخة جديدة والقديمة لسه محفوظة",
@@ -91,7 +91,7 @@
     {
       "name": "مصروف واحد بس بالإجمالي المحسوب (5 × 20 = 100)",
       "ok": true,
-      "detail": "[{\"id\":\"1ee45695-3ab6-46a1-add0-5426c17398c2\",\"amount\":\"100.00\",\"category\":\"مستلزمات طبية\",\"inventory_item_id\":\"13996930-cef4-4c92-9f22-5e950c0f81db\",\"quantity\":\"5\",\"unit_price\":\"20\"}]"
+      "detail": "[{\"id\":\"6f0322ba-6d8f-4b40-a0b4-11fe93dfd264\",\"amount\":\"100.00\",\"category\":\"مستلزمات طبية\",\"inventory_item_id\":\"a1ce0416-bd39-493c-bb29-edf9f06ea8f2\",\"quantity\":\"5\",\"unit_price\":\"20\"}]"
     },
     {
       "name": "الكمية زادت مرة واحدة بس (10 ← 15)",
@@ -106,7 +106,7 @@
     {
       "name": "رد الخادم فيه الرصيد الجديد",
       "ok": true,
-      "detail": "{\"id\":\"1ee45695-3ab6-46a1-add0-5426c17398c2\",\"low\":false,\"item\":\"شاش اختبار964\",\"unit\":\"علبة\",\"amount\":100,\"balance\":15,\"duplicate\":false,\"minQuantity\":5}"
+      "detail": "{\"id\":\"6f0322ba-6d8f-4b40-a0b4-11fe93dfd264\",\"low\":false,\"item\":\"شاش اختبار964\",\"unit\":\"علبة\",\"amount\":100,\"balance\":15,\"duplicate\":false,\"minQuantity\":5}"
     },
     {
       "name": "تعديل الكمية لـ 8 ← تسوية بالفرق (+3) والمبلغ 160",

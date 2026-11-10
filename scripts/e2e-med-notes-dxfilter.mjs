@@ -57,6 +57,24 @@ try {
   const dates = await page.locator('.dx-queue__row.dx-pat .dx-queue__time').allTextContents();
   check('من يوم لـ يوم بيعرض الفترة دي بس', dates.every((d) => /27|28/.test(d) && /أكتوبر/.test(d)), dates.join(' | '));
   await page.screenshot({ path: shot('dx-date-filter') });
+
+  section('شيت «فحص سريع» (تاب 2)');
+  await page.getByRole('button', { name: 'فتح ملف تشخيص جديد' }).click();
+  await page.fill('input[placeholder="مثال: محمد أحمد علي"]', 'محمد احمد اختبار');
+  await page.getByRole('button', { name: 'ابدأ التشخيص بالاسم ده' }).click();
+  await page.waitForSelector('.sh-tabs', { timeout: 15000 });
+  const tabs = (await page.locator('.sh-tabs button').allInnerTexts()).map((t) => t.replace(/\s+/g, ' ').trim());
+  check('التاب رقم 2 = «فحص سريع» وبعده «متابعة المريض» رقم 3', /^2\s*فحص سريع/.test(tabs[1] ?? '') && /^3\s*متابعة المريض/.test(tabs[2] ?? ''), tabs.slice(0, 4).join(' | '));
+  await page.locator('.sh-tabs button', { hasText: 'فحص سريع' }).click();
+  await page.waitForTimeout(500);
+  const titles = ['General Examination', 'Local Examination', 'Neurological Examination', 'Vascular Examination', 'Joint Stability', 'ROM & Muscle Examination', 'Pain Assessment', 'Clinical Impression'];
+  const missing = [];
+  for (const t of titles) if (!(await page.locator('.modal', { hasText: t }).count())) missing.push(t);
+  check('الـ 8 أقسام بتاعة الورقة ظاهرين', missing.length === 0, missing.join(', '));
+  const nav = await page.locator('.modal button', { hasText: 'التالي: متابعة المريض' }).count() + await page.locator('.modal button', { hasText: 'رجوع: الشيت العام' }).count();
+  check('أزرار رجوع/التالي في «فحص سريع»', nav === 2);
+  await page.screenshot({ path: shot('quick-exam'), fullPage: false });
+  await page.locator('.modal__foot').getByRole('button', { name: 'إلغاء' }).click().catch(() => {});
   check('من غير أخطاء JavaScript', errors.length === 0, errors.join(' | ').slice(0, 300));
 } catch (e) {
   check('تنفيذ الاختبار بدون أخطاء غير متوقعة', false, String(e?.stack ?? e).split('\n').slice(0, 3).join(' | '));

@@ -45,8 +45,12 @@ try {
   for (let i = 1; i < 15 && !day; i++) { const d = cairoDate(i); const k = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][new Date(d + 'T00:00:00Z').getUTCDay()]; const s = (center.week_schedule ?? []).find((x) => x.day === k); if (s?.open) day = { date: d, from: s.from }; }
   const b = await recep.rpc('book_appointment', { p: { patientId: p1.data.id, type: 'session', serviceId: 'old_consult', therapistId: made.therapist, date: day.date, time: day.from, notes: 'اختبار' } });
   check('حجز موعد', !b.error, b.error?.message);
+  // الحجز بيتحكم فيه مواعيد الدكتور (doctor_day_window) — نضيّق مواعيده مؤقتًا لـ 16:00–22:00 ونجرب 03:00
+  await sql(`update therapists set work_hours = (select jsonb_agg(jsonb_set(jsonb_set(e, '{from}', '"16:00"'), '{to}', '"22:00"')) from jsonb_array_elements(work_hours) e) where id = '${made.therapist}'`);
   const bad = await recep.rpc('book_appointment', { p: { patientId: p1.data.id, type: 'session', serviceId: 'old_consult', therapistId: made.therapist, date: day.date, time: '03:00', notes: '' } });
-  check('حجز برّه مواعيد المركز مرفوض', !!bad.error, 'accepted');
+  await sql(`update therapists set work_hours = (select jsonb_agg(jsonb_set(jsonb_set(e, '{from}', '"00:00"'), '{to}', '"23:59"')) from jsonb_array_elements(work_hours) e) where id = '${made.therapist}'`);
+  if (bad.data?.id) await admin.rpc('delete_appointment', { p_id: bad.data.id });
+  check('حجز برّه مواعيد الدكتور مرفوض', !!bad.error, 'accepted');
   const noSvc = await recep.rpc('book_appointment', { p: { patientId: p1.data.id, type: 'session', serviceId: 'مش-موجودة', therapistId: made.therapist, date: day.date, time: day.from } });
   check('خدمة غير موجودة مرفوضة', !!noSvc.error, 'accepted');
   const delHas = await admin.rpc('delete_patient', { p_id: p1.data.id });
@@ -56,8 +60,9 @@ try {
   if (Number(inv.total) > 0) {
     const pay = await admin.rpc('record_payment', { p_invoice: inv.id, p_amount: 1, p_method: 'cash', p_note: 'اختبار' });
     check('تسجيل دفعة اتحفظ', !pay.error && !!(await one(`select id from payments where invoice_id = '${inv.id}'`)), pay.error?.message);
-    const delPaid = await admin.rpc('delete_appointment', { p_id: b.data.id });
-    check('موعد فاتورته عليها مدفوعات مايتحذفش', !!delPaid.error, 'deleted');
+    // الاستقبال مايقدرش يحذف موعد عليه مدفوعات؛ المدير يقدر (delete_appointment: is_center_manager) — بنجرب الاستقبال بس هنا
+    const delPaid = await recep.rpc('delete_appointment', { p_id: b.data.id });
+    check('موعد فاتورته عليها مدفوعات مايتحذفش من غير المدير', !!delPaid.error, 'deleted');
     await sql(`delete from payments where invoice_id = '${inv.id}'`);
   }
   const delRec = await recep.rpc('delete_appointment', { p_id: b.data.id });
@@ -86,8 +91,12 @@ try {
 
   section('المصروفات');
   const exp = { category: 'اختبار', amount: 25, description: 'مصروف اختبار', expenseDate: cairoDate(0), paymentMethod: 'cash' };
-  const expDenied = await recep.rpc('save_expense', { p: exp });
-  check('الاستقبال مايقدرش يسجل مصروف', !!expDenied.error, 'accepted');
+  // صلاحية المصروفات للاستقبال بتتظبط من شاشة الأدوار — بنتأكد إن القاعدة بتنفّذ المحفوظ
+  const recExp = (await one(`select ops from role_permissions where role = 'reception' and area = 'expenses'`))?.ops ?? [];
+  const expTry = await recep.rpc('save_expense', { p: { ...exp, description: 'مصروف اختبار استقبال' } });
+  const recExpId = expTry.data?.id ?? (await one(`select id from expenses where description = 'مصروف اختبار استقبال'`))?.id;
+  if (recExpId) await sql(`delete from expenses where id = '${recExpId}'`);
+  check(`الاستقبال ${recExp.includes('create') ? 'يسجل مصروف (متظبط كده في الأدوار)' : 'مايقدرش يسجل مصروف'}`, recExp.includes('create') ? !expTry.error : !!expTry.error, expTry.error?.message ?? 'accepted');
   const expZero = await admin.rpc('save_expense', { p: { ...exp, amount: 0 } });
   check('مصروف بقيمة صفر مرفوض', !!expZero.error, 'accepted');
   const e1 = await admin.rpc('save_expense', { p: exp });

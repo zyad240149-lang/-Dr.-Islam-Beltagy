@@ -174,7 +174,11 @@ try {
   const imU = await doc.from('ortho_imaging').update({ status: 'reviewed', finding: 'قطع جزئي في الغضروف الهلالي (اختبار)' }).eq('id', im.data?.id).select().single();
   check('الطبيب يسجّل نتيجة الأشعة', !imU.error && imU.data?.status === 'reviewed', err(imU));
   const imR = await recep.from('ortho_imaging').insert({ patient_id: P.id, kind: 'xray', region: 'الكتف', requested_at: today, status: 'requested' }).select();
-  check('الاستقبال ما يطلبش أشعة', !!imR.error, err(imR) || 'inserted!');
+  // صلاحية الاستقبال في «الأشعة والتحاليل» بتتظبط من شاشة الأدوار — الاختبار بيتأكد إن القاعدة بتنفّذ المحفوظ (مسموح أو ممنوع)
+  const recImg = (await sql(`select ops from role_permissions where role = 'reception' and area = 'imaging'`))[0]?.ops;
+  const recMay = recImg ? recImg.includes('create') : false;
+  check(`الاستقبال ${recMay ? 'يقدر يطلب أشعة (متظبط كده في الأدوار)' : 'ما يطلبش أشعة'}`, recMay ? !imR.error : !!imR.error, err(imR) || (recMay ? '' : 'inserted!'));
+  if (!imR.error && imR.data?.[0]?.id) await sql(`delete from ortho_imaging where id = '${imR.data[0].id}'`);
   const imK = await doc.from('ortho_imaging').insert({ patient_id: P.id, kind: 'pet', region: 'الكتف', requested_at: today }).select();
   check('نوع أشعة مش من القائمة مرفوض', !!imK.error, err(imK) || 'inserted!');
   const su = await doc.from('ortho_surgeries').insert({ patient_id: P.id, procedure: 'منظار ركبة اختبار', region: 'الركبة', side: 'right', hospital: 'مستشفى اختبار', date: cairoDate(20), implant: '', status: 'scheduled' }).select().single();

@@ -114,7 +114,7 @@ try {
   await p.getByRole('button', { name: 'موعد متابعة جديد' }).first().click();
   const m = p.locator('.modal', { hasText: 'تحديد موعد متابعة' }).last();
   await m.locator('select').first().selectOption(made.therapist);
-  await m.locator('.fu-day--pick input').fill(day1.date);
+  await m.locator('input[aria-label="يوم المتابعة"]').fill(day1.date);
   await m.locator('input.fu-slots__time').fill(at(day1, 180));
   await m.locator('textarea').first().fill('اختبار ربط الواجهة');
   await m.getByRole('button', { name: 'حفظ' }).click();
@@ -128,52 +128,47 @@ try {
   check('الموعد ظاهر في «مواعيد محتاجة تأكيد» بعد إعادة التحميل', await row.locator('.badge', { hasText: 'محتاج تأكيد' }).count() === 1);
   await row.locator('.fu-item__main').click();
   const dm = p.locator('.modal', { hasText: 'موعد متابعة' }).last();
-  check('الضغط على الموعد فتح تفاصيله ومعاها زرار التأكيد', await dm.getByRole('button', { name: 'تأكيد الموعد' }).isVisible());
+  // الفتح async (بيحمّل المتابعات لو لسه ماتحمّلتش) — بنستنى النافذة بدل ما نشيك فورًا
+  const opened = await dm.getByRole('button', { name: 'تأكيد الموعد' }).waitFor({ timeout: 15000 }).then(() => true).catch(() => false);
+  if (!opened) await p.screenshot({ path: fileURLToPath(new URL('../docs/ui-failures/fu-confirm-open.png', import.meta.url)) }).catch(() => {});
+  check('الضغط على الموعد فتح تفاصيله ومعاها زرار التأكيد', opened, (await p.locator('.modal h2').allTextContents()).join(' | '));
   await dm.getByRole('button', { name: 'تأكيد الموعد' }).click();
   const conf = await waitFor(async () => (await one(`select status from appointments where id = '${a3.id}'`))?.status === 'confirmed');
   check('التأكيد من المتابعات اتحفظ على نفس سجل الموعد', !!conf);
   const c3 = await counts(P3);
   check('التأكيد ماعملش حجز تاني', c3.a === 1 && c3.f === 1, JSON.stringify(c3));
 
-  await go('/appointments');
+  // ١٠/١١: صفحة «المواعيد» اتشالت (/appointments بيفتح «حجز كشف ومتابعة») — نفس الموعد بيظهر هنا «مؤكد» بعد إعادة التحميل
   await p.reload();
-  await p.fill('#ap-q', a3.no);
-  const inList = p.locator('tr, .appt-card', { hasText: 'مريض اختبار الواجهة' }).first();
-  check('نفس الموعد ظاهر في قسم المواعيد بنفس الرقم وحالته «مؤكد»', await waitFor(async () => (await inList.count()) > 0 && /مؤكد/.test(await inList.innerText()), 20000));
+  await p.waitForSelector('.page h1', { timeout: 30000 });
+  check('بعد إعادة التحميل: الموعد اتشال من «محتاج تأكيد» (اتأكد)', await waitFor(async () => (await p.locator('.fu-confirm .fu-item', { hasText: 'مريض اختبار الواجهة' }).count()) === 0, 20000));
 
   section('الواجهة: من المواعيد للمتابعات');
   const P4 = await newPatient('+201200000935', 'الاتجاه التاني');
   const b4 = await book(P4, day1.date, at(day1, 240));
+  await go('/'); await p.waitForTimeout(500); // تنقل جوّه البرنامج (من غير إعادة تحميل) زي ما كان بيروح للمواعيد ويرجع
   await go('/follow-ups');
   const row4 = p.locator('.fu-confirm .fu-item', { hasText: 'مريض اختبار الاتجاه التاني' });
   check('حجز المواعيد ظاهر في المتابعات «محتاج تأكيد» من غير إعادة تحميل', await waitFor(async () => (await row4.count()) === 1, 20000));
   const cf4 = await recep.rpc('set_appointment_status', { p_id: b4.data.id, p_status: 'confirmed' });
   check('التأكيد من جهاز تاني اتحفظ', !cf4.error, cf4.error?.message);
   check('المتابعات شالته من «محتاج تأكيد» فورًا', await waitFor(async () => (await row4.count()) === 0, 20000));
-  await p.reload();
-  await p.getByPlaceholder(/ابحث باسم المريض/).fill('الاتجاه التاني');
-  const item4 = p.locator('.fu-item', { hasText: 'مريض اختبار الاتجاه التاني' }).first();
-  await item4.waitFor({ timeout: 20000 });
-  check('بعد إعادة التحميل المتابعة حالتها «مؤكد»', await waitFor(async () => (await item4.locator('.badge', { hasText: 'مؤكد' }).count()) === 1));
+  check('المتابعة المربوطة بقت «مؤكد» في قاعدة البيانات', await waitFor(async () => (await one(`select a.status from appointments a join ortho_follow_ups f on f.appointment_id = a.id where a.id = '${b4.data.id}'`))?.status === 'confirmed'));
 
   const P5 = await newPatient('+201200000936', 'تأكيد المواعيد');
   const b5 = await book(P5, day1.date, at(day1, 300));
-  const b5no = (await one(`select no from appointments where id = '${b5.data.id}'`)).no;
-  await go('/appointments');
-  await p.fill('#ap-q', '');
-  await p.fill('#ap-q', b5no);
-  const row5 = p.locator('tr', { hasText: 'مريض اختبار تأكيد المواعيد' }).first();
+  // زرار «تأكيد» في «مواعيد محتاجة تأكيد» (بدل صفحة المواعيد القديمة)
+  const row5 = p.locator('.fu-confirm .fu-item', { hasText: 'مريض اختبار تأكيد المواعيد' }).first();
   await row5.waitFor({ timeout: 20000 });
   await row5.getByRole('button', { name: 'تأكيد' }).click();
-  check('زرار «تأكيد» في صفحة المواعيد حفظ في قاعدة البيانات', await waitFor(async () => (await one(`select status from appointments where id = '${b5.data.id}'`))?.status === 'confirmed'));
-  await go('/follow-ups');
-  await p.getByPlaceholder(/ابحث باسم المريض/).fill('تأكيد المواعيد');
-  const item5 = p.locator('.fu-item', { hasText: 'مريض اختبار تأكيد المواعيد' }).first();
-  await item5.waitFor({ timeout: 20000 });
-  check('تأكيد صفحة المواعيد ظهر في المتابعات «مؤكد»', await waitFor(async () => (await item5.locator('.badge', { hasText: 'مؤكد' }).count()) === 1));
-  await p.getByPlaceholder(/ابحث باسم المريض/).fill('الاتجاه التاني');
-  await item4.waitFor({ timeout: 20000 });
+  check('زرار «تأكيد» في «مواعيد محتاجة تأكيد» حفظ في قاعدة البيانات', await waitFor(async () => (await one(`select status from appointments where id = '${b5.data.id}'`))?.status === 'confirmed'));
+  check('التأكيد شال الموعد من «محتاج تأكيد»', await waitFor(async () => (await row5.count()) === 0, 20000));
 
+  // إلغاء من نافذة المتابعة (من ملف المريض ← «مواعيد المتابعة»)
+  await go(`/patients/${P4}`);
+  await p.getByRole('button', { name: 'مواعيد المتابعة' }).first().click();
+  const item4 = p.locator('.fu-item').first();
+  await item4.waitFor({ timeout: 20000 });
   await item4.locator('.fu-item__main').click();
   const cm = p.locator('.modal', { hasText: 'موعد متابعة' }).last();
   await cm.getByRole('button', { name: 'إلغاء الموعد' }).click();

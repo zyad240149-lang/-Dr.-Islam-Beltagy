@@ -742,7 +742,7 @@ export default function FollowUpsPage({ tabs, pageTitle }: { tabs?: React.ReactN
                   <li key={a.id} className="fu-item fu-item--upcoming">
                     <button type="button" className="fu-item__main" onClick={async () => {
                       // بعد فتح الصفحة مباشرة المتابعات ممكن تكون لسه بتتحمّل — حجز نوعه متابعة لازم يفتح متابعته
-                      if (!fu && a.type === 'followup') await ortho.reload('follow_ups');
+                      if (!fu && a.type === 'followup') await ortho.ready('follow_ups');
                       const match = fu ?? ortho.list('follow_ups').find((x) => x.appointmentId === a.id);
                       if (match) setOpen(match); else openVisit(a.id);
                     }}>

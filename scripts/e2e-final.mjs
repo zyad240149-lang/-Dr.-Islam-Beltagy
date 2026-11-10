@@ -57,7 +57,7 @@ try {
   const out = await admin.rpc('add_stock_movement', { p: { itemId: made.item, type: 'issue', quantity: 4, unitCost: 0, reference: 'غرفة الجبس', note: '' } });
   const [q2] = await sql(`select quantity from inventory_items where id = '${made.item}'`);
   check('توريد 5 وصرف 4 ← الكمية 11', !buy.error && !out.error && Number(q2.quantity) === 11, err(buy) || err(out) || q2.quantity);
-  const over = await admin.rpc('add_stock_movement', { p: { itemId: made.item, type: 'issue', quantity: 50, unitCost: 0, reference: '', note: '' } });
+  const over = await admin.rpc('add_stock_movement', { p: { itemId: made.item, type: 'issue', quantity: 50, unitCost: 0, reference: 'صرف اختبار', note: '' } }); // السبب مكتوب عشان الرفض يبقى بسبب الكمية مش السبب
   check('صرف أكتر من المتاح مرفوض', /المتاحة/.test(err(over)), err(over) || 'accepted!');
   const [mv] = await sql(`select count(*)::int n from stock_movements where item_id = '${made.item}'`);
   check('كل حركة متسجّلة (افتتاحي + توريد + صرف)', mv.n === 3, mv.n);

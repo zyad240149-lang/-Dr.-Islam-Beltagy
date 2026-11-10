@@ -1,7 +1,7 @@
 {
-  "at": "2026-11-10T17:18:14.809Z",
-  "passed": 41,
-  "failed": 7,
+  "at": "2026-11-10T21:20:33.886Z",
+  "passed": 48,
+  "failed": 0,
   "results": [
     {
       "name": "ملف طبيب الاختبار",
@@ -11,12 +11,12 @@
     {
       "name": "حساب استقبال شامل اختبار",
       "ok": true,
-      "detail": "{\"id\":\"16b2e45f-1931-452d-8762-cc121c10da59\",\"name\":\"استقبال شامل اختبار\",\"username\":\"201200000961\",\"role\":\"reception\",\""
+      "detail": "{\"id\":\"9601615e-2b61-4600-9ed9-1830175277c3\",\"name\":\"استقبال شامل اختبار\",\"username\":\"201200000961\",\"role\":\"reception\",\""
     },
     {
       "name": "حساب دكتور شامل اختبار",
       "ok": true,
-      "detail": "{\"id\":\"df4aa62e-4f69-458a-b223-10ee1d2c5c70\",\"name\":\"دكتور شامل اختبار\",\"username\":\"201200000962\",\"role\":\"system_admin\","
+      "detail": "{\"id\":\"81cf6666-ef0f-4948-947d-c607f2e79eeb\",\"name\":\"دكتور شامل اختبار\",\"username\":\"201200000962\",\"role\":\"system_admin\","
     },
     {
       "name": "بيانات الخادم: مريضين + ٣ حجوزات + فاتورة بمتبقي",
@@ -61,12 +61,12 @@
     {
       "name": "ملف المريض الجديد اتحفظ على الجهاز (متشفّر في الطابور)",
       "ok": true,
-      "detail": "[{\"id\":\"2c7e0a50-a05e-4cf2-9a57-25cf581e5eb1\",\"kind\":\"patient.create\",\"status\":\"pending\",\"entityId\":\"2c7e0a50-a05e-4cf2-9a57-25cf581e5eb1\",\"sealed\":true}]"
+      "detail": "[{\"id\":\"1fef12ae-e5db-46c0-b3e1-920ca18cd5ff\",\"kind\":\"patient.create\",\"status\":\"pending\",\"entityId\":\"1fef12ae-e5db-46c0-b3e1-920ca18cd5ff\",\"sealed\":true}]"
     },
     {
       "name": "حجز للمريض الجديد من غير نت",
       "ok": true,
-      "detail": "5399ebff-1a8b-47be-84e7-dfe91a0c02ca"
+      "detail": "7f111a6b-e398-48bf-b1bb-67bfdb5cffbe"
     },
     {
       "name": "تعديل ميعاد الحجز الجديد + تعديل/تأكيد/إلغاء حجوزات موجودة من غير نت",
@@ -86,7 +86,7 @@
     {
       "name": "طابور الاستقبال: مريض + حجز (تعديله اندمج فيه) + تعديل + تأكيد + إلغاء + دفعة",
       "ok": true,
-      "detail": "[\"patient.create\",\"appointment.cancel\",\"appointment.create\",\"appointment.status\",\"payment.record\",\"appointment.reschedule\"]"
+      "detail": "[\"patient.create\",\"appointment.status\",\"appointment.cancel\",\"appointment.reschedule\",\"appointment.create\",\"payment.record\"]"
     },
     {
       "name": "الدكتور سجّل نفس المريض على جهازه بمعرّف محلي مختلف",
@@ -146,12 +146,12 @@
     {
       "name": "طابور الدكتور خلص لوحده بعد النت المتقطع",
       "ok": true,
-      "detail": "[{\"id\":\"13601e44-6e50-4ddb-bf26-2c0c3e18eab5\",\"kind\":\"ortho.save\",\"status\":\"pending\",\"entityId\":\"f3b25dba-f62e-4550-8756-630a63f2d972\",\"sealed\":true},{\"id\":\"2ac3ea84-532b-4931-8523-6ea361063422\",\"kind"
+      "detail": "[]"
     },
     {
       "name": "الـ 503 والرد الضايع حصلوا فعلًا",
-      "ok": false,
-      "detail": "503=1 drop=0"
+      "ok": true,
+      "detail": "503=1 drop=1"
     },
     {
       "name": "طابور الاستقبال خلص (الدفعة بس ممكن تستنى تحديث الخادم)",
@@ -161,47 +161,47 @@
     {
       "name": "مفيش ولا عملية «فشل» أو «تعارض» محتاجة قرار (الجهازين)",
       "ok": true,
-      "detail": "[{\"id\":\"13601e44-6e50-4ddb-bf26-2c0c3e18eab5\",\"kind\":\"ortho.save\",\"status\":\"pending\",\"entityId\":\"f3b25dba-f62e-4550-8756-630a63f2d972\",\"sealed\":true},{\"id\":\"2ac3ea84-532b-4931-8523-6ea361063422\",\"kind"
+      "detail": "[]"
     },
     {
       "name": "المريض اللي اتسجّل على الجهازين = ملف واحد بس (اتدمج تلقائي)",
       "ok": true,
-      "detail": "[{\"id\":\"2c7e0a50-a05e-4cf2-9a57-25cf581e5eb1\",\"file_no\":\"TM-859\"}]"
+      "detail": "[{\"id\":\"ffe8da43-9da4-47ca-9c30-948ff46e6343\",\"file_no\":\"TM-858\"}]"
     },
     {
       "name": "بمعرّف واحد من الجهازين (مفيش معرّف ضايع)",
       "ok": true,
-      "detail": "2c7e0a50-a05e-4cf2-9a57-25cf581e5eb1"
+      "detail": "ffe8da43-9da4-47ca-9c30-948ff46e6343"
     },
     {
       "name": "تشخيص الدكتور على المريض المحلي اتربط بالملف الحقيقي (مرة واحدة)",
-      "ok": false,
-      "detail": "[]"
+      "ok": true,
+      "detail": "[{\"id\":\"5a7c3d51-680e-4921-ac4a-542c8ff7150b\",\"patient_id\":\"ffe8da43-9da4-47ca-9c30-948ff46e6343\"}]"
     },
     {
       "name": "الأشعة والتحليل وصلوا مرة واحدة على الملفات الصح",
-      "ok": false,
-      "detail": "[]"
+      "ok": true,
+      "detail": "[{\"patient_id\":\"ebd168aa-a663-4659-ae4b-d869260639b3\"},{\"patient_id\":\"ffe8da43-9da4-47ca-9c30-948ff46e6343\"}]"
     },
     {
       "name": "تشخيص المريض الموجود وصل مرة واحدة رغم الـ 503 والرد الضايع",
-      "ok": false,
-      "detail": "[]"
+      "ok": true,
+      "detail": "[{\"id\":\"e2a3fdee-7226-48b5-a548-3548ed82e310\"}]"
     },
     {
       "name": "حجز المريض الجديد وصل مرة واحدة على الملف الحقيقي بالميعاد المعدّل (15:30)",
       "ok": true,
-      "detail": "[{\"id\":\"cceb6af8-3b46-497c-a3cd-881955680303\",\"patient_id\":\"37b535ae-7d89-4d9a-bda1-5091af4740d1\",\"t\":\"11:00\",\"status\":\"rescheduled\"},{\"id\":\"411ac2e8-4f6e-4989-b0c1-56e5580912f9\",\"patient_id\":\"37b535a"
+      "detail": "[{\"id\":\"37e6c461-e847-40ec-bb9a-1b7a23e4684c\",\"patient_id\":\"ebd168aa-a663-4659-ae4b-d869260639b3\",\"t\":\"11:00\",\"status\":\"rescheduled\"},{\"id\":\"cd27ea91-b148-4a6f-948b-7cc7c8717a17\",\"patient_id\":\"ebd168a"
     },
     {
       "name": "المعرّف المحلي للحجز اتشال من الجهاز (مفيش حجز مكرر ظاهر)",
       "ok": true,
-      "detail": "4ebcff16-17cd-4e16-b010-333cbf1a68c1"
+      "detail": "fd34a4ed-0acc-48c0-8806-46b80b07f18f"
     },
     {
       "name": "تعديل الميعاد (11:00) + التأكيد + الإلغاء وصلوا الخادم",
       "ok": true,
-      "detail": "[{\"id\":\"cceb6af8-3b46-497c-a3cd-881955680303\",\"patient_id\":\"37b535ae-7d89-4d9a-bda1-5091af4740d1\",\"t\":\"11:00\",\"status\":\"rescheduled\"},{\"id\":\"411ac2e8-4f6e-4989-b0c1-56e5580912f9\",\"patient_id\":\"37b535a"
+      "detail": "[{\"id\":\"37e6c461-e847-40ec-bb9a-1b7a23e4684c\",\"patient_id\":\"ebd168aa-a663-4659-ae4b-d869260639b3\",\"t\":\"11:00\",\"status\":\"rescheduled\"},{\"id\":\"cd27ea91-b148-4a6f-948b-7cc7c8717a17\",\"patient_id\":\"ebd168a"
     },
     {
       "name": "الدفعة وصلت مرة واحدة بس",
@@ -210,17 +210,17 @@
     },
     {
       "name": "التشخيص المؤقت وصل الخادم (مستني ملف — مش ظاهر للدكتور كرسالة)",
-      "ok": false,
-      "detail": ""
+      "ok": true,
+      "detail": "{\"patient_id\":null,\"link_status\":\"waiting\"}"
     },
     {
       "name": "اتربط تلقائي بملف الاستقبال (auto) من غير ما حد يختار",
-      "ok": false,
-      "detail": "null"
+      "ok": true,
+      "detail": "{\"patient_id\":\"7f0cdab4-faf9-45d7-8ee0-ea8ed7a1e22c\",\"link_method\":\"auto\"}"
     },
     {
       "name": "ملف المريض الحقيقي عند الدكتور فيه تشخيصه",
-      "ok": false,
+      "ok": true,
       "detail": ""
     },
     {

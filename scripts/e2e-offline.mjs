@@ -93,8 +93,8 @@ try {
            '+2015' || lpad(i::text, 8, '0'), 'male', 'saudi', '', 'friend', 'اختبار-' || translate(i::text, '0123456789', '${L}'), now() - (i || ' minutes')::interval
     from generate_series(1, ${SEED}) i;`);
   const [{ id: p4321 }] = await sql(`select id from patients where full_name = '${seedName(4321)}'`);
-  made.consult = (await sql(`insert into ortho_consultations (patient_id, complaint, region, side, diagnosis, plan, medications, follow_up)
-    values ('${p4321}', 'ألم ركبة اختبار', 'الركبة', 'right', 'تمزق غضروف هلالي اختبار', 'راحة', '[{"name":"Celebrex 200mg","dose":"قرص","frequency":"مرتين","duration":"5 أيام","notes":""}]', current_date + 10) returning id`))[0].id;
+  made.consult = (await sql(`insert into ortho_consultations (date, patient_id, complaint, region, side, diagnosis, plan, medications, follow_up)
+    values ((now() at time zone 'Africa/Cairo')::date, '${p4321}', 'ألم ركبة اختبار', 'الركبة', 'right', 'تمزق غضروف هلالي اختبار', 'راحة', '[{"name":"Celebrex 200mg","dose":"قرص","frequency":"مرتين","duration":"5 أيام","notes":""}]', current_date + 10) returning id`))[0].id;
   const total = await patientCount();
   const visible = (await sql(`select count(*)::int n from patients where not is_guest`))[0].n;
   check(`اتزرع ${SEED.toLocaleString('en')} مريض (الإجمالي ${total.toLocaleString('en')})`, total >= SEED, total);

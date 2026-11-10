@@ -8,7 +8,7 @@ import { SIDE, type Consultation, type ExamSheet } from './data';
 import { GEN_BOXES, SHEET_LISTS as L, bmiOf, bmiClass, bmiText, normSheet, painLabel, sheetHasContent } from './ExamSheet';
 import { RX_CSS, rxPageHtml } from './printRx';
 import { DX_SHEETS, FDX, PAIN_FOR_DD, dxGroupKey, dxSub, type DxSheetId } from './dxCatalog';
-import { TREATMENT, boxNeedsNotes, boxNotesKey, activeSheets, regionSheet, sheetFilled, treatmentFilled, type Field, type RegionSheetDef } from './regionSheets';
+import { QUICK_EXAM, TREATMENT, boxNeedsNotes, quickFilled, boxNotesKey, activeSheets, regionSheet, sheetFilled, treatmentFilled, type Field, type RegionSheetDef } from './regionSheets';
 import { openPrintWindow, printHtml } from '../utils/printDoc';
 import { US_SHEETS, usFilled, usImage } from './ultrasoundSheets';
 
@@ -168,7 +168,7 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
   };
   // شيت الطبيب = الشيتات النشطة (من مكان الألم + اللي اتكتب فيه)؛ كشف قديم من غير أي منطقة ← الورك والركبة زي الأول
   const ids = activeSheets(s);
-  const doctor = (ids.length ? ids : ['hipknee' as const]).map((id) => (id === 'hipknee' ? dr : regionPage(regionSheet(id)!))).join('') + (!compact || treatmentFilled(s) ? regionPage(TREATMENT) : '')
+  const doctor = (quickFilled(s) ? regionPage(QUICK_EXAM) : '') + (ids.length ? ids : ['hipknee' as const]).map((id) => (id === 'hipknee' ? dr : regionPage(regionSheet(id)!))).join('') + (!compact || treatmentFilled(s) ? regionPage(TREATMENT) : '')
     // تقارير السونار اللي اتفتحت أو اتكتب فيها — صفحة لكل منطقة بعد الخطة العلاجية
     + US_SHEETS.filter((d) => s.on.includes(`us|${d.prefix}`) || usFilled(s, d)).map(regionPage).join('');
   // شيت التروما جزء من الشيت العام: صفحته بتتطبع بعد الشيت العام لو اتكتب فيه

@@ -1,12 +1,12 @@
 {
-  "at": "2026-11-04T01:46:11.170Z",
+  "at": "2026-11-10T21:24:14.483Z",
   "passed": 49,
   "failed": 0,
   "results": [
     {
       "name": "حسابات مؤقتة",
       "ok": true,
-      "detail": "{\"id\":\"8d09f4ec-4ccc-42ad-8d22-e3072a6b54f1\",\"name\":\"استقبال اختبار العمليات\",\"username\":\"201200000941\",\"role\":\"receptio"
+      "detail": "{\"id\":\"d0d5a40a-9de2-4be6-a637-7dc857e5ea76\",\"name\":\"استقبال اختبار العمليات\",\"username\":\"201200000941\",\"role\":\"receptio"
     },
     {
       "name": "إضافة مريض اتحفظت في القاعدة",
@@ -34,7 +34,7 @@
       "detail": ""
     },
     {
-      "name": "حجز برّه مواعيد المركز مرفوض",
+      "name": "حجز برّه مواعيد الدكتور مرفوض",
       "ok": true,
       "detail": "accepted"
     },
@@ -59,7 +59,7 @@
       "detail": ""
     },
     {
-      "name": "موعد فاتورته عليها مدفوعات مايتحذفش",
+      "name": "موعد فاتورته عليها مدفوعات مايتحذفش من غير المدير",
       "ok": true,
       "detail": "deleted"
     },
@@ -109,7 +109,7 @@
       "detail": ""
     },
     {
-      "name": "الاستقبال مايقدرش يسجل مصروف",
+      "name": "الاستقبال يسجل مصروف (متظبط كده في الأدوار)",
       "ok": true,
       "detail": "accepted"
     },
@@ -246,7 +246,7 @@
     {
       "name": "الأعداد رجعت زي ما كانت (مفيش بيانات اختبار متبقية ولا بيانات ضاعت)",
       "ok": true,
-      "detail": "{\"before\":{\"patients\":840,\"services\":19,\"expenses\":0,\"appts\":0,\"invoices\":0,\"payments\":0,\"journals\":0,\"employees\":1,\"therapists\":1},\"after\":{\"patients\":840,\"services\":19,\"expenses\":0,\"appts\":0,\"invoic"
+      "detail": "{\"before\":{\"patients\":840,\"services\":21,\"expenses\":1,\"appts\":1,\"invoices\":1,\"payments\":0,\"journals\":0,\"employees\":4,\"therapists\":1},\"after\":{\"patients\":840,\"services\":21,\"expenses\":1,\"appts\":1,\"invoic"
     }
   ]
 }

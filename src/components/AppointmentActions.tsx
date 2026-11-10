@@ -143,19 +143,22 @@ export function CancelModal({ appt, onClose }: { appt: Appointment; onClose: () 
   const toast = useToast();
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
+  // ١٠/١١: الإلغاء من غير سبب (هجرة 967) — ولو الخادم رفض لأي سبب الرسالة بتظهر والزرار مابيفضلش يلف
   const submit = async () => {
     setBusy(true);
-    await db.setAppointmentStatus(appt.id, 'cancelled', reason);
-    setBusy(false);
-    toast.success('تم إلغاء الموعد');
-    onClose();
+    try {
+      await db.setAppointmentStatus(appt.id, 'cancelled', reason.trim());
+      toast.success('تم إلغاء الموعد');
+      onClose();
+    } catch (e) { toast.error((e as Error).message || 'تعذّر إلغاء الموعد'); }
+    finally { setBusy(false); }
   };
   return (
     <Modal title="إلغاء الموعد" onClose={onClose} footer={
       <><Button variant="outline" onClick={onClose} disabled={busy}>رجوع</Button><Button variant="danger" onClick={submit} loading={busy}>تأكيد الإلغاء</Button></>
     }>
       <div className="alert alert-danger" style={{ marginBottom: 16 }}><Icon name="alert" size={17} /><div>هل أنت متأكد من إلغاء هذا الموعد رقم <span className="num">{appt.no}</span>؟</div></div>
-      <Input label="سبب الإلغاء" placeholder="اختياري" value={reason} onChange={(e) => setReason(e.target.value)} />
+      <Input label="سبب الإلغاء (اختياري)" placeholder="اختياري" value={reason} onChange={(e) => setReason(e.target.value)} />
     </Modal>
   );
 }

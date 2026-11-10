@@ -70,6 +70,7 @@ try {
     const errors = [];
     page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
     page.on('console', (m) => { if (m.type() === 'error' && !NOISE.test(m.text())) errors.push('console: ' + m.text()); });
+    page.on('response', (r) => { if (r.status() >= 500) errors.push(`http ${r.status()}: ${r.request().method()} ${new URL(r.url()).pathname.slice(0, 140)}`); });
     await page.goto(BASE + '/login');
     await page.fill('#al-phone', phone);
     await page.fill('#al-pass', PW);

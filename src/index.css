@@ -2084,3 +2084,11 @@ html[dir="rtl"] .table td.num, html[dir="rtl"] .table th.num { text-align: right
 .cx-pick__chips { display: flex; flex-wrap: wrap; gap: 5px; }
 .cx-chip--sm { padding: 3px 10px; font-size: 12.5px; min-height: 0; }
 .cx-pick__go { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+/* ١٢/١١: نصّين جنب بعض من غير مربعات ولا اسكرول جوّاني — نص الجرعة بيفضل ظاهر وانت بتنزل في الأدوية */
+.cx, .cx-sec { min-width: 0; }
+.cx-pick { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; gap: 0; border-top: 1px solid var(--line-2); }
+.cx-pick__p { border: 0; border-radius: 0; background: none; padding: 10px 0; }
+.cx-pick__p + .cx-pick__p { border-inline-start: 1px solid var(--line); padding-inline-start: 12px; align-self: start; position: sticky; top: 0; }
+.cx-pick__p:first-child { padding-inline-end: 12px; }
+.cx-pick__list { max-height: none; overflow: visible; }
+.cx-pick__g { position: static; }

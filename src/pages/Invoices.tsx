@@ -290,7 +290,7 @@ export default function Invoices() {
         ) : tab === 'invoices' ? (
           <>
             <PeriodFilter id="inv" value={invPeriod} onChange={setInvPeriod} />
-            {!can('financial', 'view') ? null : loading ? <div style={{ padding: 22 }}><Skeleton h={70} /></div> : (
+            {!can('invoices', 'view') ? null : loading ? <div style={{ padding: 22 }}><Skeleton h={70} /></div> : (
               <div className="kpi-grid" style={{ padding: '18px 22px 0' }}>
                 <StatCard icon="wallet" tone="brand" value={money(total)} label="إجمالي الفواتير" />
                 <StatCard icon="checkCircle" tone="ok" value={money(paid)} label="المدفوع" />

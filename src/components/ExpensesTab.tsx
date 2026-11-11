@@ -3,7 +3,7 @@
 // «مستلزمات طبية» (هجرة 964): اختيار منتج من المخزون + الكمية + سعر الوحدة ← الإجمالي محسوب، والحفظ = save_supply_expense:
 // المصروف + زيادة الكمية في المخزون + حركة توريد مربوطة بالمصروف في عملية واحدة على الخادم، بمفتاح عملية يمنع التسجيل مرتين.
 // تعديل المصروف المربوط = حركة تسوية بالفرق، وحذفه = الكمية بترجع من المخزون (ولو اتصرف منها الحذف بيترفض).
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { fetchKeyset } from '../data/download';
 import { db } from '../data/db';
@@ -22,6 +22,7 @@ interface Draft { id?: string; category: string; amount: string; description: st
 export const SUPPLY_CATEGORY = 'مستلزمات طبية';
 const DEFAULT_CATEGORIES = ['إيجار', 'كهرباء ومياه', 'إنترنت وتليفون', SUPPLY_CATEGORY, 'أدوات مكتبية', 'صيانة', 'نظافة', 'تسويق', 'انتقالات', 'نثريات'];
 const NEW_CATEGORY = '__new_category__';
+const NEW_ITEM = '__new_item__'; // «+ صنف جديد»: الصنف بيتضاف للمخزون وبعدين المصروف بيزوّد كميته
 const OFFLINE = 'تسجيل المصروفات محتاج اتصال بالإنترنت — جرّب لما النت يرجع.';
 const methodLabel = (m: string) => PAYMENT_METHOD_LABEL[m] ?? m;
 const toNum = (v?: string) => Number(String(v ?? '').replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x660)).replace(/[^\d.]/g, '')) || 0;
@@ -42,18 +43,37 @@ function ExpenseModal({ initial, categories, onClose, onSaved }: { initial: Draf
   const supply = f.category === SUPPLY_CATEGORY && (wasLinked || (canStock && f.linked !== false));
   const items = db.inventory().filter((it) => it.active || it.id === f.itemId).sort((a, b) => a.name.localeCompare(b.name, 'ar'));
   const item = items.find((it) => it.id === f.itemId);
+  const canNewItem = can('inventory', 'create') && !wasLinked;
+  const isNewItem = f.itemId === NEW_ITEM;
+  const [newItem, setNewItem] = useState({ name: '', unit: '' });
+  const creating = useRef(false); // ضغطتين على «حفظ» مايعملوش صنفين
   const qty = toNum(f.quantity), price = toNum(f.unitPrice);
   const total = Math.round(qty * price * 100) / 100;
-  const ok = !!f.category.trim() && !!f.date && (supply ? !!item && qty > 0 && total > 0 : toNum(f.amount) > 0);
+  const ok = !!f.category.trim() && !!f.date && (supply ? (!!item || (isNewItem && !!newItem.name.trim())) && qty > 0 && total > 0 : toNum(f.amount) > 0);
   const after = item ? item.quantity + (wasLinked && initial.itemId === item.id ? qty - toNum(initial.quantity) : qty) : 0;
 
   const save = async () => {
     if (!net.isOnline()) { toast.error(OFFLINE); return; }
     if (wasLinked && !canStock) { toast.error('تعديل مصروف المستلزمات محتاج صلاحية «المخزون: تعديل».'); return; }
+    if (creating.current) return;
+    creating.current = true;
     setBusy(true);
     try {
       if (supply) {
-        const r = await db.saveSupplyExpense({ ...(f.id ? { id: f.id } : {}), key, itemId: f.itemId!, quantity: qty, unitPrice: price, purchaseDate: f.date, description: f.description.trim(), paymentMethod: f.method });
+        let itemId = f.itemId!;
+        if (isNewItem) {
+          // صنف جديد: لو فيه صنف بنفس الاسم بالظبط بنستخدمه، وإلا بيتضاف للمخزون (فئة «مستلزمات طبية») وبعدين المصروف يزوّد كميته
+          const name = newItem.name.trim().replace(/\s+/g, ' ');
+          const same = db.inventory().find((it) => it.name.trim().replace(/\s+/g, ' ') === name);
+          if (same) itemId = same.id;
+          else {
+            const c = await db.saveItem({ name, category: SUPPLY_CATEGORY, unit: newItem.unit.trim() || 'قطعة', quantity: 0, sku: '', minQuantity: 0, costPrice: price, salePrice: 0, supplier: '', supplierPhone: '', supplierUrl: '', active: true });
+            if (!c.ok) { toast.error(c.error); return; }
+            itemId = c.id;
+          }
+          setF((x) => ({ ...x, itemId })); setNewItem({ name: '', unit: '' }); // إعادة المحاولة بعد خطأ تستخدم نفس الصنف
+        }
+        const r = await db.saveSupplyExpense({ ...(f.id ? { id: f.id } : {}), key, itemId, quantity: qty, unitPrice: price, purchaseDate: f.date, description: f.description.trim(), paymentMethod: f.method });
         if (!r.ok) { toast.error(r.error); return; }
         const d = r.data;
         toast.success(d.duplicate ? 'المصروف ده اتسجّل قبل كده — ما اتكررش.' : `اتسجّل المصروف (${money(d.amount)}) واتحدّث المخزون — رصيد «${d.item}» دلوقتي ${d.balance} ${d.unit}`);
@@ -64,7 +84,7 @@ function ExpenseModal({ initial, categories, onClose, onSaved }: { initial: Draf
         toast.success('تم حفظ المصروف');
       }
       onSaved();
-    } finally { setBusy(false); }
+    } finally { setBusy(false); creating.current = false; }
   };
   const options = [{ value: '', label: 'اختار البند' }, ...[...new Set([...categories, f.category].filter(Boolean))].map((value) => ({ value, label: value })), { value: NEW_CATEGORY, label: '+ بند جديد' }];
   return (
@@ -86,8 +106,12 @@ function ExpenseModal({ initial, categories, onClose, onSaved }: { initial: Draf
           <Select id="exp-item" label="المنتج من المخزون *" value={f.itemId ?? ''} onChange={(e) => {
             const it = items.find((x) => x.id === e.target.value);
             setF((x) => ({ ...x, itemId: e.target.value, unitPrice: x.unitPrice || (it?.costPrice ? String(it.costPrice) : '') }));
-          }} options={[{ value: '', label: items.length ? 'اختار المنتج' : 'مفيش أصناف في المخزون — ضيفها من «المخزون»' }, ...items.map((it) => ({ value: it.id, label: `${it.name} — المتاح ${it.quantity} ${it.unit}` }))]} />
-          <Input id="exp-qty" label={`الكمية${item ? ` (${item.unit})` : ''} *`} inputMode="decimal" value={f.quantity ?? ''} onChange={(e) => set('quantity', e.target.value)} />
+          }} options={[{ value: '', label: items.length ? 'اختار المنتج' : canNewItem ? 'مفيش أصناف — اختار «+ صنف جديد»' : 'مفيش أصناف في المخزون — ضيفها من «المخزون»' }, ...items.map((it) => ({ value: it.id, label: `${it.name} — المتاح ${it.quantity} ${it.unit}` })), ...(canNewItem ? [{ value: NEW_ITEM, label: '+ صنف جديد (يتضاف للمخزون)' }] : [])]} />
+          {isNewItem && <>
+            <Input id="exp-new-item" label="اسم الصنف الجديد *" autoFocus value={newItem.name} onChange={(e) => setNewItem((x) => ({ ...x, name: e.target.value }))} />
+            <Input id="exp-new-unit" label="الوحدة" placeholder="قطعة / علبة / لفة" value={newItem.unit} onChange={(e) => setNewItem((x) => ({ ...x, unit: e.target.value }))} />
+          </>}
+          <Input id="exp-qty" label={`الكمية${item ? ` (${item.unit})` : isNewItem && newItem.unit.trim() ? ` (${newItem.unit.trim()})` : ''} *`} inputMode="decimal" value={f.quantity ?? ''} onChange={(e) => set('quantity', e.target.value)} />
           <Input id="exp-unit-price" label="سعر الوحدة *" inputMode="decimal" value={f.unitPrice ?? ''} onChange={(e) => set('unitPrice', e.target.value)} />
           <Input id="exp-total" label="الإجمالي (محسوب)" value={total ? money(total) : '—'} readOnly />
           <Input id="exp-date" label="تاريخ الشراء *" type="date" value={f.date} onChange={(e) => set('date', e.target.value)} />

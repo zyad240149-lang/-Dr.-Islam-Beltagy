@@ -1320,9 +1320,9 @@ export const db = {
     if (error) throw new Error(error.message);
     return data as { totalValue: number; rows: { id: string; sku: string; name: string; unit: string; opening: number; in: number; out: number; closing: number; value: number; low: boolean }[] };
   },
-  async saveItem(input: Omit<InventoryItem, 'id' | 'sku' | 'updatedAt' | 'quantity'> & { id?: string; quantity?: number; sku?: string }): Promise<Result> {
-    const r = await rpc('save_item', { p: input }, ['inventory', 'activity']);
-    return r.ok ? { ok: true } : r;
+  async saveItem(input: Omit<InventoryItem, 'id' | 'sku' | 'updatedAt' | 'quantity'> & { id?: string; quantity?: number; sku?: string }): Promise<Result<{ id: string }>> {
+    const r = await rpc<{ id: string }>('save_item', { p: input }, ['inventory', 'activity']);
+    return r.ok ? { ok: true, id: r.data?.id ?? input.id ?? '' } : r;
   },
   async deleteItem(id: string) { await rpcOrThrow('delete_item', { p_id: id }, ['inventory', 'activity']); },
   async addStockMovement(input: { itemId: string; type: StockMovementType; quantity: number; unitCost: number; reference: string; note: string; overdraw?: boolean; key?: string }): Promise<Result<{ low: boolean; balance: number }>> {

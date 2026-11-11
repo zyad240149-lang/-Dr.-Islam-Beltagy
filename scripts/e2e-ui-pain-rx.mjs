@@ -182,6 +182,24 @@ try {
   check('ضغطتين على «حفظ» = مصروف واحد بـ 50', exAll.length === 1 && Number(ex?.[0]?.amount) === 50, JSON.stringify(exAll));
   check('الكمية زادت في المخزون مرة واحدة (6 ← 10)', Number((await one(`select quantity from inventory_items where id = '${made.item}'`)).quantity) === 10);
   check('المصروف ظاهر في الجدول مربوط بالمنتج', !!await waitFor(() => pg.getByTestId('exp-stock-link').first().isVisible()));
+  // «+ صنف جديد» من المصروفات: الصنف بيتضاف للمخزون بالكمية — ضغطتين = صنف واحد ومصروف واحد
+  await pg.getByRole('button', { name: 'إضافة مصروف' }).click();
+  const en = pg.locator('.modal', { hasText: 'إضافة مصروف' }).last();
+  await en.locator('#exp-cat').selectOption('مستلزمات طبية');
+  await en.locator('#exp-item').selectOption('__new_item__');
+  await en.locator('#exp-new-item').fill(`شاش جديد ${TAG}`);
+  await en.locator('#exp-new-unit').fill('علبة');
+  await en.locator('#exp-qty').fill('3');
+  await en.locator('#exp-unit-price').fill('20');
+  await en.getByRole('button', { name: 'حفظ', exact: true }).dblclick();
+  const ni = await waitFor(async () => { const r = await sql(`select id, quantity, unit, category from inventory_items where name = 'شاش جديد ${TAG}'`); return r.length ? r : null; });
+  await pg.waitForTimeout(1500);
+  const niAll = await sql(`select i.id, i.quantity, i.unit, i.category, (select count(*) from expenses e where e.inventory_item_id = i.id)::int ex, (select max(amount) from expenses e where e.inventory_item_id = i.id) amt from inventory_items i where name = 'شاش جديد ${TAG}'`);
+  made.newItem = niAll[0]?.id ?? ni?.[0]?.id;
+  check('صنف جديد من المصروفات اتضاف للمخزون (صنف واحد، 3 علبة، فئة مستلزمات طبية)', niAll.length === 1 && Number(niAll[0].quantity) === 3 && niAll[0].unit === 'علبة' && niAll[0].category === 'مستلزمات طبية', JSON.stringify(niAll));
+  check('الصنف الجديد: مصروف واحد بـ 60 مربوط بيه', niAll[0]?.ex === 1 && Number(niAll[0]?.amt) === 60, JSON.stringify(niAll));
+  await go(pg, '/inventory');
+  check('الصنف الجديد ظاهر في صفحة المخزون', !!await waitFor(() => pg.locator('tr', { hasText: `شاش جديد ${TAG}` }).first().isVisible()));
 
   section('5. المخزون: الصرف وتنبيه الحد الأدنى');
   await go(pg, '/inventory');
@@ -219,6 +237,8 @@ try {
   section('تنظيف بيانات الاختبار');
   try {
     const emp = made.employees.map((x) => `'${x}'`).join(',') || 'null';
+    const extra = await sql(`select id from inventory_items where name = 'شاش جديد ${TAG}'`);
+    for (const { id } of extra) await sql(`delete from stock_movements where item_id = '${id}'; delete from expenses where inventory_item_id = '${id}'; delete from notifications where ref_id = '${id}'; delete from inventory_items where id = '${id}'`);
     if (made.item) await sql(`delete from stock_movements where item_id = '${made.item}'; delete from expenses where inventory_item_id = '${made.item}'; delete from notifications where ref_id = '${made.item}'; delete from inventory_items where id = '${made.item}'`);
     if (made.patient) {
       const fs = await sql(`select file_path from patient_files where patient_id = '${made.patient}'`);

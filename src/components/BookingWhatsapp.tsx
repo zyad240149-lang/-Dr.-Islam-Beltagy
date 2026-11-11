@@ -2,6 +2,7 @@
 // كله على رقم الموبايل المسجّل في ملف المريض (رقم الواتساب لو متحدد، وإلا الموبايل الأساسي). مفيش إرسال تلقائي:
 // واتساب بيتفتح والرسالة جاهزة والموظف بيضغط «إرسال». كل اختيار بصلاحيته: «رسائل واتساب للمرضى» / «التمرينات العلاجية» / «الفواتير والمدفوعات».
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { db } from '../data/db';
 import { sendWhatsApp } from '../data/whatsappSend';
 import { useDbVersion } from '../hooks/useDb';
@@ -118,6 +119,17 @@ export function BookingWhatsapp({ patientId, appointmentId, followUp, layout = '
     void inv.send();
   });
 
+  // مفيش رقم واتساب صالح ← بدل الأيقونة: زرار «ضيف رقم واتساب» يفتح ملف المريض
+  const waNum = patientWaNumber(patientId);
+  if (!waNum) {
+    return (
+      <Link to={`/patients/${patientId}`} className="bk-wa-add" data-testid="wa-add-number" onClick={(e) => e.stopPropagation()}
+        title={waNum === null ? WA_BOOKING_MSG.badPhone : 'مفيش رقم واتساب في ملف المريض'}>
+        + {waNum === null ? 'صحّح رقم الواتساب' : 'ضيف رقم واتساب'}
+      </Link>
+    );
+  }
+
   if (layout === 'buttons') {
     if (!canRemind && !canEx) return null;
     return (
@@ -136,6 +148,7 @@ export function BookingWhatsapp({ patientId, appointmentId, followUp, layout = '
       </button>
       {open && (
         <span className="bk-wa__menu" role="menu">
+          <a role="menuitem" className="bk-wa__chat" href={`https://wa.me/${waNum}`} target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)}><Icon name="share" size={15} /> فتح شات المريض</a>
           {canRemind && <button type="button" role="menuitem" onClick={remind}><Icon name="calendar" size={15} /> تذكير بالموعد</button>}
           {canEx && <button type="button" role="menuitem" onClick={exercises}><Icon name="share" size={15} /> إرسال التمارين</button>}
           {canInv && <button type="button" role="menuitem" disabled={inv.state === 'preparing'} onClick={sendInvoice}><Icon name="receipt" size={15} /> إرسال الفاتورة{!invoice ? <small> — مفيش فاتورة</small> : null}</button>}

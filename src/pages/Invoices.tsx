@@ -267,7 +267,7 @@ export default function Invoices() {
                         <td className="num">{money(i.price)}</td>
                         <td className="num">{i.discount ? money(i.discount) : '—'}</td>
                         <td className="num" style={{ fontWeight: 700 }}>{money(i.total)}</td>
-                        <td><StatusBadge label={st.label} tone={st.tone} /><SentTag i={i} /></td>
+                        <td><StatusBadge label={i.status === 'cancelled' || i.status === 'draft' ? st.label : i.remaining > 0 ? `مستحق ${money(i.remaining)}${i.paid > 0 ? ` · دفع ${money(i.paid)}` : ''}` : i.paid > 0 ? `دفع ${money(i.paid)}` : st.label} tone={st.tone} /><SentTag i={i} /></td>
                         <td>{listReqs.rows ? <InstallmentStateBadge invoice={i} req={requestFor(listReqs.rows, i.id)} /> : null}</td>
                         <td className="actions"><RowActions>
                           {i.status === 'draft' ? (
@@ -310,7 +310,7 @@ export default function Invoices() {
                     <tr key={i.id}>
                       <td className="num">{i.no}</td><td>{fmtDate(i.date)}</td><td>{db.patient(i.patientId)?.fullName} <CompletenessBadge patient={db.patient(i.patientId)} /></td><td>{i.serviceName}</td>
                       <td className="num">{money(i.total)}</td><td className="num">{money(i.paid)}</td><td className="num">{money(i.remaining)}</td>
-                      <td><StatusBadge label={st.label} tone={st.tone} /><SentTag i={i} />{listReqs.rows && requestFor(listReqs.rows, i.id) ? <div style={{ marginTop: 4 }}><InstallmentStateBadge invoice={i} req={requestFor(listReqs.rows, i.id)} /></div> : null}</td>
+                      <td><StatusBadge label={i.status === 'cancelled' || i.status === 'draft' ? st.label : i.remaining > 0 ? `مستحق ${money(i.remaining)}${i.paid > 0 ? ` · دفع ${money(i.paid)}` : ''}` : i.paid > 0 ? `دفع ${money(i.paid)}` : st.label} tone={st.tone} /><SentTag i={i} />{listReqs.rows && requestFor(listReqs.rows, i.id) ? <div style={{ marginTop: 4 }}><InstallmentStateBadge invoice={i} req={requestFor(listReqs.rows, i.id)} /></div> : null}</td>
                       <td className="actions">
                         {i.status === 'draft'
                           ? (can('invoices', 'edit') ? <Button size="sm" onClick={() => setEditingPlanInv(i.id)}>مراجعة وتعديل</Button> : <span className="muted" style={{ fontSize: 12.5 }}>بانتظار الاستقبال</span>)

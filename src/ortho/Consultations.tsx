@@ -22,6 +22,9 @@ import { RequestForms } from './RequestForms';
 import { applyRequestForms, deliverRequestImage, labOthers, prepareRequestImage, readyRequestImage, requestHtml } from './requestData';
 import { DiagnosisOutput } from './DiagnosisOutput';
 import { ExerciseSendModal, useCanSendExercises } from './ExerciseSend';
+import { PlanGeneralSheet } from './PlanGeneralSheet';
+
+const patientAge = (id: string) => { const b = id ? db.patient(id)?.birthDate : null; if (!b) return null; const d = new Date(b); return isNaN(+d) ? null : Math.floor((Date.now() - +d) / 31557600000); };
 import { InjectionList, InjectionModal } from './Injections';
 import { PatientMedicalFiles } from './PatientMedicalFiles';
 import { RxEditor } from './Rx';
@@ -445,6 +448,10 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
 
         {tab === 'nurse' && <BoxOpenDefault.Provider value={false}>
           <PainHint patientId={c.patientId} current={c.painScore} excludeSourceId={initial?.id} date={c.date} />
+          {/* ١١/١١: الشيت العام الجديد (مربعات بتتعلّم) — والقديم متركن تحته في «الشيت العام القديم» للمقارنة */}
+          <PlanGeneralSheet sheet={sheet} onChange={changeSheet} age={patientAge(c.patientId)} onOpenMap={() => openMap('pg.dx')} />
+          <details className="sh-old" style={{ marginTop: 14 }}>
+            <summary style={{ cursor: 'pointer', fontWeight: 700, padding: '8px 0' }}>الشيت العام القديم (متركن على جمب)</summary>
           <NursingSheet sheet={sheet} onChange={changeSheet} patient={c.patientId ? db.patient(c.patientId) : null} date={c.date} visitNo={visitNo}
             painScore={c.painScore} onPainScore={(v) => set('painScore', v)}
             onFirstPain={(id, side) => setC((x) => ({ ...x, region: regionById(id)?.name ?? x.region, ...(side ? { side } : {}) }))} />
@@ -456,6 +463,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
                 icd10={c.icd10} onIcd10={(v) => set('icd10', v)} onOpenMap={() => openMap('tr.dx.other')} />
             </section>
           )}
+          </details>
           <div className="sh-next">
             {canExSend && <Button variant="outline" icon="share" disabled={!c.patientId} title={c.patientId ? '' : 'اختار المريض الأول'} onClick={() => setExSend(true)}>إرسال تمرينات واتساب</Button>}
             <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => setOut(['nurse'])}>طباعة / إرسال الشيت العام</Button>

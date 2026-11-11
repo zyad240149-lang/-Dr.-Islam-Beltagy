@@ -18,6 +18,7 @@ import { RaAssessment } from './RaAssessment';
 import { NociChecklist, nociOpen, nociSummary } from './NociChecklist';
 import { dxSummary } from './dxCatalog';
 import { medCatalog } from './clinicalLists';
+import { planSheetSummary } from './PlanGeneralSheet';
 
 // ---------- بنود الورقتين ----------
 const N_VISIT = ['زيارة جديدة', 'متابعة'];
@@ -90,8 +91,8 @@ export const sheetHasContent = (s: ExamSheet) =>
   || Object.entries(s.txt).some(([k, v]) => !BASIC_KEYS.includes(k) && v.trim());
 /** فيه حاجة اتكتبت في الشيت العام (غير اللي اتملى تلقائي من ملف المريض) */
 export const nurseStarted = (s: ExamSheet) =>
-  s.on.some((o) => (o.startsWith('n.') || o.startsWith('tr.') || o.startsWith('ra.') || (o.startsWith('np|') && o !== 'np|closed' && o !== 'np|open')) && !isAutoOn(o)) || s.pain.length > 0 || s.meds.some((m) => m.name.trim())
-  || Object.entries(s.txt).some(([k, v]) => (k.startsWith('n.') || k.startsWith('tr.') || k.startsWith('ra.')) && !BASIC_KEYS.includes(k) && v.trim());
+  s.on.some((o) => (o.startsWith('n.') || o.startsWith('pg.') || o.startsWith('tr.') || o.startsWith('ra.') || (o.startsWith('np|') && o !== 'np|closed' && o !== 'np|open')) && !isAutoOn(o)) || s.pain.length > 0 || s.meds.some((m) => m.name.trim())
+  || Object.entries(s.txt).some(([k, v]) => (k.startsWith('n.') || k.startsWith('pg.') || k.startsWith('tr.') || k.startsWith('ra.')) && !BASIC_KEYS.includes(k) && v.trim());
 /** شيت التروما جوّه الشيت العام: بيظهر لما فيه إصابة حديثة أو اتكتب فيه قبل كده */
 export const traumaShown = (s: ExamSheet) => has(s, 'n.injury', 'نعم') || sheetFilled(s, 'trauma');
 /** فيه حاجة متكتبة في شيت الطبيب (عشان استكمال الكشف يفتح عليه على طول) */
@@ -296,7 +297,8 @@ export function sheetSummary(s: ExamSheet, side: Side = 'na') {
   const multi = regions.length + (sheetFilled(s, 'hipknee') ? 1 : 0) > 1;
   const tag = (label: string, t: string) => (t && multi ? `[${label}] ${t}` : t);
   const doctorCc = join([xcc && join([xcc, dur], ' — '), ...regions.map(({ d, r }) => r.complaint && tag(d.tab, r.complaint))], ' · ');
-  const complaint = doctorCc || (ncc ? join([ncc, pain], ' — ') : '');
+  const pg = planSheetSummary(s); // ١١/١١: الشيت العام الجديد (pg.*)
+  const complaint = doctorCc || (ncc ? join([ncc, pain], ' — ') : '') || pg.complaint;
 
   const meds = s.meds.filter((m) => m.name.trim()).map((m) => join([m.name.trim(), m.dose.trim(), m.freq.trim()], ' ')).join('، ');
   const allergy = join([...picked(s, 'n.allergy', N_ALLERGY), tx(s, 'n.allergy.other')], '، ');
@@ -308,6 +310,7 @@ export function sheetSummary(s: ExamSheet, side: Side = 'na') {
   const job = join(picked(s, 'n.job', N_JOB), '، '), activity = join(picked(s, 'n.activity', N_ACTIVITY), '، ');
   const miss = female ? picked(s, 'n.miss', N_MISS)[0] : '', preg = female ? picked(s, 'n.preg', N_PREG)[0] : '';
   const history = join([
+    pg.history,
     job && `الوظيفة: ${job}`,
     activity && `النشاط: ${activity}`,
     miss && `الحالة: ${miss}`,

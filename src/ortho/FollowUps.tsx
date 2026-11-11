@@ -495,7 +495,7 @@ export function FollowUpStep({ patientId, patientLabel, consultationId, pending,
       </>}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginTop: 10 }}>
         {perm.add && <Button icon="plus" onClick={() => setEdit('new')}>إضافة موعد متابعة</Button>}
-        {patientId && (mine.length > 0 || others.length > 0) && <BookingWhatsapp patientId={patientId} followUp={mine.filter((f) => f.status === 'scheduled' && f.date >= t)[0] ?? others[0]} layout="buttons" remindOnly />}
+        {patientId && <BookingWhatsapp patientId={patientId} followUp={(mine.filter((f) => f.status === 'scheduled' && f.date >= t)[0] ?? pending[0] ?? others[0]) as FollowUp | undefined} layout="buttons" remindOnly />}
       </div>
       {others.length > 0 && <><div className="section-title" style={{ marginTop: 14 }}>متابعات قادمة تانية للمريض</div><FollowUpList items={others} onOpen={setEdit} /></>}
       {edit && (

@@ -28,7 +28,8 @@ function client(E) {
         t = await r.text();
       } catch (e) { if (i >= tries) throw e; await sleep(3000 * (i + 1)); continue; }
       if (r.ok) return t ? JSON.parse(t) : null;
-      if ((r.status === 429 || r.status >= 500) && i < tries) { await sleep(Math.min(60000, 4000 * (i + 1))); continue; }
+      // 57014 = statement timeout (القديم المتقيّد بطيء) — مؤقت زي 429/5xx
+      if ((r.status === 429 || r.status >= 500 || /57014|statement timeout/.test(t)) && i < tries) { await sleep(Math.min(60000, 4000 * (i + 1))); continue; }
       throw new Error(`SQL ${r.status}: ${t.slice(0, 500)}`);
     }
   };
@@ -42,25 +43,48 @@ async function columns(schema, table) {
   return rows.map((r) => r.c);
 }
 
-async function copyTable(schema, table, where = '', chunk = 400) {
+async function copyTable(schema, table, where = '', chunk = 400, estimate = false) {
   const key = `${schema}.${table}`;
-  if (state.done[key]) { console.log('  = ', key, '(اتنسخ قبل كده)'); return; }
+  if (state.done[key] !== undefined) { console.log('  = ', key, '(اتنسخ قبل كده)'); return; }
   if (SKIP.includes(table)) { console.log('  - ', key, '(متساب)'); return; }
   const full = `${qi(schema)}.${qi(table)}`;
-  const [{ n }] = await oldSql(`select count(*)::int n from ${full} ${where}`);
+  // estimate: جدول كبير (audit_logs) — العدّ الكامل بيعدّي statement timeout على القديم، فبنستخدم تقدير للتقدّم بس (verify-move بيتأكد صف صف)
+  const [{ n }] = estimate ? await oldSql(`select greatest(reltuples, 0)::int n from pg_class where oid = '${full}'::regclass`) : await oldSql(`select count(*)::int n from ${full} ${where}`);
   const cols = await columns(schema, table);
   const colList = cols.map(qi).join(', ');
   if (!MERGE) await newSql(`set session_replication_role = replica; delete from ${full};`);
+  // مفتاح أساسي من عمود واحد ← قراية بالترتيب عليه (keyset): كل دفعة بتقرا صفوفها بس.
+  // (offset كان بيعيد قراية كل اللي قبله في كل دفعة — على جدول كبير زي audit_logs ده كان بيخنق القديم المتقيّد)
+  const pk = (await newSql(`select a.attname c from pg_index i join pg_attribute a on a.attrelid = i.indrelid and a.attnum = any(i.indkey) where i.indrelid = '${full}'::regclass and i.indisprimary`)).map((r) => r.c);
+  const cond = where.replace(/^\s*where\s+/i, '');
+  const insert = (j) => newSql(`set session_replication_role = replica; insert into ${full} (${colList}) overriding system value select ${colList} from jsonb_populate_recordset(null::${full}, ${lit(j)}::jsonb)${MERGE ? ' on conflict do nothing' : ''};`);
   let copied = 0;
-  for (let off = 0; off < n; off += chunk) {
-    const [{ j }] = await oldSql(`select coalesce(jsonb_agg(to_jsonb(t)), '[]')::text j from (select * from ${full} ${where} order by ctid limit ${chunk} offset ${off}) t`);
-    await newSql(`set session_replication_role = replica; insert into ${full} (${colList}) overriding system value select ${colList} from jsonb_populate_recordset(null::${full}, ${lit(j)}::jsonb)${MERGE ? ' on conflict do nothing' : ''};`);
-    copied += JSON.parse(j).length;
-    if (n > chunk) process.stdout.write(`\r  … ${key} ${copied}/${n}`);
+  if (pk.length === 1) {
+    state.progress ??= {};
+    let last = MERGE ? state.progress[key] ?? null : null; // في الدمج بنكمّل من آخر صف اتنسخ لو اتقطع
+    for (;;) {
+      const filt = [cond, last !== null ? `${qi(pk[0])} > '${String(last).replace(/'/g, "''")}'` : ''].filter(Boolean).join(' and ');
+      const [{ j }] = await oldSql(`select coalesce(jsonb_agg(to_jsonb(t) order by t.${qi(pk[0])}), '[]')::text j from (select * from ${full} ${filt ? 'where ' + filt : ''} order by ${qi(pk[0])} limit ${chunk}) t`);
+      const rows = JSON.parse(j);
+      if (!rows.length) break;
+      await insert(j);
+      copied += rows.length;
+      last = rows[rows.length - 1][pk[0]];
+      if (MERGE) { state.progress[key] = last; saveState(); }
+      if (n > chunk) process.stdout.write(`\r  … ${key} ${copied}/${n}`);
+      if (rows.length < chunk) break;
+    }
+  } else {
+    for (let off = 0; off < n; off += chunk) {
+      const [{ j }] = await oldSql(`select coalesce(jsonb_agg(to_jsonb(t)), '[]')::text j from (select * from ${full} ${where} order by ctid limit ${chunk} offset ${off}) t`);
+      await insert(j);
+      copied += JSON.parse(j).length;
+      if (n > chunk) process.stdout.write(`\r  … ${key} ${copied}/${n}`);
+    }
   }
   const [{ m }] = await newSql(`select count(*)::int m from ${full}`);
   console.log(`${n > chunk ? '\n' : ''}  ✓ ${key}: ${m}/${n}`);
-  if (MERGE ? m < n : m !== n) throw new Error(`${key}: العدد مش مطابق (${m} من ${n})`);
+  if (!estimate && (MERGE ? m < n : m !== n)) throw new Error(`${key}: العدد مش مطابق (${m} من ${n})`);
   state.done[key] = n; saveState();
 }
 
@@ -83,7 +107,13 @@ async function main() {
   for (const t of tables.filter((x) => newTables.has(x))) await copyTable('public', t);
   if (!ONLY) {
     console.log(`— سجل العمليات (آخر ${AUDIT_DAYS} يوم)`);
-    await copyTable('public', 'audit_logs', `where at > now() - interval '${AUDIT_DAYS} days'`, 300);
+    // --audit-real: سجلات الموظفين الحقيقيين بس (الموجودين في employees / auth.users على القديم) — من غير سجلات حسابات الاختبار
+    // والبيانات المؤقتة اللي كانت أغلب الـ 262 ألف صف (قرار الدكتور ١١/١١: «الحقيقي بس»)
+    const real = process.argv.includes('--audit-real')
+      ? `(employee_id in (select id from public.employees) or user_id in (select id from auth.users))` : '';
+    const days = AUDIT_DAYS >= 36500 ? '' : `at > now() - interval '${AUDIT_DAYS} days'`;
+    const auditWhere = [real, days].filter(Boolean).join(' and ');
+    await copyTable('public', 'audit_logs', auditWhere ? `where ${auditWhere}` : '', 150, true);
     console.log('— storage.buckets');
     await copyTable('storage', 'buckets', '', 100);
   }

@@ -208,11 +208,12 @@ try {
     if (made.patient) {
       const paths = (await sql(`select name from storage.objects where bucket_id = 'patient-files' and name like '${made.patient}/%'`)).map((r) => r.name);
       if (paths.length) await fetch(`${URL_}/storage/v1/object/patient-files`, { method: 'DELETE', headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ prefixes: paths }) });
-      await sql(`delete from ortho_consultations where patient_id = '${made.patient}'; delete from patients where id = '${made.patient}';`);
+      await sql(`delete from ortho_consultations where patient_id = '${made.patient}'; delete from invoices where patient_id = '${made.patient}'; delete from appointments where patient_id = '${made.patient}'; delete from patients where id = '${made.patient}';`);
     }
     for (const id of made.employees) { await sql(`delete from attendance where employee_id = '${id}';`); await deleteEmployee(id); }
-    if (made.therapist) await sql(`delete from therapist_services where therapist_id = '${made.therapist}'; delete from therapists where id = '${made.therapist}';`);
-    const [left] = await sql(`select (select count(*) from patients where full_name like '%أوفلاين ملفات%')::int p, (select count(*) from employees where name like '%أوفلاين ملفات%')::int e`);
+    // المواعيد اللي على الطبيب المؤقت لازم تتمسح قبله (كان التنضيف بيقف هنا والطبيب بيفضل)
+    if (made.therapist) await sql(`delete from invoices where appointment_id in (select id from appointments where therapist_id = '${made.therapist}'); delete from appointments where therapist_id = '${made.therapist}'; delete from therapist_services where therapist_id = '${made.therapist}'; delete from therapists where id = '${made.therapist}';`);
+    const [left] = await sql(`select (select count(*) from patients where full_name like '%أوفلاين ملفات%')::int p, (select count(*) from employees where name like '%أوفلاين ملفات%')::int e, (select count(*) from therapists where name like '%أوفلاين ملفات%')::int t`);
     console.log('  متبقي من بيانات الاختبار:', JSON.stringify(left));
   } catch (e) { console.log('  تنظيف ناقص:', e.message); }
   save('e2e-offline-files-results.json');

@@ -112,7 +112,7 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
   const side = (compact ? L.X_SIDE.filter(([k]) => c.side === k) : L.X_SIDE).map(([k, l]) => ck(c.side === k, l)).join('');
   const derm = L.X_DERM.filter(([r]) => !compact || has('x.derm', `${r} Rt`) || has('x.derm', `${r} Lt`));
   const imgs = L.X_IMG.filter((m) => !compact || has('x.img', m) || v(`x.img.${m}`) || v(`x.img.${m}.date`));
-  const drBar = `Patient Name: <b>${name || '—'}</b><span>Age: <b>${v('n.age') || '—'}</b></span><span>Sex: ${ck(sex === 'M', 'M')}${ck(sex === 'F', 'F')}</span><span>Date: <b>${dmy(c.date)}</b></span><span>File No.: <b>${fileNo || '—'}</b></span>`;
+  const drBar = `Patient Name: <b>${name || '—'}</b><span>Age: <b>${v('n.age') || '—'}</b></span>${compact && !sex ? '' : `<span>Sex: ${compact ? ck(true, sex) : ck(sex === 'M', 'M') + ck(sex === 'F', 'F')}</span>`}<span>Date: <b>${dmy(c.date)}</b></span><span>File No.: <b>${fileNo || '—'}</b></span>`;
   const dr = page('ltr', head('HIP &amp; KNEE CONSULTATION SHEET', ''), drBar, [
       box(1, 'Chief Complaint', two(cks('x.cc', L.X_CC) + line('Other:', v('x.cc.other')), lbl('Duration:', cks('x.dur', L.X_DUR)))),
       box(2, 'History of Present Illness', row('Side:', side) + row('Onset:', cks('x.onset', L.X_ONSET)) + row('Course:', cks('x.course', L.X_COURSE)) + line('Aggravating factors:', v('x.aggr'))
@@ -187,7 +187,14 @@ function legacyHtml(c: DxConsult, p: DxPatient | null | undefined) {
 export function diagnosisHtml(c: DxConsult, p?: DxPatient | null, visitNo?: number, parts: DxPart[] = ['nurse', 'doctor'], compact = false): string {
   const pages: string[] = [];
   const sheetParts = parts.filter((x) => x !== 'rx');
-  if (sheetParts.length) {
+  if (sheetParts.length && compact) {
+    // ١١/١١ «اللي اتحدد بس» (ملف تشخيصات المريض): عمره ما بيعرض الورقة الفاضية بكل الاختيارات —
+    // اللي اتعلّم واتكتب بس، ولو الشيت مفيهوش حاجة ← الملخص المكتوب (الشكوى/التشخيص…) لو موجود، وإلا ولا حاجة
+    const sp = sheetHasContent(normSheet(c.sheet)) ? sheetPages(c, p, visitNo, true) : null;
+    const filled = sp ? (sheetParts as ('nurse' | 'doctor')[]).map((k) => sp[k]).filter(Boolean) : [];
+    if (filled.length) pages.push(...filled);
+    else if ([c.complaint, c.diagnosis, c.examination, c.history, c.plan].some((x) => (x ?? '').trim())) pages.push(legacyHtml(c, p));
+  } else if (sheetParts.length) {
     // جزء فاضي في «اللي اتحدد بس» ← الشيت الفاضي نفسه (زي الورقة المطبوعة) بدل صفحة بيضا؛ كشف جديد لسه مفيهوش حاجة ← الشيتات فاضية
     const blank = !sheetHasContent(normSheet(c.sheet)) && ![c.complaint, c.diagnosis, c.examination, c.history].some((x) => (x ?? '').trim());
     if (sheetHasContent(normSheet(c.sheet)) || blank) {

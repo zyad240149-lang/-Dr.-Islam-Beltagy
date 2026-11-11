@@ -35,6 +35,7 @@ function SheetPreview({ c, visitNo }: { c: Consultation; visitNo: number }) {
     const doc = frame.current?.contentDocument;
     if (doc) setHeight(doc.documentElement.scrollHeight);
   };
+  if (!html.includes('class="page')) return <p className="muted-sm dxh-empty">مفيش حاجة متعلّم عليها أو مكتوبة في الشيت ده.</p>;
   return (
     <div className="dxh-sheet" ref={box} style={{ height: height * scale }}>
       <iframe ref={frame} title={`شيت التشخيص ${fmtDate(c.date)}`} srcDoc={html} scrolling="no"

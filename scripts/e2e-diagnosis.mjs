@@ -306,6 +306,14 @@ try {
   await closeConsult();
   // الحقن بقت جوّه التشخيص بس — مفيش تبويب «سجل الحقن» في صفحة التشخيص
   check('مفيش تبويب «سجل الحقن» برّه التشخيص', await A.page.locator('.dx-views button', { hasText: 'سجل الحقن' }).count() === 0);
+  // ١١/١١ ملف تشخيصات المريض = اللي اتعلّم/اتكتب بس: تشخيص من غير شيت ولا شكوى (تعليمات بس) مايعرضش الورقة الفاضية بكل الاختيارات
+  await sql(`insert into ortho_consultations (patient_id, date, complaint, diagnosis, plan, created_by, complete) values ('${PC.id}', '2026-09-10', '', '', 'راحة وتلج اختبار', '${adminEmp}', true)`);
+  await goto(A.page, `/diagnosis?patient=${PC.id}`);
+  await A.page.waitForTimeout(2500);
+  const frames = await A.page.locator('.dxh-sheet iframe').evaluateAll((fs) => fs.map((f) => f.contentDocument?.body?.innerHTML ?? ''));
+  const unchecked = frames.reduce((n, h) => n + (h.match(/class="ck"/g) ?? []).length, 0);
+  check('ملف المريض: مفيش ولا اختيار مش متعلّم عليه في الشيتات', frames.length > 0 && unchecked === 0, `frames ${frames.length}, unchecked ${unchecked}`);
+  check('ملف المريض: التشخيص اللي فيه تعليمات بس بيعرض التعليمات (مش الورقة الفاضية)', frames.some((h) => h.includes('راحة وتلج اختبار')) && !frames.some((h) => h.includes('HIP &amp; KNEE CONSULTATION SHEET')), '');
   // ✕ «شيل من قايمة النهارده»: المريض بيختفي من القايمة (وبيفضل مخفي بعد تحديث الصفحة) — والموعد زي ما هو
   await goto(A.page, '/diagnosis');
   await queueRow(A.page, PB).getByRole('button', { name: 'شيل من قايمة النهارده' }).click();

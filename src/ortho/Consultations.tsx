@@ -449,7 +449,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
         {tab === 'nurse' && <BoxOpenDefault.Provider value={false}>
           <PainHint patientId={c.patientId} current={c.painScore} excludeSourceId={initial?.id} date={c.date} />
           {/* ١١/١١: الشيت العام الجديد (مربعات بتتعلّم) — والقديم متركن تحته في «الشيت العام القديم» للمقارنة */}
-          <PlanGeneralSheet sheet={sheet} onChange={changeSheet} age={patientAge(c.patientId)} onOpenMap={() => openMap('pg.dx')} />
+          <PlanGeneralSheet sheet={sheet} onChange={changeSheet} age={patientAge(c.patientId)} onOpenMap={() => openMap('pg.dx')} painScore={c.painScore} onPainScore={(v) => set('painScore', v)} />
           <details className="sh-old" style={{ marginTop: 14 }}>
             <summary style={{ cursor: 'pointer', fontWeight: 700, padding: '8px 0' }}>الشيت العام القديم (متركن على جمب)</summary>
           <NursingSheet sheet={sheet} onChange={changeSheet} patient={c.patientId ? db.patient(c.patientId) : null} date={c.date} visitNo={visitNo}

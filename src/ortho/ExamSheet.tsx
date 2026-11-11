@@ -367,7 +367,7 @@ export function sheetSummary(s: ExamSheet, side: Side = 'na') {
     ['Imaging', img],
   ];
   const quick = regionSummary(QUICK_EXAM, s, side); // «فحص سريع» (تاب 2)
-  const examination = join([...quick.examination.map((t) => tag(QUICK_EXAM.tab, t)), ...lines.map(([l, v]) => v && `${l} — ${v}`), tx(s, 'x.notes'), ...regions.flatMap(({ d, r }) => r.examination.map((t) => tag(d.tab, t))), raSummary(s), nociSummary(s)], '\n');
+  const examination = join([pg.examination, ...quick.examination.map((t) => tag(QUICK_EXAM.tab, t)), ...lines.map(([l, v]) => v && `${l} — ${v}`), tx(s, 'x.notes'), ...regions.flatMap(({ d, r }) => r.examination.map((t) => tag(d.tab, t))), raSummary(s), nociSummary(s)], '\n');
 
   const diagnosis = join([quick.diagnosis && tag(QUICK_EXAM.tab, quick.diagnosis), dxSummary('x', 'hipknee', (g, i) => has(s, g, i), (k) => tx(s, k)), ...regions.map(({ d, r }) => r.diagnosis && tag(d.tab, r.diagnosis))], ' · ');
   const plan = join([...picked(s, 'x.plan', X_PLAN), tx(s, 'x.plan.fu') && `Follow up after ${tx(s, 'x.plan.fu')}`, tx(s, 'x.plan.other'), ...regions.map(({ d, r }) => r.plan && tag(d.tab, r.plan)), regionSummary(TREATMENT, s, side).plan]);

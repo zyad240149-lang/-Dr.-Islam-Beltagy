@@ -125,7 +125,6 @@ function ItemModal({ item, onClose }: { item: InventoryItem | null; onClose: () 
   const [tried, setTried] = useState(false);
   const url = (() => { const u = f.supplierUrl.trim(); return !u || /^https?:\/\//i.test(u) ? u : `https://${u}`; })();
   const urlOk = !url || URL.canParse(url);
-  const cost = Number(f.costPrice.replace(/[^\d.]/g, '')) || 0, sale = Number(f.salePrice.replace(/[^\d.]/g, '')) || 0;
   const set = (k: keyof typeof f, v: string | boolean) => setF((x) => ({ ...x, [k]: v }));
   const num = (v: string) => Number(v.replace(/[^\d.]/g, '')) || 0;
   const save = async () => {
@@ -164,14 +163,7 @@ function ItemModal({ item, onClose }: { item: InventoryItem | null; onClose: () 
           <Input id="it-min" label="الحد الأدنى (تنبيه)" inputMode="decimal" value={f.minQuantity} onChange={(e) => set('minQuantity', e.target.value)} />
         </div>
       </section>
-      <section className="form-section" style={{ borderBottom: 0, paddingBottom: 0 }}>
-        <h4 className="form-section-title">الأسعار</h4>
-        <div className="grid-form">
-          <Input id="it-cost" label="سعر التكلفة" inputMode="decimal" value={f.costPrice} onChange={(e) => set('costPrice', e.target.value)} />
-          <Input id="it-sale" label="سعر البيع (لو بيتباع)" inputMode="decimal" value={f.salePrice} onChange={(e) => set('salePrice', e.target.value)} />
-        </div>
-        {sale > 0 && <p className="muted-sm" style={{ marginBottom: 0 }}>هامش الربح في القطعة: <strong className="num">{money(sale - cost)}</strong></p>}
-      </section>
+      {/* ١١/١١: قسم «الأسعار» اتشال — السعر بيتكتب لما الشراء يتسجل من «المصروفات ← مستلزمات طبية» (القيم القديمة بتفضل زي ما هي) */}
       <section className="form-section" style={{ borderBottom: 0, paddingBottom: 0 }}>
         <h4 className="form-section-title">المورّد</h4>
         <div className="grid-form">

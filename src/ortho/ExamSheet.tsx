@@ -422,6 +422,38 @@ export function Txt({ a, k, label, unit, num, stack, ...rest }: { a: Api; k: str
   return <label className={`sh-line${stack ? ' sh-line--stack' : ''}`}><span className="sh-line__l">{label}</span>{input}{unit && <span className="sh-unit">{unit}</span>}</label>;
 }
 
+// جسم مربع من GEN_BOXES (الأسئلة + الشيتات الملحقة + ملاحظات المربع) — مستخدم في الشيت القديم والجديد
+export function GenBody({ a, sheet, onChange, b }: { a: Api; sheet: ExamSheet; onChange: Change; b: (typeof GEN_BOXES)[number] }) {
+  return (<>
+    <div className={b.id === 'dxm' ? 'dxm-grid' : 'sh-genf'}>
+    {b.f.map((f) => ('g' in f ? (
+      <div key={f.g} className={b.id === 'dxm' ? 'dxm-reg' : undefined}>
+        {f.label && <div className="sh-lbl">{f.label}</div>}
+        <div className={f.one ? 'sh-inline' : undefined}>{f.one ? <Pick a={a} g={f.g} items={f.items} /> : <Checks a={a} g={f.g} items={f.items} />}{f.also?.map((x) => <Checks key={x.g} a={a} g={x.g} items={x.items} />)}</div>
+        {f.other && <Txt a={a} k={f.g + '.other'} label="أخرى" />}
+      </div>
+    ) : <div key={f.k} className={b.id === 'dxm' ? 'dxm-other' : undefined}><Txt a={a} k={f.k} label={f.label} stack={f.stack} /></div>))}
+    </div>
+    {b.id === 'ms' && <RaAssessment sheet={sheet} onChange={onChange} />}
+    {b.id === 'nature' && <NociChecklist sheet={sheet} onChange={onChange} />}
+    {b.id !== 'sum' && <><div className="sh-lbl">ملاحظات</div>
+    <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt(`n.bn.${b.id}`)} onChange={(e) => a.set(`n.bn.${b.id}`, e.target.value)} /></>}
+  </>);
+}
+
+/** ١١/١١: مربع متجمّع من GEN_GROUPS (زي «مكان الألم وبدايته وطبيعته — تورم / احمرار / سخونة») — للشيت العام الجديد */
+export function GenGroupBox({ sheet, onChange, gi, n }: { sheet: ExamSheet; onChange: Change; gi: number; n: number }) {
+  const a = sheetApi(sheet, onChange);
+  const g = GEN_GROUPS[gi];
+  const bs = g.ids.map((id) => GEN_BOXES.find((b) => b.id === id)!);
+  const one = bs.length === 1 ? bs[0] : null;
+  return (
+    <Box n={n} wide={!one || one.wide || (one.id === 'nature' && nociOpen(sheet))} tone={one?.id === 'rf' ? 'red' : undefined} title={g.title ?? bs[0].title}>
+      {bs.map((b) => <div key={b.id}>{!one && <div className="sh-lbl sh-sub">{b.title}</div>}<GenBody a={a} sheet={sheet} onChange={onChange} b={b} /></div>)}
+    </Box>
+  );
+}
+
 // ---------- الشيت العام ----------
 export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScore, onPainScore, onFirstPain }: {
   sheet: ExamSheet; onChange: Change; patient?: Patient | null; date: string; visitNo: number;
@@ -437,21 +469,7 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
   const female = a.has('n.gender', 'أنثى');
   const raOpen = raCalc(sheet).enabled;
   // جسم مربع من GEN_BOXES (الأسئلة + الشيتات الملحقة + ملاحظات المربع)
-  const genBody = (b: (typeof GEN_BOXES)[number]) => (<>
-    <div className={b.id === 'dxm' ? 'dxm-grid' : 'sh-genf'}>
-    {b.f.map((f) => ('g' in f ? (
-      <div key={f.g} className={b.id === 'dxm' ? 'dxm-reg' : undefined}>
-        {f.label && <div className="sh-lbl">{f.label}</div>}
-        <div className={f.one ? 'sh-inline' : undefined}>{f.one ? <Pick a={a} g={f.g} items={f.items} /> : <Checks a={a} g={f.g} items={f.items} />}{f.also?.map((x) => <Checks key={x.g} a={a} g={x.g} items={x.items} />)}</div>
-        {f.other && <Txt a={a} k={f.g + '.other'} label="أخرى" />}
-      </div>
-    ) : <div key={f.k} className={b.id === 'dxm' ? 'dxm-other' : undefined}><Txt a={a} k={f.k} label={f.label} stack={f.stack} /></div>))}
-    </div>
-    {b.id === 'ms' && <RaAssessment sheet={sheet} onChange={onChange} />}
-    {b.id === 'nature' && <NociChecklist sheet={sheet} onChange={onChange} />}
-    {b.id !== 'sum' && <><div className="sh-lbl">ملاحظات</div>
-    <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt(`n.bn.${b.id}`)} onChange={(e) => a.set(`n.bn.${b.id}`, e.target.value)} /></>}
-  </>);
+  const genBody = (b: (typeof GEN_BOXES)[number]) => <GenBody a={a} sheet={sheet} onChange={onChange} b={b} />;
   const togglePain = (id: string, side: PinSide) => {
     const k = side ? `${id}:${side}` : id;
     if (!sheet.pain.length) onFirstPain(id, side);

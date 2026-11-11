@@ -5,7 +5,7 @@ import { GOALS } from '../data/physioApi';
 import { AGGRAVATING, CHARACTER, HISTORY, LOCATION, ONSET, PATTERN, RADIATION, RELIEVING, DURATION_UNITS } from '../data/physioSubjective';
 import { GAIT, JOINTS, OBSERVATION, PALPATION, REFLEXES, REFLEX_RESULT, ROM_STATUS, SENS_DEEP, SENS_SUP, TEST_RESULT, GRADES, type Opt } from '../data/physioObjective';
 import type { ExamSheet } from './data';
-import { Box, Checks, Pick, Row, SHEET_LISTS, Txt, sheetApi, type Api } from './ExamSheet';
+import { Box, Checks, GenGroupBox, Pick, Row, SHEET_LISTS, Txt, sheetApi, type Api } from './ExamSheet';
 
 // نفس اختيارات خطة العلاج (PatientForms → PlanModal)
 export const PLAN_ONSET = ['مفاجئ (Sudden)', 'تدريجي (Gradual)', 'بعد إصابة/حادثة (Traumatic)', 'بعد سقوط (Fall)', 'بعد رفع شيء ثقيل (Lifting)', 'بعد عملية (Post-operative)', 'بعد مجهود رياضي (Sports)',
@@ -36,14 +36,14 @@ export const EVAL_BOXES: EB[] = [
   { id: 'agg', part: 'Subjective', title: 'عوامل تزيد الألم (Aggravating Factors)', wide: true, f: [{ g: 'pg.agg', items: L_(AGGRAVATING), other: true }] },
   { id: 'rel', part: 'Subjective', title: 'عوامل تخفف الألم (Relieving Factors)', f: [{ g: 'pg.rel', items: L_(RELIEVING), other: true }] },
   { id: 'hx', part: 'Subjective', title: 'التاريخ الطبي/الجراحي (Medical/Surgical History)', f: [{ g: 'pg.hx', items: L_(HISTORY), other: true }, { k: 'pg.hx.surgery', label: 'تفاصيل العملية (Surgery Details)' }, { k: 'pg.hx.injury', label: 'تفاصيل الإصابة (Injury Details)' }] },
-  { id: 'meds', part: 'Subjective', title: 'الأدوية (Medications)', f: [{ k: 'pg.meds', label: 'الدواء — الجرعة — التكرار', stack: true }] },
+  { id: 'meds', off: true, part: 'Subjective', title: 'الأدوية (Medications)', f: [{ k: 'pg.meds', label: 'الدواء — الجرعة — التكرار', stack: true }] },
   { id: 'obs', part: 'Objective', title: 'الملاحظة (Observation)', wide: true, f: [{ g: 'pg.obs', items: L_(OBSERVATION), other: true }] },
   { id: 'palp', part: 'Objective', title: 'الجس (Palpation)', wide: true, f: [{ g: 'pg.palp', items: L_(PALPATION), other: true }, { k: 'pg.palp.notes', label: 'ملاحظات / المكان', stack: true }] },
   { id: 'mmt', part: 'Objective', title: 'قوة العضلات (Muscle Strength — MMT)', f: [{ k: 'pg.mmt.muscle', label: 'العضلة', stack: true }, { g: 'pg.mmt.side', label: 'الجهة', items: SIDES, one: true }, { g: 'pg.mmt.grade', label: 'الدرجة', items: L_(GRADES), one: true }, { k: 'pg.mmt.notes', label: 'عضلات تانية', stack: true }] },
   { id: 'rom', part: 'Objective', title: 'مدى الحركة (ROM)', f: [{ g: 'pg.rom.joint', label: 'المفصل', items: L_(JOINTS), other: true }, { g: 'pg.rom.side', label: 'الجهة', items: [...SIDES, 'N/A', 'Midline'], one: true }, { g: 'pg.rom.status', label: 'الحالة', items: L_(ROM_STATUS) }, { k: 'pg.rom.notes', label: 'الحركة والدرجات (Active / Passive)', stack: true }] },
-  { id: 'sens', part: 'Objective', title: 'الإحساس (Sensation)', f: [{ g: 'pg.sens.sup', label: 'السطحي (Superficial)', items: L_(SENS_SUP), other: true }, { g: 'pg.sens.deep', label: 'العميق (Deep)', items: L_(SENS_DEEP), other: true }, { k: 'pg.sens.area', label: 'المنطقة' }] },
+  { id: 'sens', off: true, part: 'Objective', title: 'الإحساس (Sensation)', f: [{ g: 'pg.sens.sup', label: 'السطحي (Superficial)', items: L_(SENS_SUP), other: true }, { g: 'pg.sens.deep', label: 'العميق (Deep)', items: L_(SENS_DEEP), other: true }, { k: 'pg.sens.area', label: 'المنطقة' }] },
   { id: 'st', off: true, part: 'Objective', title: 'الاختبارات الخاصة (Special Tests)', f: [{ k: 'pg.st.test', label: 'اسم الاختبار', stack: true }, { g: 'pg.st.side', label: 'الجهة', items: [...SIDES, 'N/A'], one: true }, { g: 'pg.st.res', label: 'النتيجة', items: L_(TEST_RESULT), one: true }, { k: 'pg.st.notes', label: 'اختبارات تانية / ملاحظات', stack: true }] },
-  { id: 'refl', part: 'Objective', title: 'الانعكاسات (Reflexes)', f: [...L_(REFLEXES).map((r) => ({ g: `pg.refl.${r}`, label: r, items: L_(REFLEX_RESULT), one: true })), { k: 'pg.refl.notes', label: 'ملاحظات', stack: true }] },
+  { id: 'refl', off: true, part: 'Objective', title: 'الانعكاسات (Reflexes)', f: [...L_(REFLEXES).map((r) => ({ g: `pg.refl.${r}`, label: r, items: L_(REFLEX_RESULT), one: true })), { k: 'pg.refl.notes', label: 'ملاحظات', stack: true }] },
   { id: 'gait', part: 'Objective', title: 'المشي (Gait)', wide: true, f: [{ g: 'pg.gait', items: L_(GAIT), other: true }, { k: 'pg.gait.device', label: 'الجهاز المساعد' }, { k: 'pg.gait.notes', label: 'ملاحظات', stack: true }] },
   { id: 'rf', part: 'Assessment', red: true, title: '⚠ علامات الخطر (Red Flags)', f: [{ g: 'pg.rf', items: ['لا (No)', 'نعم (Yes)'], one: true }, { k: 'pg.rf.notes', label: 'ملاحظات العلامات الخطيرة — اكتب ما هي', stack: true }] },
   { id: 'reeval', off: true, part: 'Assessment', title: 'موعد إعادة التقييم (Re-evaluation)', f: [{ k: 'pg.reeval', label: 'التاريخ', date: true }] },
@@ -90,6 +90,19 @@ export function PlanGeneralSheet({ sheet, onChange, age, onOpenMap, painScore, o
   const a = sheetApi(sheet, onChange);
   const L = SHEET_LISTS;
   const female = a.has('n.gender', 'أنثى');
+  const evalBox = (b: EB, n: number) => (
+    <Box key={b.id} n={n} title={b.title} wide={b.wide} tone={b.red ? 'red' : undefined}>
+      {b.f.map((f) => ('g' in f ? (
+        <div key={f.g}>
+          {f.label && <div className="sh-lbl">{f.label}</div>}
+          <div className="sh-cols">{f.one ? <Pick a={a} g={f.g} items={f.items} /> : <Checks a={a} g={f.g} items={f.items} />}</div>
+          {f.other && <Other a={a} k={f.g + '.other'} />}
+        </div>
+      ) : f.date ? (
+        <label key={f.k} className="sh-line"><span className="sh-line__l">{f.label}</span><input type="date" className="sh-in" value={a.txt(f.k)} onChange={(e) => a.set(f.k, e.target.value)} /></label>
+      ) : <Txt key={f.k} a={a} k={f.k} label={f.label} stack={f.stack} num={f.num} />))}
+    </Box>
+  );
   return (
     <div className="sh-grid sh-grid--2" data-testid="plan-general-sheet">
       {/* ١١/١١: «البيانات الأساسية» — نفس خانات الشيت القديم (مفاتيح n.*) فبتتملى من ملف المريض وبتتحدّث فيه */}
@@ -111,40 +124,32 @@ export function PlanGeneralSheet({ sheet, onChange, age, onOpenMap, painScore, o
         <div className="sh-lbl">ملاحظات</div>
         <textarea className="sh-in sh-notes" dir="auto" rows={3} aria-label="ملاحظات" value={a.txt('n.notes')} onChange={(e) => a.set('n.notes', e.target.value)} />
       </Box>
-      <Box n={2} title="بداية ظهور الألم">
+      {/* ١١/١١: «مكان الألم» بقى رقم 2 والباقي بنفس ترتيبه بعده */}
+      {evalBox(EVAL_BOXES.find((x) => x.id === 'loc')!, 2)}
+      <Box n={3} title="بداية ظهور الألم">
         <div className="sh-cols"><Pick a={a} g="pg.onset" items={PLAN_ONSET} /></div>
         <Other a={a} k="pg.onset.other" />
       </Box>
-      <Box n={3} title="شكوى المريض">
+      <Box n={4} title="شكوى المريض">
         <div className="sh-cols"><Checks a={a} g="pg.cc" items={PLAN_COMPLAINT} /></div>
         <Other a={a} k="pg.cc.other" />
       </Box>
-      <Box n={4} title="التشخيص">
+      <Box n={5} title="التشخيص">
         <Txt a={a} k="pg.dx" label="التشخيص" stack />
         {onOpenMap && <button type="button" className="link-more" style={{ background: 'none', border: 0, padding: 0, cursor: 'pointer', marginTop: 6 }} onClick={onOpenMap}>اختيار من خريطة الجسم</button>}
       </Box>
       {/* ١١/١١: «الهدف الرئيسي» و«نوع العلاج» و«عدد الزيارات» و«ملاحظات» اتشالوا (طلب العيادة) — اللي اتسجّل فيهم قبل كده لسه في الملخص */}
-      {onPainScore && <Box n={5} title="مقياس الألم (VAS) 0–10">
+      {onPainScore && <Box n={6} title="مقياس الألم (VAS) 0–10">
         <div className="pt-vas" role="radiogroup" aria-label="مقياس الألم">
           {Array.from({ length: 11 }, (_, i) => (
             <button type="button" key={i} role="radio" aria-checked={painScore === i} className={`pt-vas__n ${painScore === i ? 'active' : ''}`} data-level={i >= 7 ? 'high' : i >= 4 ? 'mid' : 'low'} onClick={() => onPainScore(painScore === i ? '' : i)}>{i}</button>
           ))}
         </div>
       </Box>}
-      {/* ١١/١١: «المدة» و«الاختبارات الخاصة» و«إعادة التقييم» و«الأهداف» اتشالوا من الشاشة (off) — القديم المتسجّل لسه في الملخص */}
-      {EVAL_BOXES.filter((b) => !b.off).map((b, i) => (
-        <Box key={b.id} n={6 + i} title={b.title} wide={b.wide} tone={b.red ? 'red' : undefined}>
-          {b.f.map((f) => ('g' in f ? (
-            <div key={f.g}>
-              {f.label && <div className="sh-lbl">{f.label}</div>}
-              <div className="sh-cols">{f.one ? <Pick a={a} g={f.g} items={f.items} /> : <Checks a={a} g={f.g} items={f.items} />}</div>
-              {f.other && <Other a={a} k={f.g + '.other'} />}
-            </div>
-          ) : f.date ? (
-            <label key={f.k} className="sh-line"><span className="sh-line__l">{f.label}</span><input type="date" className="sh-in" value={a.txt(f.k)} onChange={(e) => a.set(f.k, e.target.value)} /></label>
-          ) : <Txt key={f.k} a={a} k={f.k} label={f.label} stack={f.stack} num={f.num} />))}
-        </Box>
-      ))}
+      {/* ١١/١١: «مكان الألم وبدايته وطبيعته — تورم / احمرار / سخونة» (مربع 5 في الشيت القديم) رجع — نفس البيانات n.* */}
+      <GenGroupBox sheet={sheet} onChange={onChange} gi={0} n={7} />
+      {/* «المدة» و«الأدوية» و«الاختبارات الخاصة» و«الإحساس» و«الانعكاسات» و«إعادة التقييم» و«الأهداف» اتشالوا من الشاشة (off) — القديم المتسجّل لسه في الملخص */}
+      {EVAL_BOXES.filter((x) => !x.off && x.id !== 'loc').map((x, i) => evalBox(x, 8 + i))}
     </div>
   );
 }

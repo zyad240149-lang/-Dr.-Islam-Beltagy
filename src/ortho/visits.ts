@@ -10,6 +10,10 @@ import { namesTypoClose, phoneMatches } from '../utils/phoneUtils';
 const ymdInClinicTz = (ms: number) => new Date(ms).toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' });
 
 export const ATTENDED = new Set(['arrived', 'in_progress', 'completed']);
+// أي زيارة اتسجلت للنهارده (كشف، متابعة، أي خدمة) بتظهر للدكتور على طول — من غير ما يستنى الاستقبال يعمل حضور
+// (الملغي / لم يحضر / معاد جدولته بس اللي مش بيظهروا)
+const NOT_VISIT = new Set(['cancelled', 'no_show', 'rescheduled']);
+export const isTodayVisit = (a: Appointment) => !NOT_VISIT.has(a.status);
 export type VisitState = 'waiting' | 'incomplete' | 'done';
 export interface VisitDx { a: Appointment; consult?: Consultation; state: VisitState }
 
@@ -43,7 +47,7 @@ export function todaysVisits(): VisitDx[] {
   const consults = ortho.list('consultations');
   const byPatient = new Map<string, VisitDx>();
   const order: VisitState[] = ['incomplete', 'waiting', 'done'];
-  for (const a of db.todayAppointments().filter((x) => ATTENDED.has(x.status)).sort((x, y) => x.time.localeCompare(y.time))) {
+  for (const a of db.todayAppointments().filter(isTodayVisit).sort((x, y) => x.time.localeCompare(y.time))) {
     const consult = consultForVisit(a, consults);
     const state: VisitState = !consult ? 'waiting' : isIncomplete(consult) ? 'incomplete' : 'done';
     const cur = byPatient.get(a.patientId);
@@ -66,7 +70,7 @@ export function openVisitFor(patientId: string): Appointment | undefined {
   if (!patientId) return undefined;
   const consults = ortho.list('consultations', patientId);
   return db.todayAppointments()
-    .filter((a) => a.patientId === patientId && ATTENDED.has(a.status) && !consultForVisit(a, consults))
+    .filter((a) => a.patientId === patientId && isTodayVisit(a) && !consultForVisit(a, consults))
     .sort((x, y) => x.time.localeCompare(y.time))[0];
 }
 

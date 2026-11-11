@@ -71,13 +71,14 @@ export default function Diagnosis() {
   const doneToday = visits.filter((x) => x.state === 'done').length;
   const lastConsultOf = (id: string) => consults.filter((c) => c.patientId === id && !isUnlinked(c)).sort((a, b) => b.date.localeCompare(a.date))[0];
   // المتشخص ← «إضافة شيت»: تشخيص الزيارة نفسها، أو لو جاي متابعة/خدمة تانية ومن غير تشخيص النهارده ← آخر تشخيص ليه
-  const sheetTarget = (x: (typeof visits)[number]) => (x.state === 'done' ? x.consult : x.state === 'waiting' && !needsDiagnosis(x.a) ? lastConsultOf(x.a.patientId) : undefined);
+  // اتشخص قبل كده (امبارح مثلًا) وجه النهارده لأي خدمة ← «إضافة شيت» على آخر تشخيص (ولو الزيارة كشف يقدر يعمل تشخيص جديد كمان)
+  const sheetTarget = (x: (typeof visits)[number]) => (x.state === 'done' ? x.consult : x.state === 'waiting' ? lastConsultOf(x.a.patientId) : undefined);
   const shownInQueue = new Set(visits.map((x) => x.a.patientId));
   const newFiles = newFilesToday().filter((p) => !shownInQueue.has(p.id));
   // اتشخصوا النهارده من غير حضور مسجل (ملف جديد مثلًا) — بيفضلوا في القايمة بعد التشخيص
   const dayConsults = [...consults.filter((c) => c.date === todayYmd() && !isUnlinked(c) && !shownInQueue.has(c.patientId)).sort((a, b) => Number(isIncomplete(a)) - Number(isIncomplete(b)))
     .reduce((m, c) => m.set(c.patientId, c), new Map<string, Consultation>()).values()];
-  const waitingCount = visits.filter((x) => x.state !== 'done' && !sheetTarget(x)).length + newFiles.length;
+  const waitingCount = visits.filter((x) => x.state !== 'done').length + newFiles.length;
 
   // ---------- المرضى اللي اتشخصوا: مريض واحد لكل صف، آخر تشخيص أولًا ----------
   const diagnosed = (() => {
@@ -153,7 +154,7 @@ export default function Diagnosis() {
             <div className="card__body">
               <LoadState kind="consultations">
                 {visits.length + newFiles.length + dayConsults.length === 0
-                  ? <EmptyState icon="calendarPlus" title="ما فيه مرضى حضروا أو سجلوا النهارده" text="أول ما مريض يسجل أو الاستقبال يعمل له حضور لأي خدمة، هيظهر هنا لحد آخر اليوم." />
+                  ? <EmptyState icon="calendarPlus" title="ما فيه مرضى حضروا أو سجلوا النهارده" text="أول ما مريض يفتح ملف أو يتسجله كشف أو متابعة أو أي خدمة النهارده، هيظهر هنا على طول لحد آخر اليوم." />
                   : (
                     <div className="dx-queue">
                       {visits.map((x) => {
@@ -180,7 +181,10 @@ export default function Diagnosis() {
                               {p && whatsappNumber(p) && <WhatsappLink phone={whatsappNumber(p)} patientId={p.id} button />}
                               {state === 'incomplete' && consult ? perm.add && <Button size="sm" icon="refresh" onClick={() => (consult.patientId ? openSaved(consult, true) : setUnlinkedEdit(consult))}>استكمال</Button>
                                 : local ? perm.add && <Button size="sm" icon="refresh" onClick={() => resumeDraft(a.patientId, true)}>استكمال</Button>
-                                : target ? perm.edit && <Button size="sm" icon="plus" onClick={() => (target.patientId ? openSaved(target, true) : setUnlinkedEdit(target))}>إضافة شيت</Button>
+                                : target ? <>
+                                  {perm.edit && <Button size="sm" icon="plus" onClick={() => (target.patientId ? openSaved(target, true) : setUnlinkedEdit(target))}>إضافة شيت</Button>}
+                                  {state === 'waiting' && needsDiagnosis(a) && perm.add && <Button size="sm" variant="outline" icon="stethoscope" onClick={() => startNew(a.patientId, a.id)}>تشخيص جديد</Button>}
+                                </>
                                 : perm.add && <Button size="sm" icon="stethoscope" onClick={() => startNew(a.patientId, a.id)}>تشخيص</Button>}
                             </div>
                           </div>

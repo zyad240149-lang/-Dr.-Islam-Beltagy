@@ -306,6 +306,14 @@ try {
   await closeConsult();
   // الحقن بقت جوّه التشخيص بس — مفيش تبويب «سجل الحقن» في صفحة التشخيص
   check('مفيش تبويب «سجل الحقن» برّه التشخيص', await A.page.locator('.dx-views button', { hasText: 'سجل الحقن' }).count() === 0);
+  // ✕ «شيل من قايمة النهارده»: المريض بيختفي من القايمة (وبيفضل مخفي بعد تحديث الصفحة) — والموعد زي ما هو
+  await goto(A.page, '/diagnosis');
+  await queueRow(A.page, PB).getByRole('button', { name: 'شيل من قايمة النهارده' }).click();
+  await A.page.waitForTimeout(500);
+  check('✕ شال مريض «ب» من قايمة النهارده و«أ» لسه موجود', await queueRow(A.page, PB).count() === 0 && await queueRow(A.page, PA).count() === 1);
+  await A.page.reload(); await A.page.waitForSelector('.page h1'); await A.page.waitForTimeout(1500);
+  check('بعد تحديث الصفحة «ب» لسه مش في القايمة', await queueRow(A.page, PB).count() === 0 && await queueRow(A.page, PA).count() === 1);
+  check('موعد «ب» ما اتلمسش', (await q1(`select status from appointments where id = '${PB.appt}'`)).status === 'arrived');
   check('صفحة التشخيص بدون أخطاء JavaScript (الكمبيوتر)', A.errors.length === 0, A.errors.join(' | ').slice(0, 300));
   await A.ctx.close();
 

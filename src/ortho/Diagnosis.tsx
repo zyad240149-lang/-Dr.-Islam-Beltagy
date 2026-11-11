@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { addDays, isIncomplete, isUnlinked, ortho, useOrthoVersion, type Consultation } from './data';
-import { LoadState, PageHead, SearchBox, patientFile, patientName, useClinicalCan } from './kit';
+import { IconBtn, LoadState, PageHead, SearchBox, patientFile, patientName, useClinicalCan } from './kit';
 import { ConsultModal, DraftCard, LinkBadge, clearConsultDraft, listConsultDrafts } from './Consultations';
 import { DiagnosisTab } from './DiagnosisTab';
 import { needsDiagnosis, newFilesToday, todaysVisits } from './visits';
@@ -67,16 +67,26 @@ export default function Diagnosis() {
   };
 
   // ---------- مرضى النهارده: أي مريض حضر لأي خدمة بيفضل ظاهر لحد ما اليوم يخلص، حتى بعد التشخيص ----------
-  const visits = todaysVisits();
+  // «شيل من قايمة النهارده»: بيخفي المريض من القايمة النهارده بس (على الجهاز ده) — ملفه ومواعيده زي ما هي، وبكره بيرجع عادي
+  const hideKey = `dx-hidden-${todayYmd()}`;
+  const [hidden, setHidden] = useState<string[]>(() => { try { return JSON.parse(localStorage.getItem(hideKey) ?? '[]'); } catch { return []; } });
+  const hide = (id: string) => {
+    if (!window.confirm(`شيل ${patientName(id)} من قايمة النهارده؟ (ملفه ومواعيده مش هيتمسحوا)`)) return;
+    const next = [...hidden, id];
+    setHidden(next);
+    try { localStorage.setItem(hideKey, JSON.stringify(next)); } catch { /* التخزين مقفول — الإخفاء لحد ما الصفحة تتقفل */ }
+  };
+  const isHidden = (id: string) => hidden.includes(id);
+  const visits = todaysVisits().filter((x) => !isHidden(x.a.patientId));
   const doneToday = visits.filter((x) => x.state === 'done').length;
   const lastConsultOf = (id: string) => consults.filter((c) => c.patientId === id && !isUnlinked(c)).sort((a, b) => b.date.localeCompare(a.date))[0];
   // المتشخص ← «إضافة شيت»: تشخيص الزيارة نفسها، أو لو جاي متابعة/خدمة تانية ومن غير تشخيص النهارده ← آخر تشخيص ليه
   // اتشخص قبل كده (امبارح مثلًا) وجه النهارده لأي خدمة ← «إضافة شيت» على آخر تشخيص (ولو الزيارة كشف يقدر يعمل تشخيص جديد كمان)
   const sheetTarget = (x: (typeof visits)[number]) => (x.state === 'done' ? x.consult : x.state === 'waiting' ? lastConsultOf(x.a.patientId) : undefined);
   const shownInQueue = new Set(visits.map((x) => x.a.patientId));
-  const newFiles = newFilesToday().filter((p) => !shownInQueue.has(p.id));
+  const newFiles = newFilesToday().filter((p) => !shownInQueue.has(p.id) && !isHidden(p.id));
   // اتشخصوا النهارده من غير حضور مسجل (ملف جديد مثلًا) — بيفضلوا في القايمة بعد التشخيص
-  const dayConsults = [...consults.filter((c) => c.date === todayYmd() && !isUnlinked(c) && !shownInQueue.has(c.patientId)).sort((a, b) => Number(isIncomplete(a)) - Number(isIncomplete(b)))
+  const dayConsults = [...consults.filter((c) => c.date === todayYmd() && !isUnlinked(c) && !shownInQueue.has(c.patientId) && !isHidden(c.patientId)).sort((a, b) => Number(isIncomplete(a)) - Number(isIncomplete(b)))
     .reduce((m, c) => m.set(c.patientId, c), new Map<string, Consultation>()).values()];
   const waitingCount = visits.filter((x) => x.state !== 'done').length + newFiles.length;
 
@@ -186,6 +196,7 @@ export default function Diagnosis() {
                                   {state === 'waiting' && needsDiagnosis(a) && perm.add && <Button size="sm" variant="outline" icon="stethoscope" onClick={() => startNew(a.patientId, a.id)}>تشخيص جديد</Button>}
                                 </>
                                 : perm.add && <Button size="sm" icon="stethoscope" onClick={() => startNew(a.patientId, a.id)}>تشخيص</Button>}
+                              <IconBtn icon="close" label="شيل من قايمة النهارده" onClick={() => hide(a.patientId)} />
                             </div>
                           </div>
                         );
@@ -205,6 +216,7 @@ export default function Diagnosis() {
                           {!perm.add ? null
                             : local ? <Button size="sm" icon="refresh" onClick={() => resumeDraft(p.id, true)}>استكمال</Button>
                             : <Button size="sm" icon="stethoscope" onClick={() => startNew(p.id, null)}>تشخيص</Button>}
+                          <IconBtn icon="close" label="شيل من قايمة النهارده" onClick={() => hide(p.id)} />
                         </div>
                       </div>
                     );
@@ -224,6 +236,7 @@ export default function Diagnosis() {
                               {p && whatsappNumber(p) && <WhatsappLink phone={whatsappNumber(p)} patientId={p.id} button />}
                               {local ? perm.add && <Button size="sm" icon="refresh" onClick={() => resumeDraft(c.patientId, true)}>استكمال</Button>
                                 : perm.edit && <Button size="sm" icon={isIncomplete(c) ? 'refresh' : 'plus'} onClick={() => openSaved(c, true)}>{isIncomplete(c) ? 'استكمال' : 'إضافة شيت'}</Button>}
+                              <IconBtn icon="close" label="شيل من قايمة النهارده" onClick={() => hide(c.patientId)} />
                             </div>
                           </div>
                         );

@@ -198,11 +198,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) { lastErr = error.message; continue; }
       if (!data.session) continue;
+      let s: Session;
       try {
-        const k = await accept(await applyCloudSession());
+        s = await applyCloudSession();
+        const k = await accept(s);
         if (k && k !== 'pending') return { ok: true, kind: k };
       } catch (e) { return { ok: false, error: (e as Error).message }; }
       await supabase.auth.signOut();
+      // الخادم مارّدش (مش إن الحساب موقوف) — كانت بتظهر «غير مفعّل» وده بيضلّل
+      if (s === 'network') return { ok: false, error: 'كلمة المرور صح، بس الخادم مارّدش — حدّث الصفحة وجرّب تاني بعد شوية.' };
       return { ok: false, error: 'هذا الحساب غير مفعّل.' };
     }
     return { ok: false, error: /fetch|network/i.test(lastErr) ? 'تعذّر الاتصال بالخادم — تحقق من الإنترنت.' : 'رقم الجوال أو كلمة المرور غير صحيحة.' };

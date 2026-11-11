@@ -4,6 +4,39 @@ import { BodyFigure, regionById, type BodyView } from './BodyFigure';
 import { Button, EmptyState, Input, Modal } from './ui';
 import { Icon } from '../utils/icons';
 import type { DiagnosisRef } from '../types';
+import { db } from '../data/db';
+import { useDbVersion } from '../hooks/useDb';
+import { useToast } from '../hooks/useToast';
+import { useCan } from './common';
+
+// ١١/١١: إضافة تشخيص جديد للمنطقة المختارة (بيتحفظ في جدول conditions ويظهر للكل)
+function AddCondition({ region, onDone }: { region: BodyRegion; onDone: () => void }) {
+  const toast = useToast();
+  const [f, setF] = useState({ en: '', name: '', icd10: '', tests: '' });
+  const [busy, setBusy] = useState(false);
+  const save = async () => {
+    const en = f.en.trim() || f.name.trim(), name = f.name.trim() || f.en.trim();
+    if (!en) { toast.error('اكتب اسم التشخيص.'); return; }
+    setBusy(true);
+    const r = await db.saveCondition({ regionId: region.id, name, en, icd10: f.icd10.trim() || '—', tests: f.tests.trim(), desc: '' });
+    setBusy(false);
+    if (!r.ok) { toast.error(r.error); return; }
+    toast.success(`اتضاف «${en}» لـ ${region.name}.`);
+    onDone();
+  };
+  return (
+    <div className="dx-add">
+      <Input id="dx-add-en" label="اسم التشخيص بالإنجليزي" dir="ltr" value={f.en} onChange={(e) => setF({ ...f, en: e.target.value })} />
+      <Input id="dx-add-ar" label="الاسم بالعربي" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
+      <Input id="dx-add-icd" label="كود ICD-10 (اختياري)" dir="ltr" value={f.icd10} onChange={(e) => setF({ ...f, icd10: e.target.value })} />
+      <Input id="dx-add-tests" label="الاختبارات (اختياري)" dir="ltr" value={f.tests} onChange={(e) => setF({ ...f, tests: e.target.value })} />
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        <Button variant="outline" size="sm" onClick={onDone} disabled={busy}>إلغاء</Button>
+        <Button size="sm" icon="check" loading={busy} onClick={save}>حفظ التشخيص</Button>
+      </div>
+    </div>
+  );
+}
 
 export const DIAGNOSIS_LIST_ID = 'dx-conditions';
 type Side = 'right' | 'left' | 'both';
@@ -61,11 +94,21 @@ export function DiagnosisPicker({ onPick, onClose }: { onPick: (text: string, re
   const [hovered, setHovered] = useState<string | null>(null);
   const [q, setQ] = useState('');
   const [pending, setPending] = useState<{ region: BodyRegion; c: Condition } | null>(null);
+  const [adding, setAdding] = useState(false);
+  const version = useDbVersion(); // بعد إضافة/حذف تشخيص القايمة بتتحدّث
+  const can = useCan();
+  const toast = useToast();
+  const canAdd = can('plans', 'create'), canDel = can('plans', 'delete');
+  const remove = async (c: Condition) => {
+    if (!window.confirm(`حذف «${c.en}» من قايمة التشخيصات؟ (التشخيصات المحفوظة قبل كده مش هتتأثر)`)) return;
+    const r = await db.hideCondition(c.id);
+    if (r.ok) toast.success('اتحذف التشخيص من القايمة.'); else toast.error(r.error);
+  };
   const search = q.trim().toLowerCase();
 
   const results = useMemo(() => !search ? [] : mapRegions().flatMap((r) =>
     r.conditions.filter((c) => c.name.includes(q.trim()) || c.en.toLowerCase().includes(search) || c.icd10.toLowerCase().includes(search)).map((c) => ({ region: r, c }))),
-  [q, search]);
+  [q, search, version]);
   const highlighted = useMemo(() => new Set(results.map((x) => x.region.id)), [results]);
   const region = selected ? regionById(selected) : undefined;
   const list = search ? results : (region?.conditions ?? []).map((c) => ({ region: region!, c }));
@@ -79,7 +122,7 @@ export function DiagnosisPicker({ onPick, onClose }: { onPick: (text: string, re
       <div className="dx-layout">
         <div className="dx-body">
           <BodyFigure key={view} view={view} compact selected={pending?.region.id ?? selected} hovered={hovered} highlighted={highlighted}
-            onSelect={(id) => { setSelected(id); setQ(''); setPending(null); }} onHover={setHovered} />
+            onSelect={(id) => { setSelected(id); setQ(''); setPending(null); setAdding(false); }} onHover={setHovered} />
           <div className="dx-hint">{hovered ? regionById(hovered)?.name : region ? region.name : 'اختار منطقة الألم'}</div>
         </div>
 
@@ -101,19 +144,25 @@ export function DiagnosisPicker({ onPick, onClose }: { onPick: (text: string, re
           ) : (
             <>
               <Input id="dx-q" icon="search" placeholder="Search: Knee OA, ACL, M17…" value={q} onChange={(e) => setQ(e.target.value)} />
+              {!search && region && canAdd && (adding
+                ? <AddCondition region={region} onDone={() => setAdding(false)} />
+                : <Button size="sm" variant="outline" icon="plus" style={{ marginTop: 8 }} onClick={() => setAdding(true)}>إضافة تشخيص لـ {region.name}</Button>)}
               {!search && !region ? <EmptyState icon="body" title="اختر منطقة من الجسم" text="ابحث باسم الحالة بالعربي أو الإنجليزي أو كود ICD-10." />
                 : list.length === 0 ? <EmptyState icon="search" title="ما فيه حالات مطابقة" /> : (
                   <div className="dx-options">
                     {!search && region && <div className="bm-list__title">{region.name} · <span className="num">{region.conditions.length}</span> حالات</div>}
                     {list.map(({ region: r, c }) => (
-                      <button key={c.id} type="button" className="dx-option" onClick={() => choose(r, c)}>
-                        <span>
-                          <strong dir="ltr">{c.en} <span className="dx-code num">{c.icd10}</span></strong>
-                          <small>{c.name.replace(/\s*\(تأهيل\)/, '')}{search ? ` · ${r.name}` : ''}</small>
-                          <em>الاختبارات: <bdi>{c.tests}</bdi></em>
-                        </span>
-                        <Icon name={r.sided ? 'chevronLeft' : 'check'} size={16} />
-                      </button>
+                      <div key={c.id} className="dx-option-row">
+                        <button type="button" className="dx-option" onClick={() => choose(r, c)}>
+                          <span>
+                            <strong dir="ltr">{c.en} <span className="dx-code num">{c.icd10}</span></strong>
+                            <small>{c.name.replace(/\s*\(تأهيل\)/, '')}{search ? ` · ${r.name}` : ''}</small>
+                            {c.tests && <em>الاختبارات: <bdi>{c.tests}</bdi></em>}
+                          </span>
+                          <Icon name={r.sided ? 'chevronLeft' : 'check'} size={16} />
+                        </button>
+                        {canDel && <button type="button" className="icon-btn dx-del" aria-label="حذف التشخيص" title="حذف من القايمة" onClick={() => void remove(c)}><Icon name="trash" size={16} /></button>}
+                      </div>
                     ))}
                   </div>
                 )}

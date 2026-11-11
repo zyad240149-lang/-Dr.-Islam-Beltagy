@@ -37,10 +37,13 @@ function timeOptions(extra: string[]) {
   return list.map((t) => ({ value: t, label: fmtTime(t) }));
 }
 // ملخص مقروء: «السبت، الاثنين: 5:00 م – 9:00 م — العيادة»
+// «24 ساعة» = من 12:00 ص لـ 11:59 م (نفس صيغة الحفظ — الخادم محتاج البداية قبل النهاية)
+export const ALL_DAY = { from: '00:00', to: '23:59' };
+const isAllDay = (x: { from: string; to: string }) => x.from === ALL_DAY.from && x.to === ALL_DAY.to;
 export function hoursSummary(h: WorkHours[]) {
   const branchName = (id?: string | null) => (id && db.branches().find((b) => b.id === id)?.name) || '';
   const groups = new Map<string, WorkDay[]>();
-  for (const x of [...h].sort(byDayOrder)) { const k = `${fmtTime(x.from)} – ${fmtTime(x.to)}|${branchName(x.branchId)}`; groups.set(k, [...(groups.get(k) ?? []), x.day]); }
+  for (const x of [...h].sort(byDayOrder)) { const k = `${isAllDay(x) ? '24 ساعة' : `${fmtTime(x.from)} – ${fmtTime(x.to)}`}|${branchName(x.branchId)}`; groups.set(k, [...(groups.get(k) ?? []), x.day]); }
   return [...groups].map(([k, days]) => { const [time, branch] = k.split('|'); return `${days.map(dayLabel).join('، ')}: ${time}${branch ? ` — ${branch}` : ''}`; }).join(' · ');
 }
 
@@ -51,6 +54,10 @@ export function WorkHoursEditor({ id, hours, onChange }: { id: string; hours: Wo
   const setHour = (day: WorkDay, k: 'from' | 'to', v: string) => onChange(hours.map((x) => (x.day === day ? { ...x, [k]: v } : x)));
   const setDayBranch = (day: WorkDay, branchId: string) => onChange(hours.map((x) => (x.day === day ? { ...x, branchId: branchId || null } : x)));
   const applyAll = (src: WorkHours) => onChange(hours.map((x) => ({ ...x, from: src.from, to: src.to })));
+  // ١١/١١: «24 ساعة» — الأيام المختارة (أو كل أيام الأسبوع لو مفيش يوم مختار) من 12:00 ص لـ 11:59 م
+  const allDay = () => onChange(hours.length ? hours.map((x) => ({ ...x, ...ALL_DAY })) : DAY_ORDER.map((day) => ({ day, ...ALL_DAY })));
+  const allWeekAllDay = () => onChange(DAY_ORDER.map((day) => ({ ...(hours.find((x) => x.day === day) ?? { day }), ...ALL_DAY })));
+  const everyAllDay = hours.length === 7 && hours.every(isAllDay);
   const opts = timeOptions(hours.flatMap((h) => [h.from, h.to]));
   const err = hoursError(hours);
   // عمود الفرع بيظهر لو فيه فرع نشط واحد على الأقل
@@ -62,6 +69,10 @@ export function WorkHoursEditor({ id, hours, onChange }: { id: string; hours: Wo
         const on = hours.some((h) => h.day === d);
         return <label key={d} className={`check-pill ${on ? 'on' : ''}`}><input type="checkbox" checked={on} onChange={() => toggleDay(d)} />{dayLabel(d)}</label>;
       })}</div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+        <Button type="button" size="sm" variant={everyAllDay ? undefined : 'outline'} icon="clock" onClick={allWeekAllDay}>24 ساعة — كل الأيام</Button>
+        {hours.length > 0 && hours.length < 7 && <Button type="button" size="sm" variant="outline" icon="clock" onClick={allDay}>24 ساعة للأيام المختارة</Button>}
+      </div>
       {hours.length === 0 && <p className="muted-sm">اختر أيام العمل.</p>}
       {hours.map((h, i) => (
         <div key={h.day} className="grid-form" style={{ alignItems: 'end', gridTemplateColumns: showBranch ? 'minmax(70px,.6fr) repeat(2, minmax(0,1fr)) minmax(120px,1fr)' : 'minmax(70px,.6fr) repeat(2, minmax(0,1fr))' }}>

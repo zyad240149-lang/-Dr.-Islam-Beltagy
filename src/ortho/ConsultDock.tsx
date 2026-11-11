@@ -1,7 +1,7 @@
 // ١١/١١: أكتر من كشف مفتوح في نفس الوقت — «فتح مريض تاني» بيركن الكشف الحالي تحت زي ما هو (مش بيتقفل ولا بيضيع اللي اتكتب)،
 // وتفتح مريض تاني، وترجع لأي كشف من الشريط اللي تحت بضغطة. الكشوفات بتفضل مفتوحة حتى لو اتنقلت لصفحة تانية.
 // نافذة الكشف نفسها بتتحمّل lazy عشان الملف ده في الـ Layout ومايتقّلش فتح البرنامج.
-import { createContext, lazy, Suspense, useCallback, useContext, useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
+import { createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import { db } from '../data/db';
 import { Icon } from '../utils/icons';
 import type { ConsultModal as ConsultModalT } from './Consultations';
@@ -31,13 +31,17 @@ export function ConsultDockProvider({ children }: { children: ReactNode }) {
   // ركن الكشف: الصفحة اللي فتحته بترجع لحالتها (عشان تقدر تختار مريض تاني أو نفس المريض تاني) والكشف فاضل عايش في الشريط
   const park = (x: Entry) => { setActive(null); x.spec.onClose(); };
   const parked = list.filter((x) => x.key !== active);
+  // الـ context لازم يفضل نفس الكائن — لو اتغيّر كل رندر، الصفحة اللي فتحت الكشف كانت بتفتحه تاني وترجّع التبديل (١٢/١١)
+  const ctx = useMemo(() => ({ open }), [open]);
+  // التبديل لكشف تاني: الكشف الحالي بيتركن والصفحة اللي فتحته بترجع لحالتها
+  const switchTo = (from: Entry, key: string) => { from.spec.onClose(); setActive(key); };
   return (
-    <DockCtx.Provider value={{ open }}>
+    <DockCtx.Provider value={ctx}>
       {children}
       <Suspense fallback={null}>
         {list.map((x) => (
           <ConsultModal key={x.key} {...x.spec} minimized={x.key !== active} onMinimize={() => park(x)} onClose={() => close(x.key)}
-            others={x.key === active ? list.filter((y) => y.key !== x.key).map((y) => ({ key: y.key, label: labelOf(y.spec), go: () => setActive(y.key) })) : undefined} />
+            others={x.key === active ? list.filter((y) => y.key !== x.key).map((y) => ({ key: y.key, label: labelOf(y.spec), go: () => switchTo(x, y.key) })) : undefined} />
         ))}
       </Suspense>
       {parked.length > 0 && (

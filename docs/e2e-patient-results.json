@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-11T02:54:25.578Z",
+  "at": "2026-11-11T12:21:58.271Z",
   "passed": 38,
   "failed": 0,
   "results": [
@@ -36,7 +36,7 @@
     {
       "name": "إنشاء الحساب ينجح ويرجع رقم الملف",
       "ok": true,
-      "detail": "{\"ok\":true,\"patientId\":\"40644f5e-1bec-4742-9e48-e02b967759a6\",\"customerId\":\"87fa01e3-0475-4336-a760-f58c5d96a9c4\"}"
+      "detail": "{\"ok\":true,\"patientId\":\"1ce22f76-6809-4b1c-b03f-da2b231bc170\",\"customerId\":\"760801a7-cca1-431a-937b-17128a744c47\"}"
     },
     {
       "name": "نفس الرقم مرتين مرفوض",
@@ -46,7 +46,7 @@
     {
       "name": "ملف مريض اتعمل تلقائيًا (المصدر: الموقع)",
       "ok": true,
-      "detail": "{\"full_name\":\"مريض بوابة اختبار\",\"phone\":\"+201200000931\",\"referral_source\":\"website\",\"file_no\":\"TM-856\"}"
+      "detail": "{\"full_name\":\"مريض بوابة اختبار\",\"phone\":\"+201200000931\",\"referral_source\":\"website\",\"file_no\":\"TM-857\"}"
     },
     {
       "name": "الاستقبال فتح ملف للمريض (من غير رقم قومي) قبل ما يعمل حساب",
@@ -81,7 +81,7 @@
     {
       "name": "الرقم الصح (حتى بأرقام عربية ومسافة) ← اتربط بنفس الملف",
       "ok": true,
-      "detail": "{\"ok\":true,\"patientId\":\"62f26578-f7e8-4f44-87bd-cd146799e280\",\"customerId\":\"4a64b8a9-d4c6-400f-b7ce-1aff571dbf1f\"}"
+      "detail": "{\"ok\":true,\"patientId\":\"114dca42-24a2-46b6-b68a-af1c08db018b\",\"customerId\":\"a902cd3b-7f99-4066-923c-07d0d0b92b7e\"}"
     },
     {
       "name": "مفيش ملف مكرر لنفس الموبايل",
@@ -96,7 +96,7 @@
     {
       "name": "الحساب اتربط بملف صاحب الرقم القومي (الابن) مش أول ملف",
       "ok": true,
-      "detail": "{\"ok\":true,\"patientId\":\"d2b5b9ed-f3c2-4995-9ef9-8f5475e3b783\",\"customerId\":\"912e62eb-a672-48d5-84df-443ee5d525cd\"}"
+      "detail": "{\"ok\":true,\"patientId\":\"5c8032dc-0b89-4e21-b9ff-6e4a0e3901dd\",\"customerId\":\"ab8fa534-c256-4193-9649-a4c0fce0d321\"}"
     },
     {
       "name": "5 محاولات غلط بترجع «غير مطابق»",
@@ -126,7 +126,7 @@
     {
       "name": "الدخول كمريض و /api/me = customer",
       "ok": true,
-      "detail": "{\"kind\":\"customer\",\"customer\":{\"id\":\"87fa01e3-0475-4336-a760-f58c5d96a9c4\",\"auth_user_id\":\"66987183-4a91-4f0b-8bdb-3a148fc4068e\",\"patient_id\":\"40644f5"
+      "detail": "{\"kind\":\"customer\",\"customer\":{\"id\":\"760801a7-cca1-431a-937b-17128a744c47\",\"auth_user_id\":\"38a6f97f-b5c0-48ff-bbac-90bde6fa5423\",\"patient_id\":\"1ce22f7"
     },
     {
       "name": "ملفي (patient_me)",
@@ -171,7 +171,7 @@
     {
       "name": "المريض بيشوف ملفه هو بس",
       "ok": true,
-      "detail": "[{\"id\":\"40644f5e-1bec-4742-9e48-e02b967759a6\"}]"
+      "detail": "[{\"id\":\"1ce22f76-6809-4b1c-b03f-da2b231bc170\"}]"
     },
     {
       "name": "ملف مريض تاني مش ظاهر له",

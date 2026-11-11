@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-11T02:53:21.664Z",
+  "at": "2026-11-11T12:20:51.441Z",
   "passed": 31,
   "failed": 0,
   "results": [
@@ -26,12 +26,12 @@
     {
       "name": "إنشاء حساب استقبال",
       "ok": true,
-      "detail": "{\"id\":\"ac9bc6b3-ffda-48d9-8013-2e7d6aab16fb\",\"name\":\"استقبال اختبار آلي\",\"username\":\"201200000901\",\"role\":\"reception\",\"phone\":\"+201200000901\",\"active\""
+      "detail": "{\"id\":\"3a43d906-aecc-412c-b168-e3327a37d771\",\"name\":\"استقبال اختبار آلي\",\"username\":\"201200000901\",\"role\":\"reception\",\"phone\":\"+201200000901\",\"active\""
     },
     {
       "name": "إنشاء حساب طبيب مربوط بملفه",
       "ok": true,
-      "detail": "{\"id\":\"0b651d1e-ef5a-410f-9375-94411a51147e\",\"name\":\"طبيب اختبار آلي\",\"username\":\"201200000902\",\"role\":\"therapist\",\"phone\":\"+201200000902\",\"active\":tr"
+      "detail": "{\"id\":\"e9adfe29-b22e-4d8f-b0a2-afb73d7c2baf\",\"name\":\"طبيب اختبار آلي\",\"username\":\"201200000902\",\"role\":\"therapist\",\"phone\":\"+201200000902\",\"active\":tr"
     },
     {
       "name": "رقم موظف مكرر مرفوض",
@@ -51,7 +51,7 @@
     {
       "name": "الاستقبال يضيف مريض ورقم الملف يتولد تلقائي",
       "ok": true,
-      "detail": "TM-856"
+      "detail": "TM-857"
     },
     {
       "name": "المريض محفوظ فعلًا في القاعدة",
@@ -81,7 +81,7 @@
     {
       "name": "حجزين متزامنين على نفس الوقت: واحد بس ينجح",
       "ok": true,
-      "detail": "ok | المريض عنده موعد تاني في نفس الوقت (18:00 – 18:15) مع د. اختبار آلي — اختر وقتًا مختلفًا"
+      "detail": "المريض عنده موعد تاني في نفس الوقت (18:00 – 18:15) مع د. اختبار آلي — اختر وقتًا مختلفًا | ok"
     },
     {
       "name": "الفاتورة اتعملت تلقائيًا مع الحجز بسعر الخدمة",
@@ -116,7 +116,7 @@
     {
       "name": "لوحة الاستقبال بدون أرقام الإيراد",
       "ok": true,
-      "detail": "{\"openTickets\":0,\"outstanding\":null,\"monthRevenue\":null,\"totalPatients\":840,\"completedToday\":0,\"pendingRequests\":0,\"newP"
+      "detail": "{\"openTickets\":0,\"outstanding\":null,\"monthRevenue\":null,\"totalPatients\":841,\"completedToday\":0,\"pendingRequests\":0,\"newP"
     },
     {
       "name": "الاستقبال ما يقدرش يكتب تشخيص",
@@ -131,7 +131,7 @@
     {
       "name": "الكشف محفوظ باسم الطبيب",
       "ok": true,
-      "detail": "0b651d1e-ef5a-410f-9375-94411a51147e"
+      "detail": "e9adfe29-b22e-4d8f-b0a2-afb73d7c2baf"
     },
     {
       "name": "الاستقبال يقرا الكشف (عرض فقط)",

@@ -70,7 +70,7 @@ try {
     P.appt = id;
     check(`حجز موعد النهارده لـ ${P.first}`, !!id, err);
   }
-  // قبل الحضور: الحجز لوحده مايظهرش في قايمة الانتظار (بيتأكد في الواجهة تحت)
+  // ١١/١١: الحجز لوحده (من غير حضور) بيظهر في «مرضى النهارده» على طول — «أ» بيفضل محجوز بس، «ب» بيتعمله حضور
   const recepC = await login(STAFF.recep.digits, PW);
 
   section('قاعدة البيانات: الربط بالزيارة والصلاحيات');
@@ -82,7 +82,7 @@ try {
   const recepIns = await recepC.from('ortho_consultations').insert({ patient_id: PB.id, complaint: 'x', diagnosis: 'x' }).select();
   check('الاستقبال ما يقدرش يسجّل تشخيص', !!recepIns.error || (recepIns.data ?? []).length === 0, 'inserted!');
   await sql(`delete from ortho_consultations where patient_id = '${PB.id}'`); // الواجهة هتعمل تشخيص «ب» من الأول
-  for (const P of [PA, PB]) {
+  for (const P of [PB]) {
     const st = await recepC.rpc('set_appointment_status', { p_id: P.appt, p_status: 'arrived', p_reason: null, p_therapist: null });
     check(`تسجيل حضور ${P.first} (من الاستقبال)`, !st.error, st.error?.message);
   }
@@ -141,7 +141,9 @@ try {
   const A = await open(STAFF.admin);
   await goto(A.page, '/diagnosis');
   const rowA = queueRow(A.page, PA), rowB = queueRow(A.page, PB);
-  check('مريض «أ» اللي اتعمله حضور ظاهر في «بانتظار التشخيص»', await rowA.count() === 1);
+  check('مريض «أ» المحجوز النهارده (من غير حضور) ظاهر على طول في «مرضى النهارده»', await rowA.count() === 1);
+  check('«أ» اتشخص قبل كده ← زرار «إضافة شيت» + «تشخيص جديد» (زيارته كشف)', await rowA.locator('button', { hasText: 'إضافة شيت' }).count() === 1 && await rowA.locator('button', { hasText: 'تشخيص جديد' }).count() === 1);
+  check('«ب» أول مرة ← زرار «تشخيص» بس (من غير «إضافة شيت»)', await rowB.locator('button', { hasText: 'إضافة شيت' }).count() === 0 && await rowB.locator('button', { hasText: 'تشخيص' }).count() === 1);
   check('مريض «ب» اللي اتعمله حضور ظاهر في «بانتظار التشخيص»', await rowB.count() === 1);
   const apA = await q1(`select no from appointments where id = '${PA.appt}'`);
   const rowText = (await rowA.textContent()) ?? '';

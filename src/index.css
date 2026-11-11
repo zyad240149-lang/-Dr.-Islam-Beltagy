@@ -2112,3 +2112,13 @@ html[dir="rtl"] .table td.num, html[dir="rtl"] .table th.num { text-align: right
 .cx-pick__go { justify-content: flex-start; padding-top: 2px; }
 @media (max-width: 760px) { .cx-pick { grid-template-columns: minmax(0, 1fr) !important; } .cx-pick__p + .cx-pick__p { border-inline-start: 0; border-top: 1px solid var(--line); } .cx-pick__p:first-child { max-height: 320px; } }
 .cx-pick__note { height: 34px; font-size: 13px; padding: 0 10px; }
+
+/* ١٢/١١: جسم الإنسان في مربع التشخيص (الشيت العام الجديد) */
+.pg-dxb { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; margin-top: 8px; align-items: start; }
+.pg-dxb__fig { text-align: center; }
+.pg-dxb__fig svg { max-width: 150px; height: auto; }
+.pg-dxb__hint { font-size: 12px; font-weight: 700; color: var(--brand-700); margin-top: 2px; }
+.pg-dxb__t { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; font-weight: 800; color: var(--brand-700); margin-bottom: 6px; }
+.pg-dxb__side { display: inline-flex; gap: 4px; }
+.pg-dxb__chips { display: flex; flex-wrap: wrap; gap: 5px; }
+@media (max-width: 520px) { .pg-dxb { grid-template-columns: minmax(0, 1fr); } }

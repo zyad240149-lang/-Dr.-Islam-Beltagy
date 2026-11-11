@@ -1,6 +1,9 @@
 // ١١/١١: «الشيت العام» الجديد — نفس خانات «إنشاء خطة علاج جديدة» بس مربعات بتتعلّم زي الشيت العام القديم.
 // الاختيارات بتتحفظ في consultation.sheet تحت مفاتيح pg.* (الشيت القديم n.* متركن تحته ومحفوظ زي ما هو).
+import { useState } from 'react';
 import { db } from '../data/db';
+import { BodyFigure, regionById, type PinSide } from '../components/BodyFigure';
+import { diagnosisText } from '../components/DiagnosisPicker';
 import { GOALS } from '../data/physioApi';
 import { AGGRAVATING, CHARACTER, HISTORY, LOCATION, ONSET, PATTERN, RADIATION, RELIEVING, DURATION_UNITS } from '../data/physioSubjective';
 import { GAIT, JOINTS, OBSERVATION, PALPATION, REFLEXES, REFLEX_RESULT, ROM_STATUS, SENS_DEEP, SENS_SUP, TEST_RESULT, GRADES, type Opt } from '../data/physioObjective';
@@ -80,6 +83,37 @@ export const planSheetStarted = (s: ExamSheet) => s.on.some((o) => o.startsWith(
 
 const Other = ({ a, k, label = 'أخرى (Other)' }: { a: Api; k: string; label?: string }) => <Txt a={a} k={k} label={label} />;
 
+/** جسم الإنسان + تشخيصات المنطقة المختارة (مربع التشخيص في الشيت العام الجديد) */
+function DxBody({ value, onAdd }: { value: string; onAdd: (text: string) => void }) {
+  const [region, setRegion] = useState<string | null>(null);
+  const [side, setSide] = useState<PinSide>(null);
+  const [hovered, setHovered] = useState<string | null>(null);
+  const r = region ? regionById(region) : undefined;
+  const picked = new Set(value.split(' · ').map((x) => x.trim()).filter(Boolean));
+  const sideOf = (s: PinSide) => (s === 'right' ? 'right' : s === 'left' ? 'left' : null);
+  return (
+    <div className="pg-dxb">
+      <div className="pg-dxb__fig">
+        <BodyFigure compact selected={region} hovered={hovered} onHover={setHovered} onSelect={(id, s) => { setRegion(id); setSide(s); }} />
+        <div className="pg-dxb__hint">{hovered ? regionById(hovered)?.name : r ? r.name : 'دوس على مكان الألم'}</div>
+      </div>
+      <div className="pg-dxb__list">
+        {!r ? <p className="cx-empty">اختار المنطقة من الجسم — تشخيصاتها هتظهر هنا.</p> : (<>
+          <div className="pg-dxb__t">{r.name}{r.sided && (
+            <span className="pg-dxb__side">{(['right', 'left', 'both'] as const).map((x) => <button key={x} type="button" className={`cx-chip cx-chip--sm${(x === 'both' ? side === null : side === x) ? ' is-on' : ''}`} onClick={() => setSide(x === 'both' ? null : x)}>{x === 'right' ? 'يمين' : x === 'left' ? 'شمال' : 'الجهتين'}</button>)}</span>
+          )}</div>
+          <div className="pg-dxb__chips">
+            {r.conditions.map((c) => {
+              const t = diagnosisText(c, r.sided ? (sideOf(side) ?? 'both') : null);
+              return <button key={c.id} type="button" dir="ltr" className={`cx-chip cx-chip--sm${picked.has(t) ? ' is-on' : ''}`} title={c.name} onClick={() => onAdd(t)}>{c.en}</button>;
+            })}
+          </div>
+        </>)}
+      </div>
+    </div>
+  );
+}
+
 export function PlanGeneralSheet({ sheet, onChange, age, onOpenMap, painScore, onPainScore }: {
   sheet: ExamSheet; onChange: (f: (s: ExamSheet) => ExamSheet) => void;
   /** عمر المريض من ملفه (لو خانة العمر فاضية بيظهر كاقتراح) */
@@ -137,7 +171,9 @@ export function PlanGeneralSheet({ sheet, onChange, age, onOpenMap, painScore, o
       </Box>
       <Box n={5} title="التشخيص">
         <Txt a={a} k="pg.dx" label="التشخيص" stack />
-        {onOpenMap && <button type="button" className="link-more" style={{ background: 'none', border: 0, padding: 0, cursor: 'pointer', marginTop: 6 }} onClick={onOpenMap}>اختيار من خريطة الجسم</button>}
+        {/* ١٢/١١: جسم الإنسان جوّه مربع التشخيص — دوس على المنطقة (الجهة من مكان الضغطة) وبعدين اختار التشخيص فيتضاف */}
+        <DxBody value={a.txt('pg.dx')} onAdd={(t) => { const cur = a.txt('pg.dx').trim(); if (cur.split(' · ').includes(t)) return; a.set('pg.dx', cur ? `${cur} · ${t}` : t); }} />
+        {onOpenMap && <button type="button" className="link-more" style={{ background: 'none', border: 0, padding: 0, cursor: 'pointer', marginTop: 6 }} onClick={onOpenMap}>البحث في كل التشخيصات</button>}
       </Box>
       {/* ١١/١١: «الهدف الرئيسي» و«نوع العلاج» و«عدد الزيارات» و«ملاحظات» اتشالوا (طلب العيادة) — اللي اتسجّل فيهم قبل كده لسه في الملخص */}
       {/* ١١/١١: «مقياس الألم» ومربع «مكان الألم وبدايته…» اتشالوا، ومكانهم «سبب الزيارة الحالية وتفاصيل المشكلة» (مربع 4 في الشيت القديم — نفس البيانات n.*، وفيه شدة الألم) */}

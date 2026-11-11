@@ -21,7 +21,7 @@ if (!env.CLOUDFLARE_API_TOKEN) throw new Error('CLOUDFLARE_API_TOKEN مش موج
 if (!process.argv.includes('--skip-build')) execSync('npm run build', { cwd: ROOT, stdio: 'inherit' });
 
 // أي مفتاح سري (service_role / access token / توكن Cloudflare) جوّه dist = وقف النشر
-const secrets = ['SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_ACCESS_TOKEN', 'CLOUDFLARE_API_TOKEN'].map((k) => [k, env[k]]).filter(([, v]) => v && v.length > 20);
+const secrets = ['SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SECRET_KEY', 'SUPABASE_ACCESS_TOKEN', 'CLOUDFLARE_API_TOKEN'].map((k) => [k, env[k]]).filter(([, v]) => v && v.length > 20);
 const files = [];
 const walk = (d) => { for (const f of readdirSync(d)) { const p = join(d, f); if (statSync(p).isDirectory()) walk(p); else files.push(p); } };
 walk(DIST);

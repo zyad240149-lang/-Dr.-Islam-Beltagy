@@ -77,6 +77,24 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
     setMed(i, p ? { name, dose: cur.dose || p.dose, frequency: cur.frequency || p.frequency, duration: cur.duration || p.duration, notes: cur.notes || p.notes || '' } : { name });
   };
   const [medQ, setMedQ] = useState('');
+  // ١٢/١١: اختيار الدواء على مربعين — الأول الأدوية، والتاني جرعات الدواء المختار، و«إضافة للروشتة» بتنزّله تحت
+  const [sel, setSel] = useState<MedPreset | null>(null);
+  const [draft, setDraft] = useState<Pick<Medication, 'dose' | 'frequency' | 'duration' | 'notes'>>({ dose: '', frequency: '', duration: '', notes: '' });
+  const choose = (p: MedPreset) => {
+    const cur = c.medications.find((m) => m.name.trim().toLowerCase() === p.name.trim().toLowerCase());
+    setSel(p);
+    setDraft(cur ? { dose: cur.dose, frequency: cur.frequency, duration: cur.duration, notes: cur.notes ?? '' } : { dose: p.dose, frequency: p.frequency, duration: p.duration, notes: p.notes ?? '' });
+  };
+  const addSel = () => {
+    if (!sel) return;
+    const k = sel.name.trim().toLowerCase();
+    const exists = c.medications.some((m) => m.name.trim().toLowerCase() === k);
+    set('medications', exists
+      ? c.medications.map((m) => (m.name.trim().toLowerCase() === k ? { ...m, ...draft } : m))
+      : [...c.medications.filter((m) => m.name.trim()), { ...emptyMed(), name: sel.name, ...draft }]);
+    if (exists) toast.info(`«${sel.name}» موجود في الروشتة — اتحدّثت جرعته.`);
+    setSel(null);
+  };
   const norm = (s: string) => s.trim().toLowerCase();
   // ١١/١١: نفس الدواء متكتب مرتين ← تنبيه + الصفوف المتكررة بتتعلّم بالأحمر
   const dupNames = (() => { const seen = new Map<string, number>(); for (const m of c.medications) { const k = norm(m.name); if (k) seen.set(k, (seen.get(k) ?? 0) + 1); } return new Set([...seen].filter(([, n]) => n > 1).map(([k]) => k)); })();
@@ -143,17 +161,51 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
   );
   const medsSec = (
     <Section key="meds" icon="receipt" title={rxOnly ? 'الأدوية' : 'العلاج — الروشتة'} aside={<Button size="sm" variant="outline" icon="plus" onClick={() => set('medications', [...c.medications, emptyMed()])}>إضافة دواء</Button>}>
-      {/* اختيار من قسم «الأدوية»: ضغطة بتضيف الدواء بجرعته وتكراره ومدته، وضغطة تانية بتشيله */}
-      <input className="input cx-medq" dir="auto" placeholder="ابحث بالاسم التجاري أو المادة الفعالة…" value={medQ} onChange={(e) => setMedQ(e.target.value)} />
-      {[...medGroups].map(([g, meds]) => (
-        <div className="cx-labgrp" key={g}>
-          <span className="cx-labgrp__t">{g}</span>
-          <div className="cx-chips">{meds.map((p) => { const on = hasMed(p.name); return <button key={p.name} type="button" dir="ltr" aria-pressed={on} className={`cx-chip ${on ? 'is-on' : ''}`} onClick={() => toggleMed(p)}>{p.name}</button>; })}</div>
+      {/* ١٢/١١: مربعين — (1) الأدوية (2) جرعات الدواء المختار ← «إضافة للروشتة» بتنزّله في القايمة تحت */}
+      <div className="cx-pick">
+        <div className="cx-pick__p">
+          <div className="cx-pick__h"><span className="cx-pick__n">1</span> اختار الدواء</div>
+          <input className="input cx-medq" dir="auto" placeholder="ابحث بالاسم التجاري أو المادة الفعالة…" value={medQ} onChange={(e) => setMedQ(e.target.value)} />
+          <div className="cx-pick__list">
+            {[...medGroups].map(([g, meds]) => (
+              <div key={g}>
+                <div className="cx-pick__g">{g}</div>
+                {meds.map((p) => { const on = hasMed(p.name); const act = sel?.name === p.name; return (
+                  <button key={p.name} type="button" dir="ltr" className={`cx-pick__m${act ? ' is-act' : ''}${on ? ' is-on' : ''}`} onClick={() => choose(p)}>
+                    <span>{p.name}</span>{on && <Icon name="check" size={13} />}
+                  </button>
+                ); })}
+              </div>
+            ))}
+            {medQ.trim() && !medGroups.size && <p className="cx-empty">مفيش دواء بالاسم ده — اضغط «إضافة دواء» واكتبه.</p>}
+          </div>
         </div>
-      ))}
-      {medQ.trim() && !medGroups.size && <p className="cx-empty">مفيش دواء بالاسم ده في القايمة — اضغط «إضافة دواء» واكتبه، أو ضيفه من قسم «الأدوية».</p>}
+        <div className="cx-pick__p">
+          <div className="cx-pick__h"><span className="cx-pick__n">2</span> الجرعة</div>
+          {!sel ? <p className="cx-empty">اختار دواء من المربع الأول — جرعاته هتظهر هنا.</p> : (
+            <div className="cx-pick__dose">
+              <div className="cx-pick__sel" dir="ltr">{sel.name}</div>
+              {([['الجرعة', 'dose', MED_DOSES], ['عدد المرات', 'frequency', MED_FREQS], ['المدة', 'duration', MED_DURATIONS], ['ملاحظة', 'notes', MED_NOTES]] as const).map(([label, k, opts]) => {
+                const v = draft[k] ?? '';
+                const list = v && !(opts as readonly string[]).includes(v) ? [v, ...opts] : opts;
+                return (
+                  <div key={k} className="cx-pick__row">
+                    <b>{label}</b>
+                    <div className="cx-pick__chips">{list.map((o) => <button key={o} type="button" className={`cx-chip cx-chip--sm${v === o ? ' is-on' : ''}`} onClick={() => setDraft((d) => ({ ...d, [k]: d[k] === o ? '' : o }))}>{o}</button>)}</div>
+                  </div>
+                );
+              })}
+              <div className="cx-pick__go">
+                <Button icon={hasMed(sel.name) ? 'check' : 'plus'} onClick={addSel}>{hasMed(sel.name) ? 'تحديث الجرعة' : 'إضافة للروشتة'}</Button>
+                {hasMed(sel.name) && <Button variant="outline" icon="trash" onClick={() => { toggleMed(sel); setSel(null); }}>شيله من الروشتة</Button>}
+                <Button variant="ghost" onClick={() => setSel(null)}>إلغاء</Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
       {c.medications.length === 0
-        ? <p className="cx-empty">اختار الأدوية من القايمة فوق، أو اضغط «إضافة دواء» واكتب اسم دواء تاني.</p>
+        ? <p className="cx-empty">الأدوية اللي بتضيفها بتنزل هنا — أو اضغط «إضافة دواء» واكتب اسم دواء تاني.</p>
         : (
           <div className="cx-rows">
             {dupNames.size > 0 && <div className="cx-dup" role="alert"><Icon name="alert" size={16} /> فيه دواء متكتب مرتين: <b dir="ltr">{[...dupNames].join('، ')}</b> — امسح التكرار.</div>}

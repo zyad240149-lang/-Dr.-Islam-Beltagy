@@ -454,6 +454,53 @@ export function GenGroupBox({ sheet, onChange, gi, n }: { sheet: ExamSheet; onCh
   );
 }
 
+/** ١١/١١: «سبب الزيارة الحالية وتفاصيل المشكلة» (مربع 4 في الشيت القديم) — مكوّن لوحده عشان الشيت الجديد يستخدمه بنفس البيانات */
+export function VisitReasonBox({ n, sheet, onChange, painScore, onPainScore }: { n: number; sheet: ExamSheet; onChange: Change; painScore: number | ''; onPainScore: (v: number | '') => void }) {
+  const a = sheetApi(sheet, onChange);
+  return (
+        <Box n={n} wide title="سبب الزيارة الحالية وتفاصيل المشكلة">
+          <div className="sh-visit">
+            <div>
+              <div className="sh-lbl">الشكوى</div>
+              <Checks a={a} g="n.cc" items={N_CC} />
+              <Txt a={a} k="n.cc.other" label="أخرى" />
+              <div className="sh-lbl">شكوى المريض (كتابةً)</div>
+              <textarea className="sh-in sh-in--area" dir="auto" rows={3} aria-label="شكوى المريض كتابةً" placeholder="اكتب شكوى المريض بكلامه…" value={a.txt('n.cc.text')} onChange={(e) => a.set('n.cc.text', e.target.value)} />
+            </div>
+
+            <div>
+              <div className="sh-lbl">شدة الألم حاليًا (من 10) {painScore !== '' && <b className="cx-pain-val num">{painScore}/10</b>}</div>
+              <div className="cx-pain" role="radiogroup" aria-label="شدة الألم">
+                {Array.from({ length: 11 }, (_, n) => (
+                  <button key={n} type="button" role="radio" aria-checked={painScore === n} className={`cx-pain__b cx-pain__b--${n <= 3 ? 'lo' : n <= 6 ? 'mid' : 'hi'} ${painScore === n ? 'is-on' : ''}`}
+                    onClick={() => onPainScore(painScore === n ? '' : n)}>{n}</button>
+                ))}
+              </div>
+              <div className="sh-scale"><span>لا يوجد ألم</span><span>ألم متوسط</span><span>ألم شديد</span></div>
+              <div className="sh-lbl">منذ متى؟</div>
+              <div className="sh-inline"><Pick a={a} g="n.since" items={N_SINCE} /></div>
+              <div className="sh-lbl">النوبات</div>
+              <div className="sh-inline"><Pick a={a} g="n.episode" items={N_EPISODE} /></div>
+              {a.has('n.episode', 'على شكل نوبات') && <>
+                <div className="sh-lbl">معدل تكرر النوبات</div>
+                <div className="sh-inline"><Pick a={a} g="n.ep.freq" items={N_EP_FREQ} /></div>
+                <Txt a={a} k="n.ep.count" label="عدد النوبات" unit="في الفترة دي" num />
+                <Txt a={a} k="n.ep.dur" label="مدة النوبة" placeholder="مثلاً: ساعتين" />
+              </>}
+              <Txt a={a} k="n.onset" label="بداية المشكلة / كيفية حدوثها" stack />
+              <Row label="هل توجد إصابة حديثة؟"><Pick a={a} g="n.injury" items={YES_NO} /></Row>
+              {a.has('n.injury', 'نعم') && <Txt a={a} k="n.injury.what" label="إذا نعم، ما هي؟" stack />}
+              <Txt a={a} k="n.done" label="ماذا تم عمله حتى الآن؟ (علاج / جبس / عملية / زيارات …)" stack />
+            </div>
+          </div>
+        <div className="sh-lbl">ملاحظات</div>
+          <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt('n.bn.visit')} onChange={(e) => a.set('n.bn.visit', e.target.value)} />
+          {/* ٩/١١: «الأدوية والعلاج المستخدم سابقًا» جوّه سبب الزيارة */}
+          {GEN_BOXES.filter((b) => b.id === 'prevtx').map((b) => <div key={b.id}><div className="sh-lbl sh-sub">{b.title}</div><GenBody a={a} sheet={sheet} onChange={onChange} b={b} /></div>)}
+        </Box>
+  );
+}
+
 // ---------- الشيت العام ----------
 export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScore, onPainScore, onFirstPain }: {
   sheet: ExamSheet; onChange: Change; patient?: Patient | null; date: string; visitNo: number;
@@ -589,46 +636,7 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
           <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt('n.bn.meds')} onChange={(e) => a.set('n.bn.meds', e.target.value)} />
         </Box>
 
-        <Box n={4} wide title="سبب الزيارة الحالية وتفاصيل المشكلة">
-          <div className="sh-visit">
-            <div>
-              <div className="sh-lbl">الشكوى</div>
-              <Checks a={a} g="n.cc" items={N_CC} />
-              <Txt a={a} k="n.cc.other" label="أخرى" />
-              <div className="sh-lbl">شكوى المريض (كتابةً)</div>
-              <textarea className="sh-in sh-in--area" dir="auto" rows={3} aria-label="شكوى المريض كتابةً" placeholder="اكتب شكوى المريض بكلامه…" value={a.txt('n.cc.text')} onChange={(e) => a.set('n.cc.text', e.target.value)} />
-            </div>
-
-            <div>
-              <div className="sh-lbl">شدة الألم حاليًا (من 10) {painScore !== '' && <b className="cx-pain-val num">{painScore}/10</b>}</div>
-              <div className="cx-pain" role="radiogroup" aria-label="شدة الألم">
-                {Array.from({ length: 11 }, (_, n) => (
-                  <button key={n} type="button" role="radio" aria-checked={painScore === n} className={`cx-pain__b cx-pain__b--${n <= 3 ? 'lo' : n <= 6 ? 'mid' : 'hi'} ${painScore === n ? 'is-on' : ''}`}
-                    onClick={() => onPainScore(painScore === n ? '' : n)}>{n}</button>
-                ))}
-              </div>
-              <div className="sh-scale"><span>لا يوجد ألم</span><span>ألم متوسط</span><span>ألم شديد</span></div>
-              <div className="sh-lbl">منذ متى؟</div>
-              <div className="sh-inline"><Pick a={a} g="n.since" items={N_SINCE} /></div>
-              <div className="sh-lbl">النوبات</div>
-              <div className="sh-inline"><Pick a={a} g="n.episode" items={N_EPISODE} /></div>
-              {a.has('n.episode', 'على شكل نوبات') && <>
-                <div className="sh-lbl">معدل تكرر النوبات</div>
-                <div className="sh-inline"><Pick a={a} g="n.ep.freq" items={N_EP_FREQ} /></div>
-                <Txt a={a} k="n.ep.count" label="عدد النوبات" unit="في الفترة دي" num />
-                <Txt a={a} k="n.ep.dur" label="مدة النوبة" placeholder="مثلاً: ساعتين" />
-              </>}
-              <Txt a={a} k="n.onset" label="بداية المشكلة / كيفية حدوثها" stack />
-              <Row label="هل توجد إصابة حديثة؟"><Pick a={a} g="n.injury" items={YES_NO} /></Row>
-              {a.has('n.injury', 'نعم') && <Txt a={a} k="n.injury.what" label="إذا نعم، ما هي؟" stack />}
-              <Txt a={a} k="n.done" label="ماذا تم عمله حتى الآن؟ (علاج / جبس / عملية / زيارات …)" stack />
-            </div>
-          </div>
-        <div className="sh-lbl">ملاحظات</div>
-          <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt('n.bn.visit')} onChange={(e) => a.set('n.bn.visit', e.target.value)} />
-          {/* ٩/١١: «الأدوية والعلاج المستخدم سابقًا» جوّه سبب الزيارة */}
-          {GEN_BOXES.filter((b) => b.id === 'prevtx').map((b) => <div key={b.id}><div className="sh-lbl sh-sub">{b.title}</div>{genBody(b)}</div>)}
-        </Box>
+        <VisitReasonBox n={4} sheet={sheet} onChange={onChange} painScore={painScore} onPainScore={onPainScore} />
 
         {/* ٩/١١: مربعات متجمعة — (مكان/بداية/طبيعة الألم/التورم) و(ما يخفف/التأثير على الحياة اليومية) */}
         {GEN_GROUPS.map((g, i) => {

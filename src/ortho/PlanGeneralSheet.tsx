@@ -5,7 +5,7 @@ import { GOALS } from '../data/physioApi';
 import { AGGRAVATING, CHARACTER, HISTORY, LOCATION, ONSET, PATTERN, RADIATION, RELIEVING, DURATION_UNITS } from '../data/physioSubjective';
 import { GAIT, JOINTS, OBSERVATION, PALPATION, REFLEXES, REFLEX_RESULT, ROM_STATUS, SENS_DEEP, SENS_SUP, TEST_RESULT, GRADES, type Opt } from '../data/physioObjective';
 import type { ExamSheet } from './data';
-import { Box, Checks, GenGroupBox, Pick, Row, SHEET_LISTS, Txt, sheetApi, type Api } from './ExamSheet';
+import { Box, Checks, Pick, Row, SHEET_LISTS, Txt, VisitReasonBox, sheetApi, type Api } from './ExamSheet';
 
 // نفس اختيارات خطة العلاج (PatientForms → PlanModal)
 export const PLAN_ONSET = ['مفاجئ (Sudden)', 'تدريجي (Gradual)', 'بعد إصابة/حادثة (Traumatic)', 'بعد سقوط (Fall)', 'بعد رفع شيء ثقيل (Lifting)', 'بعد عملية (Post-operative)', 'بعد مجهود رياضي (Sports)',
@@ -139,17 +139,10 @@ export function PlanGeneralSheet({ sheet, onChange, age, onOpenMap, painScore, o
         {onOpenMap && <button type="button" className="link-more" style={{ background: 'none', border: 0, padding: 0, cursor: 'pointer', marginTop: 6 }} onClick={onOpenMap}>اختيار من خريطة الجسم</button>}
       </Box>
       {/* ١١/١١: «الهدف الرئيسي» و«نوع العلاج» و«عدد الزيارات» و«ملاحظات» اتشالوا (طلب العيادة) — اللي اتسجّل فيهم قبل كده لسه في الملخص */}
-      {onPainScore && <Box n={6} title="مقياس الألم (VAS) 0–10">
-        <div className="pt-vas" role="radiogroup" aria-label="مقياس الألم">
-          {Array.from({ length: 11 }, (_, i) => (
-            <button type="button" key={i} role="radio" aria-checked={painScore === i} className={`pt-vas__n ${painScore === i ? 'active' : ''}`} data-level={i >= 7 ? 'high' : i >= 4 ? 'mid' : 'low'} onClick={() => onPainScore(painScore === i ? '' : i)}>{i}</button>
-          ))}
-        </div>
-      </Box>}
-      {/* ١١/١١: «مكان الألم وبدايته وطبيعته — تورم / احمرار / سخونة» (مربع 5 في الشيت القديم) رجع — نفس البيانات n.* */}
-      <GenGroupBox sheet={sheet} onChange={onChange} gi={0} n={7} />
+      {/* ١١/١١: «مقياس الألم» ومربع «مكان الألم وبدايته…» اتشالوا، ومكانهم «سبب الزيارة الحالية وتفاصيل المشكلة» (مربع 4 في الشيت القديم — نفس البيانات n.*، وفيه شدة الألم) */}
+      {onPainScore && <VisitReasonBox n={6} sheet={sheet} onChange={onChange} painScore={painScore ?? ''} onPainScore={onPainScore} />}
       {/* «المدة» و«الأدوية» و«الاختبارات الخاصة» و«الإحساس» و«الانعكاسات» و«إعادة التقييم» و«الأهداف» اتشالوا من الشاشة (off) — القديم المتسجّل لسه في الملخص */}
-      {EVAL_BOXES.filter((x) => !x.off && x.id !== 'loc').map((x, i) => evalBox(x, 8 + i))}
+      {EVAL_BOXES.filter((x) => !x.off && x.id !== 'loc').map((x, i) => evalBox(x, 7 + i))}
     </div>
   );
 }

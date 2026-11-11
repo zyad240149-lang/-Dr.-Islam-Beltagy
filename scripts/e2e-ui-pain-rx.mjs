@@ -181,6 +181,7 @@ try {
   const exAll = await sql(`select id from expenses where inventory_item_id = '${made.item}'`);
   check('ضغطتين على «حفظ» = مصروف واحد بـ 50', exAll.length === 1 && Number(ex?.[0]?.amount) === 50, JSON.stringify(exAll));
   check('الكمية زادت في المخزون مرة واحدة (6 ← 10)', Number((await one(`select quantity from inventory_items where id = '${made.item}'`)).quantity) === 10);
+  check('هجرة 969: سعر التكلفة بتاع الصنف بقى سعر الشراء (12.5)', Number((await one(`select cost_price from inventory_items where id = '${made.item}'`)).cost_price) === 12.5);
   check('المصروف ظاهر في الجدول مربوط بالمنتج', !!await waitFor(() => pg.getByTestId('exp-stock-link').first().isVisible()));
   // «+ صنف جديد» من المصروفات: الصنف بيتضاف للمخزون بالكمية — ضغطتين = صنف واحد ومصروف واحد
   await pg.getByRole('button', { name: 'إضافة مصروف' }).click();
@@ -198,6 +199,7 @@ try {
   made.newItem = niAll[0]?.id ?? ni?.[0]?.id;
   check('صنف جديد من المصروفات اتضاف للمخزون (صنف واحد، 3 علبة، فئة مستلزمات طبية)', niAll.length === 1 && Number(niAll[0].quantity) === 3 && niAll[0].unit === 'علبة' && niAll[0].category === 'مستلزمات طبية', JSON.stringify(niAll));
   check('الصنف الجديد: مصروف واحد بـ 60 مربوط بيه', niAll[0]?.ex === 1 && Number(niAll[0]?.amt) === 60, JSON.stringify(niAll));
+  check('الصنف الجديد: سعر التكلفة 20 (سعر الشراء)', Number((await one(`select cost_price from inventory_items where id = '${made.newItem}'`)).cost_price) === 20);
   await go(pg, '/inventory');
   check('الصنف الجديد ظاهر في صفحة المخزون', !!await waitFor(() => pg.locator('tr', { hasText: `شاش جديد ${TAG}` }).first().isVisible()));
 

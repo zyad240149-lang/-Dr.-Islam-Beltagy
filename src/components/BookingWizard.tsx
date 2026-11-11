@@ -269,7 +269,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
   );
 
   return (
-    <Modal title="حجز موعد جديد" onClose={onClose} footer={footer} wide>
+    <Modal title="حجز موعد جديد" onClose={onClose} onBack={() => { if (busy || step <= visible[0]) return false; back(); return true; }} footer={footer} wide>
       <div className="steps">
         {STEPS.map((label, i) => (i === 2 || (lockedPreset && i === 3)) ? null : (
           <div key={label} style={{ display: 'contents' }}>

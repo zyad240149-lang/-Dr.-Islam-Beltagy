@@ -1,4 +1,5 @@
 import { LangSwitch } from '../i18n/LangSwitch';
+import { BackButton } from './BackButton';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Icon } from '../utils/icons';
@@ -67,7 +68,7 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
       <div className="shell">
         <header className="topbar">
           {brand}
-          <span style={{ display: 'flex', gap: 8 }}><LangSwitch />
+          <span style={{ display: 'flex', gap: 8 }}><BackButton home="/me" compact /><LangSwitch />
           <NavLink to="/me/notifications" className="icon-btn" aria-label="الإشعارات" style={{ position: 'relative' }}><Icon name="bell" size={19} />{unread > 0 && <span className="dt-badge">{unread}</span>}</NavLink>
           <button className="icon-btn" onClick={() => setOpen(true)} aria-label="فتح القائمة"><Icon name="menu" size={20} /></button></span>
         </header>
@@ -96,6 +97,7 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
         <main className="main">
           <PwaUpdateBanner />
           <div className="desktop-topbar desktop-topbar--patient no-print">
+            <BackButton home="/me" />
             <span style={{ flex: 1 }} />
             <LangSwitch style={{ marginInlineEnd: 8 }} />
             <NavLink to="/me/notifications" className="icon-btn" aria-label="الإشعارات" style={{ position: 'relative' }}>

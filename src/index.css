@@ -448,6 +448,9 @@ select.input { appearance: none; background-image: url("data:image/svg+xml,%3Csv
 .modal--wide { max-width: 720px; }
 .modal__head { display: flex; align-items: center; gap: 12px; padding: 18px 22px; border-bottom: 1px solid var(--line-2); }
 .modal__head h2 { flex: 1; font-size: 18.5px; }
+.modal__back { flex: none; display: inline-flex; align-items: center; gap: 4px; padding-inline: 8px; }
+.back-btn { display: inline-flex; align-items: center; gap: 4px; }
+@media (max-width: 640px) { .modal__back span { display: none; } }
 .modal__body { padding: 22px; overflow-y: auto; }
 .modal__foot { display: flex; gap: 10px; justify-content: flex-end; padding: 16px 22px; border-top: 1px solid var(--line-2); background: var(--surface-2); border-radius: 0 0 var(--r-lg) var(--r-lg); flex-wrap: wrap; }
 @keyframes fade { from { opacity: 0; } }

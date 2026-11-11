@@ -233,7 +233,14 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
   const tabTrail = useRef<Tab[]>([]);
   const showTab = (t: Tab) => { setTab(t); if (t === 'nursing') setNursingSeen(true); bodyRef.current?.closest('.modal__body')?.scrollTo({ top: 0 }); };
   const goTab = (t: Tab) => { if (t !== tab) tabTrail.current.push(tab); showTab(t); };
-  const backTab = () => { const prev = tabTrail.current.pop(); if (!prev) return false; showTab(prev); return true; };
+  // رجوع خطوة: آخر تاب اتفتح قبل كده — ولو مفيش سجل (زي استكمال تشخيص فتح على تاب في النص) ← التاب اللي قبله بالترتيب
+  const backTab = () => {
+    const prev = tabTrail.current.pop();
+    if (prev) { showTab(prev); return true; }
+    const i = TABS.findIndex(([k]) => k === tab);
+    if (i > 0) { showTab(TABS[i - 1][0] as Tab); return true; }
+    return false;
+  };
 
   // كشف جديد (مش تعديل كشف محفوظ): نحفظ مسودة محليًا أول بأول عشان لو المستخدم خرج من غير ما يحفظ، يقدر يستكمل بعدين
   useEffect(() => {

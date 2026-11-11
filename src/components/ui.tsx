@@ -171,6 +171,10 @@ export function Modal({ title, onClose, onBack, children, footer, wide, xl }: { 
     <div className="overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className={`modal ${wide ? 'modal--wide' : ''} ${xl ? 'modal--xl' : ''}`} role="dialog" aria-modal="true" aria-label={title}>
         <div className="modal__head">
+          {/* ١١/١١: «رجوع» في كل نافذة — بيرجع خطوة جوّاها الأول (تابات الكشف، خطوات الحجز)، ولو مفيش خطوات بيقفلها */}
+          <button type="button" className="btn btn--ghost btn--sm modal__back" onClick={() => { if (!backRef.current?.()) onClose(); }} aria-label="رجوع" title="رجوع خطوة">
+            <Icon name="chevron" size={16} /><span>رجوع</span>
+          </button>
           <h2>{title}</h2>
           <button className="icon-btn" onClick={onClose} aria-label="إغلاق"><Icon name="close" size={18} /></button>
         </div>

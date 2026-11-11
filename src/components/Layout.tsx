@@ -12,6 +12,7 @@ import { initials } from '../utils/format';
 import { useToast } from '../hooks/useToast';
 import { prefetchRoute } from '../routeImports';
 import { PwaControls, PwaUpdateBanner, RefreshButton } from '../pwa/PwaControls';
+import { BackButton } from './BackButton';
 import { OfflineBadge } from './OfflineStatus';
 import { offline, markLoggedOut } from '../offline';
 import { isNetworkError } from '../offline/net';
@@ -185,6 +186,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       <header className="topbar">
         <Brand />
         <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <BackButton compact />
           <OfflineBadge />
           <RefreshButton compact />
           <LangSwitch />
@@ -249,6 +251,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         <IncompleteHost />
         <div className="desktop-topbar no-print">
           {/* البحث الموحّد اللي كان هنا اتشال بطلب العيادة — البحث عن المريض جوّه كل صفحة (التشخيص/المرضى/المواعيد) */}
+          <BackButton />
           <span style={{ flex: 1 }} />
           <span className="dt-tools">
             <RefreshButton />

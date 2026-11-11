@@ -2059,3 +2059,7 @@ html[dir="rtl"] .table td.num, html[dir="rtl"] .table th.num { text-align: right
 .cdock__b { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 999px; border: 0; background: #fff; color: var(--brand-700); font: inherit; font-weight: 700; cursor: pointer; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cdock__b:hover { background: var(--brand-50, #eef2fb); }
 @media print { .cdock { display: none !important; } }
+
+/* ١١/١١: «رجوع لكشف: فلان» جوّه راس الكشف المفتوح */
+.cdock-head { display: inline-flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+@media (max-width: 640px) { .cdock-head .btn { padding-inline: 8px; font-size: 12.5px; } }

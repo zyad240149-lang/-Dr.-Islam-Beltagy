@@ -36,7 +36,8 @@ export function ConsultDockProvider({ children }: { children: ReactNode }) {
       {children}
       <Suspense fallback={null}>
         {list.map((x) => (
-          <ConsultModal key={x.key} {...x.spec} minimized={x.key !== active} onMinimize={() => park(x)} onClose={() => close(x.key)} />
+          <ConsultModal key={x.key} {...x.spec} minimized={x.key !== active} onMinimize={() => park(x)} onClose={() => close(x.key)}
+            others={x.key === active ? list.filter((y) => y.key !== x.key).map((y) => ({ key: y.key, label: labelOf(y.spec), go: () => setActive(y.key) })) : undefined} />
         ))}
       </Suspense>
       {parked.length > 0 && (

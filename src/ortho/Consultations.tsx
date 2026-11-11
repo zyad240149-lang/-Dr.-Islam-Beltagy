@@ -126,7 +126,7 @@ function matchPatient(name: string, phone?: string) {
 }
 
 // openFollowUp = يفتح على تاب «متابعة المريض» بشيت متابعة جديد (زرار «متابعة» في قايمة المرضى اللي اتشخصوا)
-export function ConsultModal({ initial, resume, patientId = '', appointmentId, pending, openFollowUp, onClose, minimized, onMinimize }: { initial?: Consultation; resume?: boolean; patientId?: string; appointmentId?: string | null; pending?: { name: string; phone?: string }; openFollowUp?: boolean; onClose: () => void; minimized?: boolean; onMinimize?: () => void }) {
+export function ConsultModal({ initial, resume, patientId = '', appointmentId, pending, openFollowUp, onClose, minimized, onMinimize, others }: { others?: Array<{ key: string; label: string; go: () => void }>; initial?: Consultation; resume?: boolean; patientId?: string; appointmentId?: string | null; pending?: { name: string; phone?: string }; openFollowUp?: boolean; onClose: () => void; minimized?: boolean; onMinimize?: () => void }) {
   const { run, busy } = useRun();
   const toast = useToast();
   const fuPerm = useFuCan();
@@ -386,7 +386,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
   }
 
   return (
-    <Modal xl hidden={minimized} headExtra={onMinimize && <Button size="sm" variant="outline" icon="plus" title="الكشف ده بيتركن تحت زي ما هو — وتقدر تفتح مريض تاني وترجعله بضغطة" onClick={onMinimize}>فتح مريض تاني</Button>} title={initial ? 'تعديل الكشف' : 'كشف جديد'} patient={c.patientId ? db.patient(c.patientId)?.fullName : pendingInfo.name || null} onClose={cancel} onBack={backTab} footer={<>
+    <Modal xl hidden={minimized} headExtra={onMinimize && <span className="cdock-head">{others?.map((o) => <Button key={o.key} size="sm" variant="outline" icon="chevron" title="رجوع للكشف ده — الكشف الحالي بيتركن زي ما هو" onClick={o.go}>رجوع لكشف: {o.label}</Button>)}<Button size="sm" variant="outline" icon="plus" title="الكشف ده بيتركن تحت زي ما هو — وتقدر تفتح مريض تاني وترجعله بضغطة" onClick={onMinimize}>فتح مريض تاني</Button></span>} title={initial ? 'تعديل الكشف' : 'كشف جديد'} patient={c.patientId ? db.patient(c.patientId)?.fullName : pendingInfo.name || null} onClose={cancel} onBack={backTab} footer={<>
       <VoiceDictation />
       {(c.patientId || unlinked) && missing.length > 0 && <span className="sh-need">لسه ناقص: {missing.join('، ')}</span>}
       {unlinked && !ok && <span className="sh-need">اكتب اسم المريض الثلاثي في خانة 1</span>}

@@ -2040,3 +2040,5 @@ button.dsch__who small { white-space: nowrap; font-size: 12.5px; color: var(--mu
 .dx-option-row .dx-option { flex: 1; min-width: 0; }
 .dx-del { flex: none; align-self: center; color: var(--danger); }
 .dx-add { display: grid; gap: 8px; margin-top: 8px; padding: 12px; border: 1px dashed var(--line); border-radius: 12px; background: var(--surface-2); }
+/* ١١/١١: خانة رقم في جدول (td.num اتجاهها ltr) كانت بتتلزق شمال وعنوان العمود يمين — دلوقتي تحت عنوانها */
+html[dir="rtl"] .table td.num, html[dir="rtl"] .table th.num { text-align: right; }

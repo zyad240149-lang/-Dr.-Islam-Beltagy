@@ -149,7 +149,8 @@ export function BookingWhatsapp({ patientId, appointmentId, followUp, layout = '
     return (
       <div className="bk-wa-btns" onClick={(e) => e.stopPropagation()}>
         {canRemind && <button type="button" className="btn btn--outline" data-testid="visit-fu-remind" onClick={remindFu} title={nextFu || followUp ? `متابعة ${(followUp ?? nextFu)!.date}` : 'مفيش موعد متابعة جاي'}><Icon name="calendar" size={16} /> {remindOnly ? 'إرسال موعد المتابعة واتساب' : 'إرسال تذكير متابعة'}</button>}
-        {canEx && !remindOnly && <button type="button" className="btn btn--outline" data-testid="visit-send-ex" onClick={exercises}><Icon name="share" size={16} /> إرسال تمرينات</button>}
+        {/* ١١/١١: «إرسال تمارين» جنب «إرسال موعد المتابعة واتساب» كمان (طلب العيادة) */}
+        {canEx && <button type="button" className="btn btn--outline" data-testid="visit-send-ex" onClick={exercises}><Icon name="share" size={16} /> {remindOnly ? 'إرسال تمارين' : 'إرسال تمرينات'}</button>}
         {ex && <ExerciseSendModal patientId={patientId} initialSel={ex.sel} onClose={() => setEx(null)} />}
       </div>
     );

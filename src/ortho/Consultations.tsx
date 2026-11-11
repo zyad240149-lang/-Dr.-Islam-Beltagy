@@ -387,6 +387,8 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
       {(c.patientId || unlinked) && missing.length > 0 && <span className="sh-need">لسه ناقص: {missing.join('، ')}</span>}
       {unlinked && !ok && <span className="sh-need">اكتب اسم المريض الثلاثي في خانة 1</span>}
       <Button variant="outline" onClick={cancel}>إلغاء</Button>
+      {/* ١١/١١: «إرسال تمارين» جنب «إلغاء» في أسفل الكشف */}
+      {canExSend && <Button variant="outline" icon="share" disabled={!c.patientId} title={c.patientId ? '' : 'اختار المريض الأول'} onClick={() => setExSend(true)}>إرسال تمارين</Button>}
       <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => setOut(['nurse', 'doctor'])}>طباعة وإرسال</Button>
       <Button icon="check" loading={busy} disabled={!ok} onClick={() => save(false)}>حفظ الكشف</Button>
     </>}>

@@ -145,8 +145,10 @@ export default function Layout({ children }: { children: ReactNode }) {
     return () => { window.removeEventListener('unhandledrejection', onErr); window.removeEventListener('session-expired', onExpired); };
   }, [toast, logout, navigate]);
   useEffect(() => {
+    // ١١/١١: كانت كل دقيقة من كل تاب مفتوح (≈12 ألف نداء) — ضغط كبير على الخادم. دلوقتي كل 15 دقيقة ومن التاب الظاهر بس
+    // (الخادم نفسه بيبعت الإشعارات بالـ cron كل دقيقة، فمفيش تنبيه بيتأخر)
     db.runAutomations();
-    const t = setInterval(() => db.runAutomations(), 60000);
+    const t = setInterval(() => { if (document.visibilityState === 'visible') db.runAutomations(); }, 15 * 60000);
     return () => clearInterval(t);
   }, []);
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { Appointment } from '../types';
 import { db, type DashboardStats } from '../data/db';
@@ -43,7 +43,15 @@ export default function Dashboard() {
   const [tab, setTab] = useState<'all' | 'confirmed' | 'pending'>('all');
   const [selected, setSelected] = useState<Appointment | null>(null);
   const version = useDbVersion();
-  useEffect(() => { db.dashboardStats().then(setStats); }, [version]);
+  // ١١/١١: كانت بتتحسب على الخادم مع كل تحديث لحظي لأي حاجة — دلوقتي مرة على الأكتر كل دقيقة (وأول ما الصفحة تفتح)
+  const statsAt = useRef(0);
+  useEffect(() => {
+    const wait = statsAt.current + 60000 - Date.now();
+    const run = () => { statsAt.current = Date.now(); void db.dashboardStats().then(setStats); };
+    if (wait <= 0) { run(); return; }
+    const t = setTimeout(run, wait);
+    return () => clearTimeout(t);
+  }, [version]);
   const canBook = can('booking', 'create') || can('appointments', 'create');
   const canConfirmAppt = (can('appointments', 'edit') || can('booking', 'edit')) && can('appt_confirm', 'view');
   const [confirmAppt, , doctorModal] = useConfirmAppointment();

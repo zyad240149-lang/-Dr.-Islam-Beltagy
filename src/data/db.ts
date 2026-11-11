@@ -973,6 +973,14 @@ export const db = {
     const r = await rpc('set_appointment_status', { p_id: id, p_status: status, p_reason: reason ?? null, p_therapist: therapistId || null }, ['appointments', 'invoices', 'notifications', 'activity']);
     if (!r.ok && r.error === OFFLINE_MSG && offlineOk) return status === 'cancelled' ? queueCancel(id, reason) : queueStatus(id, status, therapistId); // الاتصال قطع في النص
     if (!r.ok) throw new DbError(r.error);
+    if (status === 'confirmed') await this.payOnConfirm(id);
+  },
+  /** تأكيد الموعد = المريض دفع: المتبقي على فاتورة الحجز بيتسجل دفعة كاش (لو فيه فاتورة معتمدة عليها فلوس) */
+  async payOnConfirm(appointmentId: string) {
+    const inv = load().invoices.find((i) => i.appointmentId === appointmentId);
+    if (!inv || inv.status === 'draft' || inv.status === 'cancelled' || !(inv.remaining > 0)) return;
+    const p = await this.recordPayment(inv.id, inv.remaining, 'cash', 'دفع عند تأكيد الموعد');
+    if (!p.ok) throw new DbError(`اتأكد الموعد، لكن تعذّر تسجيل الدفع: ${p.error ?? ''}`);
   },
   async rescheduleAppointment(id: string, date: string, time: string, therapistId?: string, address?: string): Promise<Result> {
     if (!net.isOnline() || offline.queue.hasPendingFor(id)) return queueReschedule(id, date, time, therapistId, address);

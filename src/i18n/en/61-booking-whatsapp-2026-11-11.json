@@ -11,5 +11,11 @@
  "فيه حجز في الوقت ده — ينفع تحجز عليه · الوقت ده فات النهارده — ينفع تحجز فيه": "Already booked and passed today — you can still book it",
  "إخفاء المواعيد اللي فاتت النهارده": "Hide today's past times",
  "مواعيد النهارده فاتت — لسه ينفع تحجز في أي ميعاد منها (حتى لو محجوز).": "Today's times have passed — you can still book any of them (even if already booked).",
- "هذا الوقت خارج مواعيد الدكتور أو في يوم فات — اختر وقتًا آخر.": "This time is outside the doctor's hours or on a past day — pick another time."
+ "هذا الوقت خارج مواعيد الدكتور أو في يوم فات — اختر وقتًا آخر.": "This time is outside the doctor's hours or on a past day — pick another time.",
+ "تسجيل الدفع": "Record payment",
+ "اكتب المبلغ اللي المريض دفعه، والنظام يحسب الباقي.": "Enter the amount the patient paid and the system works out the rest.",
+ "الباقي بعد الدفع:": "Remaining after payment:",
+ "على المريض مستحق من زيارات قبل كده:": "Patient owes from previous visits:",
+ "على المريض مستحق قديم": "Patient has an old balance",
+ "— أي دفعة بتسدّد القديم الأول.": "— any payment settles the old balance first."
 }

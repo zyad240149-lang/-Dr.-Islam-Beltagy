@@ -6,6 +6,7 @@ import { useDbVersion } from '../hooks/useDb';
 import { Modal, Button, Input, Select } from './ui';
 import { PhoneInput } from './PhoneInput';
 import { Icon } from '../utils/icons';
+import { patientOldDue, sumRemaining } from '../data/patientDue';
 import { phoneMatches } from '../utils/phoneUtils';
 import { money, fmtDate, APPT_STATUS, fmtTime, todayYmd, addDaysYmd, riyadhNowHm, REFERRAL_SOURCE_LABEL, PAYMENT_METHOD_LABEL, PAYMENT_METHOD_OPTIONS } from '../utils/format';
 
@@ -467,6 +468,12 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
           <div style={{ marginTop: 14 }}><Select id="bk-price" label="السعر" value={priceId} onChange={(e) => setPriceId(e.target.value)}
             options={[{ value: '', label: `السعر العادي — ${money(service?.price ?? 0)}` }, ...extraPrices.map((p) => ({ value: p.id, label: `${p.label} — ${money(p.price)}` }))]} /></div>
         )}
+        {patientId && (() => {
+          // ١١/١١: المريض عليه فلوس من زيارة قبل كده ← تنبيه (بتتدفع الأول من «خدمات الزيارة» في تفاصيل الموعد)
+          const old = patientOldDue(patientId);
+          return old.length ? <div className="xsvc__old" style={{ marginTop: 14 }}><Icon name="alert" size={16} /> <b>على المريض مستحق قديم <span className="num">{money(sumRemaining(old))}</span></b>
+            <div className="muted-sm">{old.map((o) => `${o.no} (${o.date}) ${money(o.remaining)}`).join(' · ')} — بيتسدّد الأول من «خدمات الزيارة» في تفاصيل الموعد.</div></div> : null;
+        })()}
         {willHaveInvoice && (
           <div className="grid-form grid-form--3" style={{ marginTop: 14 }}>
             <Input id="bk-pay" label="دفعة الحين (اختياري)" type="number" min={0} max={netPrice} value={payAmount} onChange={(e) => setPayAmount(e.target.value)}

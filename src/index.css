@@ -1961,6 +1961,9 @@ button.dsch__who small { white-space: nowrap; font-size: 12.5px; color: var(--mu
 .xsvc__add { display: flex; gap: 8px; margin-top: 8px; }
 .xsvc__add .input { flex: 1; min-width: 0; }
 .xsvc__add--top { margin: 0 0 10px; padding-bottom: 10px; border-bottom: 1px dashed var(--line); }
+.xsvc__old { margin: 8px 0 4px; padding: 10px 12px; border-radius: 10px; background: var(--warn-bg, #fffbeb); border: 1px solid var(--warn, #f59e0b); color: var(--ink); }
+.xsvc__old ul { margin: 6px 0; padding-inline-start: 18px; font-size: 14px; }
+.xsvc__pay { margin-top: 6px; padding-top: 8px; border-top: 1px dashed var(--line); }
 .bk-wa-btns { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
 .bk-wa-btns .btn { flex: 1 1 180px; justify-content: center; }
 .pain-cmp__sheet { display: inline-flex; align-items: center; gap: 6px; }

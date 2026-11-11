@@ -4,7 +4,9 @@ import { supabase } from '../lib/supabase';
 import { db } from '../data/db';
 import { useDbVersion } from '../hooks/useDb';
 import { useToast } from '../hooks/useToast';
-import { money } from '../utils/format';
+import { money, PAYMENT_METHOD_LABEL, PAYMENT_METHOD_OPTIONS } from '../utils/format';
+import { patientOldDue, payOldestFirst, sumRemaining } from '../data/patientDue';
+import type { PaymentMethod } from '../types';
 import { Button } from './ui';
 import { Icon } from '../utils/icons';
 import { useCan } from './common';
@@ -22,6 +24,8 @@ export default function ExtraServices({ appointmentId }: { appointmentId: string
   const [disc, setDisc] = useState('');
   const [busy, setBusy] = useState(false);
   const [fileBusy, setFileBusy] = useState<'' | 'print' | 'save'>('');
+  const [payAmt, setPayAmt] = useState('');
+  const [payMethod, setPayMethod] = useState<PaymentMethod>('cash');
   const file = async (kind: 'print' | 'save') => {
     if (!inv) return;
     setFileBusy(kind);
@@ -47,6 +51,24 @@ export default function ExtraServices({ appointmentId }: { appointmentId: string
     setBusy(false);
   };
   const list = items && items.length ? items : [{ id: '', description: inv.serviceName || 'الخدمة', amount: inv.price, service_id: null }];
+  // ١١/١١: المستحق القديم على المريض (زيارات قبل كده) + «دفع كام» ← الباقي. الدفعة بتسدّد القديم الأول وبعدين الزيارة دي
+  const oldDue = patientOldDue(inv.patientId, inv.id);
+  const oldSum = sumRemaining(oldDue);
+  const curDue = inv.status === 'due' || inv.status === 'partial' ? inv.remaining : 0;
+  const allDue = Math.round((oldSum + curDue) * 100) / 100;
+  const entered = Number(payAmt);
+  const validAmt = payAmt !== '' && Number.isFinite(entered) && entered > 0 && entered <= allDue;
+  const canPay = can('payments', 'create') && allDue > 0;
+  const pay = () => {
+    if (!validAmt) { toast.error(`المبلغ لازم يكون بين 1 و ${money(allDue)}.`); return; }
+    setBusy(true);
+    void payOldestFirst(inv.patientId, inv, entered, payMethod).then((r) => {
+      const txt = r.done.map((d) => `${d.no}: ${money(d.amount)}`).join(' · ');
+      if (!r.ok) toast.error(`${txt ? `اتسجّل ${txt} — ` : ''}${r.error ?? ''}`);
+      else { toast.success(`اتسجّل ${money(entered)} (${PAYMENT_METHOD_LABEL[payMethod]}) — ${txt}`); setPayAmt(''); }
+      setBusy(false);
+    });
+  };
 
   return (
     <div className="xsvc">
@@ -84,7 +106,31 @@ export default function ExtraServices({ appointmentId }: { appointmentId: string
         </div>
       )}
       {inv.discount > 0 && <div className="xsvc__total"><span className="muted-sm">الخصم</span><b className="num">− {money(inv.discount)}</b></div>}
-      <div className="xsvc__total"><span>الإجمالي</span><b className="num">{money(inv.total)}</b>{inv.paid > 0 && <span className="muted-sm">مدفوع {money(inv.paid)} · باقي {money(inv.remaining)}</span>}</div>
+      <div className="xsvc__total"><span>الإجمالي</span><b className="num">{money(inv.total)}</b>{inv.total > 0 && <span className="muted-sm">مدفوع {money(inv.paid)} · باقي {money(inv.remaining)}</span>}</div>
+      {oldDue.length > 0 && (
+        <div className="xsvc__old" data-testid="xsvc-old-due">
+          <div><Icon name="alert" size={16} /> <b>على المريض مستحق من زيارات قبل كده: <span className="num">{money(oldSum)}</span></b></div>
+          <ul>{oldDue.map((o) => <li key={o.id}><span className="num">{o.no}</span> · {o.serviceName} · <span className="num">{o.date}</span> — باقي <b className="num">{money(o.remaining)}</b></li>)}</ul>
+          <div className="muted-sm">المطلوب دلوقتي: <b className="num">{money(allDue)}</b> (القديم {money(oldSum)} + الزيارة دي {money(curDue)}) — أي دفعة بتسدّد القديم الأول.</div>
+        </div>
+      )}
+      {canPay && inv.status !== 'cancelled' && (
+        <div className="xsvc__pay">
+          <div className="xsvc__add">
+            <input className="input num" type="number" min={0} max={allDue} inputMode="decimal" aria-label="دفع كام" data-testid="xsvc-pay-amount"
+              placeholder={`دفع كام؟ (المطلوب ${money(allDue)})`} value={payAmt} onChange={(e) => setPayAmt(e.target.value)} />
+            <select className="input" style={{ maxWidth: 150 }} value={payMethod} onChange={(e) => setPayMethod(e.target.value as PaymentMethod)} aria-label="طريقة الدفع">
+              {PAYMENT_METHOD_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <Button icon="check" disabled={!validAmt} loading={busy} onClick={pay}>تسجيل الدفع</Button>
+          </div>
+          <div className="muted-sm" style={{ marginTop: 4 }}>
+            {payAmt === '' ? <>اكتب المبلغ اللي المريض دفعه، والنظام يحسب الباقي.{' '}<button type="button" className="link-btn" onClick={() => setPayAmt(String(allDue))}>دفع الكل ({money(allDue)})</button></>
+              : validAmt ? <>الباقي بعد الدفع: <b className="num">{money(Math.round((allDue - entered) * 100) / 100)}</b></>
+              : <span style={{ color: 'var(--danger)' }}>المبلغ لازم يكون بين 1 و {money(allDue)}</span>}
+          </div>
+        </div>
+      )}
       {/* ٩/١١: نفس شكل «طباعة وإرسال» في التشخيص */}
       <div className="out-actions xsvc__out">
         <button type="button" className="out-act" disabled={!!fileBusy} onClick={() => void file('print')}>

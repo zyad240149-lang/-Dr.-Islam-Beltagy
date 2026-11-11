@@ -9,6 +9,7 @@ import { fileNoText } from '../utils/phoneUtils';
 import { openPrintWindow, printHtml } from '../utils/printDoc';
 import { addDays, ortho, useOrthoVersion, type Nursing, type NursingSheet, type RxData } from './data';
 import { FollowUpModal, fuWhen, useFuCan } from './FollowUps';
+import { BookingWhatsapp } from '../components/BookingWhatsapp';
 import { RxEditor, cleanRx, hasRx, normRx, registerRxRequests } from './Rx';
 import { printRx } from './printRx';
 import { PAIN_TREND, PainCompare, PainHint, PrevRx, painTrend, previousPain } from './history';
@@ -184,6 +185,8 @@ export function NursingModal({ patientId, appointmentId = null, initial, onClose
           <Field label="موعد المتابعة — بعد"><Pick options={OPT.fu} value={pl.fu} onChange={(v) => setPlan('fu', v)} />
             {nextFu && <small className="muted" style={{ display: 'block', marginTop: 6 }}>الموعد الجاي: <bdi className="num">{fuWhen(nextFu)}</bdi></small>}
             {fuPerm.add && <Button size="sm" variant="outline" icon="calendarPlus" style={{ marginTop: 6 }} onClick={() => setFuOpen(true)}>تحديد موعد متابعة</Button>}
+            {/* ١١/١١: تحت «تحديد موعد متابعة»: «إرسال موعد المتابعة واتساب» و«إرسال تمارين» */}
+            {patientId && <div style={{ marginTop: 8 }}><BookingWhatsapp patientId={patientId} followUp={nextFu ?? null} layout="buttons" remindOnly /></div>}
           </Field>
         </div>
       </Box>

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { invoiceStatusOf } from '../data/invoiceStatus';
 import { StatusBadge } from './ui';
 import { INVOICE_STATUS, PAYMENT_METHOD_LABEL, money } from '../utils/format';
 import type { FinanceMonth } from '../data/payrollApi';
@@ -43,7 +44,7 @@ export default function FinanceBreakdown({ data }: { data: FinanceMonth }) {
     pr: sumBy(data.productSales.filter((s) => s.method === m), (s) => s.total),
   })).sort((a, b) => b.pt + b.pr - (a.pt + a.pr));
 
-  const byStatus = groupBy(data.invoices, (i) => i.status);
+  const byStatus = groupBy(data.invoices, (i) => invoiceStatusOf(i));
   const byService = groupBy(invoices, (i) => i.service).sort((a, b) => sumBy(b[1], (i) => i.total) - sumBy(a[1], (i) => i.total));
   const therapists = [...new Set([...invoices.map((i) => i.therapist ?? '—'), ...data.payments.map((p) => p.therapist ?? '—')])];
   const byTherapist = therapists.map((k) => ({

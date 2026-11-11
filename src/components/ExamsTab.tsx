@@ -2,6 +2,7 @@
 // ومع كل كشف اللي اتسجّل فيه: الطبيب والحالة والفاتورة، وتقييم العلاج الطبيعي/التقييم الأولي بنفس اليوم، وملاحظات الزيارة.
 import { useEffect, useState } from 'react';
 import { db } from '../data/db';
+import { invoiceStatusLabel } from '../data/invoiceStatus';
 import { physioApi, type PhysioEvaluation } from '../data/physioApi';
 import { Button, EmptyState, StatusBadge } from './ui';
 import { useCan } from './common';
@@ -60,7 +61,7 @@ export function ExamsTab({ patientId }: { patientId: string }) {
               <strong>{svc?.name ?? 'كشف'} — <span className="num date">{fmtDate(a.date)} · {fmtTime(a.time)}</span></strong>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                 <StatusBadge label={st.label} tone={st.tone} />
-                {inv && <StatusBadge label={INVOICE_STATUS[inv.status].label} tone={INVOICE_STATUS[inv.status].tone} />}
+                {inv && <StatusBadge label={invoiceStatusLabel(inv).label} tone={invoiceStatusLabel(inv).tone} />}
                 <Button size="sm" variant="outline" icon="eye" onClick={() => openVisit(a.id)}>تفاصيل الزيارة</Button>
               </div>
             </div>

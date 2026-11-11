@@ -10,6 +10,7 @@ import InstallmentPatientsTab from '../components/InstallmentPatientsTab';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { db, newestInvoiceFirst, normalizeCode } from '../data/db';
+import { invoiceStatusLabel, invoiceStatusOf } from '../data/invoiceStatus';
 import { useDbVersion, useLoading } from '../hooks/useDb';
 import { Button, EmptyState, Skeleton, StatusBadge, Modal, Input, Select } from '../components/ui';
 import { ConfirmDialog, FilterBar, IconAction, RowActions, useCan } from '../components/common';
@@ -187,7 +188,7 @@ export default function Invoices() {
     const p = db.patient(i.patientId);
     const s = q.trim().toLowerCase();
     return (!s || i.no.toLowerCase().includes(s) || patientMatches(p, s) || i.serviceName.includes(q.trim()))
-      && (!status || i.status === status)
+      && (!status || invoiceStatusOf(i) === status)
       && (!kind || (kind === 'package' ? !!i.packageId : !i.packageId));
   };
   const invoices = db.invoices().filter((i) => matchesFilters(i) && (!from || i.date >= from) && (!to || i.date <= to)).sort(newestInvoiceFirst);
@@ -220,7 +221,7 @@ export default function Invoices() {
   const paySum = (m?: string) => payments.filter((p) => !m || p.method === m).reduce((s, p) => s + p.amount, 0);
 
   const doExportInvoices = () => exportCsv('الفواتير', ['رقم الفاتورة', 'التاريخ', 'المريض', 'الخدمة/الباقة', 'السعر', 'الخصم', 'الإجمالي', 'المدفوع', 'المتبقي', 'الحالة'],
-    invoices.map((i) => [i.no, i.date, db.patient(i.patientId)?.fullName ?? '', i.serviceName, i.price, i.discount, i.total, i.paid, i.remaining, INVOICE_STATUS[i.status].label]));
+    invoices.map((i) => [i.no, i.date, db.patient(i.patientId)?.fullName ?? '', i.serviceName, i.price, i.discount, i.total, i.paid, i.remaining, invoiceStatusLabel(i).label]));
   const doExportPayments = () => exportCsv('المدفوعات', ['التاريخ', 'المريض', 'الفاتورة', 'الخدمة', 'المبلغ', 'طريقة الدفع', 'ملاحظة'],
     payments.map((p) => [fmtDateTime(p.date), db.patient(p.patientId)?.fullName ?? '', db.invoice(p.invoiceId)?.no ?? '', db.invoice(p.invoiceId)?.serviceName ?? '', p.amount, PAYMENT_METHOD_LABEL[p.method], p.note]));
 
@@ -256,7 +257,7 @@ export default function Invoices() {
                 <div className="table-wrap"><table className="table">
                   <thead><tr><th>رقم الفاتورة</th><th>المريض</th><th>الخطة العلاجية</th><th>أنشأها</th><th>السعر</th><th>الخصم</th><th>الإجمالي</th><th>الحالة</th><th>التقسيط</th><th className="actions"></th></tr></thead>
                   <tbody>{planRows.map((i) => {
-                    const st = INVOICE_STATUS[i.status]; const plan = i.planId ? db.plan(i.planId) : undefined;
+                    const st = invoiceStatusLabel(i); const plan = i.planId ? db.plan(i.planId) : undefined;
                     const creator = i.createdBy ? db.employeeById(i.createdBy) : undefined;
                     return (
                       <tr key={i.id}>
@@ -306,7 +307,7 @@ export default function Invoices() {
               {invoices.length === 0 ? <EmptyState icon="receipt" title="ما فيه فواتير مطابقة" /> : (
                 <div className="table-wrap"><table className="table">
                   <thead><tr><th>رقم الفاتورة</th><th>التاريخ</th><th>المريض</th><th>الخدمة</th><th>الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>الحالة</th><th className="actions"></th></tr></thead>
-                  <tbody>{invoices.map((i) => { const st = INVOICE_STATUS[i.status]; return (
+                  <tbody>{invoices.map((i) => { const st = invoiceStatusLabel(i); return (
                     <tr key={i.id}>
                       <td className="num">{i.no}</td><td>{fmtDate(i.date)}</td><td>{db.patient(i.patientId)?.fullName} <CompletenessBadge patient={db.patient(i.patientId)} /></td><td>{i.serviceName}</td>
                       <td className="num">{money(i.total)}</td><td className="num">{money(i.paid)}</td><td className="num">{money(i.remaining)}</td>
@@ -408,7 +409,7 @@ function InvoiceModal({ invoiceId, canEdit, canDelete, canPay, canEditPay, canDe
   const [promo, setPromo] = useState('');
   const [confirm, setConfirm] = useState<{ title: string; message: string; run: () => Promise<void>; label?: string } | null>(null);
   if (!invoice) return null;
-  const st = INVOICE_STATUS[invoice.status];
+  const st = invoiceStatusLabel(invoice);
   const payments = db.paymentsForInvoice(invoice.id);
   const center = db.center();
   const patient = db.patient(invoice.patientId);
@@ -684,7 +685,7 @@ function PlanInvoiceModal({ invoice, onClose }: { invoice: Invoice; onClose: () 
         {isDraft && payMode === 'full' && req?.status !== 'pending' && canApprove && canPrice && <Button icon="check" onClick={() => save(true)} loading={busy === 'issue'} disabled={!!busy || incomplete}>{primaryLabel}</Button>}
       </>}>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
-        <StatusBadge label={INVOICE_STATUS[inv0.status].label} tone={INVOICE_STATUS[inv0.status].tone} />
+        <StatusBadge label={invoiceStatusLabel(inv0).label} tone={invoiceStatusLabel(inv0).tone} />
         {instState !== 'none' && instState !== 'review' && <StatusBadge label={INST_STATE[instState].label} tone={INST_STATE[instState].tone} />}
       </div>
       {isDraft && <IncompleteAlert patientId={inv0.patientId} />}

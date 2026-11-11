@@ -4,6 +4,7 @@ import { FilterBar, IconAction, RowActions, useCan } from '../components/common'
 import { StatCard } from '../components/StatCard';
 import { INVOICE_STATUS, PAYMENT_METHOD_LABEL, exportCsv, fmtDate, fmtDateTime, money } from '../utils/format';
 import { db } from '../data/db';
+import { invoiceStatusLabel } from '../data/invoiceStatus';
 import { patientMatches, textMatches } from '../utils/phoneUtils';
 import { payrollApi,currentPeriod, type FinanceMonth, type FinPayout } from '../data/payrollApi';
 import { PAYOUT_KIND, PAYOUT_METHOD, ROLE_NAME, ReasonModal, periodLabel, periodOptions } from '../components/PayrollKit';
@@ -67,7 +68,7 @@ export default function Finance() {
     const name = `${TABS.find((x) => x.id === tab)!.label}-${period}`;
     if (tab === 'summary') return;
     if (tab === 'all') exportCsv(name, ['التاريخ', 'النوع', 'المرجع', 'الطرف', 'التفاصيل', 'وارد', 'صادر'], ledger.map((r) => [fmtDateTime(r.at), r.type, r.ref, r.party, r.detail, r.inAmt, r.outAmt]));
-    else if (tab === 'invoices') exportCsv(name, ['رقم الفاتورة', 'التاريخ', 'المريض', 'الخدمة', 'الأخصائي', 'الإجمالي', 'الضريبة', 'المدفوع', 'المتبقي', 'الحالة'], invoices.map((i) => [i.no, i.date, i.patient, i.service, i.therapist ?? '', i.total, i.tax, i.paid, i.remaining, INVOICE_STATUS[i.status as InvoiceStatus]?.label ?? i.status]));
+    else if (tab === 'invoices') exportCsv(name, ['رقم الفاتورة', 'التاريخ', 'المريض', 'الخدمة', 'الأخصائي', 'الإجمالي', 'الضريبة', 'المدفوع', 'المتبقي', 'الحالة'], invoices.map((i) => [i.no, i.date, i.patient, i.service, i.therapist ?? '', i.total, i.tax, i.paid, i.remaining, invoiceStatusLabel(i).label]));
     else if (tab === 'payments') exportCsv(name, ['التاريخ', 'المريض', 'الفاتورة', 'الخدمة', 'الأخصائي', 'المبلغ', 'طريقة الدفع'], payments.map((p) => [fmtDateTime(ts(p.date)), p.patient, p.invoiceNo, p.service, p.therapist ?? '', p.amount, methodLabel(p.method)]));
     else if (tab === 'sales') exportCsv(name, ['رقم الفاتورة', 'التاريخ', 'المنتج', 'الكمية', 'العميل', 'الإجمالي', 'طريقة الدفع'], sales.map((s) => [s.no, fmtDateTime(ts(s.date)), s.product, s.qty, s.customer ?? '', s.total, methodLabel(s.method)]));
     else exportCsv(name, ['السند', 'المستفيد', 'الوظيفة', 'عن شهر', 'المبلغ', 'تاريخ الصرف', 'طريقة الدفع', 'المرجع', 'ملاحظات', 'سجّله', 'الحالة'],
@@ -131,7 +132,7 @@ export default function Finance() {
                       <tr key={i.id}>
                         <td className="num">{i.no}</td><td className="num date" style={{ whiteSpace: 'nowrap' }}>{fmtDate(i.date)}</td><td data-no-i18n>{i.patient}</td><td>{i.service}</td><td data-no-i18n>{i.therapist ?? '—'}</td>
                         <td className="num">{money(i.total)}</td><td className="num">{money(i.paid)}</td><td className="num">{money(i.remaining)}</td>
-                        <td><StatusBadge label={INVOICE_STATUS[i.status as InvoiceStatus]?.label ?? i.status} tone={INVOICE_STATUS[i.status as InvoiceStatus]?.tone ?? 'muted'} /></td>
+                        <td><StatusBadge label={invoiceStatusLabel(i).label} tone={invoiceStatusLabel(i).tone} /></td>
                       </tr>
                     ))}</tbody>
                     <tfoot><tr><td colSpan={5}>{`الإجمالي (${invoices.length} فاتورة)`}</td><td className="num">{money(sumBy(invoices, (i) => i.total))}</td><td className="num">{money(sumBy(invoices, (i) => i.paid))}</td><td className="num">{money(sumBy(invoices, (i) => i.remaining))}</td><td /></tr></tfoot>

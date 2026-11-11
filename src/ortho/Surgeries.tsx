@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button, EmptyState, Modal } from '../components/ui';
 import { db } from '../data/db';
+import { invoiceStatusLabel } from '../data/invoiceStatus';
 import { supabase } from '../lib/supabase';
 import { INVOICE_STATUS, PAYMENT_METHOD_OPTIONS, fmtDate, money, todayYmd } from '../utils/format';
 import { InvoiceFileButtons, InvoiceWhatsappButton } from '../components/InvoiceActions';
@@ -237,7 +238,7 @@ function SurgeryInvoice({ surgery }: { surgery: Surgery }) {
             <div><dt>الإجمالي</dt><dd className="num"><b>{money(inv.total)}</b></dd></div>
             <div><dt>المدفوع</dt><dd className="num">{money(inv.paid)}</dd></div>
             <div><dt>المتبقي</dt><dd className="num">{money(inv.remaining)}</dd></div>
-            <div><dt>الحالة</dt><dd><Tone s={INVOICE_STATUS[inv.status]} /></dd></div>
+            <div><dt>الحالة</dt><dd><Tone s={invoiceStatusLabel(inv)} /></dd></div>
           </dl>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             <InvoiceFileButtons invoice={inv} size="sm" />

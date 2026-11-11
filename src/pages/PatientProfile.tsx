@@ -7,6 +7,7 @@ import { sendWhatsApp } from '../data/whatsappSend';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { db } from '../data/db';
+import { invoiceStatusLabel } from '../data/invoiceStatus';
 import { checkPortalAccount, type PortalAccount } from '../data/cloudSync';
 import { useDbVersion } from '../hooks/useDb';
 import { Button, EmptyState, StatusBadge } from '../components/ui';
@@ -389,7 +390,7 @@ export default function PatientProfile() {
               {invoices.length === 0 ? <p className="muted" style={{ marginBottom: 20 }}>ما فيه فواتير.</p> : (
                 <div className="table-wrap" style={{ marginBottom: 20 }}><table className="table">
                   <thead><tr><th>رقم الفاتورة</th><th>التاريخ</th><th>الخدمة</th><th>الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>الحالة</th><th>التقسيط</th></tr></thead>
-                  <tbody>{invoices.map((i) => { const st = INVOICE_STATUS[i.status]; return (
+                  <tbody>{invoices.map((i) => { const st = invoiceStatusLabel(i); return (
                     <tr key={i.id} style={{ cursor: can('invoices') ? 'pointer' : undefined }} onClick={() => can('invoices') && navigate(`/invoices?q=${i.no}`)}><td className="num">{i.no}</td><td>{fmtDate(i.date)}</td><td>{i.serviceName}</td><td className="num">{money(i.total)}</td><td className="num">{money(i.paid)}</td><td className="num">{money(i.remaining)}</td><td><StatusBadge label={st.label} tone={st.tone} /></td><td>{instReqs.rows ? <InstallmentStateBadge invoice={i} req={requestFor(instReqs.rows, i.id)} /> : null}</td></tr>
                   );})}</tbody>
                 </table></div>

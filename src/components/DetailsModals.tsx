@@ -12,6 +12,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useDetails } from './DetailsHost';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../data/db';
+import { invoiceStatusLabel } from '../data/invoiceStatus';
 import { useDbVersion } from '../hooks/useDb';
 import { useInstallmentRequests } from './PackagePayment';
 import { InstallmentStateBadge, InstallmentSummary } from './InstallmentSummary';
@@ -122,7 +123,7 @@ function FinanceBlock({ invoices }: { invoices: Invoice[] }) {
       <div className="table-wrap" style={{ marginBottom: 10 }}><table className="table">
         <thead><tr><th>الفاتورة</th><th>الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>الحالة</th><th>التقسيط</th><th className="actions"></th></tr></thead>
         <tbody>{invoices.map((i) => {
-          const st = INVOICE_STATUS[i.status];
+          const st = invoiceStatusLabel(i);
           return (
             <tr key={i.id}>
               <td className="num">{i.no}<div className="muted-sm">{i.serviceName}</div></td>
@@ -177,7 +178,7 @@ export function PlanDetailsModal({ planId, onClose, onBack }: { planId: string; 
       <div className="row-between" style={{ marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           <StatusBadge label={ps.label} tone={ps.tone} />
-          {inv && <StatusBadge label={INVOICE_STATUS[inv.status].label} tone={INVOICE_STATUS[inv.status].tone} />}
+          {inv && <StatusBadge label={invoiceStatusLabel(inv).label} tone={invoiceStatusLabel(inv).tone} />}
           {inv && rows && <InstallmentStateBadge invoice={inv} req={req} />}
         </div>
         {patient && <Button size="sm" variant="ghost" icon="user" onClick={() => { onClose(); navigate(`/patients/${patient.id}`); }}>ملف المريض</Button>}

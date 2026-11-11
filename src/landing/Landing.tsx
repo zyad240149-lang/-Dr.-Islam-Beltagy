@@ -1,10 +1,13 @@
 // صفحة الهبوط العامة (للزوار) — بيانات الطبيب من صفحته على فيسبوك، والحجز بالاتصال/واتساب
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import InstallButton from '../pwa/InstallButton';
 import { Icon } from '../utils/icons';
 import { DOCTOR, PLACES, POSTS, SERVICES, STEPS } from './content';
 import './landing.css';
+
+// ١١/١١: «احجز أونلاين» بيفتح نافذة حجز من غير حساب (بتتحمّل لما تتفتح بس)
+const GuestBook = lazy(() => import('./GuestBook'));
 
 const img = (f: string) => `${import.meta.env.BASE_URL}landing/${f}`;
 const tel = (n: string) => `tel:${n}`;
@@ -18,6 +21,7 @@ function FacebookIcon() {
 
 export default function Landing() {
   const [menu, setMenu] = useState(false);
+  const [booking, setBooking] = useState(false);
   const [view, setView] = useState<number | null>(null);
   useEffect(() => {
     document.title = `${DOCTOR.short} — ${DOCTOR.title} | ${DOCTOR.city}`;
@@ -69,7 +73,7 @@ export default function Landing() {
             <div className="lp-hero__cta">
               <a className="lp-btn" href={tel(main.number)}><Icon name="phone" size={18} />اتصل واحجز: <span className="num">{main.number}</span></a>
               <a className="lp-btn lp-btn--wa" href={`https://wa.me/${DOCTOR.whatsapp}`} target="_blank" rel="noopener noreferrer"><WhatsappIcon />واتساب</a>
-              <Link className="lp-btn lp-btn--outline" to="/signup"><Icon name="calendar" size={18} />احجز أونلاين</Link>
+              <button type="button" className="lp-btn lp-btn--outline" onClick={() => setBooking(true)}><Icon name="calendar" size={18} />احجز أونلاين</button>
               <InstallButton />
             </div>
             <ul className="lp-stats">
@@ -178,6 +182,7 @@ export default function Landing() {
           <button className="lp-lightbox__nav lp-lightbox__nav--next" aria-label="التالي" onClick={(e) => { e.stopPropagation(); setView((view + 1) % POSTS.length); }}><Icon name="chevron" size={26} /></button>
         </div>
       )}
+      {booking && <Suspense fallback={null}><GuestBook onClose={() => setBooking(false)} /></Suspense>}
     </div>
   );
 }

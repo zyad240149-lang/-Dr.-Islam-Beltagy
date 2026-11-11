@@ -215,7 +215,7 @@ export function diagnosisHtml(c: DxConsult, p?: DxPatient | null, visitNo?: numb
   @page { size: A4 landscape; margin: 7mm; }
   * { box-sizing: border-box; }
   :root { color-scheme: light; }
-  @page rx { size: A5; margin: 12mm; }
+  @page rx { size: A5; margin: 0; } /* ١٢/١١: الروشتة صورة ورقة العيادة من الحافة للحافة */
   body { background: #fff; margin: 0; }
   .rxw { page: rx; }
   .shp { font-family: "IBM Plex Sans", "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif; color: #10182f; font-size: 9px; line-height: 1.22; }
@@ -225,13 +225,14 @@ export function diagnosisHtml(c: DxConsult, p?: DxPatient | null, visitNo?: numb
     body { background: #e9edf3; padding: 14px 0; }
     .page { background: #fff; margin: 0 auto 14px; box-shadow: 0 1px 4px rgba(16, 24, 47, .15); border-radius: 4px; }
     .shp { width: 1124px; padding: 26px; }
-    .rxw { width: 560px; padding: 45px; }
+    .rxw { width: 560px; padding: 0; overflow: hidden; }
   }
   /* PDF: كل صفحة بعرض المساحة المطبوعة بتاعتها (A4 بالعرض / A5) وبتتصوّر لوحدها */
   .pdf body { background: #fff; padding: 0; }
   .pdf .page { box-shadow: none; border-radius: 0; }
   .pdf .shp { width: 1070px; }
-  .pdf .rxw { width: 469px; }
+  .pdf .rxw { width: 560px; padding: 0 !important; }
+  @media print { .rxw .rxp { width: 148mm; height: 210mm; aspect-ratio: auto; } }
   .pdf .page { margin-bottom: 24px; padding: 4px; }
   .page { break-after: page; }
   .page:last-child { break-after: auto; }
@@ -342,7 +343,7 @@ export async function buildDiagnosisPdf(c: DxConsult, p?: DxPatient | null, visi
     let pdf: InstanceType<typeof jsPDF> | null = null;
     for (const el of pages) {
       const rx = el.classList.contains('rxw');
-      const [format, orientation, w, h, m] = rx ? ['a5', 'portrait', 148, 210, 12] as const : ['a4', 'landscape', 297, 210, 7] as const;
+      const [format, orientation, w, h, m] = rx ? ['a5', 'portrait', 148, 210, 0] as const : ['a4', 'landscape', 297, 210, 7] as const;
       const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
       // الروشتة صفحة واحدة. الشيت بياخد عرض الصفحة ويتقسم عند الفراغ بين الأقسام (تصغيره لصفحة واحدة كان بيخلي الخط مايتقراش)
       const k = rx ? Math.min((w - 2 * m) / canvas.width, (h - 2 * m) / canvas.height) : (w - 2 * m) / canvas.width;

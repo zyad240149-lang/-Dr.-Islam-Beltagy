@@ -99,36 +99,31 @@ const ageOf = (birth?: string | null) => {
   return y >= 0 ? String(y) : '';
 };
 
+// ١٢/١١: طلب الأشعة والتحاليل على نفس ورقة العيادة (public/rx/letterhead.jpg) زي الروشتة بالظبط — البيانات بتتكتب فوقها في أماكنها
 export const REQ_CSS = `
-  .rqp { width: 148mm; min-height: 200mm; padding: 9mm 9mm 7mm; background: #fff; color: #10182f; font-family: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
-    font-size: 12.5px; line-height: 1.5; display: flex; flex-direction: column; box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .rqp { position: relative; width: 148mm; height: 210mm; overflow: hidden; background: #fff; color: #10182f; font-family: "Cairo", "Segoe UI", Tahoma, sans-serif;
+    font-size: 11.5px; line-height: 1.45; box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .rqp * { box-sizing: border-box; }
-  .rqp { direction: ltr; }
-  .rqp .hd { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; padding-bottom: 6px; border-bottom: 3px solid #1b4f9c; }
-  .rqp .hd .en { direction: ltr; text-align: left; } .rqp .hd .ar { direction: rtl; text-align: right; }
-  .rqp .hd b { display: block; font-size: 15px; color: #10325f; } .rqp .hd span { font-size: 11px; color: #1b4f9c; }
-  .rqp .hd img { width: 46px; height: 46px; }
-  .rqp .ttl { margin: 10px auto 8px; padding: 6px 20px; border-radius: 999px; background: linear-gradient(135deg, #10325f, #1b4f9c); color: #fff; font-weight: 700; font-size: 16px; text-align: center; }
-  .rqp .pt { display: grid; grid-template-columns: 1.7fr .7fr 1fr 1fr; gap: 4px 10px; padding: 6px 10px; border: 1px solid #c9d6ea; border-radius: 10px; font-size: 12px; direction: ltr; }
-  .rqp .pt span { color: #64748b; } .rqp .pt b { color: #10325f; unicode-bidi: isolate; }
-  .rqp .sec { margin-top: 9px; border: 1px solid #c9d6ea; border-radius: 10px; overflow: hidden; direction: ltr; }
-  .rqp .sec h3 { margin: 0; padding: 4px 10px; background: #eaf1fb; color: #10325f; font-size: 12.5px; }
-  .rqp .sec .bd { padding: 6px 10px; }
-  .rqp .chips { display: flex; flex-wrap: wrap; gap: 4px 6px; }
-  .rqp .chips span { padding: 2px 9px; border-radius: 999px; border: 1px solid #1b4f9c; color: #10325f; font-weight: 600; font-size: 12px; background: #fff; }
-  .rqp .grp { margin-bottom: 5px; } .rqp .grp b { display: block; font-size: 11.5px; color: #1b4f9c; margin-bottom: 2px; }
-  .rqp .txt { white-space: pre-line; direction: auto; unicode-bidi: plaintext; min-height: 18px; }
-  .rqp .grow { flex: 1; }
-  .rqp .sign { display: flex; justify-content: flex-end; margin-top: 16px; direction: ltr; }
-  .rqp .sign div { min-width: 45%; text-align: center; border-top: 1px solid #94a3b8; padding-top: 3px; font-size: 11.5px; color: #475569; }
-  .rqp footer { margin-top: 10px; padding-top: 5px; border-top: 3px solid #6cb33f; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; font-size: 9.5px; color: #475569; direction: rtl; }
-  .rqp footer b { color: #10325f; }
+  .rqp > img.bg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
+  .rqp .f { position: absolute; z-index: 1; }
+  .rqp .nm { top: 14.9%; right: 13.8%; width: 50%; height: 3.4%; display: flex; align-items: center; gap: 8px; direction: rtl; font-size: 14px; font-weight: 800; color: #0d2a6b; white-space: nowrap; overflow: hidden; }
+  .rqp .nm small { font-size: 10.5px; font-weight: 600; color: #475569; }
+  .rqp .dt { top: 15.6%; left: 6.2%; width: 18%; height: 3.4%; display: flex; align-items: center; justify-content: center; direction: ltr; font-size: 13px; font-weight: 800; color: #0d2a6b; background: #fff; border-radius: 6px; }
+  .rqp .norx { top: 25.6%; left: 3%; width: 8%; height: 4.4%; background: #fff; }
+  .rqp .bd { top: 26.2%; right: 4.5%; left: 4.5%; bottom: 20.5%; overflow: hidden; direction: ltr; display: flex; flex-direction: column; gap: 6px; }
+  .rqp .ttl { align-self: center; padding: 4px 18px; border-radius: 999px; background: linear-gradient(135deg, #10325f, #1b4f9c); color: #fff; font-weight: 800; font-size: 14px; text-align: center; }
+  .rqp .sec { border: 1px solid #c9d6ea; border-radius: 9px; overflow: hidden; background: rgba(255,255,255,.9); }
+  .rqp .sec h3 { margin: 0; padding: 3px 9px; background: #eaf1fb; color: #10325f; font-size: 11.5px; }
+  .rqp .sec .bd2 { padding: 5px 9px; }
+  .rqp .chips { display: flex; flex-wrap: wrap; gap: 3px 5px; }
+  .rqp .chips span { padding: 1px 8px; border-radius: 999px; border: 1px solid #1b4f9c; color: #10325f; font-weight: 600; font-size: 11px; background: #fff; }
+  .rqp .grp { margin-bottom: 4px; } .rqp .grp b { display: block; font-size: 10.5px; color: #1b4f9c; margin-bottom: 1px; }
+  .rqp .txt { white-space: pre-line; direction: auto; unicode-bidi: plaintext; min-height: 16px; }
 `;
 
 export function requestPageHtml(kind: 'rad' | 'lab', s: ExamSheet, p: ReqPatient | null | undefined, date: string): string {
-  const logo = `${location.origin}/brand/logo.svg`;
   const chips = (xs: string[]) => `<div class="chips">${xs.map((x) => `<span>${esc(x)}</span>`).join('')}</div>`;
-  const sec = (title: string, body: string) => (body ? `<div class="sec"><h3>${esc(title)}</h3><div class="bd">${body}</div></div>` : '');
+  const sec = (title: string, body: string) => (body ? `<div class="sec"><h3>${esc(title)}</h3><div class="bd2">${body}</div></div>` : '');
   let body = '';
   if (kind === 'rad') {
     body = sec('Requested Investigation', radTypes(s).length ? chips(radTypes(s).map(([l]) => l)) : '')
@@ -154,18 +149,21 @@ export function requestPageHtml(kind: 'rad' | 'lab', s: ExamSheet, p: ReqPatient
       + sec('Clinical Notes', tx(s, 'lr.notes') ? `<div class="txt">${esc(tx(s, 'lr.notes'))}</div>` : '');
   }
   const title = kind === 'rad' ? 'Radiology Request &nbsp;|&nbsp; طلب أشعة' : 'Laboratory Request &nbsp;|&nbsp; طلب تحاليل';
-  return `<div class="rqp">
-<div class="hd"><div class="en"><b>Dr. Islam Gomaa Beltagy</b><span>Consultant of Orthopedic &amp; Trauma Surgery</span></div><img src="${logo}" alt="" crossorigin="anonymous"><div class="ar"><b>${esc(DOCTOR.name)}</b><span>${esc(DOCTOR.title)}</span></div></div>
+  const age = ageOf(p?.birthDate), file = fileNoText(p?.fileNo) || '';
+  const extra = [age && `${age} سنة`, file && `ملف ${file}`].filter(Boolean).join(' · ');
+  return `<div class="rqp" dir="rtl">
+<img class="bg" src="${location.origin}/rx/letterhead.jpg" alt="">
+<div class="f nm"><span>${esc(p?.fullName || '')}</span>${extra ? `<small>${esc(extra)}</small>` : ''}</div>
+<div class="f dt">${esc(date.split('-').reverse().join('/'))}</div>
+<div class="f norx"></div>
+<div class="f bd">
 <div class="ttl">${title}</div>
-<div class="pt"><div><span>Name:</span> <b>${esc(p?.fullName || '—')}</b></div><div><span>Age:</span> <b>${esc(ageOf(p?.birthDate) || '—')}</b></div><div><span>File No:</span> <b>${esc(fileNoText(p?.fileNo) || '—')}</b></div><div><span>Date:</span> <b>${esc(date.split('-').reverse().join('/'))}</b></div></div>
 ${body}
-<div class="grow"></div>
-<div class="sign"><div>Doctor's Signature</div></div>
-<footer>${PLACES.map((pl) => `<div><b>${esc(pl.name)}</b> — ${esc(pl.address)}<br>☎ <bdi>${pl.phones.map(esc).join(' • ')}</bdi></div>`).join('')}</footer>
+</div>
 </div>`;
 }
 
-const FONT_HREF = 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap';
+const FONT_HREF = 'https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800&display=swap';
 export function requestHtml(kind: 'rad' | 'lab', s: ExamSheet, p: ReqPatient | null | undefined, date: string): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${kind === 'rad' ? 'Radiology Request' : 'Laboratory Request'} — ${esc(p?.fullName)}</title>
 <link rel="stylesheet" href="${FONT_HREF}"><style>@page { size: A5; margin: 0; } body { margin: 0; } ${REQ_CSS}</style></head><body>${requestPageHtml(kind, s, p, date)}</body></html>`;

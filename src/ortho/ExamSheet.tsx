@@ -454,6 +454,48 @@ export function GenGroupBox({ sheet, onChange, gi, n }: { sheet: ExamSheet; onCh
   );
 }
 
+/** ١١/١١: «التاريخ المرضي المعروف والأدوية والحساسية» (مربع 3 في الشيت القديم) — مكوّن لوحده عشان الشيت الجديد يستخدمه بنفس البيانات */
+export function HistoryMedsBox({ n, sheet, onChange }: { n: number; sheet: ExamSheet; onChange: Change }) {
+  const a = sheetApi(sheet, onChange);
+  const setMed = (i: number, patch: Partial<CurrentMed>) => onChange((x) => ({ ...x, meds: x.meds.map((m, j) => (j === i ? { ...m, ...patch } : m)) }));
+  const pickMed = (i: number, name: string) => {
+    const p = medCatalog().find((x) => x.name === name);
+    const cur = sheet.meds[i];
+    setMed(i, p ? { name, dose: cur.dose || p.dose, freq: cur.freq || p.frequency } : { name });
+  };
+  return (
+        <Box n={n} wide title="التاريخ المرضي المعروف والأدوية والحساسية">
+          <div className="sh-lbl sh-sub">التاريخ المرضي المعروف</div>
+          <div className="sh-cols"><Checks a={a} g="n.hx" items={N_HX} none={N_HX_NONE} /></div>
+          <Row label="التدخين"><Pick a={a} g="n.smoke" items={YES_NO} /></Row>
+          <Txt a={a} k="n.hx.other" label="أخرى" />
+        <div className="sh-lbl">ملاحظات</div>
+          <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt('n.bn.hx')} onChange={(e) => a.set('n.bn.hx', e.target.value)} />
+          <div className="sh-lbl sh-sub">الأدوية الحالية</div>
+          {sheet.meds.length > 0 && (
+            <div className="sh-meds">
+              <span>اسم الدواء</span><span>الجرعة</span><span>عدد المرات</span><span />
+              {sheet.meds.map((m, i) => [
+                <input key={`n${i}`} className="sh-in" dir="auto" aria-label="اسم الدواء" list="sh-meds" value={m.name} onChange={(e) => pickMed(i, e.target.value)} />,
+                <input key={`d${i}`} className="sh-in" dir="auto" aria-label="الجرعة" value={m.dose} onChange={(e) => setMed(i, { dose: e.target.value })} />,
+                <input key={`f${i}`} className="sh-in" dir="auto" aria-label="عدد المرات" value={m.freq} onChange={(e) => setMed(i, { freq: e.target.value })} />,
+                <button key={`x${i}`} type="button" className="sh-x" aria-label="حذف الدواء" onClick={() => onChange((x) => ({ ...x, meds: x.meds.filter((_, j) => j !== i) }))}><Icon name="close" size={14} /></button>,
+              ])}
+            </div>
+          )}
+          {/* اقتراحات من قسم «الأدوية» */}
+          <datalist id="sh-meds">{medCatalog().map((p) => <option key={p.name} value={p.name}>{p.group}</option>)}</datalist>
+          <button type="button" className="sh-add" onClick={() => onChange((x) => ({ ...x, meds: [...x.meds, { name: '', dose: '', freq: '' }] }))}><Icon name="plus" size={14} /> إضافة دواء</button>
+          <div className="sh-lbl">الحساسية</div>
+          <Checks a={a} g="n.allergy" items={N_ALLERGY} none={N_ALLERGY_NONE} />
+          <Txt a={a} k="n.allergy.other" label="مواد أخرى" />
+          <Txt a={a} k="n.allergy.details" label="التفاصيل" />
+        <div className="sh-lbl">ملاحظات</div>
+          <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt('n.bn.meds')} onChange={(e) => a.set('n.bn.meds', e.target.value)} />
+        </Box>
+  );
+}
+
 /** ١١/١١: «سبب الزيارة الحالية وتفاصيل المشكلة» (مربع 4 في الشيت القديم) — مكوّن لوحده عشان الشيت الجديد يستخدمه بنفس البيانات */
 export function VisitReasonBox({ n, sheet, onChange, painScore, onPainScore }: { n: number; sheet: ExamSheet; onChange: Change; painScore: number | ''; onPainScore: (v: number | '') => void }) {
   const a = sheetApi(sheet, onChange);
@@ -606,35 +648,7 @@ export function NursingSheet({ sheet, onChange, patient, date, visitNo, painScor
         </Box>
 
         {/* ٩/١١: «التاريخ المرضي المعروف» و«الأدوية الحالية والحساسية» مربع واحد */}
-        <Box n={3} wide title="التاريخ المرضي المعروف والأدوية والحساسية">
-          <div className="sh-lbl sh-sub">التاريخ المرضي المعروف</div>
-          <div className="sh-cols"><Checks a={a} g="n.hx" items={N_HX} none={N_HX_NONE} /></div>
-          <Row label="التدخين"><Pick a={a} g="n.smoke" items={YES_NO} /></Row>
-          <Txt a={a} k="n.hx.other" label="أخرى" />
-        <div className="sh-lbl">ملاحظات</div>
-          <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt('n.bn.hx')} onChange={(e) => a.set('n.bn.hx', e.target.value)} />
-          <div className="sh-lbl sh-sub">الأدوية الحالية</div>
-          {sheet.meds.length > 0 && (
-            <div className="sh-meds">
-              <span>اسم الدواء</span><span>الجرعة</span><span>عدد المرات</span><span />
-              {sheet.meds.map((m, i) => [
-                <input key={`n${i}`} className="sh-in" dir="auto" aria-label="اسم الدواء" list="sh-meds" value={m.name} onChange={(e) => pickMed(i, e.target.value)} />,
-                <input key={`d${i}`} className="sh-in" dir="auto" aria-label="الجرعة" value={m.dose} onChange={(e) => setMed(i, { dose: e.target.value })} />,
-                <input key={`f${i}`} className="sh-in" dir="auto" aria-label="عدد المرات" value={m.freq} onChange={(e) => setMed(i, { freq: e.target.value })} />,
-                <button key={`x${i}`} type="button" className="sh-x" aria-label="حذف الدواء" onClick={() => onChange((x) => ({ ...x, meds: x.meds.filter((_, j) => j !== i) }))}><Icon name="close" size={14} /></button>,
-              ])}
-            </div>
-          )}
-          {/* اقتراحات من قسم «الأدوية» */}
-          <datalist id="sh-meds">{medCatalog().map((p) => <option key={p.name} value={p.name}>{p.group}</option>)}</datalist>
-          <button type="button" className="sh-add" onClick={() => onChange((x) => ({ ...x, meds: [...x.meds, { name: '', dose: '', freq: '' }] }))}><Icon name="plus" size={14} /> إضافة دواء</button>
-          <div className="sh-lbl">الحساسية</div>
-          <Checks a={a} g="n.allergy" items={N_ALLERGY} none={N_ALLERGY_NONE} />
-          <Txt a={a} k="n.allergy.other" label="مواد أخرى" />
-          <Txt a={a} k="n.allergy.details" label="التفاصيل" />
-        <div className="sh-lbl">ملاحظات</div>
-          <textarea className="sh-in sh-notes" dir="auto" aria-label="ملاحظات" value={a.txt('n.bn.meds')} onChange={(e) => a.set('n.bn.meds', e.target.value)} />
-        </Box>
+        <HistoryMedsBox n={3} sheet={sheet} onChange={onChange} />
 
         <VisitReasonBox n={4} sheet={sheet} onChange={onChange} painScore={painScore} onPainScore={onPainScore} />
 

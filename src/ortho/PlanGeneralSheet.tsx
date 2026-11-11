@@ -5,7 +5,7 @@ import { GOALS } from '../data/physioApi';
 import { AGGRAVATING, CHARACTER, HISTORY, LOCATION, ONSET, PATTERN, RADIATION, RELIEVING, DURATION_UNITS } from '../data/physioSubjective';
 import { GAIT, JOINTS, OBSERVATION, PALPATION, REFLEXES, REFLEX_RESULT, ROM_STATUS, SENS_DEEP, SENS_SUP, TEST_RESULT, GRADES, type Opt } from '../data/physioObjective';
 import type { ExamSheet } from './data';
-import { Box, Checks, Pick, Row, SHEET_LISTS, Txt, VisitReasonBox, sheetApi, type Api } from './ExamSheet';
+import { Box, Checks, HistoryMedsBox, Pick, Row, SHEET_LISTS, Txt, VisitReasonBox, sheetApi, type Api } from './ExamSheet';
 
 // نفس اختيارات خطة العلاج (PatientForms → PlanModal)
 export const PLAN_ONSET = ['مفاجئ (Sudden)', 'تدريجي (Gradual)', 'بعد إصابة/حادثة (Traumatic)', 'بعد سقوط (Fall)', 'بعد رفع شيء ثقيل (Lifting)', 'بعد عملية (Post-operative)', 'بعد مجهود رياضي (Sports)',
@@ -27,7 +27,7 @@ type ET = { k: string; label: string; stack?: boolean; num?: boolean; date?: boo
 type EB = { id: string; title: string; part: string; wide?: boolean; red?: boolean; off?: boolean; f: (EG | ET)[] };
 const SIDES = ['Right', 'Left', 'Bilateral'];
 export const EVAL_BOXES: EB[] = [
-  { id: 'loc', part: 'Subjective', title: 'مكان الألم (Location of Pain)', f: [{ g: 'pg.loc', items: L_(LOCATION), other: true }] },
+  { id: 'loc', off: true, part: 'Subjective', title: 'مكان الألم (Location of Pain)', f: [{ g: 'pg.loc', items: L_(LOCATION), other: true }] },
   { id: 'ons', part: 'Subjective', title: 'بداية الألم (Onset)', f: [{ g: 'pg.ons', items: L_(ONSET), other: true }] },
   { id: 'dur', off: true, part: 'Subjective', title: 'المدة (Duration)', f: [{ k: 'pg.dur.n', label: 'المدة', num: true }, { g: 'pg.dur.u', label: 'الوحدة', items: L_(DURATION_UNITS), one: true }] },
   { id: 'rad', part: 'Subjective', title: 'Radiation / Spread', f: [{ g: 'pg.rad', items: L_(RADIATION), other: true }] },
@@ -125,7 +125,8 @@ export function PlanGeneralSheet({ sheet, onChange, age, onOpenMap, painScore, o
         <textarea className="sh-in sh-notes" dir="auto" rows={3} aria-label="ملاحظات" value={a.txt('n.notes')} onChange={(e) => a.set('n.notes', e.target.value)} />
       </Box>
       {/* ١١/١١: «مكان الألم» بقى رقم 2 والباقي بنفس ترتيبه بعده */}
-      {evalBox(EVAL_BOXES.find((x) => x.id === 'loc')!, 2)}
+      {/* ١٢/١١: «مكان الألم» اتشال ومكانه «التاريخ المرضي المعروف والأدوية والحساسية» (مربع 3 في الشيت القديم — نفس البيانات) */}
+      <HistoryMedsBox n={2} sheet={sheet} onChange={onChange} />
       <Box n={3} title="بداية ظهور الألم">
         <div className="sh-cols"><Pick a={a} g="pg.onset" items={PLAN_ONSET} /></div>
         <Other a={a} k="pg.onset.other" />

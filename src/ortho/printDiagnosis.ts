@@ -6,7 +6,7 @@ import { fileNoText } from '../utils/phoneUtils';
 import { fmtDate } from '../utils/format';
 import { SIDE, type Consultation, type ExamSheet } from './data';
 import { GEN_BOXES, SHEET_LISTS as L, bmiOf, bmiClass, bmiText, normSheet, painLabel, sheetHasContent } from './ExamSheet';
-import { RX_CSS, rxPageHtml } from './printRx';
+import { RX_CSS, RX_FONT_HREF, rxPageHtml } from './printRx';
 import { DX_SHEETS, FDX, PAIN_FOR_DD, dxGroupKey, dxSub, type DxSheetId } from './dxCatalog';
 import { QUICK_EXAM, TREATMENT, boxNeedsNotes, quickFilled, boxNotesKey, activeSheets, regionSheet, sheetFilled, treatmentFilled, type Field, type RegionSheetDef } from './regionSheets';
 import { openPrintWindow, printHtml } from '../utils/printDoc';
@@ -210,6 +210,7 @@ export function diagnosisHtml(c: DxConsult, p?: DxPatient | null, visitNo?: numb
   const body = pages.join('');
   return `<!doctype html><html lang="ar"><head><meta charset="utf-8"><title>التشخيص — ${esc(p?.fullName)}</title>
 <link rel="stylesheet" href="${FONT_HREF}">
+<link rel="stylesheet" href="${RX_FONT_HREF}">
 <style>
   @page { size: A4 landscape; margin: 7mm; }
   * { box-sizing: border-box; }

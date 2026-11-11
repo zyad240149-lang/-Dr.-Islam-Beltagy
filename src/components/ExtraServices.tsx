@@ -94,13 +94,13 @@ export default function ExtraServices({ appointmentId }: { appointmentId: string
         ))}
       </ul>
       {/* ١٠/١١: مبلغ خصم على فاتورة الزيارة — صلاحية «الفواتير: تعديل السعر والخصم» وقبل أي دفع */}
-      {inv.status !== 'cancelled' && can('invoices', 'edit') && can('inv_price', 'view') && inv.paid <= 0 && (
+      {inv.status !== 'cancelled' && can('invoices', 'edit') && can('inv_price', 'view') && (inv.remaining > 0 || inv.discount > 0) && ( /* ١١/١١: الخصم متاح بعد الدفع كمان — لحد ما الإجمالي يوصل للمدفوع */
         <div className="xsvc__add">
-          <input className="input num" type="number" min={0} max={inv.price} inputMode="decimal" aria-label="مبلغ الخصم"
+          <input className="input num" type="number" min={0} max={Math.max(0, inv.price - inv.paid)} inputMode="decimal" aria-label="مبلغ الخصم"
             placeholder={inv.discount > 0 ? `الخصم الحالي ${money(inv.discount)}` : 'مبلغ الخصم (ج.م)'} value={disc} onChange={(e) => setDisc(e.target.value)} />
           <Button variant="outline" icon="check" disabled={disc === ''} loading={busy} onClick={() => {
             const d = Number(disc);
-            if (!Number.isFinite(d) || d < 0 || d > inv.price) { toast.error('الخصم لازم يكون بين 0 وإجمالي الخدمات.'); return; }
+            const maxD = Math.max(0, Math.round((inv.price - inv.paid) * 100) / 100); if (!Number.isFinite(d) || d < 0 || d > maxD) { toast.error(inv.paid > 0 ? `الخصم لازم يكون بين 0 و ${money(maxD)} (المريض دفع ${money(inv.paid)}).` : 'الخصم لازم يكون بين 0 وإجمالي الخدمات.'); return; }
             void call(() => db.updatePlanInvoice(inv.id, { price: inv.price, discount: d, note: inv.note ?? '' }, false), d > 0 ? `اتطبّق خصم ${money(d)}` : 'اتلغى الخصم').then(() => setDisc(''));
           }}>تطبيق الخصم</Button>
         </div>

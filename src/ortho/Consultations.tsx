@@ -386,7 +386,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
   }
 
   return (
-    <Modal xl title={initial ? 'تعديل الكشف' : 'كشف جديد'} onClose={cancel} onBack={backTab} footer={<>
+    <Modal xl title={initial ? 'تعديل الكشف' : 'كشف جديد'} patient={c.patientId ? db.patient(c.patientId)?.fullName : pendingInfo.name || null} onClose={cancel} onBack={backTab} footer={<>
       <VoiceDictation />
       {(c.patientId || unlinked) && missing.length > 0 && <span className="sh-need">لسه ناقص: {missing.join('، ')}</span>}
       {unlinked && !ok && <span className="sh-need">اكتب اسم المريض الثلاثي في خانة 1</span>}
@@ -672,7 +672,7 @@ function RxPage({ patientId, region, initial, busy, onClose, onSave, onPrint, ex
   const [rx, setRx] = useState<RxData>(initial);
   const pick = () => ({ medications: rx.medications, labs: rx.labs, imagingRequests: rx.imagingRequests, plan: rx.plan });
   return (
-    <Modal xl title="الروشتة — الأدوية والتعليمات" onClose={onClose} footer={<>
+    <Modal xl title="الروشتة — الأدوية والتعليمات" patient={db.patient(patientId)?.fullName} onClose={onClose} footer={<>
       <Button variant="outline" onClick={onClose} disabled={busy}>إغلاق</Button>
       <Button variant="outline" icon="print" loading={busy} onClick={() => onPrint(pick())}>طباعة الروشتة</Button>
       <Button icon="check" loading={busy} onClick={async () => { if (await onSave(pick())) onClose(); }}>حفظ الروشتة</Button>

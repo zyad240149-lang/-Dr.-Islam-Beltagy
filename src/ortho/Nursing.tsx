@@ -205,7 +205,7 @@ export function NursingModal({ patientId, appointmentId = null, initial, onClose
       {fuOpen && <FollowUpModal patientId={patientId} doctorHint={visitDoctor} presetDate={addDays(todayYmd(), FU_DAYS[pl.fu] ?? 7)} onClose={() => setFuOpen(false)} />}
     </>;
   if (embedded) return <div className="nu-inline">{body}<div className="sh-next">{foot}</div></div>;
-  return <Modal wide title={initial ? 'تعديل شيت متابعة التمريض' : 'شيت متابعة التمريض'} onClose={cancel} footer={foot}>{body}</Modal>;
+  return <Modal wide title={initial ? 'تعديل شيت متابعة التمريض' : 'شيت متابعة التمريض'} patient={db.patient(patientId)?.fullName} onClose={cancel} footer={foot}>{body}</Modal>;
 }
 
 // تاب «متابعة المريض» جوّه نموذج التشخيص: كل شيتات المتابعة بتاعت المريض + متابعة جديدة/تعديل في نفس المكان

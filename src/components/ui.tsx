@@ -145,7 +145,7 @@ if (typeof window !== 'undefined') window.addEventListener('popstate', () => {
   top.close();
   if (modalStack.length) ensureGuard(); // لسه فيه نافذة تحتها ← سطر جديد عشان الرجوع الجاي يقفلها هي كمان
 });
-export function Modal({ title, onClose, onBack, children, footer, wide, xl }: { title: string; onClose: () => void; onBack?: () => boolean; children: ReactNode; footer?: ReactNode; wide?: boolean; xl?: boolean }) {
+export function Modal({ title, onClose, onBack, children, footer, wide, xl, patient }: { title: string; patient?: string | null; onClose: () => void; onBack?: () => boolean; children: ReactNode; footer?: ReactNode; wide?: boolean; xl?: boolean }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onKey);
@@ -175,7 +175,7 @@ export function Modal({ title, onClose, onBack, children, footer, wide, xl }: { 
           <button type="button" className="btn btn--ghost btn--sm modal__back" onClick={() => { if (!backRef.current?.()) onClose(); }} aria-label="رجوع" title="رجوع خطوة">
             <Icon name="chevron" size={16} /><span>رجوع</span>
           </button>
-          <h2>{title}</h2>
+          <h2>{title}{patient ? <span className="modal__pt" title="المريض"><Icon name="user" size={14} />{patient}</span> : null}</h2>
           <button className="icon-btn" onClick={onClose} aria-label="إغلاق"><Icon name="close" size={18} /></button>
         </div>
         <div className="modal__body">{children}</div>

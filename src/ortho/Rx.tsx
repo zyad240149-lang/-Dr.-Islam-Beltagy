@@ -73,10 +73,13 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
   const pickMedName = (i: number, name: string) => {
     const p = medCatalog().find((x) => x.name === name);
     const cur = c.medications[i];
+    if (p && c.medications.some((m, j) => j !== i && m.name.trim().toLowerCase() === name.trim().toLowerCase())) toast.error(`«${name}» متكتب قبل كده في الروشتة — اتأكد إنك مش كاتبه مرتين.`);
     setMed(i, p ? { name, dose: cur.dose || p.dose, frequency: cur.frequency || p.frequency, duration: cur.duration || p.duration, notes: cur.notes || p.notes || '' } : { name });
   };
   const [medQ, setMedQ] = useState('');
   const norm = (s: string) => s.trim().toLowerCase();
+  // ١١/١١: نفس الدواء متكتب مرتين ← تنبيه + الصفوف المتكررة بتتعلّم بالأحمر
+  const dupNames = (() => { const seen = new Map<string, number>(); for (const m of c.medications) { const k = norm(m.name); if (k) seen.set(k, (seen.get(k) ?? 0) + 1); } return new Set([...seen].filter(([, n]) => n > 1).map(([k]) => k)); })();
   const hasMed = (name: string) => c.medications.some((m) => norm(m.name) === norm(name));
   const toggleMed = (p: MedPreset) => set('medications', hasMed(p.name)
     ? c.medications.filter((m) => norm(m.name) !== norm(p.name))
@@ -153,8 +156,9 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
         ? <p className="cx-empty">اختار الأدوية من القايمة فوق، أو اضغط «إضافة دواء» واكتب اسم دواء تاني.</p>
         : (
           <div className="cx-rows">
+            {dupNames.size > 0 && <div className="cx-dup" role="alert"><Icon name="alert" size={16} /> فيه دواء متكتب مرتين: <b dir="ltr">{[...dupNames].join('، ')}</b> — امسح التكرار.</div>}
             {c.medications.map((m, i) => (
-              <div className="cx-row cx-row--med" key={i}>
+              <div className={`cx-row cx-row--med${dupNames.has(norm(m.name)) ? ' is-dup' : ''}`} key={i}>
                 <span className="cx-row__n">{i + 1}</span>
                 <input className="input" dir="ltr" aria-label="اسم الدواء" placeholder="اسم الدواء" list="cx-meds" value={m.name} onChange={(e) => pickMedName(i, e.target.value)} />
                 <MedChoice label="الجرعة" value={m.dose} options={MED_DOSES} onChange={(v) => setMed(i, { dose: v })} />

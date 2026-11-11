@@ -263,7 +263,7 @@ export function FollowUpModal({ patientId, patientLabel, consultationId, initial
   const canCheckIn = !!saved && saved.status === 'scheduled' && saved.date <= t && perm.book;
 
   return (
-    <Modal wide title={saved ? 'موعد متابعة' : 'تحديد موعد متابعة'} onClose={onClose} footer={<>
+    <Modal wide title={saved ? 'موعد متابعة' : 'تحديد موعد متابعة'} patient={patientId ? db.patient(patientId)?.fullName : null} onClose={onClose} footer={<>
       {saved && perm.edit && saved.status === 'scheduled' && (!linked || NEEDS_CONFIRM.has(linked.status)) && <Button icon="checkCircle" loading={busy} onClick={confirmAppt}>تأكيد الموعد</Button>}
       {saved && perm.edit && saved.status === 'scheduled' && <>
         <Button variant="outline" icon="check" loading={busy} onClick={() => save({ status: 'done' }, 'اتسجّلت المتابعة «تمت»')}>تمت المتابعة</Button>

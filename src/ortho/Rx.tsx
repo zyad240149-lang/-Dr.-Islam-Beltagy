@@ -195,6 +195,11 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
                   </div>
                 );
               })}
+              {/* ١٢/١١: ملاحظة الدواء كتابة حرة (أو من الاختيارات اللي فوق) */}
+              <div className="cx-pick__row">
+                <b>اكتب ملاحظة</b>
+                <input className="input cx-pick__note" dir="auto" placeholder="ملاحظة للدواء ده — مثلًا: بعد الفطار مع كوب مية" value={draft.notes ?? ''} onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSel(); } }} />
+              </div>
               <div className="cx-pick__go">
                 <Button icon={hasMed(sel.name) ? 'check' : 'plus'} onClick={addSel}>{hasMed(sel.name) ? 'تحديث الجرعة' : 'إضافة للروشتة'}</Button>
                 {hasMed(sel.name) && <Button variant="outline" icon="trash" onClick={() => { toggleMed(sel); setSel(null); }}>شيله من الروشتة</Button>}

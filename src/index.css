@@ -2092,3 +2092,23 @@ html[dir="rtl"] .table td.num, html[dir="rtl"] .table th.num { text-align: right
 .cx-pick__p:first-child { padding-inline-end: 12px; }
 .cx-pick__list { max-height: none; overflow: visible; }
 .cx-pick__g { position: static; }
+/* ١٢/١١ (٢): شكل احترافي مضغوط — قايمة الأدوية عمودين بصفوف صغيرة، والجرعة: عنوان + اختيارات صغيرة في سطر، والنصّين نفس الطول */
+.cx-pick { align-items: stretch; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface); }
+.cx-pick__p { padding: 10px 12px !important; }
+.cx-pick__p + .cx-pick__p { position: static; align-self: stretch; background: var(--surface-2); }
+.cx-pick__p:first-child { display: flex; flex-direction: column; max-height: 470px; }
+.cx-pick__list { flex: 1; min-height: 0; overflow: auto !important; columns: 2 200px; column-gap: 10px; scrollbar-width: thin; }
+.cx-pick__list > div { display: contents; }
+.cx-pick__g { column-span: all; position: static; margin: 4px 0 2px; padding: 3px 6px; border-radius: 6px; font-size: 10.5px; letter-spacing: .3px; }
+.cx-pick__m { break-inside: avoid; border: 0; border-radius: 7px; padding: 4px 7px; font-size: 11.5px; font-weight: 600; line-height: 1.35; margin-bottom: 1px; }
+.cx-pick__m span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cx-pick__h { font-size: 14px; }
+.cx-pick__sel { padding: 5px 9px; font-size: 13.5px; }
+.cx-pick__dose { gap: 6px; }
+.cx-pick__row { grid-template-columns: 74px minmax(0, 1fr); align-items: start; gap: 6px; padding-bottom: 6px; border-bottom: 1px dashed var(--line-2); }
+.cx-pick__row > b { padding-top: 3px; font-size: 12px; }
+.cx-pick__chips { gap: 4px; }
+.cx-pick .cx-chip--sm { padding: 2px 8px; font-size: 11.5px; border-radius: 999px; line-height: 1.5; }
+.cx-pick__go { justify-content: flex-start; padding-top: 2px; }
+@media (max-width: 760px) { .cx-pick { grid-template-columns: minmax(0, 1fr) !important; } .cx-pick__p + .cx-pick__p { border-inline-start: 0; border-top: 1px solid var(--line); } .cx-pick__p:first-child { max-height: 320px; } }
+.cx-pick__note { height: 34px; font-size: 13px; padding: 0 10px; }

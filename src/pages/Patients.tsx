@@ -15,7 +15,7 @@ import { useToast } from '../hooks/useToast';
 import { useAuth } from '../services/auth';
 import { exportPatientsWorkbook } from '../utils/patientsWorkbook';
 import ImportPatientsModal from '../components/ImportPatientsModal';
-import { EditPatientModal, NewPatientModal } from '../components/PatientForms';
+import { EditPatientModal, NewPatientModal, PlanModal } from '../components/PatientForms';
 import { patientGaps } from '../utils/patientGaps';
 
 const PAGE_SIZE = 15;
@@ -64,6 +64,8 @@ function PatientsList({ tabs }: { tabs: ReactNode }) {
   const [adding, setAdding] = useState(params.get('new') === '1');
   const [editing, setEditing] = useState<PatientRow | null>(null);
   // ١١/١١: «مواعيد المتابعة» و«إضافة موعد» و«خطة العلاج» اتشالوا من صف المريض (طلب الدكتور) — من ملف المريض نفسه
+  // ١١/١١ (بعدها): «خطة العلاج» رجعت لصف المريض بطلب العيادة
+  const [planning, setPlanning] = useState<PatientRow | null>(null);
   const [deleting, setDeleting] = useState<PatientRow | null>(null);
   const [minSessions, setMinSessions] = useState('3');
 
@@ -135,6 +137,7 @@ function PatientsList({ tabs }: { tabs: ReactNode }) {
                           <RowActions>
                             <IconAction icon="eye" label="عرض الملف" onClick={() => navigate(`/patients/${p.id}`)} />
                             {can('patients', 'edit') && <IconAction icon="edit" label="تعديل" onClick={() => setEditing(p)} />}
+                            {can('plans', 'create') && <IconAction icon="target" label="خطة العلاج" onClick={() => setPlanning(p)} />}
                             {can('patients', 'edit') && <IconAction icon="lock" label={p.active ? 'تعطيل' : 'تفعيل'} onClick={() => toggleActive(p)} />}
                             {can('patients', 'delete') && <IconAction icon="trash" label="حذف المريض" danger onClick={() => setDeleting(p)} />}
                           </RowActions>
@@ -176,6 +179,7 @@ function PatientsList({ tabs }: { tabs: ReactNode }) {
 
       {adding && <NewPatientModal onClose={() => setAdding(false)} onCreated={(id) => navigate(`/patients/${id}`)} />}
       {editing && <EditPatientModal patient={db.patient(editing.id) ?? editing} onClose={() => { setEditing(null); reload(); }} />}
+      {planning && <PlanModal patientId={planning.id} onClose={() => { setPlanning(null); reload(); }} />}
       {deleting && (
         <ConfirmDialog title="حذف ملف المريض" onClose={() => setDeleting(null)}
           message={<>سيتم حذف ملف <b>{deleting.fullName}</b> ({deleting.fileNo}) نهائيًا. ما يمكن حذف مريض عنده زيارات أو مدفوعات — استخدم «تعطيل» بدل الحذف للاحتفاظ بالسجلات.</>}

@@ -1,6 +1,7 @@
 // «تشخيص المريض»: اختار المريض ← زرار واحد «تشخيص» يفتح نموذج الكشف والتشخيص.
 // من غير مريض مختار: تبويبين — «مرضى بانتظار التشخيص» (زيارات النهارده اللي اتعملها حضور ولسه تشخيصها ما اكتملش)
 // و«المرضى اللي اتشخصوا» (شيت متابعة التمريض بقى تاب «متابعة المريض» جوّه نموذج التشخيص — بحث بالاسم أو جزء منه أو الموبايل أو رقم الملف). مريض مختار ← ملف تشخيصاته كله + تشخيص جديد.
+import { DockedConsult } from './ConsultDock';
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { addDays, isIncomplete, isUnlinked, ortho, useOrthoVersion, type Consultation } from './data';
@@ -372,11 +373,11 @@ export default function Diagnosis() {
           </p>
         </Modal>
       )}
-      {pendingOpen && <ConsultModal pending={pendingOpen} onClose={() => setPendingOpen(null)} />}
-      {unlinkedEdit && <ConsultModal initial={unlinkedEdit} onClose={() => setUnlinkedEdit(null)} />}
-      {followOf && <ConsultModal initial={followOf} openFollowUp onClose={() => setFollowOf(null)} />}
+      <DockedConsult when={!!pendingOpen} pending={pendingOpen ?? undefined} onClose={() => setPendingOpen(null)} />
+      <DockedConsult when={!!unlinkedEdit} initial={unlinkedEdit ?? undefined} onClose={() => setUnlinkedEdit(null)} />
+      <DockedConsult when={!!followOf} initial={followOf ?? undefined} openFollowUp onClose={() => setFollowOf(null)} />
       {/* «تشخيص» بيفتح الشيت على طول: الشيت العام (وفيه خريطة الجسم لمكان الألم) ← كشف الطبيب ← الروشتة */}
-      {edit && patientId && <ConsultModal patientId={patientId} appointmentId={edit === 'new' ? newVisit : undefined} initial={edit === 'new' ? undefined : edit} resume={edit === 'new' && resume} onClose={closeModal} />}
+      <DockedConsult when={!!edit && !!patientId} patientId={patientId} appointmentId={edit === 'new' ? newVisit : undefined} initial={edit === 'new' || !edit ? undefined : edit} resume={edit === 'new' && resume} onClose={closeModal} />
       {exSend && patientId && <ExerciseSendModal patientId={patientId} onClose={() => setExSend(false)} />}
     </div>
   );

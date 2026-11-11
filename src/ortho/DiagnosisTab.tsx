@@ -1,6 +1,7 @@
 // تبويب «التشخيص» في ملف المريض (ونفسه «ملف تشخيصات المريض» في صفحة التشخيص — embedded): كل تشخيص بتاريخه ورقم الزيارة
 // والطبيب اللي سجّله والتشخيص، وتحته الشيت باللي اتحدد واتكتب بس (+ الروشتة والتحاليل والأشعة) والمرفقات.
 // كل تشخيص سجل مستقل — التشخيص الجديد بيتضاف وما بيلمسش القديم.
+import { DockedConsult } from './ConsultDock';
 import { useEffect, useRef, useState } from 'react';
 import { Button, EmptyState } from '../components/ui';
 import { db } from '../data/db';
@@ -114,7 +115,7 @@ export function DiagnosisTab({ patientId, embedded }: { patientId: string; embed
           );
         })}
       </LoadState>
-      {edit && <ConsultModal patientId={patientId} initial={edit === 'new' ? undefined : edit} resume={edit === 'new' && resume} onClose={() => { setEdit(null); setResume(false); }} />}
+      <DockedConsult when={!!edit} patientId={patientId} initial={edit === 'new' || !edit ? undefined : edit} resume={edit === 'new' && resume} onClose={() => { setEdit(null); setResume(false); }} />
       {out && <DiagnosisOutput c={out.c} initial={['nurse', 'doctor', 'rx']} patient={db.patient(patientId)} visitNo={out.visitNo} onClose={() => setOut(null)} />}
     </div>
   );

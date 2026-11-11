@@ -1,4 +1,5 @@
 import SecondSessionHost from './SecondSessionHost';
+import { ConsultDockProvider } from '../ortho/ConsultDock';
 import IncompleteHost from './PatientCompleteness';
 import { LangSwitch } from '../i18n/LangSwitch';
 import { useEffect, useState, type ReactNode } from 'react';
@@ -286,7 +287,8 @@ export default function Layout({ children }: { children: ReactNode }) {
             )}
           </div>
         </div>
-        <DetailsProvider>{children}</DetailsProvider>
+        {/* ١١/١١: أكتر من كشف مفتوح في نفس الوقت (شريط «كشوفات مفتوحة» تحت) */}
+        <DetailsProvider><ConsultDockProvider>{children}</ConsultDockProvider></DetailsProvider>
       </main>
     </div>
   );

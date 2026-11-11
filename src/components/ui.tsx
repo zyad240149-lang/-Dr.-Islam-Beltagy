@@ -145,8 +145,9 @@ if (typeof window !== 'undefined') window.addEventListener('popstate', () => {
   top.close();
   if (modalStack.length) ensureGuard(); // لسه فيه نافذة تحتها ← سطر جديد عشان الرجوع الجاي يقفلها هي كمان
 });
-export function Modal({ title, onClose, onBack, children, footer, wide, xl, patient }: { title: string; patient?: string | null; onClose: () => void; onBack?: () => boolean; children: ReactNode; footer?: ReactNode; wide?: boolean; xl?: boolean }) {
+export function Modal({ title, onClose, onBack, children, footer, wide, xl, patient, hidden, headExtra }: { title: string; patient?: string | null; hidden?: boolean; headExtra?: ReactNode; onClose: () => void; onBack?: () => boolean; children: ReactNode; footer?: ReactNode; wide?: boolean; xl?: boolean }) {
   useEffect(() => {
+    if (hidden) return; // ١١/١١: نافذة متصغّرة (كشف مركون تحت) — مابتسمعش Escape ولا بتقفل اسكرول الصفحة
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onKey);
     document.body.style.overflow = 'hidden';
@@ -154,21 +155,22 @@ export function Modal({ title, onClose, onBack, children, footer, wide, xl, pati
     const onFocus = (e: FocusEvent) => { const t = e.target as HTMLElement; if (window.innerWidth <= 640 && t.matches?.('input, textarea, select')) setTimeout(() => t.scrollIntoView({ block: 'center', behavior: 'smooth' }), 250); };
     document.addEventListener('focusin', onFocus);
     return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('focusin', onFocus); document.body.style.overflow = ''; };
-  }, [onClose]);
+  }, [onClose, hidden]);
   // رجوع الموبايل (زرار/سحب) وفيه نافذة مفتوحة ← يقفل النافذة بس، مش يخرج من الصفحة
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   const backRef = useRef(onBack);
   backRef.current = onBack;
   useEffect(() => {
+    if (hidden) return;
     const entry: ModalEntry = { close: () => closeRef.current(), back: () => !!backRef.current?.() };
     modalStack.push(entry);
     ensureGuard();
     return () => { const i = modalStack.indexOf(entry); if (i >= 0) modalStack.splice(i, 1); };
-  }, []);
+  }, [hidden]);
   // بيترسم في body: النافذة اللي بتتفتح من جوّه عنصر sticky (زي «حالة المزامنة» في القائمة الجانبية) كانت بتطلع ورا محتوى الصفحة ومابتتضغطش
   return createPortal(
-    <div className="overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="overlay" style={hidden ? { display: 'none' } : undefined} aria-hidden={hidden || undefined} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className={`modal ${wide ? 'modal--wide' : ''} ${xl ? 'modal--xl' : ''}`} role="dialog" aria-modal="true" aria-label={title}>
         <div className="modal__head">
           {/* ١١/١١: «رجوع» في كل نافذة — بيرجع خطوة جوّاها الأول (تابات الكشف، خطوات الحجز)، ولو مفيش خطوات بيقفلها */}
@@ -176,6 +178,7 @@ export function Modal({ title, onClose, onBack, children, footer, wide, xl, pati
             <Icon name="chevron" size={16} /><span>رجوع</span>
           </button>
           <h2>{title}{patient ? <span className="modal__pt" title="المريض"><Icon name="user" size={14} />{patient}</span> : null}</h2>
+          {headExtra}
           <button className="icon-btn" onClick={onClose} aria-label="إغلاق"><Icon name="close" size={18} /></button>
         </div>
         <div className="modal__body">{children}</div>

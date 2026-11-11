@@ -1,4 +1,5 @@
 // تبويبات العظام داخل ملف المريض
+import { DockedConsult } from './ConsultDock';
 import { useState } from 'react';
 import { Button, EmptyState } from '../components/ui';
 import type { Area } from '../types';
@@ -39,7 +40,7 @@ export function OrthoPatientTab({ kind, patientId }: { kind: OrthoKind; patientI
       {kind === 'nursing' && <NursingList items={ortho.list('nursing', patientId).sort((a, b) => b.date.localeCompare(a.date))} onEdit={(n: Nursing) => setEdit(n)} />}
       </LoadState>
       {edit && kind === 'nursing' && <NursingModal patientId={patientId} initial={init} onClose={close} />}
-      {edit && kind === 'consultations' && <ConsultModal patientId={patientId} initial={init} onClose={close} />}
+      <DockedConsult when={!!edit && kind === 'consultations'} patientId={patientId} initial={init} onClose={close} />
       {edit && kind === 'imaging' && <ImagingModal patientId={patientId} initial={init} onClose={close} />}
       {edit && kind === 'labs' && <ImagingModal patientId={patientId} initial={init} defaultKind="lab" onClose={close} />}
       {edit && kind === 'injections' && <InjectionModal patientId={patientId} initial={init} onClose={close} />}

@@ -626,5 +626,6 @@
  "حفظ تشخيص الزيارة {0}": "Save visit {0} diagnosis",
  "تشخيص الزيارة {0}": "Visit {0} diagnosis",
  "تشخيص الزيارة {0} بعد تأكيد حضور الزيارة {1} (المؤكَّد حتى الآن: {2})": "Visit {0} diagnosis opens after attendance of visit {1} is confirmed (confirmed so far: {2})",
- "بعد تأكيد حضور الزيارة {0}": "After attendance of visit {0} is confirmed"
+ "بعد تأكيد حضور الزيارة {0}": "After attendance of visit {0} is confirmed",
+ "عرض المواعيد اللي فاتت النهارده ({0}) — للحجز في نفس ميعاد": "Show today's past times ({0}) — to book at the same time"
 }

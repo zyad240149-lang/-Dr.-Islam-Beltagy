@@ -1,0 +1,15 @@
+{
+ "فتح شات المريض": "Open patient chat",
+ "ضيف رقم واتساب": "Add WhatsApp number",
+ "صحّح رقم الواتساب": "Fix WhatsApp number",
+ "مفيش رقم واتساب في ملف المريض": "No WhatsApp number in the patient file",
+ "إرسال موعد المتابعة واتساب": "Send follow-up appointment on WhatsApp",
+ "دفع عند تأكيد الموعد": "Paid on appointment confirmation",
+ "فات": "Passed",
+ "محجوز · فات": "Booked · Passed",
+ "الوقت ده فات النهارده — ينفع تحجز فيه": "This time has passed today — you can still book it",
+ "فيه حجز في الوقت ده — ينفع تحجز عليه · الوقت ده فات النهارده — ينفع تحجز فيه": "Already booked and passed today — you can still book it",
+ "إخفاء المواعيد اللي فاتت النهارده": "Hide today's past times",
+ "مواعيد النهارده فاتت — لسه ينفع تحجز في أي ميعاد منها (حتى لو محجوز).": "Today's times have passed — you can still book any of them (even if already booked).",
+ "هذا الوقت خارج مواعيد الدكتور أو في يوم فات — اختر وقتًا آخر.": "This time is outside the doctor's hours or on a past day — pick another time."
+}

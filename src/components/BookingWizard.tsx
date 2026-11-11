@@ -7,7 +7,7 @@ import { Modal, Button, Input, Select } from './ui';
 import { PhoneInput } from './PhoneInput';
 import { Icon } from '../utils/icons';
 import { phoneMatches } from '../utils/phoneUtils';
-import { money, fmtDate, APPT_STATUS, fmtTime, todayYmd, addDaysYmd, REFERRAL_SOURCE_LABEL, PAYMENT_METHOD_LABEL, PAYMENT_METHOD_OPTIONS } from '../utils/format';
+import { money, fmtDate, APPT_STATUS, fmtTime, todayYmd, addDaysYmd, riyadhNowHm, REFERRAL_SOURCE_LABEL, PAYMENT_METHOD_LABEL, PAYMENT_METHOD_OPTIONS } from '../utils/format';
 
 const endTimeOf = (t: string, min: number) => { const [h, m] = t.split(':').map(Number); const v = h * 60 + m + min; return `${String(Math.floor(v / 60) % 24).padStart(2, '0')}:${String(v % 60).padStart(2, '0')}`; };
 const fmtDayName = (ymd: string) => new Date(ymd + 'T00:00:00').toLocaleDateString(document.documentElement.lang === 'en' ? 'en-GB' : 'ar-SA-u-nu-latn', { weekday: 'long' });
@@ -51,6 +51,7 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
   const [payMethod, setPayMethod] = useState<PaymentMethod>('cash');
   // «المريض موجود» (في العيادة دلوقتي): الموعد بيتحجز النهارده في الوقت اللي تختاره، وحضوره بيتأكد على طول بعد الحجز
   const [walkIn, setWalkIn] = useState(false);
+  const [showPast, setShowPast] = useState(false); // ١١/١١: عرض أوقات النهارده اللي فاتت (للحجز في نفس ميعاد)
   const [confirmed, setConfirmed] = useState(true); // الحجز بيبدأ «مؤكد» تلقائي — والموظف يقدر يغيّره لـ«غير مؤكد»
   const [creating, setCreating] = useState(false);
   const [extra, setExtra] = useState<{ phone2: string; wa: string; e2: unknown; eWa: unknown }>({ phone2: '', wa: '', e2: null, eWa: null });
@@ -96,22 +97,31 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
   // (ومعاها جدول الدكتور + العطلات/الإجازات عشان أي تعديل في دوامه يبان فورًا)
   useEffect(() => { if (therapistId && date) void db.refresh('appointments', 'catalog', 'center'); }, [therapistId, date]);
   const docDay = therapistId && date ? db.doctorDay(therapistId, date) : null;
-  const slots = serviceId && date && therapistId ? db.availableSlots(therapistId, date, duration, undefined, patientId || undefined) : [];
+  // ١١/١١: النهارده بتتعرض كل أوقاته — حتى اللي فاتت (بعلامة «فات») — عشان ينفع تحجز في نفس ميعاد حجز تاني بعد ما الوقت يعدّي
+  const isToday = date === todayYmd();
+  const slots = serviceId && date && therapistId ? db.availableSlots(therapistId, date, duration, undefined, patientId || undefined, isToday) : [];
+  const nowHm = riyadhNowHm();
+  const pastSet = new Set(isToday ? slots.filter((s) => s <= nowHm) : []);
+  const upcoming = slots.length - pastSet.size;
   const takenSet = new Set<string>();
   const ptBusySet = new Set<string>(); // المريض عنده موعد تاني في الوقت ده (مع أي دكتور) — الخادم بيرفضه
   if (serviceId && date && therapistId) {
     for (const s of db.takenSlots(therapistId, date, duration)) takenSet.add(s); // محجوز بس لسه ينفع يتحجز عليه (٩/١١)
-    if (patientId) for (const s of db.patientBusySlots(patientId, therapistId, date, duration)) if (!takenSet.has(s)) ptBusySet.add(s);
+    if (patientId) for (const s of db.patientBusySlots(patientId, therapistId, date, duration, undefined, isToday)) if (!takenSet.has(s)) ptBusySet.add(s);
   }
-  const allSlots = [...new Set([...slots, ...ptBusySet])].sort(); // الأوقات اللي فاتت (بتوقيت القاهرة) مش بتظهر
-  // حجز أسهل: أزرار لأقرب الأيام اللي فيها أوقات فاضية (خلال أسبوعين) بعدد الأوقات، وأول يوم بيتختار لوحده
+  // الأوقات اللي فاتت النهارده بتستخبى ورا «عرض المواعيد اللي فاتت» طول ما فيه أوقات جاية — ولو مفيش، بتظهر على طول
+  const pastShown = showPast || upcoming === 0;
+  const allSlots = [...new Set([...slots, ...ptBusySet])].sort().filter((s) => pastShown || !(isToday && s <= nowHm));
+  // حجز أسهل: أزرار لأقرب أيام شغل الدكتور (خلال أسبوعين) — اليوم المليان حجوزات بيفضل ظاهر (أكتر من مريض في نفس الميعاد مسموح)،
+  // والنهارده بيفضل ظاهر حتى لو أوقاته فاتت (١١/١١). free = الأوقات الجاية بس
   const quickDays = (() => {
     if (!serviceId || !therapistId) return [] as Array<{ date: string; free: number }>;
     const out: Array<{ date: string; free: number }> = [];
     for (let i = 0; i < 14 && out.length < 7; i++) {
       const d = addDaysYmd(todayYmd(), i);
       const free = db.availableSlots(therapistId, d, duration).length;
-      if (free > 0) out.push({ date: d, free });
+      const any = i === 0 ? db.availableSlots(therapistId, d, duration, undefined, undefined, true).length : free;
+      if (any > 0) out.push({ date: d, free });
     }
     return out;
   })();
@@ -123,7 +133,8 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
     if (step !== 3) { autoDay.current = false; return; }
     if (!autoDay.current && quickDays.length) {
       autoDay.current = true;
-      if (!date || (!presetTime && !quickDays.some((q) => q.date === date))) { setDate(quickDays[0].date); setTime(''); }
+      // النهارده لو أوقاته كلها فاتت بيفضل في القايمة، بس الاختيار التلقائي بيروح لأقرب يوم فيه أوقات جاية
+      if (!date || (!presetTime && !quickDays.some((q) => q.date === date && q.free > 0))) { setDate((quickDays.find((q) => q.free > 0) ?? quickDays[0]).date); setTime(''); }
     }
   }, [step, date, walkIn, quickDays.length ? quickDays[0].date : '']);
   // وقت جاي من «جدول المواعيد اليومي»: لو بقى مش متاح للخدمة المختارة يتمسح (ويختار وقت تاني)
@@ -420,7 +431,9 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
                   <div className="slots">{allSlots.map((s) => ptBusySet.has(s) ? (
                     <button key={s} type="button" className="slot slot--taken" disabled title="عند المريض موعد تاني في هالوقت">✕ {fmtTime(s)}</button>
                   ) : (
-                    <button key={s} type="button" className={`slot ${takenSet.has(s) ? 'slot--busy' : ''} ${time === s ? 'selected' : ''}`} title={takenSet.has(s) ? 'فيه حجز في الوقت ده — ينفع تحجز عليه' : undefined} onClick={() => setTime(s)}>{fmtTime(s)}{takenSet.has(s) && <small className="slot__tag">محجوز</small>}</button>
+                    <button key={s} type="button" className={`slot ${takenSet.has(s) ? 'slot--busy' : ''} ${pastSet.has(s) ? 'slot--past' : ''} ${time === s ? 'selected' : ''}`}
+                      title={[takenSet.has(s) && 'فيه حجز في الوقت ده — ينفع تحجز عليه', pastSet.has(s) && 'الوقت ده فات النهارده — ينفع تحجز فيه'].filter(Boolean).join(' · ') || undefined}
+                      onClick={() => setTime(s)}>{fmtTime(s)}{(takenSet.has(s) || pastSet.has(s)) && <small className="slot__tag">{[takenSet.has(s) && 'محجوز', pastSet.has(s) && 'فات'].filter(Boolean).join(' · ')}</small>}</button>
                   ))}</div>
                 ) : <p className="muted">{docDay && docDay.status !== 'ok' ? `${DOCTOR_DAY_LABEL[docDay.status]} — جرّب يوم ثاني أو دكتور ثاني.` : 'ما فيه مواعيد لهذا الدكتور في هاليوم ضمن دوامه — جرّب يوم ثاني.'}</p>}
                 {date && therapistId && (() => {
@@ -435,7 +448,12 @@ export default function BookingWizard({ onClose, presetPatientId, presetServiceI
                   );
                 })()}
                 {ptBusySet.size > 0 && <p className="muted-sm" style={{ marginTop: 8 }}>الأوقات المعطّلة بعلامة ✕ تشمل أوقات عند {patient?.fullName ?? 'المريض'} فيها موعد تاني في نفس اليوم.</p>}
-                {date && allSlots.length > 0 && slots.length === 0 && <p className="muted" style={{ marginTop: 8 }}>{takenSet.size === 0 ? 'انتهت مواعيد اليوم بتوقيت القاهرة — جرّب يوم ثاني.' : 'كل مواعيد هذا الدكتور محجوزة في هاليوم — جرّب يوم ثاني.'}</p>}
+                {isToday && pastSet.size > 0 && upcoming > 0 && (
+                  <button type="button" className="btn btn--ghost btn--sm" style={{ marginTop: 8 }} onClick={() => setShowPast((x) => !x)}>
+                    {showPast ? 'إخفاء المواعيد اللي فاتت النهارده' : `عرض المواعيد اللي فاتت النهارده (${pastSet.size}) — للحجز في نفس ميعاد`}
+                  </button>
+                )}
+                {isToday && pastSet.size > 0 && upcoming === 0 && <p className="muted-sm" style={{ marginTop: 8 }}>مواعيد النهارده فاتت — لسه ينفع تحجز في أي ميعاد منها (حتى لو محجوز).</p>}
               </div>
             </>
           )}

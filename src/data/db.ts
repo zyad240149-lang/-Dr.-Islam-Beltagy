@@ -232,7 +232,8 @@ async function queueStatus(id: string, status: AppointmentStatus, therapistId?: 
 function localSlotCheck(therapistId: string, date: string, time: string, durationMin: number, excludeId?: string): string | null {
   const issue = db.doctorTimeIssue(therapistId, date, time, durationMin);
   if (issue) return issue;
-  if (!db.availableSlots(therapistId, date, durationMin, excludeId).includes(time)) return 'هذا الوقت محجوز أو فات — اختر وقتًا آخر.';
+  // زي الخادم: وقت النهارده اللي فات مقبول (جوّه دوام الدكتور) — التاريخ اللي فات بس اللي مرفوض
+  if (!db.availableSlots(therapistId, date, durationMin, excludeId, undefined, true).includes(time)) return 'هذا الوقت خارج مواعيد الدكتور أو في يوم فات — اختر وقتًا آخر.';
   return null;
 }
 
@@ -890,10 +891,11 @@ export const db = {
   },
   // الأوقات المتاحة للحجز: جوّه دوام الدكتور − المحجوز له هو بس − اللي فات (نفس check_slot / doctor_day_slots)
   // patientId: كمان من غير الأوقات اللي المريض عنده فيها موعد تاني مع أي دكتور (نفس تريجر الخادم — هجرة 909)
-  availableSlots(therapistId: string, date: string, durationMin: number, excludeAppointmentId?: string, patientId?: string): string[] {
+  // includePast (١١/١١): أوقات النهارده اللي فاتت كمان (جوّه دوام الدكتور) — الخادم بيقبلها (check_slot بيمنع التاريخ اللي فات بس)
+  availableSlots(therapistId: string, date: string, durationMin: number, excludeAppointmentId?: string, patientId?: string, includePast = false): string[] {
     // ٩/١١ (هجرة 958): الوقت المحجوز لدكتور لسه متاح — أكتر من مريض في نفس الميعاد مسموح
     void excludeAppointmentId;
-    return doctorStarts(therapistId, date, durationMin).filter((cur) => !isPastSlot(date, cur)
+    return doctorStarts(therapistId, date, durationMin).filter((cur) => (includePast ? date >= todayYmd() : !isPastSlot(date, cur))
       && !(patientId && this.patientConflict(patientId, date, cur, durationMin, excludeAppointmentId)));
   },
   // موعد تاني نشط للمريض متداخل مع الوقت ده (أي دكتور) — الموعد اللي خلص أو اتلغى أو ماحضرهوش مابيحجزش وقت المريض
@@ -902,8 +904,8 @@ export const db = {
       && a.status !== 'cancelled' && a.status !== 'no_show' && a.status !== 'completed' && overlaps(time, durationMin, a.time, a.durationMin));
   },
   // أوقات دوام الدكتور اللي المريض مشغول فيها بموعد تاني — بتتعرض معطّلة «عند المريض موعد»
-  patientBusySlots(patientId: string, therapistId: string, date: string, durationMin: number, excludeAppointmentId?: string): string[] {
-    return doctorStarts(therapistId, date, durationMin).filter((cur) => !isPastSlot(date, cur) && !!this.patientConflict(patientId, date, cur, durationMin, excludeAppointmentId));
+  patientBusySlots(patientId: string, therapistId: string, date: string, durationMin: number, excludeAppointmentId?: string, includePast = false): string[] {
+    return doctorStarts(therapistId, date, durationMin).filter((cur) => (includePast ? date >= todayYmd() : !isPastSlot(date, cur)) && !!this.patientConflict(patientId, date, cur, durationMin, excludeAppointmentId));
   },
   // الأوقات المحجوزة فعلًا جوّه دوام الدكتور — بتتعرض باهتة وعليها ✕ (الموعد الملغي مش بيحجز الوقت)
   takenSlots(therapistId: string, date: string, durationMin: number, excludeAppointmentId?: string): string[] {

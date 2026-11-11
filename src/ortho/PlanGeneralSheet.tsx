@@ -2,7 +2,7 @@
 // الاختيارات بتتحفظ في consultation.sheet تحت مفاتيح pg.* (الشيت القديم n.* متركن تحته ومحفوظ زي ما هو).
 import { db } from '../data/db';
 import type { ExamSheet } from './data';
-import { Box, Checks, Pick, Row, Txt, sheetApi, type Api } from './ExamSheet';
+import { Box, Checks, Pick, Row, SHEET_LISTS, Txt, sheetApi, type Api } from './ExamSheet';
 
 // نفس اختيارات خطة العلاج (PatientForms → PlanModal)
 export const PLAN_ONSET = ['مفاجئ (Sudden)', 'تدريجي (Gradual)', 'بعد إصابة/حادثة (Traumatic)', 'بعد سقوط (Fall)', 'بعد رفع شيء ثقيل (Lifting)', 'بعد عملية (Post-operative)', 'بعد مجهود رياضي (Sports)',
@@ -25,7 +25,7 @@ const t = (s: ExamSheet, k: string) => (s.txt[k] ?? '').trim();
 export function planSheetSummary(s: ExamSheet) {
   const complaint = join([...on(s, 'pg.cc', PLAN_COMPLAINT), t(s, 'pg.cc.other')]);
   const lines = [
-    join([t(s, 'pg.age') && `${t(s, 'pg.age')} سنة`, ...on(s, 'pg.ageband', AGE_BANDS)], ' — ') && `العمر: ${join([t(s, 'pg.age') && `${t(s, 'pg.age')} سنة`, ...on(s, 'pg.ageband', AGE_BANDS)], ' — ')}`,
+    on(s, 'pg.ageband', AGE_BANDS)[0] && `فئة العمر: ${on(s, 'pg.ageband', AGE_BANDS)[0]}`,
     join([...on(s, 'pg.onset', PLAN_ONSET), t(s, 'pg.onset.other')]) && `بداية ظهور الألم: ${join([...on(s, 'pg.onset', PLAN_ONSET), t(s, 'pg.onset.other')])}`,
     complaint && `شكوى المريض: ${complaint}`,
     t(s, 'pg.dx') && `التشخيص: ${t(s, 'pg.dx')}`,
@@ -47,11 +47,28 @@ export function PlanGeneralSheet({ sheet, onChange, age, onOpenMap }: {
   onOpenMap?: () => void;
 }) {
   const a = sheetApi(sheet, onChange);
+  const L = SHEET_LISTS;
+  const female = a.has('n.gender', 'أنثى');
   return (
     <div className="sh-grid sh-grid--2" data-testid="plan-general-sheet">
-      <Box n={1} title="بيانات الحالة — العمر">
-        <Txt a={a} k="pg.age" label="العمر (سنة)" num inputMode="decimal" placeholder={age != null ? String(age) : ''} />
+      {/* ١١/١١: «البيانات الأساسية» — نفس خانات الشيت القديم (مفاتيح n.*) فبتتملى من ملف المريض وبتتحدّث فيه */}
+      <Box n={1} title="البيانات الأساسية">
+        <Txt a={a} k="n.name" label="الاسم" />
+        <Txt a={a} k="n.age" label="السن" unit="سنة" num placeholder={age != null ? String(age) : ''} />
+        <div className="sh-lbl">فئة العمر</div>
         <div className="sh-cols"><Pick a={a} g="pg.ageband" items={AGE_BANDS} /></div>
+        <Row label="النوع"><Pick a={a} g="n.gender" items={L.N_GENDER} /></Row>
+        {female && <Row label="الحالة"><Pick a={a} g="n.miss" items={L.N_MISS} /></Row>}
+        {female && <Row label="حمل أو رضاعة"><Pick a={a} g="n.preg" items={L.N_PREG} /></Row>}
+        <Row label="متزوج"><Pick a={a} g="n.married" items={L.YES_NO} /></Row>
+        <Txt a={a} k="n.son" label="اسم الابن الكبير" />
+        <Txt a={a} k="n.address" label="العنوان" />
+        <div className="sh-lbl">الوظيفة</div>
+        <div className="sh-inline"><Checks a={a} g="n.job" items={L.N_JOB} /></div>
+        <div className="sh-lbl">النشاط البدني</div>
+        <div className="sh-inline"><Checks a={a} g="n.activity" items={L.N_ACTIVITY} /></div>
+        <div className="sh-lbl">ملاحظات</div>
+        <textarea className="sh-in sh-notes" dir="auto" rows={3} aria-label="ملاحظات" value={a.txt('n.notes')} onChange={(e) => a.set('n.notes', e.target.value)} />
       </Box>
       <Box n={2} title="بداية ظهور الألم">
         <div className="sh-cols"><Pick a={a} g="pg.onset" items={PLAN_ONSET} /></div>

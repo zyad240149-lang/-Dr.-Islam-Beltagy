@@ -110,6 +110,9 @@ export function TherapistModal({ therapist, onClose }: { therapist?: Therapist; 
   const adminDoctor = position === 'admin_doctor';
   const role: Role = adminDoctor ? 'system_admin' : position;
   const isCallerAdmin = useAuth().user?.role === 'system_admin';
+  // ١١/١١: كل المناصب (والاستقبال) تقدر تضيف موظفين — بس «مدير مركز» من المدير بس (الخادم بيرفضها لغيره)
+  const callerRole = useAuth().user?.role;
+  const isCallerManager = callerRole === 'system_admin' || callerRole === 'center_manager';
   const isTherapist = !!therapist || position === 'therapist' || adminDoctor; // في التعديل يفضل معالجًا دايمًا؛ في الإضافة يتقرر بالمنصب المختار
   const [f, setF] = useState({ name: therapist?.name ?? '', title: therapist?.title ?? '', phone: therapist?.phone ?? '', email: therapist?.email ?? '', bio: therapist?.bio ?? '', photoUrl: therapist?.photoUrl ?? '', defaultDurationMin: therapist?.defaultDurationMin ?? 30, serviceIds: therapist?.serviceIds ?? [] as string[] });
   const [hours, setHours] = useState<WorkHours[]>(() => [...(therapist?.workHours?.length ? therapist.workHours : defaultHours())].sort(byDayOrder));
@@ -169,7 +172,7 @@ export function TherapistModal({ therapist, onClose }: { therapist?: Therapist; 
           <div className="grid-form" style={{ marginBottom: 4 }}>
             <Select id="th-role" label="المنصب *" value={position} onChange={(e) => setPosition(e.target.value as Role | 'admin_doctor')} options={[
               ...(isCallerAdmin ? [{ value: 'admin_doctor', label: 'مدير ودكتور' }, { value: 'system_admin', label: 'مدير فقط' }] : []),
-              ...ROLES.filter((r) => r !== 'system_admin').map((r) => ({ value: r, label: ROLE_LABEL[r] })),
+              ...ROLES.filter((r) => r !== 'system_admin' && (r !== 'center_manager' || isCallerManager)).map((r) => ({ value: r, label: ROLE_LABEL[r] })),
             ]} />
           </div>
         )}

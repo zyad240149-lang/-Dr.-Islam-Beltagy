@@ -51,11 +51,10 @@ export function RequestForms({ sheet, onChange, busy, disabled, onSave, onPrint,
   }, [sheet, disabled]);
   const acts = (kind: 'rad' | 'lab', n: number) => (
     <>
-      <Button size="sm" variant="outline" icon="check" loading={busy} disabled={disabled || !n} onClick={onSave}>حفظ</Button>
-      <Button size="sm" icon="print" loading={busy} disabled={disabled || !n} onClick={() => onPrint(kind)}>طباعة</Button>
-      <Button size="sm" variant="outline" icon="download" loading={busy} disabled={disabled || !n} onClick={() => onImage(kind)}>حفظ كصورة على الجهاز</Button>
-      <Button size="sm" variant="outline" icon="share" loading={busy} disabled={disabled || !n} onClick={() => onWhatsapp(kind)}>فتح واتساب المريض</Button>
-      {!n && <span className="muted-sm">اختار المطلوب الأول</span>}
+      <Button size="sm" variant="outline" icon="check" loading={busy} disabled={disabled} onClick={onSave}>حفظ</Button>
+      <Button size="sm" icon="print" loading={busy} disabled={disabled} onClick={() => onPrint(kind)}>طباعة</Button>
+      <Button size="sm" variant="outline" icon="download" loading={busy} disabled={disabled} onClick={() => onImage(kind)}>حفظ كصورة على الجهاز</Button>
+      <Button size="sm" variant="outline" icon="share" loading={busy} disabled={disabled} onClick={() => onWhatsapp(kind)}>فتح واتساب المريض</Button>
     </>
   );
   return (

@@ -16,7 +16,6 @@ import { useCan } from './common';
 import { invoiceOfAppointment, useInvoiceWhatsapp } from './InvoiceActions';
 import type { Appointment } from '../types';
 
-const CENTER = 'عيادة د. إسلام بلتاجي لجراحة العظام والكسور';
 const longDay = (ymd: string) => new Intl.DateTimeFormat('ar-EG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(ymd + 'T00:00:00'));
 const hhmm = (t?: string) => (t ? String(t).slice(0, 5) : '');
 
@@ -37,6 +36,19 @@ export function patientWaNumber(patientId: string): string | null {
   return n.length >= 10 && n.length <= 15 ? n : null;
 }
 
+/** تفاصيل العيادة والمركز — بتتضاف آخر رسالة التذكير */
+export const CLINIC_INFO = [
+  '🌹 عيادة دكتور إسلام جمعة بلتاجي استشاري جراحة العظام والكسور',
+  'برجاء الحجز قبل الحضور',
+  '📍 العيادة – دسوق شارع الشركات، بجوار مسجد السمادوني، خلف صيدلية الأمانة.',
+  '🗓️ السبت – الاثنين – الأربعاء 🕐 من الساعة 1 ظهراً حتى 8 مساءً.',
+  '☎️ للحجز والاستفسار: 0472557970 01070072413',
+  'ــــــــــــــــــــــــ',
+  '🏥 مركز الرواد لجراحة العظام – دسوق أمام المستشفى العام.',
+  '🗓️ الأحد – الثلاثاء – الخميس 🕓 من الساعة 4 مساءً حتى 8 مساءً.',
+  '☎️ للحجز والاستفسار: 0472573999 0472563999',
+].join('\n');
+
 /** نص التذكير: اسم المريض + اسم الدكتور + تاريخ ووقت الحجز */
 export function bookingReminderText(x: { patientId: string; date: string; time?: string; doctorId?: string | null; kind: string }) {
   const p = db.patient(x.patientId);
@@ -45,7 +57,9 @@ export function bookingReminderText(x: { patientId: string; date: string; time?:
     `أهلاً ${p?.fullName ?? ''}،`,
     `تذكير بموعد ${x.kind}${doc ? ` مع ${doc}` : ''}`,
     `📅 ${longDay(x.date)}${x.time ? `\n⏰ الساعة ${fmtTime(hhmm(x.time))}` : ''}`,
-    `${CENTER} — في انتظارك، ولو محتاج تغيّر الموعد كلّمنا.`,
+    'في انتظارك، ولو محتاج تغيّر الموعد كلّمنا.',
+    '',
+    CLINIC_INFO,
   ].join('\n');
 }
 

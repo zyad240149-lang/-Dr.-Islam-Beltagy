@@ -40,6 +40,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
   ] },
   { title: 'المالية', items: [
     { to: '/invoices', label: 'الفواتير والمدفوعات', icon: 'receipt', area: 'invoices' },
+    { to: '/inventory', label: 'المخزون', icon: 'box', area: 'inventory' }, // ١١/١١: اتطلع فوق جنب المصروفات (شراء المستلزمات بيزوّده)
     { to: '/finance', label: 'الفواتير والمدفوعات (المدير)', icon: 'wallet', area: 'payroll' },
     { to: '/payroll', label: 'الرواتب', icon: 'wallet', area: 'payroll' }, // راتب ثابت بس (922)
   ] },
@@ -50,8 +51,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     { to: '/work-hours', label: 'مواعيد العمل', icon: 'clock', area: 'workhours' },
     { to: '/my-hours', label: 'مواعيد شغلي', icon: 'clock', area: 'dashboard', anyOf: Object.keys(AREA_LABEL) as Area[] },
   ] },
-  { title: 'المخزون والتواصل', items: [
-    { to: '/inventory', label: 'المخزون', icon: 'box', area: 'inventory' },
+  { title: 'التواصل', items: [
     { to: '/campaigns', label: 'إرسال إشعارات للمرضى', icon: 'bell', area: 'campaigns' },
     { to: '/support', label: 'الدعم الفني', icon: 'lock', area: 'support' },
   ] },

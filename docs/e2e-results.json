@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-10T20:57:52.601Z",
+  "at": "2026-11-11T02:53:21.664Z",
   "passed": 31,
   "failed": 0,
   "results": [
@@ -26,12 +26,12 @@
     {
       "name": "إنشاء حساب استقبال",
       "ok": true,
-      "detail": "{\"id\":\"ce316e7a-9700-48f7-8277-5ecb55d3a43a\",\"name\":\"استقبال اختبار آلي\",\"username\":\"201200000901\",\"role\":\"reception\",\"phone\":\"+201200000901\",\"active\""
+      "detail": "{\"id\":\"ac9bc6b3-ffda-48d9-8013-2e7d6aab16fb\",\"name\":\"استقبال اختبار آلي\",\"username\":\"201200000901\",\"role\":\"reception\",\"phone\":\"+201200000901\",\"active\""
     },
     {
       "name": "إنشاء حساب طبيب مربوط بملفه",
       "ok": true,
-      "detail": "{\"id\":\"75a982cd-7e24-47ba-bd63-d148ac58ecd0\",\"name\":\"طبيب اختبار آلي\",\"username\":\"201200000902\",\"role\":\"therapist\",\"phone\":\"+201200000902\",\"active\":tr"
+      "detail": "{\"id\":\"0b651d1e-ef5a-410f-9375-94411a51147e\",\"name\":\"طبيب اختبار آلي\",\"username\":\"201200000902\",\"role\":\"therapist\",\"phone\":\"+201200000902\",\"active\":tr"
     },
     {
       "name": "رقم موظف مكرر مرفوض",
@@ -116,7 +116,7 @@
     {
       "name": "لوحة الاستقبال بدون أرقام الإيراد",
       "ok": true,
-      "detail": "{\"openTickets\":0,\"outstanding\":null,\"monthRevenue\":null,\"totalPatients\":841,\"completedToday\":0,\"pendingRequests\":0,\"newP"
+      "detail": "{\"openTickets\":0,\"outstanding\":null,\"monthRevenue\":null,\"totalPatients\":840,\"completedToday\":0,\"pendingRequests\":0,\"newP"
     },
     {
       "name": "الاستقبال ما يقدرش يكتب تشخيص",
@@ -131,7 +131,7 @@
     {
       "name": "الكشف محفوظ باسم الطبيب",
       "ok": true,
-      "detail": "75a982cd-7e24-47ba-bd63-d148ac58ecd0"
+      "detail": "0b651d1e-ef5a-410f-9375-94411a51147e"
     },
     {
       "name": "الاستقبال يقرا الكشف (عرض فقط)",

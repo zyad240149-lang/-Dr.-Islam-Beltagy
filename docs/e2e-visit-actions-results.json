@@ -1,12 +1,12 @@
 {
-  "at": "2026-11-10T23:28:16.282Z",
-  "passed": 7,
-  "failed": 1,
+  "at": "2026-11-11T03:08:37.043Z",
+  "passed": 11,
+  "failed": 0,
   "results": [
     {
       "name": "حساب المدير",
       "ok": true,
-      "detail": "{\"id\":\"04fd9a90-924b-4eb0-8e2f-ff79d3d0ee57\",\"name\":\"مدير أزرار الزيارة اختبار\",\"username\":\"201200000941\",\"role\":\"system"
+      "detail": "{\"id\":\"d85bbfc1-ad17-48f0-910d-94bf644530c8\",\"name\":\"مدير أزرار الزيارة اختبار\",\"username\":\"201200000941\",\"role\":\"system"
     },
     {
       "name": "3 مواعيد للمريض",
@@ -21,12 +21,12 @@
     {
       "name": "نافذة تغيير الموعد فتحت وفضلت مفتوحة",
       "ok": true,
-      "detail": "modals=1 title=إعادة جدولة MV-1732"
+      "detail": "modals=1 title=إعادة جدولة MV-1775"
     },
     {
       "name": "رجوع المتصفح قفل نافذة تغيير الموعد بس ورجّع لتفاصيل الزيارة (لسه في نفس الصفحة)",
       "ok": true,
-      "detail": "http://127.0.0.1:4671/follow-ups الزيارة MV-1732 — 11 نوفمبر 2026"
+      "detail": "http://127.0.0.1:4671/follow-ups الزيارة MV-1775 — 11 نوفمبر 2026"
     },
     {
       "name": "رجوع تاني قفل تفاصيل الزيارة (لسه في نفس الصفحة)",
@@ -39,9 +39,24 @@
       "detail": "إلغاء الموعد"
     },
     {
-      "name": "تنفيذ الاختبار بدون أخطاء غير متوقعة",
-      "ok": false,
-      "detail": "Error: SQL 544: {\"message\":\"Failed to run sql query: Connection terminated due to connection timeout\"} |     at sql (file:///C:/Users/zyad2/%D8%AF%D9%83%D8%AA%D9%88%D8%B1%20%D8%A7%D8%B3%D9%84%D8%A7%D9"
+      "name": "الموعد اتلغى في قاعدة البيانات",
+      "ok": true,
+      "detail": "{\"status\":\"cancelled\",\"t\":\"23:00\"}"
+    },
+    {
+      "name": "نافذة تأكيد الحذف فتحت",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "موعد اتمسح من قاعدة البيانات",
+      "ok": true,
+      "detail": "باقي 1 من 2"
+    },
+    {
+      "name": "من غير أخطاء JavaScript",
+      "ok": true,
+      "detail": ""
     }
   ]
 }

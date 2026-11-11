@@ -1,0 +1,888 @@
+{
+ "at": "2026-11-11T02:42:47.465Z",
+ "tables": {
+  "public.acc_accounts": {
+   "old": 42,
+   "new": 42,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.acc_advance_recoveries": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.acc_advances": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.acc_assets": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.acc_audit": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.acc_budgets": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.acc_cash_counts": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.acc_cost_centers": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.acc_depreciation": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.acc_journal_lines": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.acc_journals": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.acc_method_map": {
+   "old": 14,
+   "new": 14,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.acc_periods": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.acc_posting_errors": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.acc_purchase_items": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.acc_purchases": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.acc_stock_consumptions": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.acc_transfers": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.acc_treasuries": {
+   "old": 2,
+   "new": 2,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.acc_vendor_payments": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.acc_vendors": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.activity_log": {
+   "old": 3837,
+   "new": 3860,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 23
+  },
+  "public.appointment_status_history": {
+   "old": 0,
+   "new": 2,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 2
+  },
+  "public.appointments": {
+   "old": 0,
+   "new": 1,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 1
+  },
+  "public.attendance": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.audit_logs": {
+   "skipped": "audit-postponed"
+  },
+  "public.body_records": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.booking_settings": {
+   "old": 1,
+   "new": 1,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.branches": {
+   "old": 2,
+   "new": 2,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.campaigns": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.center_info": {
+   "old": 1,
+   "new": 1,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.comp_plans": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.conditions": {
+   "old": 37,
+   "new": 37,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.counters": {
+   "old": 5,
+   "new": 5,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.coupon_usage": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.customers": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.discount_codes": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.employees": {
+   "old": 4,
+   "new": 6,
+   "missing": 0,
+   "changed": 1,
+   "addedAfterMove": 2
+  },
+  "public.expenses": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.holidays": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.initial_assessments": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.inventory_items": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.invoice_items": {
+   "old": 0,
+   "new": 1,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 1
+  },
+  "public.invoices": {
+   "old": 0,
+   "new": 1,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 1
+  },
+  "public.loyalty_ledger": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.loyalty_redemptions": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.medications": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.message_templates": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.notification_kinds": {
+   "old": 14,
+   "new": 14,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.notification_prefs": {
+   "old": 1,
+   "new": 1,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.notification_schedule": {
+   "old": 0,
+   "new": 3,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 3
+  },
+  "public.notifications": {
+   "old": 6,
+   "new": 10,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 4
+  },
+  "public.offline_ops": {
+   "old": 1,
+   "new": 1,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.ortho_consultations": {
+   "old": 689,
+   "new": 689,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.ortho_exercise_plans": {
+   "old": 5,
+   "new": 6,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 1
+  },
+  "public.ortho_exercises": {
+   "old": 9,
+   "new": 9,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.ortho_follow_ups": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.ortho_fractures": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.ortho_imaging": {
+   "old": 2,
+   "new": 2,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.ortho_injections": {
+   "old": 1,
+   "new": 1,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.ortho_medications": {
+   "old": 25064,
+   "new": 25064,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.ortho_nursing": {
+   "old": 5,
+   "new": 5,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.ortho_pain_scores": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.ortho_prescription_items": {
+   "old": 18,
+   "new": 18,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.ortho_prescriptions": {
+   "old": 207,
+   "new": 207,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.ortho_surgeries": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.ortho_surgery_payment_stages": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.ortho_surgery_stages": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.package_checkins": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.package_installment_requests": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.package_plans": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.packages": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.patient_files": {
+   "old": 2,
+   "new": 2,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.patient_import_batches": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.patients": {
+   "old": 839,
+   "new": 839,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.payments": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.payroll_audit": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.payroll_due_visits": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.payroll_dues": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.payroll_payouts": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.payroll_periods": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.physio_evaluations": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.physio_muscles": {
+   "old": 67,
+   "new": 67,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.physio_plans": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.physio_progress_notes": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.physio_special_tests": {
+   "old": 55,
+   "new": 55,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.plan_services": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.prescription_items": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.prescriptions": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.product_sales": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.product_stock_moves": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.products": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.push_config": {
+   "old": 1,
+   "new": 1,
+   "missing": 0,
+   "changed": 1,
+   "addedAfterMove": 0
+  },
+  "public.push_logs": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.push_subscriptions": {
+   "old": 6,
+   "new": 7,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 1
+  },
+  "public.register_attempts": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.register_ip_log": {
+   "old": 6,
+   "new": 6,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.role_permissions": {
+   "old": 337,
+   "new": 337,
+   "mode": "count"
+  },
+  "public.rooms": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.salary_payments": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.salary_settings": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.second_session_requests": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.service_prices": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.services": {
+   "old": 21,
+   "new": 21,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.session_diagnoses": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.staff_requests": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.stock_movements": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.support_replies": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.support_tickets": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.sync_tombstones": {
+   "old": 12070,
+   "new": 12082,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 12
+  },
+  "public.target_notice_log": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.therapist_services": {
+   "old": 21,
+   "new": 42,
+   "mode": "count"
+  },
+  "public.therapists": {
+   "old": 1,
+   "new": 2,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 1
+  },
+  "public.translations": {
+   "old": 0,
+   "new": 0,
+   "mode": "count"
+  },
+  "public.treatment_plans": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.treatment_sessions": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.webhook_events": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.whatsapp_messages": {
+   "old": 1,
+   "new": 1,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.zatca_config": {
+   "old": 1,
+   "new": 1,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "public.zatca_documents": {
+   "old": 0,
+   "new": 0,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 0
+  },
+  "auth.users": {
+   "old": 4,
+   "new": 6,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 2
+  },
+  "auth.identities": {
+   "old": 4,
+   "new": 6,
+   "missing": 0,
+   "changed": 0,
+   "addedAfterMove": 2
+  }
+ },
+ "problems": [],
+ "files": {
+  "old": 16,
+  "new": 16,
+  "missing": 0,
+  "sizeDiff": 0
+ },
+ "shape": {
+  "old": {
+   "functions": 415,
+   "functions_code": "13975d4841ca5df0e00cddca413a2d2e",
+   "triggers": 145,
+   "policies": "4ad9e4dd165d12e7655a1292c8fb32d2",
+   "indexes": "bc44dffcac2ad1e0f1c0383c9caa783d",
+   "realtime": "4496cc5d8c6524a68ba1250122b3aaa1",
+   "cron": "d4306f7a8234e0353f12fa2ab3d72ea6",
+   "buckets": "b24e5e5db500e8d7712a72a0436dec3d",
+   "role_settings": "74e9ff28846df9b1c27f9af723d3aed8",
+   "extensions": "pg_cron,pg_net,pg_stat_statements,pgcrypto,plpgsql,supabase_vault,uuid-ossp"
+  },
+  "new": {
+   "functions": 415,
+   "functions_code": "13975d4841ca5df0e00cddca413a2d2e",
+   "triggers": 145,
+   "policies": "4ad9e4dd165d12e7655a1292c8fb32d2",
+   "indexes": "bc44dffcac2ad1e0f1c0383c9caa783d",
+   "realtime": "4496cc5d8c6524a68ba1250122b3aaa1",
+   "cron": "d4306f7a8234e0353f12fa2ab3d72ea6",
+   "buckets": "b24e5e5db500e8d7712a72a0436dec3d",
+   "role_settings": "74e9ff28846df9b1c27f9af723d3aed8",
+   "extensions": "pg_cron,pg_net,pg_stat_statements,pgcrypto,plpgsql,supabase_vault,uuid-ossp"
+  }
+ },
+ "totals": {
+  "old": null,
+  "missing": 0,
+  "changed": 2,
+  "added": 56
+ }
+}

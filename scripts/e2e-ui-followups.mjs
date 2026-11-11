@@ -267,9 +267,13 @@ try {
   await go(p, '/patients');
   await p.waitForSelector('table', { timeout: 20000 });
   await p.getByPlaceholder(/ابحث/).first().fill('01200000977').catch(() => {});
-  const listBtn = await waitFor(async () => (await p.getByRole('button', { name: /^مواعيد المتابعة/ }).count()) > 0);
-  if (listBtn) await p.getByRole('button', { name: /^مواعيد المتابعة/ }).first().click();
-  check('زرار «مواعيد المتابعة» جنب كل مريض بيفتح متابعاته', listBtn && await waitFor(() => p.locator('.modal', { hasText: 'مواعيد المتابعة —' }).isVisible()));
+  // ١١/١١: زرار «مواعيد المتابعة» (و«إضافة موعد» و«خطة العلاج») اتشالوا من صف المريض بطلب الدكتور — المتابعات من ملف المريض
+  await p.waitForSelector('table tbody tr', { timeout: 20000 }).catch(() => {});
+  await p.waitForTimeout(500);
+  check('صف المريض في «المرضى» مافيهوش «مواعيد المتابعة» ولا «إضافة موعد» ولا «خطة العلاج»',
+    (await p.locator('table tbody').getByRole('button', { name: /^مواعيد المتابعة/ }).count()) === 0
+    && (await p.locator('table tbody [aria-label="إضافة موعد"], table tbody [title="إضافة موعد"]').count()) === 0
+    && (await p.locator('table tbody [aria-label="خطة العلاج"], table tbody [title="خطة العلاج"]').count()) === 0);
   // الموبايل
   await go(p, '/follow-ups');
   await p.setViewportSize({ width: 390, height: 844 });

@@ -1,17 +1,17 @@
 {
-  "at": "2026-11-10T21:25:09.936Z",
+  "at": "2026-11-11T02:57:53.438Z",
   "passed": 28,
   "failed": 0,
   "results": [
     {
       "name": "حساب محاسب نهائي اختبار",
       "ok": true,
-      "detail": "{\"id\":\"7882dca2-4928-41ed-a328-f124cb4b6ffd\",\"name\":\"محاسب نهائي اختبار\",\"username\":\"201200000971\",\"role\":\"accountant\",\""
+      "detail": "{\"id\":\"5074e0f9-16fa-4df0-8e07-188e9d90b231\",\"name\":\"محاسب نهائي اختبار\",\"username\":\"201200000971\",\"role\":\"accountant\",\""
     },
     {
       "name": "حساب استقبال نهائي اختبار",
       "ok": true,
-      "detail": "{\"id\":\"7259e79a-cf89-47e5-b121-5f931a18b233\",\"name\":\"استقبال نهائي اختبار\",\"username\":\"201200000972\",\"role\":\"reception\","
+      "detail": "{\"id\":\"cd54128f-9a97-4472-b3a2-c395eb65c19e\",\"name\":\"استقبال نهائي اختبار\",\"username\":\"201200000972\",\"role\":\"reception\","
     },
     {
       "name": "المدير يحدد راتب ثابت ويوم صرف للموظف",
@@ -91,7 +91,7 @@
     {
       "name": "خدمة جديدة من غير اختيار الظهور ← «إدارة فقط»",
       "ok": true,
-      "detail": "{\"id\":\"sv_37272acc\",\"show_on_site\":false}"
+      "detail": "{\"id\":\"sv_aa448328\",\"show_on_site\":false}"
     },
     {
       "name": "الخدمة الجديدة مش ظاهرة في قايمة الحجز الإلكتروني",
@@ -131,7 +131,7 @@
     {
       "name": "قاعدة البيانات متوصّلة بدالة push (push_config)",
       "ok": true,
-      "detail": "{\"notify_url\":\"https://jdhnxfhwwszxykizrahb.supabase.co/functions/v1/push\",\"has_secret\":true}"
+      "detail": "{\"notify_url\":\"https://izzomarpomrzxxzdxbav.supabase.co/functions/v1/push\",\"has_secret\":true}"
     },
     {
       "name": "دالة push بترفض الطلب من غير السر الصحيح",

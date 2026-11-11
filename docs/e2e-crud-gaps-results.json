@@ -1,12 +1,12 @@
 {
-  "at": "2026-11-10T21:24:14.483Z",
+  "at": "2026-11-11T02:57:32.861Z",
   "passed": 49,
   "failed": 0,
   "results": [
     {
       "name": "حسابات مؤقتة",
       "ok": true,
-      "detail": "{\"id\":\"d0d5a40a-9de2-4be6-a637-7dc857e5ea76\",\"name\":\"استقبال اختبار العمليات\",\"username\":\"201200000941\",\"role\":\"receptio"
+      "detail": "{\"id\":\"68dfa905-94f8-46e3-9038-d475f9d09366\",\"name\":\"استقبال اختبار العمليات\",\"username\":\"201200000941\",\"role\":\"receptio"
     },
     {
       "name": "إضافة مريض اتحفظت في القاعدة",
@@ -246,7 +246,7 @@
     {
       "name": "الأعداد رجعت زي ما كانت (مفيش بيانات اختبار متبقية ولا بيانات ضاعت)",
       "ok": true,
-      "detail": "{\"before\":{\"patients\":840,\"services\":21,\"expenses\":1,\"appts\":1,\"invoices\":1,\"payments\":0,\"journals\":0,\"employees\":4,\"therapists\":1},\"after\":{\"patients\":840,\"services\":21,\"expenses\":1,\"appts\":1,\"invoic"
+      "detail": "{\"before\":{\"patients\":839,\"services\":21,\"expenses\":0,\"appts\":1,\"invoices\":1,\"payments\":0,\"journals\":0,\"employees\":6,\"therapists\":1},\"after\":{\"patients\":839,\"services\":21,\"expenses\":0,\"appts\":1,\"invoic"
     }
   ]
 }

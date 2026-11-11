@@ -97,6 +97,9 @@ try {
   browser = await launchEdge();
   const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 }, locale: 'ar-EG' });
   const p = await ctx.newPage();
+  // تشخيص مؤقت: أحداث التحديث اللحظي اللي بتوصل (جدول ونوع الحدث)
+  const rtSeen = [];
+  p.on('websocket', (ws) => ws.on('framereceived', (f) => { const t = String(f.payload); if (t.includes('postgres_changes') && /"table":"(patients|appointments)"/.test(t)) rtSeen.push(`${(t.match(/"table":"(\w+)"/) ?? [])[1]}:${(t.match(/"type":"(\w+)"/) ?? [])[1]}@${new Date().toISOString().slice(14, 23)}`); }));
   const errors = [];
   p.on('pageerror', (e) => errors.push(e.message));
   p.on('dialog', (d) => void d.accept());
@@ -149,7 +152,16 @@ try {
   await go('/'); await p.waitForTimeout(500); // تنقل جوّه البرنامج (من غير إعادة تحميل) زي ما كان بيروح للمواعيد ويرجع
   await go('/follow-ups');
   const row4 = p.locator('.fu-confirm .fu-item', { hasText: 'مريض اختبار الاتجاه التاني' });
-  check('حجز المواعيد ظاهر في المتابعات «محتاج تأكيد» من غير إعادة تحميل', await waitFor(async () => (await row4.count()) === 1, 20000));
+  const seen4 = await waitFor(async () => (await row4.count()) === 1, 20000);
+  if (!seen4) {
+    // تشخيص: اللي ظاهر في «محتاج تأكيد» ساعة الفشل + صورة
+    const box = await p.locator('.fu-confirm').innerText().catch(() => '(مفيش قسم «محتاج تأكيد»)');
+    console.log('    [debug] fu-confirm:', box.replace(/\s+/g, ' ').slice(0, 400));
+    console.log('    [debug] booking', b4.data?.id, 'patient', P4);
+    console.log('    [debug] realtime frames:', rtSeen.slice(-12).join(' '));
+    await p.screenshot({ path: fileURLToPath(new URL('../docs/ui-failures/fu-confirm-missing.png', import.meta.url)) }).catch(() => {});
+  }
+  check('حجز المواعيد ظاهر في المتابعات «محتاج تأكيد» من غير إعادة تحميل', seen4);
   const cf4 = await recep.rpc('set_appointment_status', { p_id: b4.data.id, p_status: 'confirmed' });
   check('التأكيد من جهاز تاني اتحفظ', !cf4.error, cf4.error?.message);
   check('المتابعات شالته من «محتاج تأكيد» فورًا', await waitFor(async () => (await row4.count()) === 0, 20000));

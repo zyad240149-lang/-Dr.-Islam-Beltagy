@@ -65,7 +65,15 @@ let syncInfo: Record<string, TableSync> = {};
 let lastPullAt = 0;
 const syncListeners = new Set<() => void>();
 const emitSync = () => syncListeners.forEach((l) => l());
-async function syncInto(k: SyncKey): Promise<any[]> {
+// ١١/١١: مزامنة الجدول الواحد بالدور — كان ممكن تحميل قديم (بدأ قبل حجز جديد) يخلص بعد التحديث اللحظي ويكتب فوقه،
+// فالحجز اللي اتعمل من جهاز تاني يختفي لحد أي تحديث جاي. دلوقتي كل مزامنة بتبدأ بعد اللي قبلها ومن آخر نقطة وصلتلها
+const syncChain: Partial<Record<SyncKey, Promise<unknown>>> = {};
+function syncInto(k: SyncKey): Promise<any[]> {
+  const run = (syncChain[k] ?? Promise.resolve()).catch(() => undefined).then(() => syncIntoNow(k));
+  syncChain[k] = run;
+  return run;
+}
+async function syncIntoNow(k: SyncKey): Promise<any[]> {
   const spec = SYNC[k];
   const r = await syncTable(spec.table, mirror[k] ?? null, spec.map, syncInfo[spec.table], spec.label);
   if (spec.sort) r.rows.sort(spec.sort);

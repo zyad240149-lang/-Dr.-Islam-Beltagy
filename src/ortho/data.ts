@@ -175,10 +175,16 @@ function overlay(kind: Kind, rows: Row[]): Row[] {
 }
 const byCreatedDesc = (a: Row, b: Row) => String(b.created_at ?? '').localeCompare(String(a.created_at ?? ''));
 
+// ١١/١١: طلب تحميل جه والتحميل شغال (تحديث لحظي مثلًا) ← بيتعلّم ويتعمل تحميل تاني أول ما الحالي يخلص.
+// كان بيتساب: لو التحميل الشغال بدأ قبل السجل الجديد، السجل كان بيفضل مش ظاهر لحد أي تحديث تاني
+const again = new Set<Kind>();
 function load(kind: Kind): Promise<void> {
-  if (loading.has(kind)) return Promise.resolve();
+  if (loading.has(kind)) { again.add(kind); return Promise.resolve(); }
   const p = loadNow(kind);
-  if (loading.has(kind)) { inflight.set(kind, p); void p.finally(() => inflight.delete(kind)); }
+  if (loading.has(kind)) {
+    inflight.set(kind, p);
+    void p.finally(() => { inflight.delete(kind); if (again.delete(kind)) void load(kind); });
+  }
   return p;
 }
 async function loadNow(kind: Kind) {

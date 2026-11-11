@@ -50,7 +50,7 @@ export function bookingReminderText(x: { patientId: string; date: string; time?:
 }
 
 /** layout="buttons": زرارين ظاهرين («إرسال تذكير متابعة» · «إرسال تمرينات») — في تفاصيل الزيارة (١٠/١١). التذكير بيبقى بأقرب موعد متابعة جاي للمريض */
-export function BookingWhatsapp({ patientId, appointmentId, followUp, layout = 'menu' }: { patientId: string; appointmentId?: string | null; followUp?: FollowUp | null; layout?: 'menu' | 'buttons' }) {
+export function BookingWhatsapp({ patientId, appointmentId, followUp, layout = 'menu', remindOnly = false }: { patientId: string; appointmentId?: string | null; followUp?: FollowUp | null; layout?: 'menu' | 'buttons'; remindOnly?: boolean }) {
   useDbVersion();
   const can = useCan();
   const toast = useToast();
@@ -134,8 +134,8 @@ export function BookingWhatsapp({ patientId, appointmentId, followUp, layout = '
     if (!canRemind && !canEx) return null;
     return (
       <div className="bk-wa-btns" onClick={(e) => e.stopPropagation()}>
-        {canRemind && <button type="button" className="btn btn--outline" data-testid="visit-fu-remind" onClick={remindFu} title={nextFu || followUp ? `متابعة ${(followUp ?? nextFu)!.date}` : 'مفيش موعد متابعة جاي'}><Icon name="calendar" size={16} /> إرسال تذكير متابعة</button>}
-        {canEx && <button type="button" className="btn btn--outline" data-testid="visit-send-ex" onClick={exercises}><Icon name="share" size={16} /> إرسال تمرينات</button>}
+        {canRemind && <button type="button" className="btn btn--outline" data-testid="visit-fu-remind" onClick={remindFu} title={nextFu || followUp ? `متابعة ${(followUp ?? nextFu)!.date}` : 'مفيش موعد متابعة جاي'}><Icon name="calendar" size={16} /> {remindOnly ? 'إرسال موعد المتابعة واتساب' : 'إرسال تذكير متابعة'}</button>}
+        {canEx && !remindOnly && <button type="button" className="btn btn--outline" data-testid="visit-send-ex" onClick={exercises}><Icon name="share" size={16} /> إرسال تمرينات</button>}
         {ex && <ExerciseSendModal patientId={patientId} initialSel={ex.sel} onClose={() => setEx(null)} />}
       </div>
     );

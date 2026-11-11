@@ -106,14 +106,21 @@ export default function ExtraServices({ appointmentId }: { appointmentId: string
         </div>
       )}
       {inv.discount > 0 && <div className="xsvc__total"><span className="muted-sm">الخصم</span><b className="num">− {money(inv.discount)}</b></div>}
-      <div className="xsvc__total"><span>الإجمالي</span><b className="num">{money(inv.total)}</b>{inv.total > 0 && <span className="muted-sm">مدفوع {money(inv.paid)} · باقي {money(inv.remaining)}</span>}</div>
+      <div className="xsvc__total"><span>{oldDue.length ? 'إجمالي الزيارة دي' : 'الإجمالي'}</span><b className="num">{money(inv.total)}</b></div>
+      {/* ١١/١١: الباقي من الزيارات اللي فاتت بيظهر سطور في نفس الفاتورة، والإجمالي المطلوب = الزيارة دي + القديم */}
       {oldDue.length > 0 && (
         <div className="xsvc__old" data-testid="xsvc-old-due">
-          <div><Icon name="alert" size={16} /> <b>على المريض مستحق من زيارات قبل كده: <span className="num">{money(oldSum)}</span></b></div>
-          <ul>{oldDue.map((o) => <li key={o.id}><span className="num">{o.no}</span> · {o.serviceName} · <span className="num">{o.date}</span> — باقي <b className="num">{money(o.remaining)}</b></li>)}</ul>
-          <div className="muted-sm">المطلوب دلوقتي: <b className="num">{money(allDue)}</b> (القديم {money(oldSum)} + الزيارة دي {money(curDue)}) — أي دفعة بتسدّد القديم الأول.</div>
+          <div><Icon name="alert" size={16} /> <b>باقي من زيارات قبل كده</b></div>
+          <ul className="xsvc__list">{oldDue.map((o) => <li key={o.id}><span>{o.serviceName} · <span className="num">{o.no}</span> · <span className="num">{o.date}</span></span><b className="num">{money(o.remaining)}</b></li>)}</ul>
         </div>
       )}
+      {oldDue.length > 0 && <div className="xsvc__total xsvc__total--all"><span>الإجمالي المطلوب</span><b className="num">{money(Math.round((inv.total + oldSum) * 100) / 100)}</b></div>}
+      {/* «دفع كام» و«باقي عليه كام» ظاهرين دايمًا */}
+      <div className="xsvc__sum" data-testid="xsvc-paid-remaining">
+        <span>دفع: <b className="num">{money(inv.paid)}</b></span>
+        <span>باقي عليه: <b className="num" style={{ color: allDue > 0 ? 'var(--danger)' : undefined }}>{money(allDue)}</b></span>
+      </div>
+      {can('payments', 'create') && allDue <= 0 && <div className="muted-sm">مفيش مبلغ مطلوب من المريض دلوقتي.</div>}
       {canPay && inv.status !== 'cancelled' && (
         <div className="xsvc__pay">
           <div className="xsvc__add">

@@ -24,12 +24,12 @@ const therapyTypes = () => { const xs = db.planServices().map((p) => p.name).fil
 const L_ = (xs: Opt[]) => xs.filter((x) => x.value !== 'other').map((x) => x.label);
 type EG = { g: string; label?: string; items: string[]; one?: boolean; other?: boolean };
 type ET = { k: string; label: string; stack?: boolean; num?: boolean; date?: boolean };
-type EB = { id: string; title: string; part: string; wide?: boolean; red?: boolean; f: (EG | ET)[] };
+type EB = { id: string; title: string; part: string; wide?: boolean; red?: boolean; off?: boolean; f: (EG | ET)[] };
 const SIDES = ['Right', 'Left', 'Bilateral'];
 export const EVAL_BOXES: EB[] = [
   { id: 'loc', part: 'Subjective', title: 'مكان الألم (Location of Pain)', f: [{ g: 'pg.loc', items: L_(LOCATION), other: true }] },
   { id: 'ons', part: 'Subjective', title: 'بداية الألم (Onset)', f: [{ g: 'pg.ons', items: L_(ONSET), other: true }] },
-  { id: 'dur', part: 'Subjective', title: 'المدة (Duration)', f: [{ k: 'pg.dur.n', label: 'المدة', num: true }, { g: 'pg.dur.u', label: 'الوحدة', items: L_(DURATION_UNITS), one: true }] },
+  { id: 'dur', off: true, part: 'Subjective', title: 'المدة (Duration)', f: [{ k: 'pg.dur.n', label: 'المدة', num: true }, { g: 'pg.dur.u', label: 'الوحدة', items: L_(DURATION_UNITS), one: true }] },
   { id: 'rad', part: 'Subjective', title: 'Radiation / Spread', f: [{ g: 'pg.rad', items: L_(RADIATION), other: true }] },
   { id: 'pat', part: 'Subjective', title: 'Pain Pattern / Timing', f: [{ g: 'pg.pat', items: L_(PATTERN), other: true }] },
   { id: 'chr', part: 'Subjective', title: 'طبيعة الألم/الأعراض (Character of Pain/Symptoms)', wide: true, f: [{ g: 'pg.chr', items: L_(CHARACTER), other: true }] },
@@ -42,13 +42,13 @@ export const EVAL_BOXES: EB[] = [
   { id: 'mmt', part: 'Objective', title: 'قوة العضلات (Muscle Strength — MMT)', f: [{ k: 'pg.mmt.muscle', label: 'العضلة', stack: true }, { g: 'pg.mmt.side', label: 'الجهة', items: SIDES, one: true }, { g: 'pg.mmt.grade', label: 'الدرجة', items: L_(GRADES), one: true }, { k: 'pg.mmt.notes', label: 'عضلات تانية', stack: true }] },
   { id: 'rom', part: 'Objective', title: 'مدى الحركة (ROM)', f: [{ g: 'pg.rom.joint', label: 'المفصل', items: L_(JOINTS), other: true }, { g: 'pg.rom.side', label: 'الجهة', items: [...SIDES, 'N/A', 'Midline'], one: true }, { g: 'pg.rom.status', label: 'الحالة', items: L_(ROM_STATUS) }, { k: 'pg.rom.notes', label: 'الحركة والدرجات (Active / Passive)', stack: true }] },
   { id: 'sens', part: 'Objective', title: 'الإحساس (Sensation)', f: [{ g: 'pg.sens.sup', label: 'السطحي (Superficial)', items: L_(SENS_SUP), other: true }, { g: 'pg.sens.deep', label: 'العميق (Deep)', items: L_(SENS_DEEP), other: true }, { k: 'pg.sens.area', label: 'المنطقة' }] },
-  { id: 'st', part: 'Objective', title: 'الاختبارات الخاصة (Special Tests)', f: [{ k: 'pg.st.test', label: 'اسم الاختبار', stack: true }, { g: 'pg.st.side', label: 'الجهة', items: [...SIDES, 'N/A'], one: true }, { g: 'pg.st.res', label: 'النتيجة', items: L_(TEST_RESULT), one: true }, { k: 'pg.st.notes', label: 'اختبارات تانية / ملاحظات', stack: true }] },
+  { id: 'st', off: true, part: 'Objective', title: 'الاختبارات الخاصة (Special Tests)', f: [{ k: 'pg.st.test', label: 'اسم الاختبار', stack: true }, { g: 'pg.st.side', label: 'الجهة', items: [...SIDES, 'N/A'], one: true }, { g: 'pg.st.res', label: 'النتيجة', items: L_(TEST_RESULT), one: true }, { k: 'pg.st.notes', label: 'اختبارات تانية / ملاحظات', stack: true }] },
   { id: 'refl', part: 'Objective', title: 'الانعكاسات (Reflexes)', f: [...L_(REFLEXES).map((r) => ({ g: `pg.refl.${r}`, label: r, items: L_(REFLEX_RESULT), one: true })), { k: 'pg.refl.notes', label: 'ملاحظات', stack: true }] },
   { id: 'gait', part: 'Objective', title: 'المشي (Gait)', wide: true, f: [{ g: 'pg.gait', items: L_(GAIT), other: true }, { k: 'pg.gait.device', label: 'الجهاز المساعد' }, { k: 'pg.gait.notes', label: 'ملاحظات', stack: true }] },
   { id: 'rf', part: 'Assessment', red: true, title: '⚠ علامات الخطر (Red Flags)', f: [{ g: 'pg.rf', items: ['لا (No)', 'نعم (Yes)'], one: true }, { k: 'pg.rf.notes', label: 'ملاحظات العلامات الخطيرة — اكتب ما هي', stack: true }] },
-  { id: 'reeval', part: 'Assessment', title: 'موعد إعادة التقييم (Re-evaluation)', f: [{ k: 'pg.reeval', label: 'التاريخ', date: true }] },
-  { id: 'sg', part: 'Goals', title: 'أهداف قصيرة المدى (Short Term Goals)', f: [{ g: 'pg.sg', items: [...GOALS], other: true }] },
-  { id: 'lg', part: 'Goals', title: 'أهداف طويلة المدى (Long Term Goals)', f: [{ g: 'pg.lg', items: [...GOALS], other: true }] },
+  { id: 'reeval', off: true, part: 'Assessment', title: 'موعد إعادة التقييم (Re-evaluation)', f: [{ k: 'pg.reeval', label: 'التاريخ', date: true }] },
+  { id: 'sg', off: true, part: 'Goals', title: 'أهداف قصيرة المدى (Short Term Goals)', f: [{ g: 'pg.sg', items: [...GOALS], other: true }] },
+  { id: 'lg', off: true, part: 'Goals', title: 'أهداف طويلة المدى (Long Term Goals)', f: [{ g: 'pg.lg', items: [...GOALS], other: true }] },
 ];
 const groupText = (s: ExamSheet, f: EG) => join([...on(s, f.g, f.items), f.other ? t(s, f.g + '.other') : '']);
 const evalText = (s: ExamSheet, b: EB) => b.f.map((f) => {
@@ -123,30 +123,17 @@ export function PlanGeneralSheet({ sheet, onChange, age, onOpenMap, painScore, o
         <Txt a={a} k="pg.dx" label="التشخيص" stack />
         {onOpenMap && <button type="button" className="link-more" style={{ background: 'none', border: 0, padding: 0, cursor: 'pointer', marginTop: 6 }} onClick={onOpenMap}>اختيار من خريطة الجسم</button>}
       </Box>
-      <Box n={5} title="الهدف الرئيسي">
-        <div className="sh-cols"><Checks a={a} g="pg.goal" items={PLAN_GOALS} /></div>
-        <Other a={a} k="pg.goal.other" />
-      </Box>
-      <Box n={6} title="نوع العلاج">
-        <div className="sh-cols"><Checks a={a} g="pg.type" items={therapyTypes()} /></div>
-        <Other a={a} k="pg.type.other" />
-      </Box>
-      <Box n={7} title="عدد الزيارات">
-        <Row label="عدد الزيارات"><Pick a={a} g="pg.visits" items={VISITS} /></Row>
-        <Txt a={a} k="pg.visits.other" label="عدد آخر" num inputMode="decimal" />
-      </Box>
-      <Box n={8} title="ملاحظات" wide>
-        <Txt a={a} k="pg.notes" label="ملاحظات" stack />
-      </Box>
-      {onPainScore && <Box n={9} title="مقياس الألم (VAS) 0–10">
+      {/* ١١/١١: «الهدف الرئيسي» و«نوع العلاج» و«عدد الزيارات» و«ملاحظات» اتشالوا (طلب العيادة) — اللي اتسجّل فيهم قبل كده لسه في الملخص */}
+      {onPainScore && <Box n={5} title="مقياس الألم (VAS) 0–10">
         <div className="pt-vas" role="radiogroup" aria-label="مقياس الألم">
           {Array.from({ length: 11 }, (_, i) => (
             <button type="button" key={i} role="radio" aria-checked={painScore === i} className={`pt-vas__n ${painScore === i ? 'active' : ''}`} data-level={i >= 7 ? 'high' : i >= 4 ? 'mid' : 'low'} onClick={() => onPainScore(painScore === i ? '' : i)}>{i}</button>
           ))}
         </div>
       </Box>}
-      {EVAL_BOXES.map((b, i) => (
-        <Box key={b.id} n={10 + i} title={b.title} wide={b.wide} tone={b.red ? 'red' : undefined}>
+      {/* ١١/١١: «المدة» و«الاختبارات الخاصة» و«إعادة التقييم» و«الأهداف» اتشالوا من الشاشة (off) — القديم المتسجّل لسه في الملخص */}
+      {EVAL_BOXES.filter((b) => !b.off).map((b, i) => (
+        <Box key={b.id} n={6 + i} title={b.title} wide={b.wide} tone={b.red ? 'red' : undefined}>
           {b.f.map((f) => ('g' in f ? (
             <div key={f.g}>
               {f.label && <div className="sh-lbl">{f.label}</div>}

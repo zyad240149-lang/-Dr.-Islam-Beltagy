@@ -1,4 +1,5 @@
 import { CompletenessBadge, IncompleteAlert } from '../components/PatientCompleteness';
+import { patientOldDue, sumRemaining } from '../data/patientDue';
 import { isPatientComplete } from '../utils/patientGaps';
 import { fmtInvoiceStamp } from '../utils/format';
 import { patientMatches } from '../utils/phoneUtils';
@@ -49,6 +50,9 @@ export function InvoicePrintTemplate({ invoiceId }: { invoiceId: string }) {
   const qty = pkg?.totalSessions ?? 1;
   const unitPrice = qty > 1 ? invoice.price / qty : invoice.price;
   const lastPaymentMethod = payments.length ? PAYMENT_METHOD_LABEL[payments[payments.length - 1].method] : '—';
+  // ١١/١١: الباقي على المريض من زيارات قبل الفاتورة دي بيظهر فيها، والإجمالي المطلوب = الفاتورة + القديم
+  const oldDue = invoice.packageId ? [] : patientOldDue(invoice.patientId, invoice.id).filter((o) => o.date <= invoice.date);
+  const oldSum = sumRemaining(oldDue);
   const stampMs = payments.length ? payments[payments.length - 1].date : invoice.createdAt || Date.parse(invoice.date + 'T00:00:00');
   return (
     <div className="pinv" dir="rtl">
@@ -78,6 +82,8 @@ export function InvoicePrintTemplate({ invoiceId }: { invoiceId: string }) {
         <div className="pinv__grand"><dt>الإجمالي المستحق</dt><dd className="num">{money(invoice.total)}</dd></div>
         <div><dt>المدفوع</dt><dd className="num">{money(invoice.paid)}</dd></div>
         <div><dt>المتبقي</dt><dd className="num">{money(invoice.remaining)}</dd></div>
+        {oldDue.map((o) => <div key={o.id}><dt>باقي من زيارة قبل كده — {o.serviceName} ({o.no} · {o.date})</dt><dd className="num">{money(o.remaining)}</dd></div>)}
+        {oldDue.length > 0 && <div className="pinv__grand"><dt>إجمالي المطلوب من المريض</dt><dd className="num">{money(Math.round((invoice.remaining + oldSum) * 100) / 100)}</dd></div>}
       </dl>
       <p className="pinv__words">{amountToArabicWords(invoice.total)}</p>
       <PackageInvoiceBlock invoice={invoice} pkg={pkg} />

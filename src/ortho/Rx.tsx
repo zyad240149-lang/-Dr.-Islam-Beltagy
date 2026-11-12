@@ -176,7 +176,7 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
           <div className="cx-pick__list">
             {/* ١٢/١١: كل مجموعة مقفولة — بتفتحها وتقفلها بضغطة على اسمها، والبحث بيفتح النتايج على طول */}
             {[...medGroups].map(([g, meds]) => { const open = !!medQ.trim() || openGroups.includes(g); const n = meds.filter((p) => hasMed(p.name)).length; return (
-              <div key={g} className={`cx-pick__grp${open ? ' is-open' : ''}`}>
+              <div key={g} className={`cx-pick__grp${open ? ' is-open' : ''}`} style={{ ['--gc' as string]: `hsl(${[...g].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) % 360, 7)} 62% 45%)` }}>
                 <button type="button" className="cx-pick__g" aria-expanded={open} onClick={() => setOpenGroups((x) => (x.includes(g) ? x.filter((y) => y !== g) : [...x, g]))}>
                   <Icon name="chevron" size={13} /><span>{g}</span><small>{meds.length}</small>{n > 0 && <b className="cx-pick__cnt">{n} ✓</b>}
                 </button>

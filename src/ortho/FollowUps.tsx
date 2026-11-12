@@ -659,7 +659,19 @@ function DaySchedule({ date, follows, filtered, onOpen, onBook }: {
           );
         })}
       </ul>
+      {/* ١٢/١١: «فتح موعد إضافي» تحت الجدول — أي وقت (بعد آخر ميعاد مثلًا) */}
+      {perm.book && date >= today && <ExtraSlot onPick={(time) => onBook({ date, time, doctorId: doctors.length === 1 ? doctors[0].id : undefined })} />}
     </>
+  );
+}
+
+function ExtraSlot({ onPick }: { onPick: (time: string) => void }) {
+  const [t, setT] = useState('19:00');
+  return (
+    <div className="dsch-extra">
+      <input type="time" className="input" value={t} onChange={(e) => setT(e.target.value)} aria-label="وقت الموعد الإضافي" />
+      <Button icon="plus" disabled={!t} onClick={() => onPick(t)}>فتح موعد إضافي</Button>
+    </div>
   );
 }
 

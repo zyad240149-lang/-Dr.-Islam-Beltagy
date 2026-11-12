@@ -2217,3 +2217,11 @@ html[dir="rtl"] .table td.num, html[dir="rtl"] .table th.num { text-align: right
 .pr-fold__b { padding: 10px 14px 14px; }
 .rs-cards { display: grid; gap: 10px; }
 @media (max-width: 520px) { .rs-secs, .rs-labs { grid-template-columns: minmax(0, 1fr); } .rs-row__n { min-width: 70px; } }
+
+/* ١٢/١١: لون لكل مجموعة أدوية */
+.cx-pick__grp { border-inline-start: 4px solid var(--gc, var(--line)); }
+.cx-pick .cx-pick__grp .cx-pick__g { color: var(--gc); background: color-mix(in srgb, var(--gc) 10%, var(--surface)); }
+.cx-pick__grp .cx-pick__m.is-act { background: var(--gc); }
+/* «فتح موعد إضافي» */
+.dsch-extra { display: flex; gap: 8px; align-items: center; justify-content: center; margin-top: 12px; padding: 10px; border: 1px dashed var(--line); border-radius: 12px; }
+.dsch-extra .input { width: 140px; }

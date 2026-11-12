@@ -1,10 +1,10 @@
 // ١٢/١١: تاب «العلاج الطبيعي» في الكشف — Physiotherapy Referral: الاختيارات (pr.*) + طباعة / تحميل صورة / واتساب
-import { useEffect } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { Icon } from '../utils/icons';
 import { useToast } from '../hooks/useToast';
 import { openPrintWindow, printHtml } from '../utils/printDoc';
 import type { ExamSheet } from './data';
-import { Checks, Pick, Txt, sheetApi } from './ExamSheet';
+import { BoxOpenDefault, Checks, Pick, Txt, sheetApi } from './ExamSheet';
 import { REQ_CSS, type ReqPatient } from './requestData';
 import { PR_GOALS, PR_PROGRAMS, PR_REEVAL, PR_REGIONS, PR_SIDES, PR_TYPES, deliverPrImage, preparePrImage, prHtml, readyPrImage, type PrInfo } from './physioReferral';
 
@@ -32,9 +32,13 @@ export function PhysioReferralTab({ sheet, onChange, info, patient, waPhone }: {
   // الصورة بتتجهز مقدمًا عشان الحفظ يحصل في نفس الضغطة على الموبايل
   useEffect(() => { const t = setTimeout(() => { void preparePrImage(sheet, info, patient()).catch(() => undefined); }, 700); return () => clearTimeout(t); }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
   const other = (k: string) => <Txt a={a} k={k} label="Other" dir="ltr" />;
+  const [open, setOpen] = useState(useContext(BoxOpenDefault)); // ١٣/١١: الشيت بيبدأ مقفول جوّه الكشف — أزرار الطباعة/الواتساب ظاهرة على طول
   return (
     <section className="plan-part pr-form" dir="ltr">
-      <h3 className="plan-part__h" dir="rtl">Physiotherapy Referral — تحويل علاج طبيعي</h3>
+      <h3 className="plan-part__h fold-h" dir="rtl" onClick={() => setOpen(!open)}>Physiotherapy Referral — تحويل علاج طبيعي
+        <button type="button" className="fold-t fold-t--light" aria-expanded={open} onClick={(e) => { e.stopPropagation(); setOpen(!open); }}>{open ? 'إغلاق' : 'فتح'}</button>
+      </h3>
+      {open && <>
       <div className="pr-f-grid">
         <Txt a={a} k="pr.dx" label="Diagnosis" placeholder={info.diagnosis} stack dir="ltr" />
         <Txt a={a} k="pr.notes" label="Clinical Notes" stack dir="ltr" />
@@ -73,6 +77,7 @@ export function PhysioReferralTab({ sheet, onChange, info, patient, waPhone }: {
         <Txt a={a} k="pr.dur" label="Duration (weeks)" num />
         <div><div className="sh-lbl">Re-evaluation</div><div className="sh-inline"><Pick a={a} g="pr.reeval" items={PR_REEVAL} /></div>{other("pr.reeval.other")}</div>
       </div>
+      </>}
       <div className="out-actions" dir="rtl">
         <button type="button" className="out-act" onClick={() => void printHtml(prHtml(sheet, info, patient(), REQ_CSS), openPrintWindow())}>
           <Icon name="print" size={22} /><b>طباعة</b><small>A4 على الطابعة</small>

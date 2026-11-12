@@ -1,7 +1,8 @@
 // سجل الحقن (نفس الشيت الورقي «INJECTION RECORD — MSK Injection Documentation»): بيانات المريض، التشخيص، مكان الحقن والجهة،
 // التركيب المستهدف، نوع المادة، التقنية، تفاصيل المادة المحقونة (جدول)، التقييم قبل الحقن والموافقة، التعقيم وملاحظات الإجراء،
 // النتيجة والمتابعة، توقيع الطبيب، ملاحظات إضافية. بيتحفظ في ortho_injections (هجرة 923) ويتطبع A4 بنفس ترتيب الورقة.
-import { useState, type ReactNode } from 'react';
+import { useContext, useState, type ReactNode } from 'react';
+import { BoxOpenDefault } from './ExamSheet';
 import { Button, EmptyState, Modal } from '../components/ui';
 import { db } from '../data/db';
 import { DOCTOR } from '../landing/content';
@@ -38,12 +39,18 @@ function One({ options, value, onChange }: { options: string[]; value: string; o
   return <div className="cx-chips" dir="ltr" role="radiogroup">{options.map((o) => <button key={o} type="button" role="radio" aria-checked={value === o} className={`cx-chip ${value === o ? 'is-on' : ''}`} onClick={() => onChange(value === o ? '' : o)}>{o}</button>)}</div>;
 }
 // كل قسم زي الورقة: شريط أزرق بأيقونة وعنوان وتحته المحتوى
-const Box = ({ title, icon, children }: { title: string; icon: string; children: ReactNode }) => (
-  <section className="inj-box" dir="ltr">
-    <h3 className="inj-box__head"><Icon name={icon} size={18} />{title}</h3>
-    <div className="inj-box__body">{children}</div>
-  </section>
-);
+// ١٣/١١: كل مربع بيتفتح ويتقفل من عنوانه — جوّه الكشف بيبدأ مقفول (BoxOpenDefault)
+function Box({ title, icon, children }: { title: string; icon: string; children: ReactNode }) {
+  const [open, setOpen] = useState(useContext(BoxOpenDefault));
+  return (
+    <section className={`inj-box${open ? '' : ' is-closed'}`} dir="ltr">
+      <h3 className="inj-box__head fold-h" onClick={() => setOpen(!open)}><Icon name={icon} size={18} />{title}
+        <button type="button" className="fold-t" dir="rtl" aria-expanded={open} onClick={(e) => { e.stopPropagation(); setOpen(!open); }}>{open ? 'إغلاق' : 'فتح'}</button>
+      </h3>
+      {open && <div className="inj-box__body">{children}</div>}
+    </section>
+  );
+}
 const T = ({ label, value, onChange, area }: { label: string; value: string; onChange: (v: string) => void; area?: boolean }) => (
   <Field label={label}>{area ? <textarea className="input" rows={2} dir="auto" value={value} onChange={(e) => onChange(e.target.value)} /> : <input className="input" dir="auto" value={value} onChange={(e) => onChange(e.target.value)} />}</Field>
 );

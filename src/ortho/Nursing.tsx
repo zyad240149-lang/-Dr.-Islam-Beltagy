@@ -1,6 +1,7 @@
 // شيت متابعة التمريض + الروشتة والأشعة والتحاليل (نفس الشيت الورقي «يُملأ في كل زيارة متابعة»): الألم والالتزام والحركة والأعراض والعلاج الحالي،
 // وقسم الجبس وقسم العمليات بيتفتحوا بس لو المريض عنده جبس/عملية. بيتحفظ في ortho_nursing ويتطبع A4 بنفس ترتيب الورقة.
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { BoxOpenDefault } from './ExamSheet';
 import { Button, EmptyState, Modal } from '../components/ui';
 import { db } from '../data/db';
 import { DOCTOR } from '../landing/content';
@@ -58,14 +59,19 @@ function Multi({ options, value, onChange }: { options: string[]; value: string[
     </div>
   );
 }
-const Box = ({ title, children, on, onToggle }: { title: string; children: ReactNode; on?: boolean; onToggle?: (v: boolean) => void }) => (
-  <fieldset className="card" style={{ padding: 14, margin: '0 0 12px', border: '1px solid var(--line, #e2e8f0)' }}>
-    <legend style={{ fontWeight: 700, padding: '0 6px' }}>
-      {onToggle ? <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}><input type="checkbox" checked={!!on} onChange={(e) => onToggle(e.target.checked)} />{title}</label> : title}
-    </legend>
-    {(!onToggle || on) && children}
-  </fieldset>
-);
+// ١٣/١١: المربعات العادية بتتفتح وتتقفل بزرار — جوّه الكشف بتبدأ مقفولة (BoxOpenDefault)؛ مربعات الصح (الجبس/العملية) زي ما هي
+function Box({ title, children, on, onToggle }: { title: string; children: ReactNode; on?: boolean; onToggle?: (v: boolean) => void }) {
+  const [open, setOpen] = useState(useContext(BoxOpenDefault));
+  return (
+    <fieldset className="card" style={{ padding: 14, margin: '0 0 12px', border: '1px solid var(--line, #e2e8f0)' }}>
+      <legend style={{ fontWeight: 700, padding: '0 6px', display: 'flex', alignItems: 'center', gap: 8 }}>
+        {onToggle ? <label style={{ display: 'inline-flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}><input type="checkbox" checked={!!on} onChange={(e) => onToggle(e.target.checked)} />{title}</label>
+          : <>{title}<button type="button" className="fold-t fold-t--light" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? 'إغلاق' : 'فتح'}</button></>}
+      </legend>
+      {(onToggle ? on : open) && children}
+    </fieldset>
+  );
+}
 
 // embedded = الشيت جوّه تاب «متابعة المريض» في نموذج التشخيص بدل نافذة لوحدها؛ onDirty بيبلّغ التشخيص إن فيه كلام لسه ما اتحفظش
 export function NursingModal({ patientId, appointmentId = null, initial, onClose, embedded, onDirty, sheetPain = '' }: { patientId: string; appointmentId?: string | null; initial?: Nursing; onClose: () => void; embedded?: boolean; onDirty?: (dirty: boolean) => void; sheetPain?: number | '' | null }) {

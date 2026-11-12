@@ -139,7 +139,7 @@ export function SheetSwitch({ active, onPick, onRemove, ids = SHEET_ORDER, label
 export function DoctorPainMap({ sheet, onChange }: { sheet: ExamSheet; onChange: (f: (s: ExamSheet) => ExamSheet) => void }) {
   const [view, setView] = useState<BodyView>('front');
   const [hovered, setHovered] = useState<string | null>(null);
-  const [startOpen] = useState(() => !sheet.pain.length); // مفتوحة أول مرة بس لو مفيش مكان متحدد (مابتتقفلش لوحدها بعد أول ضغطة)
+  const [startOpen] = useState(false); // ١٣/١١: مقفولة دايمًا — الطبيب بيفتحها بنفسه (اللي اتحدد ظاهر في العنوان)
   const toggle = (id: string, side: PinSide) => {
     const k = side ? `${id}:${side}` : id;
     onChange((x) => ({ ...x, pain: x.pain.includes(k) ? x.pain.filter((p) => p !== k) : [...x.pain, k] }));

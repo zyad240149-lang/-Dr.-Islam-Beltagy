@@ -258,7 +258,25 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
   );
   // التابات اللي اتفتحت بالترتيب — رجوع الموبايل بيرجّع للتاب اللي قبلها خطوة خطوة، ولما تخلص النافذة بتتقفل (طلب الدكتور ١١/١١)
   const tabTrail = useRef<Tab[]>([]);
-  const showTab = (t: Tab) => { setTab(t); if (t === 'nursing') setNursingSeen(true); bodyRef.current?.closest('.modal__body')?.scrollTo({ top: 0 }); };
+  const showTab = (t: Tab) => {
+    setTab(t); if (t === 'nursing') setNursingSeen(true);
+    const body = bodyRef.current?.closest('.modal__body'); const strip = tabsRef.current;
+    // ١٣/١١ موبايل: التاب الجديد بيبدأ تحت شريط التابات على طول (من غير ما خانات المريض فوق تاخد نص الشاشة كل مرة)
+    if (body && strip && window.matchMedia('(max-width: 640px)').matches) {
+      // مكان الشريط الطبيعي = تحت الخانة اللي قبله (الشريط نفسه sticky فمكانه على الشاشة مش مقياس)
+      const prev = strip.previousElementSibling ?? strip;
+      const top = body.scrollTop + prev.getBoundingClientRect().bottom - body.getBoundingClientRect().top;
+      requestAnimationFrame(() => body.scrollTo({ top: Math.max(0, top) })); // بعد ما محتوى التاب الجديد يترسم (التاب القصير مايمنعش النزول)
+    } else body?.scrollTo({ top: 0 });
+  };
+  // ١٣/١١ موبايل: التابات شريط واحد بيتسحب بالعرض — التاب المفتوح بيتحرك لنص الشريط
+  const tabsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const strip = tabsRef.current; const el = strip?.querySelector<HTMLElement>(`[data-tab="${tab}"]`);
+    if (!strip || !el || strip.scrollWidth <= strip.clientWidth + 2) return;
+    const a = el.getBoundingClientRect(), b = strip.getBoundingClientRect();
+    strip.scrollBy({ left: a.left + a.width / 2 - (b.left + b.width / 2), behavior: 'smooth' });
+  }, [tab]);
   const goTab = (t: Tab) => { if (t !== tab) tabTrail.current.push(tab); showTab(t); };
   // رجوع خطوة: آخر تاب اتفتح قبل كده — ولو مفيش سجل (زي استكمال تشخيص فتح على تاب في النص) ← التاب اللي قبله بالترتيب
   const backTab = () => {
@@ -435,11 +453,11 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
       <VoiceDictation />
       {(c.patientId || unlinked) && missing.length > 0 && <span className="sh-need">لسه ناقص: {missing.join('، ')}</span>}
       {unlinked && !ok && <span className="sh-need">اكتب اسم المريض الثلاثي في خانة 1</span>}
-      <Button variant="outline" onClick={cancel}>إلغاء</Button>
-      {/* ١١/١١: «إرسال تمارين» جنب «إلغاء» في أسفل الكشف */}
-      {canExSend && <Button variant="outline" icon="share" disabled={!c.patientId} title={c.patientId ? '' : 'اختار المريض الأول'} onClick={() => setExSend(true)}>إرسال تمارين</Button>}
-      <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => setOut(['nurse', 'doctor'])}>طباعة وإرسال</Button>
-      <Button icon="check" loading={busy} disabled={!ok} onClick={() => save(false)}>حفظ الكشف</Button>
+      <Button variant="outline" className="cx-foot__cancel" onClick={cancel}>إلغاء</Button>
+      {/* ١١/١١: «إرسال تمارين» جنب «إلغاء» في أسفل الكشف — ١٣/١١: على الموبايل أيقونة بس (cx-foot__ic) عشان الأزرار تبقى صف واحد */}
+      {canExSend && <Button variant="outline" icon="share" className="cx-foot__ic" aria-label="إرسال تمارين" disabled={!c.patientId} title={c.patientId ? 'إرسال تمارين' : 'اختار المريض الأول'} onClick={() => setExSend(true)}><span>إرسال تمارين</span></Button>}
+      <Button variant="outline" icon="print" className="cx-foot__ic" aria-label="طباعة وإرسال" title="طباعة وإرسال" disabled={!c.patientId && !unlinked} onClick={() => setOut(['nurse', 'doctor'])}><span>طباعة وإرسال</span></Button>
+      <Button icon="check" className="cx-foot__save" loading={busy} disabled={!ok} onClick={() => save(false)}>حفظ الكشف</Button>
     </>}>
       {/* كل مربعات الشيتات بتبدأ مقفولة — في الكشف الجديد والمحفوظ (٩/١١) */}
       <BoxOpenDefault.Provider value={false}>
@@ -483,9 +501,9 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
             placeholder="اكتب شكوى المريض بكلامه — مثلاً: ألم في الركبة اليمين من أسبوعين، تورم بعد المشي…" />
         </div>
 
-        <div className="seg seg--4 sh-tabs" role="tablist" aria-label="أجزاء الكشف">
+        <div className="seg seg--4 sh-tabs" role="tablist" aria-label="أجزاء الكشف" ref={tabsRef}>
           {TABS.map(([k, l], i) => (
-            <button key={k} type="button" role="tab" aria-selected={tab === k} className={`seg__btn ${tab === k ? 'active' : ''}`} onClick={() => goTab(k)}>
+            <button key={k} type="button" role="tab" data-tab={k} aria-selected={tab === k} className={`seg__btn ${tab === k ? 'active' : ''}`} onClick={() => goTab(k)}>
               <span className="sh-tabs__n num">{i + 1}</span>{k === 'doctor' && active.length ? `${l} — ${active.map((id) => SHEET_TAB[id]).join(' + ')}` : l}
             </button>
           ))}

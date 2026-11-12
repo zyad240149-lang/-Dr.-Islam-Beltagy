@@ -2248,3 +2248,60 @@ html[dir="rtl"] .table td.num, html[dir="rtl"] .table th.num { text-align: right
 .rxt-menu__it { display: block; width: 100%; text-align: start; padding: 8px 10px; border: 0; border-radius: 8px; background: none; font: inherit; color: var(--text); cursor: pointer; }
 .rxt-menu__it:hover { background: var(--brand-50, rgba(0,0,0,.04)); }
 .rxt-menu__it span { display: block; font-size: 12.5px; color: var(--muted, #667); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* 13/11 mobile exam = app screen: full-screen window, one swipeable tab strip, one-row footer */
+@media screen and (max-width: 640px) {
+  .overlay:has(.modal--xl .cx) { place-items: stretch; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+  .modal--xl:has(.cx) { width: 100%; max-width: none; max-height: none; height: 100vh; border-radius: 0; }
+  @supports (height: 100dvh) { .modal--xl:has(.cx) { height: 100dvh; } }
+  .modal--xl:has(.cx) .modal__head { padding: 10px 12px; gap: 8px; flex-wrap: wrap; }
+  .modal--xl:has(.cx) .modal__head h2 { font-size: 16.5px; min-width: 0; }
+  .modal--xl:has(.cx) .modal__body { padding: 12px 12px 20px; }
+  .cx { gap: 12px; }
+  /* header fields: two per row instead of a long column */
+  .cx > .grid-form--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .cx > .grid-form--4 > .field:first-child { grid-column: 1 / -1; }
+  .cx > .grid-form--4 .input { min-width: 0; }
+  /* tabs: one horizontal strip of pills (was 5 rows of buttons covering the screen) */
+  .cx .sh-tabs { display: flex; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; gap: 6px; padding: 6px 2px; margin-inline: -12px; padding-inline: 12px;
+    border-radius: 0; background: var(--surface); top: -12px; box-shadow: 0 1px 0 var(--line-2), 0 -12px 0 var(--surface);
+    scroll-snap-type: x proximity; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+  .cx .sh-tabs::-webkit-scrollbar { display: none; }
+  .cx .sh-tabs .seg__btn { flex: none; min-height: 38px; height: 38px; padding: 0 12px 0 10px; white-space: nowrap; border-radius: 999px; background: var(--line-2); font-size: 14px; scroll-snap-align: center; max-width: 78vw; overflow: hidden; text-overflow: ellipsis; }
+  .cx .sh-tabs .seg__btn.active { background: var(--brand-700); color: #fff; box-shadow: none; }
+  .cx .sh-tabs .seg__btn.active .sh-tabs__n { background: #fff; color: var(--brand-700); }
+  /* prev / next at the end of every tab: side by side, big touch targets */
+  .cx .sh-next { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .cx .sh-next .btn { width: 100%; min-width: 0; min-height: 44px; padding-inline: 8px; white-space: normal; line-height: 1.25; }
+  .cx .sh-next .btn:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  /* footer: one row - icons for secondary actions, save takes the rest */
+  .modal--xl:has(.cx) .modal__foot { flex-wrap: nowrap; align-items: center; gap: 6px; padding: 8px 10px max(8px, env(safe-area-inset-bottom)); }
+  .modal--xl:has(.cx) .modal__foot .sh-need { display: none; }
+  .modal--xl:has(.cx) .modal__foot .btn { flex: none; width: auto; min-height: 44px; }
+  .modal--xl:has(.cx) .modal__foot .cx-foot__ic { width: 44px; padding: 0; justify-content: center; }
+  .modal--xl:has(.cx) .modal__foot .cx-foot__ic > span { display: none; }
+  .modal--xl:has(.cx) .modal__foot .cx-foot__cancel { padding-inline: 12px; }
+  .modal--xl:has(.cx) .modal__foot .cx-foot__save { flex: 1 1 auto; font-size: 16px; }
+  .modal--xl:has(.cx) .modal__foot .vd { display: inline-flex; gap: 4px; flex: none; }
+  .modal--xl:has(.cx) .modal__foot .vd .btn:first-child { width: 44px; padding: 0; justify-content: center; font-size: 0; gap: 0; }
+  .modal--xl:has(.cx) .modal__foot .vd .btn + .btn { padding-inline: 8px; font-size: 12.5px; }
+  .modal--xl:has(.cx) .modal__foot .vd-live { display: none; }
+}
+/* 13/11 mobile page header: title on its own line, action buttons full width under it (was squeezed side by side) */
+@media screen and (max-width: 640px) {
+  .page-head { margin-bottom: 16px; gap: 10px; }
+  .page-head > div:first-child, .page-head > div:not(:first-child) { flex: 1 1 100%; }
+  .page-head > .btn, .page-head > div:not(:first-child) > .btn { flex: 1 1 auto; justify-content: center; min-height: 44px; }
+}
+/* 13/11 mobile exam header: patient name on its own line under the title, never cut */
+@media screen and (max-width: 640px) {
+  .modal--xl:has(.cx) .modal__head h2 { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; flex: 1 1 0; }
+  .modal--xl:has(.cx) .modal__pt { margin: 0; max-width: 100%; white-space: normal; font-size: 13.5px; line-height: 1.35; }
+  .modal--xl:has(.cx) .cdock-head .btn { min-height: 36px; }
+}
+/* 13/11 open / close button on every sheet box (injections, follow-up, physio referral) - same look as .sh-box__t */
+.fold-h { cursor: pointer; user-select: none; }
+.fold-t { margin-inline-start: auto; flex: none; font: inherit; font-size: 12.5px; font-weight: 700; padding: 2px 12px; min-height: 28px; border-radius: 999px; border: 1px solid rgba(255,255,255,.55); background: rgba(255,255,255,.15); color: #fff; cursor: pointer; }
+.fold-t--light { border-color: var(--brand-100); background: var(--brand-50, #eef2fb); color: var(--brand-700); }
+.plan-part__h.fold-h { display: flex; align-items: center; gap: 8px; }
+@media print { .fold-t { display: none; } }

@@ -2176,3 +2176,43 @@ html[dir="rtl"] .table td.num, html[dir="rtl"] .table th.num { text-align: right
 .pr-f-reg { display: grid; justify-items: center; gap: 4px; padding: 6px 8px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); font: inherit; font-size: 12.5px; font-weight: 700; color: var(--brand-700); cursor: pointer; }
 .pr-f-reg.is-on { border-color: var(--brand-700); background: var(--brand-50, #eef2fb); }
 .pr-f-reg .pr-crop { border-radius: 8px; }
+
+/* ١٢/١١: نماذج طلب CT / MRI / X-Ray / التحاليل بشكل ورق العيادة — أقسام مقفولة وصور مقصوصة من نفس الورقة */
+.rs-crop { display: block; flex: none; border-radius: 8px; background-repeat: no-repeat; }
+.rs-card { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); overflow: hidden; }
+.rs-card > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 8px 12px; font-weight: 800; color: var(--brand-700); }
+.rs-card > summary::-webkit-details-marker, .rs-sec > summary::-webkit-details-marker { display: none; }
+.rs-card > summary > .icon:last-child, .rs-sec > summary > .icon:last-child { margin-inline-start: auto; transform: rotate(180deg); transition: transform .15s; flex: none; }
+.rs-card[open] > summary > .icon:last-child, .rs-sec[open] > summary > .icon:last-child { transform: rotate(270deg); }
+.rs-card[open] > summary { border-bottom: 1px solid var(--line-2); background: var(--brand-50, #eef2fb); }
+.rs-card > summary .rs-crop { max-width: calc(100% - 90px); }
+.rs-card--other > summary span[dir="ltr"] { color: var(--muted); font-size: 12.5px; font-weight: 600; }
+.rs-card__b { padding: 10px 12px; display: grid; gap: 8px; }
+.rs-n { font-size: 12px; font-weight: 800; color: #0b7a3e; background: #e8f7ee; padding: 2px 9px; border-radius: 999px; flex: none; }
+.rs-card > summary .rs-n { margin-inline-start: auto; }
+.rs-card > summary .rs-n + .icon { margin-inline-start: 6px !important; }
+.rs-secs { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 8px; align-items: start; }
+.rs-sec { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
+.rs-sec > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 6px 10px; }
+.rs-sec > summary .rs-n { margin-inline-start: auto; }
+.rs-sec > summary .rs-n + .icon { margin-inline-start: 6px !important; }
+.rs-sec[open] > summary { border-bottom: 1px solid var(--line-2); background: var(--surface-2, #f8fafc); }
+.rs-sec__t { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+.rs-sec__t b { font-size: 13px; color: var(--brand-700); }
+.rs-sec__t small { font-size: 12px; color: var(--muted); }
+.rs-sec__b { padding: 6px 10px 8px; display: grid; gap: 2px; }
+.rs-sec--sp { border-color: #6cb33f; }
+.rs-sec--sp > summary { background: rgba(108, 179, 63, .07); }
+.rs-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px dashed var(--line-2); font-size: 13px; }
+.rs-row:last-of-type { border-bottom: 0; }
+.rs-row .rs-crop { border-radius: 6px; background-color: #0b1220; }
+.rs-row__n { min-width: 96px; font-size: 13px; color: var(--ink); }
+.rs-row__o { display: flex; flex-wrap: wrap; gap: 0 10px; min-width: 0; }
+.rs-row--sp .rs-row__o { flex: 1; }
+.rs-bottom { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px 26px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px; }
+.rs-ex { display: flex; flex-direction: column; font-size: 13px; }
+.rs-labs { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; align-items: start; }
+.rs-labsp { display: grid; gap: 8px; padding: 8px; border: 2px solid #6cb33f; border-radius: 14px; }
+.rs-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0 10px; font-size: 13px; }
+.pr-fold__b { padding: 10px 14px 14px; }
+@media (max-width: 520px) { .rs-secs, .rs-labs { grid-template-columns: minmax(0, 1fr); } .rs-row__n { min-width: 70px; } }

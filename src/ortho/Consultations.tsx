@@ -21,7 +21,8 @@ import { openPrintWindow, printHtml } from '../utils/printDoc';
 import { RequestForms } from './RequestForms';
 import { PhysioReferralTab } from './PhysioReferralTab';
 import { prepareReportImage, readyReportImage, deliverReportImage, reportFields, reportHtml } from './reportData';
-import { applyRequestForms, deliverRequestImage, labOthers, prepareRequestImage, readyRequestImage, requestHtml } from './requestData';
+import { applyRequestForms, labOthers } from './requestData';
+import { deliverReqImage, prepareReqImage, readyReqImage, reqKindHtml } from './requestSheets';
 import { DiagnosisOutput } from './DiagnosisOutput';
 import { ExerciseSendModal, useCanSendExercises } from './ExerciseSend';
 import { PlanGeneralSheet } from './PlanGeneralSheet';
@@ -337,7 +338,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
       onSave={() => void saveReq()}
       onPrint={async (kind) => {
         const win = openPrintWindow();
-        if (await saveReq()) void printHtml(requestHtml(kind, sheet, patientOf(), c.date), win); else win?.close();
+        if (await saveReq()) void printHtml(reqKindHtml(kind, sheet, patientOf(), c.date), win); else win?.close();
       }}
       onWhatsapp={async (kind) => {
         // التابة بتتفتح وقت الضغطة (وإلا المتصفح يحجبها)، وبعد الحفظ بتروح لمحادثة المريض
@@ -349,18 +350,27 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
         const url = `https://wa.me/${waPhone(pt ? whatsappNumber(pt) : (pendingInfo.phone ?? ''))}`;
         if (win && !win.closed) win.location.href = url; else window.location.href = url;
       }}
-      prepare={(kind) => { void prepareRequestImage(kind, sheet, patientOf(), c.date).catch(() => undefined); }}
+      prepare={(kind) => { void prepareReqImage(kind, sheet, patientOf(), c.date).catch(() => undefined); }}
       onImage={async (kind) => {
         // الصورة جاهزة مقدمًا ← بتتحفظ في نفس الضغطة؛ مش جاهزة لسه ← بنجهزها (والحفظ ممكن يطلب ضغطة كمان)
         const say = (r: string) => {
           if (r === 'saved') toast.success(/Android/i.test(navigator.userAgent) ? 'اتحفظت الصورة في معرض الصور — ألبوم «Download» (التنزيلات)' : 'اتحفظت الصورة على الجهاز');
         };
-        const ready = readyRequestImage(kind, sheet, patientOf(), c.date);
-        if (ready) { say(deliverRequestImage(ready)); void saveReq(); return; }
+        const ready = readyReqImage(kind, sheet, patientOf(), c.date);
+        if (ready) { say(deliverReqImage(ready)); void saveReq(); return; }
         if (!(await saveReq())) return;
-        try { const img = await prepareRequestImage(kind, sheet, patientOf(), c.date); say(deliverRequestImage(img)); }
+        try { const img = await prepareReqImage(kind, sheet, patientOf(), c.date); say(deliverReqImage(img)); }
         catch (e) { toast.error((e as Error).message); }
       }} />
+  );
+
+  // ١٢/١١: طلبات الأشعة والتحاليل (ورق CT / MRI / X-Ray / التحاليل) — نفس العنصر مقفول في الروشتة والتقارير؛ اللي اتملى في مكان بيظهر مليان في الباقي
+  const reqFilled = sheet.on.some((o) => /^(xr|mr|ct|nm|rr)\.|^lr\|/.test(o)) || Object.entries(sheet.txt).some(([k, v]) => /^(xr|mr|ct|nm|rr|lr)\./.test(k) && v.trim());
+  const requestsFold = (
+    <details className="pr-fold">
+      <summary><Icon name="chevron" size={14} /> طلبات الأشعة والتحاليل (CT · MRI · X-Ray · Lab){reqFilled ? <span className="pr-fold__ok">متعبّي ✓</span> : <span className="pr-fold__no">فاضي</span>}</summary>
+      <div className="pr-fold__b">{requestForms}</div>
+    </details>
   );
 
   function save(thenPrint: boolean, complete?: boolean) {
@@ -534,6 +544,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
               <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => printRx(c, patientOf())}>طباعة الروشتة</Button>
             </div>
           </section>
+          {requestsFold}
           {physioFold}
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('plan')}>رجوع: الخطة العلاجية</Button>
@@ -600,6 +611,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
               </button>
             </div>
           </section>
+          {requestsFold}
           {physioFold}
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('appt')}>رجوع: موعد المتابعة</Button>

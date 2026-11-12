@@ -34,100 +34,96 @@ const ageOf = (birth?: string | null) => {
 };
 export interface PrInfo { date: string; diagnosis: string; refNo: string }
 
-export const PR_CSS_FIT = `
-  .prp { font-size: 9px; line-height: 1.25; }
-  .prp .pr-in { gap: 1.6mm; padding-top: 3mm; }
-  .prp .pr-hd img { width: 20mm; height: 20mm; }
-  .prp .pr-hd .l small { font-size: 15px; } .prp .pr-hd .l b { font-size: 26px; } .prp .pr-hd .r b { font-size: 19px; } .prp .pr-hd span { font-size: 11.5px; }
-  .prp .pr-ban { padding: 1.3mm 6mm; } .prp .pr-ban b { font-size: 17px; } .prp .pr-ban span { font-size: 12.5px; }
-  .prp .pr-card { padding: 1.1mm 2.6mm; }
-  .prp .pr-box ul { padding: 1mm 2.4mm; gap: .25mm; }
-  .prp .pr-box h4 { font-size: 10.6px; padding: .8mm 2.4mm; }
-  .prp .pr-green { font-size: 13px; padding: 1mm 5mm; }
-  .prp .pr-txt { min-height: 10mm; }
-  .prp .pr-foot { padding: 2mm 4mm; font-size: 11px; }
-`;
+// ١٢/١١: الورقة = صورة ورقة العيادة نفسها (public/rx/physio-form.jpg ‏1086×1448) بالصور والألوان — والعلامات ✓ والكتابة بتتحط فوق مربعاتها.
+// أماكن المربعات متقاسة من الصورة نفسها (بالبكسل) وبتتحول نسبة مئوية فبتفضل مظبوطة في أي مقاس.
+const IW = 1086, IH = 1448;
+type Pt = [number, number, number?];
+const CARD_BOXES: Pt[][] = [
+  [[155, 588], [156, 606], [156, 624], [156, 642], [156, 659], [156, 677]],
+  [[508, 588], [508, 606], [508, 624], [508, 641], [509, 658], [509, 675]],
+  [[861, 590], [862, 609], [862, 629], [862, 648], [862, 668]],
+  [[156, 749], [157, 766], [157, 783], [157, 801], [157, 819], [157, 839]],
+  [[510, 745], [510, 761], [510, 776], [510, 792], [510, 807], [510, 823], [510, 841]],
+  [[864, 745], [864, 761], [864, 776], [864, 792], [865, 807], [865, 823], [865, 841]],
+  [[158, 914], [158, 931], [158, 948], [158, 965], [158, 982], [158, 999]],
+  [[510, 912], [510, 927], [510, 941], [510, 956], [510, 970], [510, 985], [510, 1000]],
+  [[864, 911], [864, 927], [864, 944], [864, 961], [864, 978], [865, 997]],
+  [[154, 1074], [154, 1092], [155, 1110], [155, 1129], [155, 1148]],
+  [[503, 1071], [503, 1087], [503, 1103], [503, 1119], [503, 1135], [503, 1151]],
+  [[869, 1071], [870, 1086], [870, 1102], [870, 1118], [870, 1135], [870, 1151]],
+];
+const COL_END = [345, 698, 1058];
+const GENDER: Record<string, Pt> = { Male: [202, 270, 15], Female: [279, 269, 15] };
+const SIDE_BOX: Pt[] = [[39, 364, 16], [127, 364, 16], [64, 401, 17]];
+const REGION_BOX: Pt[] = [[303, 409, 15], [401, 409, 15], [514, 409, 15], [595, 409, 15], [682, 409, 15], [764, 409, 15], [854, 409, 15], [959, 409, 14]];
+const REGION_OTHER: Pt = [1058, 410, 12];
+const TYPE_BOX: Pt[] = [[266, 456, 18], [640, 456, 18]];
+const GOAL_BOX: Pt[] = [[54, 1232, 13], [54, 1251, 13], [54, 1271, 13], [54, 1290, 13], [245, 1231, 13], [245, 1250, 13], [245, 1270, 13]];
+const GOAL_OTHER: Pt = [245, 1290, 14];
+const REEVAL_BOX: Pt[] = [[715, 1333, 13], [806, 1333, 13], [892, 1333, 13]];
+const REEVAL_OTHER: Pt = [976, 1332, 12];
+
+const pc = (v: number, of: number) => `${((v / of) * 100).toFixed(3)}%`;
 export const PR_CSS = `
-  .rqp.prp { width: 210mm; height: 297mm; padding: 0; font-family: "Segoe UI", "Cairo", Tahoma, sans-serif; color: #0d2a6b; font-size: 9.6px; line-height: 1.32; direction: ltr; background: #fff; }
-  .prp .pr-in { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 2.2mm; padding: 4mm 5mm 0; }
-  .prp .pr-hd { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 4mm; border-top: 3px solid #6cb33f; border-radius: 16px 16px 0 0; padding-top: 1mm; }
-  .prp .pr-hd .l { text-align: center; } .prp .pr-hd .l small { display: block; font-family: Georgia, serif; font-size: 17px; font-weight: 700; color: #0d2a6b; }
-  .prp .pr-hd .l b { display: block; font-family: "Great Vibes", "Brush Script MT", cursive; font-weight: 400; color: #d32f2f; font-size: 30px; line-height: 1; }
-  .prp .pr-hd span { font-size: 12.5px; font-weight: 700; color: #1b4f9c; }
-  .prp .pr-hd img { width: 26mm; height: 26mm; object-fit: contain; border-inline: 1.5px solid #1b4f9c; padding: 0 4mm; }
-  .prp .pr-hd .r { text-align: center; } .prp .pr-hd .r b { display: block; font-size: 21px; font-weight: 800; color: #d32f2f; } .prp .pr-hd .r b i { font-style: normal; color: #1b4f9c; }
-  .prp .pr-ban { display: flex; align-items: center; gap: 4mm; background: linear-gradient(90deg, #0d2a6b, #1b4f9c); color: #fff; border-radius: 999px; padding: 2mm 6mm; border-bottom: 3px solid #6cb33f; }
-  .prp .pr-ban b { font-size: 20px; } .prp .pr-ban i { font-style: normal; color: #6cb33f; font-size: 22px; font-weight: 800; } .prp .pr-ban span { font-size: 14px; font-weight: 700; margin-left: auto; }
-  .prp .pr-row { display: grid; gap: 2mm; }
-  .prp .pr-card { border: 1.2px solid #b9cce6; border-radius: 10px; padding: 1.6mm 3mm; background: #f7faff; }
-  .prp .pr-k { font-weight: 800; color: #0d2a6b; } .prp .pr-v { font-weight: 700; color: #10182f; border-bottom: 1px dotted #7b8fb3; padding: 0 3px; unicode-bidi: plaintext; }
-  .prp .pr-line { display: flex; gap: 4px; align-items: baseline; margin: 1px 0; flex-wrap: wrap; }
-  .prp .ck { display: inline-flex; align-items: center; gap: 3px; margin-inline-end: 7px; white-space: nowrap; }
-  .prp .ck::before { content: ''; width: 9px; height: 9px; border: 1.3px solid #0d2a6b; border-radius: 2px; display: inline-block; flex: none; }
-  .prp .ck.on { font-weight: 800; color: #0b5d1e; } .prp .ck.on::before { background: #1b4f9c; border-color: #1b4f9c; box-shadow: inset 0 0 0 1.5px #fff; }
-  .prp .pr-sec { display: flex; align-items: center; gap: 3mm; }
-  .prp .pr-pill { background: #1b4f9c; color: #fff; font-weight: 800; border-radius: 999px; padding: 1mm 5mm; font-size: 12px; white-space: nowrap; }
-  .prp .pr-green { background: linear-gradient(90deg, #4e9a2a, #6cb33f); color: #fff; font-weight: 800; font-size: 15px; border-radius: 10px 30px 30px 10px; padding: 1.4mm 5mm; align-self: flex-start; }
-  .prp .pr-green small { font-weight: 600; font-size: 11px; }
-  .prp .pr-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2mm; }
-  .prp .pr-box { border: 1.2px solid #b9cce6; border-radius: 10px; overflow: hidden; background: #f7faff; }
-  .prp .pr-box h4 { margin: 0; display: flex; align-items: center; gap: 2mm; background: linear-gradient(90deg, #0d2a6b, #1b4f9c); color: #fff; font-size: 11.2px; padding: 1mm 2.5mm; border-radius: 0 0 14px 0; }
-  .prp .pr-box h4 em { font-style: normal; width: 17px; height: 17px; border-radius: 50%; background: #6cb33f; display: grid; place-items: center; font-size: 11px; flex: none; }
-  .prp .pr-box ul { list-style: none; margin: 0; padding: 1.4mm 2.5mm; display: grid; gap: .6mm; }
-  .prp .pr-box li .ck { white-space: normal; }
-  .prp .pr-other { color: #475569; }
-  .prp .pr-foot { margin: auto -5mm 0; display: flex; align-items: center; justify-content: space-around; gap: 3mm; background: linear-gradient(90deg, #0d2a6b, #1b4f9c); color: #fff; padding: 2.4mm 4mm; font-size: 12px; font-weight: 700; }
-  .prp .pr-foot span { display: inline-flex; align-items: center; gap: 4px; } .prp .pr-foot small { display: block; font-size: 10px; font-weight: 600; opacity: .9; }
-  .prp .pr-txt { min-height: 16mm; white-space: pre-line; unicode-bidi: plaintext; font-weight: 600; color: #10182f; }
+  .rqp.prp { width: 210mm; height: 297mm; padding: 0; background: #fff; font-family: "Segoe UI", "Cairo", Tahoma, sans-serif; direction: ltr; }
+  .prp .pr-pg { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); aspect-ratio: ${IW} / ${IH}; }
+  .prp .pr-pg > img { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .prp .pr-ck { position: absolute; display: grid; place-items: center; color: #d32f2f; font-weight: 900; line-height: 1; transform: translate(-12%, -30%); }
+  .prp .pr-ck svg { width: 100%; height: 100%; }
+  .prp .pr-tx { position: absolute; font-size: 10.5px; font-weight: 800; color: #0b2a6b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; unicode-bidi: plaintext; line-height: 1.1; }
+  .prp .pr-tx.bg { background: #fff; }
+  .prp .pr-ml { white-space: pre-line; line-height: 1.75; font-size: 10.5px; }
 `;
+export const PR_CSS_FIT = '';
+const tick = (pt: Pt) => {
+  const sz = (pt[2] ?? 12) + 8;
+  return `<span class="pr-ck" style="left:${pc(pt[0], IW)};top:${pc(pt[1], IH)};width:${pc(sz, IW)};height:${pc(sz, IH)}"><svg viewBox="0 0 24 24"><path d="M3 13l6 6L22 4" fill="none" stroke="#d32f2f" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+};
+const text = (x: number, y: number, w: number, v: string, cls = '') => (v ? `<span class="pr-tx ${cls}" style="left:${pc(x, IW)};top:${pc(y, IH)};width:${pc(w, IW)}">${esc(v)}</span>` : '');
 
 export function prPageHtml(s: ExamSheet, info: PrInfo, p: ReqPatient | null | undefined): string {
   const on = (g: string, i: string) => s.on.includes(`${g}|${i}`);
   const t = (k: string) => (s.txt[k] ?? '').trim();
-  const ck = (g: string, i: string) => `<span class="ck${on(g, i) ? ' on' : ''}">${esc(i)}</span>`;
-  const other = (k: string) => `<span class="ck${t(k) ? ' on' : ''} pr-other">Other: ${t(k) ? esc(t(k)) : '……………'}</span>`;
+  const marks: string[] = [];
+  const mark = (cond: boolean, pt: Pt) => { if (cond) marks.push(tick(pt)); };
   const gender = on('n.gender', 'ذكر') ? 'Male' : on('n.gender', 'أنثى') ? 'Female' : '';
+  if (gender) mark(true, GENDER[gender]);
+  PR_SIDES.forEach((x, i) => mark(on('pr.side', x), SIDE_BOX[i]));
+  PR_REGIONS.forEach((x, i) => mark(on('pr.reg', x), REGION_BOX[i]));
+  mark(!!t('pr.reg.other'), REGION_OTHER);
+  PR_TYPES.forEach((x, i) => mark(on('pr.type', x), TYPE_BOX[i]));
+  PR_PROGRAMS.forEach((b, ci) => {
+    const boxes = CARD_BOXES[ci];
+    b.items.forEach((x, i) => mark(on(`pr.p${ci + 1}`, x), boxes[i]));
+    mark(!!t(`pr.p${ci + 1}.other`), boxes[boxes.length - 1]);
+  });
+  PR_GOALS.forEach((x, i) => mark(on('pr.goal', x), GOAL_BOX[i]));
+  mark(!!t('pr.goal.other'), GOAL_OTHER);
+  PR_REEVAL.forEach((x, i) => mark(on('pr.reeval', x), REEVAL_BOX[i]));
+  mark(!!t('pr.reeval.other'), REEVAL_OTHER);
   const age = ageOf(p?.birthDate) || t('n.age');
-  const v = (x: string, w = '') => `<span class="pr-v"${w ? ` style="min-width:${w}"` : ''}>${esc(x) || '&nbsp;'}</span>`;
-  const box = (i: number) => {
-    const b = PR_PROGRAMS[i];
-    return `<div class="pr-box"><h4><em>${i + 1}</em>${esc(b.title)}</h4><ul>${b.items.map((x) => `<li>${ck(`pr.p${i + 1}`, x)}</li>`).join('')}<li>${other(`pr.p${i + 1}.other`)}</li></ul></div>`;
-  };
+  const otherTexts = PR_PROGRAMS.map((_, ci) => {
+    const last = CARD_BOXES[ci][CARD_BOXES[ci].length - 1];
+    const col = last[0] < 400 ? 0 : last[0] < 700 ? 1 : 2;
+    return text(last[0] + 72, last[1] - 1, COL_END[col] - last[0] - 74, t(`pr.p${ci + 1}.other`), 'bg');
+  }).join('');
   const base = typeof location !== 'undefined' ? location.origin : '';
-  return `<div class="rqp prp"><div class="pr-in">
-<div class="pr-hd">
-  <div class="l"><small>Doctor</small><b>Islam Gomaa Beltage</b><span>Consultant of Orthopedic Surgery</span></div>
-  <img src="${base}/icons/app-512.png" alt="">
-  <div class="r"><b><i>Dr.</i> Islam Gomaa Beltage</b><span>Consultant of Orthopedic Surgery</span></div>
-</div>
-<div class="pr-ban"><b>Physiotherapy Referral</b><i>/</i><span>Rehabilitation &amp; Physiotherapy Program</span></div>
-<div class="pr-row" style="grid-template-columns: 1.15fr 1.35fr .8fr">
-  <div class="pr-card"><div class="pr-line"><span class="pr-k">Patient Name :</span>${v(p?.fullName ?? '', '40mm')}</div>
-    <div class="pr-line"><span class="pr-k">Age :</span>${v(age, '10mm')}<span class="pr-k" style="margin-left:6px">Gender :</span><span class="ck${gender === 'Male' ? ' on' : ''}">Male</span><span class="ck${gender === 'Female' ? ' on' : ''}">Female</span></div>
-    <div class="pr-line"><span class="pr-k">File No :</span>${v(fileNoText(p?.fileNo) || '', '16mm')}</div></div>
-  <div class="pr-card"><div class="pr-line"><span class="pr-k">Diagnosis :</span>${v(t('pr.dx') || info.diagnosis, '50mm')}</div>
-    <div class="pr-line"><span class="pr-k">Clinical Notes :</span>${v(t('pr.notes'), '42mm')}</div></div>
-  <div class="pr-card"><div class="pr-line"><span class="pr-k">Date :</span>${v(info.date.split('-').reverse().join(' / '))}</div>
-    <div class="pr-line"><span class="pr-k">Ref. No. :</span>${v(t('pr.ref') || info.refNo, '16mm')}</div></div>
-</div>
-<div class="pr-row" style="grid-template-columns: .55fr 2.45fr">
-  <div class="pr-card"><div class="pr-pill" style="display:inline-block;margin-bottom:1mm">Affected Side:</div><div class="pr-line">${PR_SIDES.map((x) => ck('pr.side', x)).join('')}</div></div>
-  <div class="pr-card"><div class="pr-green" style="display:inline-block;margin:-1.6mm 0 1.2mm -3mm;border-radius:10px 0 30px 0;font-size:12.5px">Region (Affected Area)</div>
-    <div class="pr-line">${PR_REGIONS.map((x) => ck('pr.reg', x)).join('')}${other('pr.reg.other')}</div></div>
-</div>
-<div class="pr-card pr-sec"><span class="pr-pill">Treatment Type:</span>${PR_TYPES.map((x) => ck('pr.type', x)).join('<span style="color:#7b8fb3">|</span>')}</div>
-<div class="pr-green">☑ Rehabilitation Program <small>(Please select)</small></div>
-<div class="pr-grid">${PR_PROGRAMS.map((_, i) => box(i)).join('')}</div>
-<div class="pr-row" style="grid-template-columns: 1fr 1fr">
-  <div class="pr-box"><h4><em>◎</em>Program Goals:</h4><ul style="grid-template-columns:1fr 1fr">${PR_GOALS.map((x) => `<li>${ck('pr.goal', x)}</li>`).join('')}<li>${other('pr.goal.other')}</li></ul></div>
-  <div class="pr-box"><h4><em>✎</em>Special Instructions:</h4><div class="pr-txt" style="padding:1.4mm 2.5mm">${esc(t('pr.instr'))}</div></div>
-</div>
-<div class="pr-row" style="grid-template-columns: 1fr 1fr 1.7fr">
-  <div class="pr-card pr-line"><span class="pr-k">Frequency :</span>${v(t('pr.freq'), '10mm')}<span>sessions / week</span></div>
-  <div class="pr-card pr-line"><span class="pr-k">Duration :</span>${v(t('pr.dur'), '10mm')}<span>weeks</span></div>
-  <div class="pr-card pr-line"><span class="pr-k">Re-evaluation :</span>${PR_REEVAL.map((x) => ck('pr.reeval', x)).join('')}${other('pr.reeval.other')}</div>
-</div>
-<div class="pr-foot"><span>☎ 0472557970</span><span>✆ 01070072413</span><span>📍 Desouk – El-Samadoni Mosque St.</span><span>Dr. Islam Gomaa Beltage<small>Consultant of Orthopedic Surgery</small></span></div>
+  return `<div class="rqp prp"><div class="pr-pg">
+<img src="${base}/rx/physio-form.jpg" alt="">
+${text(152, 236, 196, p?.fullName ?? '', 'bg')}
+${text(70, 268, 46, age, 'bg')}
+${text(527, 236, 276, t('pr.dx') || info.diagnosis, 'bg')}
+${text(557, 268, 246, t('pr.notes'), 'bg')}
+${text(880, 236, 124, info.date.split('-').reverse().join(' / '), 'bg')}
+${text(917, 268, 92, t('pr.ref') || info.refNo, 'bg')}
+${text(1031, 409, 24, t('pr.reg.other'), 'bg')}
+${otherTexts}
+${text(322, 1288, 104, t('pr.goal.other'), 'bg')}
+${t('pr.instr') ? `<span class="pr-tx pr-ml" style="left:${pc(515, IW)};top:${pc(1232, IH)};width:${pc(540, IW)};height:${pc(80, IH)};white-space:pre-line">${esc(t('pr.instr'))}</span>` : ''}
+${text(160, 1332, 34, t('pr.freq'), 'bg')}
+${text(456, 1332, 36, t('pr.dur'), 'bg')}
+${text(1037, 1332, 34, t('pr.reeval.other'), 'bg')}
+${marks.join('')}
 </div></div>`;
 }
 

@@ -319,6 +319,19 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
     finally { savingRef.current = false; setRxSaving(false); }
   }
   // طلب الأشعة والتحاليل: نفس الخانات والأزرار في «الأشعة والتحاليل» وفي «متابعة المريض» (١٠/١١) — بيتحفظ في الكشف ده وفي ملف المريض
+  // ١٢/١١: تحويل العلاج الطبيعي — نفس العنصر في تابه، ومقفول (يتفتح ويتقفل) في الروشتة والأشعة والتحاليل والتقارير؛ لو اتملى بيظهر مليان في كل مكان
+  const physioReferral = (
+    <PhysioReferralTab sheet={sheet} onChange={changeSheet} patient={patientOf}
+      info={{ date: c.date, diagnosis: sum.diagnosis || c.diagnosis || '', refNo: visitAppt?.no ?? '' }}
+      waPhone={(() => { const pt = c.patientId ? db.patient(c.patientId) : null; return waPhone(pt ? whatsappNumber(pt) || pt.phone : (pendingInfo.phone ?? '')); })()} />
+  );
+  const physioFilled = sheet.on.some((o) => o.startsWith('pr.')) || Object.entries(sheet.txt).some(([k, v]) => k.startsWith('pr.') && v.trim());
+  const physioFold = (
+    <details className="pr-fold">
+      <summary><Icon name="chevron" size={14} /> تحويل علاج طبيعي (Physiotherapy Referral){physioFilled ? <span className="pr-fold__ok">متعبّي ✓</span> : <span className="pr-fold__no">فاضي</span>}</summary>
+      {physioReferral}
+    </details>
+  );
   const requestForms = (
     <RequestForms sheet={sheet} onChange={changeSheet} busy={rxSaving} disabled={!c.patientId && !unlinked}
       onSave={() => void saveReq()}
@@ -521,6 +534,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
               <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => printRx(c, patientOf())}>طباعة الروشتة</Button>
             </div>
           </section>
+          {physioFold}
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('plan')}>رجوع: الخطة العلاجية</Button>
             <Button variant="outline" icon="chevronLeft" onClick={() => goTab('appt')}>التالي: موعد المتابعة</Button>
@@ -586,6 +600,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
               </button>
             </div>
           </section>
+          {physioFold}
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('appt')}>رجوع: موعد المتابعة</Button>
             <Button variant="outline" icon="chevronLeft" onClick={() => goTab('physio')}>التالي: العلاج الطبيعي</Button>
@@ -595,9 +610,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
 
         {/* ١٢/١١: «العلاج الطبيعي» — Physiotherapy Referral (A4): طباعة / تحميل صورة / واتساب */}
         {tab === 'physio' && <>
-          <PhysioReferralTab sheet={sheet} onChange={changeSheet} patient={patientOf}
-            info={{ date: c.date, diagnosis: sum.diagnosis || c.diagnosis || '', refNo: visitAppt?.no ?? '' }}
-            waPhone={(() => { const pt = c.patientId ? db.patient(c.patientId) : null; return waPhone(pt ? whatsappNumber(pt) || pt.phone : (pendingInfo.phone ?? '')); })()} />
+          {physioReferral}
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('report')}>رجوع: التقارير</Button>
             <Button icon="check" loading={busy} disabled={!ok} onClick={() => save(false)}>حفظ الكشف</Button>
@@ -678,6 +691,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
             })()}
             <PatientMedicalFiles patientId={c.patientId} excludeConsultId={initial?.id} categories={['lab']} title="ملفات ونتائج التحاليل" icon="doc" uploadCategory="lab" />
           </section>
+          {physioFold}
 
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('doctor')}>رجوع: كشف الطبيب</Button>

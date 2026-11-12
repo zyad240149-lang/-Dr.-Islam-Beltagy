@@ -20,7 +20,8 @@ export class ErrorBoundary extends Component<Props, State> {
     // نسخة جديدة اترفعت والصفحة المفتوحة بتطلب ملف قسم اتشال: تحديث مرة واحدة بيجيب النسخة الجديدة
     // (بدون إنترنت لأ: التحديث بيقفل التطبيق على شاشة «غير متصل» بتاعة المتصفح — الشاشة دي بتعرض زرار «تحديث» يدوي)
     if (navigator.onLine && /dynamically imported module|Importing a module script failed|Failed to fetch dynamically|error loading dynamically/i.test(String(error?.message))) {
-      try { if (!sessionStorage.getItem('ortho_chunk_reload')) { sessionStorage.setItem('ortho_chunk_reload', '1'); window.location.reload(); } } catch { /* ignore */ }
+      // ١٢/١١: مرة لكل نسخة (مش مرة واحدة للجلسة كلها) — بعد نشر جديد الصفحة كانت بتفضل على «حدث خطأ»
+      try { const last = Number(sessionStorage.getItem('ortho_chunk_reload') || 0); if (Date.now() - last > 20000) { sessionStorage.setItem('ortho_chunk_reload', String(Date.now())); window.location.reload(); } } catch { /* ignore */ }
     }
   }
 

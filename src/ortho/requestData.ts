@@ -216,10 +216,11 @@ export interface ReqImage { key: string; blob: Blob; dataUrl: string; file: File
 const imgCache = new Map<'rad' | 'lab', ReqImage>();
 const pending = new Map<string, Promise<ReqImage>>();
 
-async function renderImage(kind: 'rad' | 'lab', html: string, p: ReqPatient | null | undefined, date: string): Promise<ReqImage> {
+/** صورة PNG من صفحة على ورقة العيادة (.rqp) — مستخدمة في الطلبات والتقارير */
+export async function renderLetterImage(html: string, name: string, extraCss = ''): Promise<ReqImage> {
   const host = document.createElement('div');
   host.style.cssText = 'position:fixed;left:-10000px;top:0;z-index:-1;background:#fff';
-  host.innerHTML = `<style>${REQ_CSS}</style>${html}`;
+  host.innerHTML = `<style>${REQ_CSS}${extraCss}</style>${html}`;
   document.body.appendChild(host);
   try {
     await Promise.race([document.fonts?.ready, new Promise((r) => setTimeout(r, 2000))]).catch(() => undefined);
@@ -228,10 +229,14 @@ async function renderImage(kind: 'rad' | 'lab', html: string, p: ReqPatient | nu
     const canvas = await html2canvas(host.querySelector('.rqp') as HTMLElement, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
     const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/png'));
     if (!blob) throw new Error('تعذّر تجهيز الصورة');
-    // اسم الملف بحروف إنجليزي بس (بعض تطبيقات المعرض بتتلخبط في الأسماء العربي)
-    const name = `${kind === 'rad' ? 'Radiology-Request' : 'Laboratory-Request'}-${(p?.fileNo || '').replace(/[^A-Za-z0-9-]/g, '') || 'patient'}-${date}-${Date.now().toString().slice(-5)}.png`;
     return { key: html, blob, dataUrl: canvas.toDataURL('image/png'), file: new File([blob], name, { type: 'image/png', lastModified: Date.now() }) };
   } finally { host.remove(); }
+}
+
+async function renderImage(kind: 'rad' | 'lab', html: string, p: ReqPatient | null | undefined, date: string): Promise<ReqImage> {
+  // اسم الملف بحروف إنجليزي بس (بعض تطبيقات المعرض بتتلخبط في الأسماء العربي)
+  const name = `${kind === 'rad' ? 'Radiology-Request' : 'Laboratory-Request'}-${(p?.fileNo || '').replace(/[^A-Za-z0-9-]/g, '') || 'patient'}-${date}-${Date.now().toString().slice(-5)}.png`;
+  return renderLetterImage(html, name);
 }
 
 /** تجهيز صورة الطلب مقدمًا (بتتنادي من الشاشة بعد ما الاختيارات تهدى) */

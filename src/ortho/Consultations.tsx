@@ -19,6 +19,7 @@ import { IMAGING_KIND, IMAGING_STATUS, REGIONS, SIDE, isIncomplete, isUnlinked, 
 import { printRx } from './printRx';
 import { openPrintWindow, printHtml } from '../utils/printDoc';
 import { RequestForms } from './RequestForms';
+import { prepareReportImage, readyReportImage, deliverReportImage, reportFields, reportHtml } from './reportData';
 import { applyRequestForms, deliverRequestImage, labOthers, prepareRequestImage, readyRequestImage, requestHtml } from './requestData';
 import { DiagnosisOutput } from './DiagnosisOutput';
 import { ExerciseSendModal, useCanSendExercises } from './ExerciseSend';
@@ -101,7 +102,7 @@ function Section({ icon, title, children, aside }: { icon: string; title: string
 // «كشف الطبيب» بيتسمى بالمنطقة: شيت الطبيب بيتحدد من مكان الألم في الشيت العام (regionSheets)
 // ١٠/١١: «فحص سريع» رقم 2 قبل «متابعة المريض» (3)، و«موعد المتابعة» الأخير (طلب الدكتور)
 // ١١/١١: تاب «فحص سريع» اتشال (طلب العيادة) — البيانات القديمة (qe.*) لسه محفوظة في الكشف
-const TABS = [['nurse', 'الشيت العام'], ['nursing', 'متابعة المريض'], ['doctor', 'كشف الطبيب'], ['files', 'الأشعة والتحاليل'], ['inj', 'الحقن'], ['plan', 'الخطة العلاجية'], ['rx', 'الأدوية والروشتة'], ['appt', 'موعد المتابعة']] as const;
+const TABS = [['nurse', 'الشيت العام'], ['nursing', 'متابعة المريض'], ['doctor', 'كشف الطبيب'], ['files', 'الأشعة والتحاليل'], ['inj', 'الحقن'], ['plan', 'الخطة العلاجية'], ['rx', 'الأدوية والروشتة'], ['appt', 'موعد المتابعة'], ['report', 'التقارير']] as const; // ١٢/١١: «التقارير» (إفادة طبية) آخر تاب
 type Tab = typeof TABS[number][0];
 
 // appointmentId = الزيارة اللي التشخيص الجديد بيتربط بيها (من «بانتظار التشخيص»)؛ من غيرها بيتربط بزيارة النهارده المفتوحة للمريض لو فيه
@@ -164,6 +165,16 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
   const sheet = normSheet(c.sheet);
   const changeSheet = (f: (s: typeof sheet) => typeof sheet) => setC((x) => ({ ...x, sheet: f(normSheet(x.sheet)) }));
   const sum = sheetSummary(sheet, c.side);
+  // ١٢/١١: «التقارير» — خانات الإفادة الطبية (rep.* في الشيت) والصورة بتتجهز مقدمًا وانت في التاب
+  const patientOfRef = useRef<() => ReturnType<typeof db.patient> | null>(() => null);
+  const rf = reportFields(sheet, { date: c.date, diagnosis: sum.diagnosis || c.diagnosis || '', followUp: c.followUp, today: todayYmd() });
+  const setRep = (k: string, v: string) => changeSheet((x) => ({ ...x, txt: { ...x.txt, [k]: v } }));
+  const rfKey = JSON.stringify(rf);
+  useEffect(() => {
+    if (tab !== 'report') return;
+    const t = setTimeout(() => { void prepareReportImage(rf, patientOfRef.current()).catch(() => undefined); }, 600);
+    return () => clearTimeout(t);
+  }, [tab, rfKey]); // eslint-disable-line react-hooks/exhaustive-deps
   // شيتات الطبيب: من مكان الألم في الشيت العام + اللي اتكتب فيه + اللي الطبيب ضافه
   const active = activeSheets(sheet);
   const usActive = US_SHEETS.filter((d) => sheet.on.includes(`us|${d.prefix}`) || usFilled(sheet, d));
@@ -207,6 +218,7 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
   const ok = !!c.patientId || (unlinked && isTripleName(pendingInfo.name));
   const pseudo = unlinked ? ({ fullName: pendingInfo.name, phone: pendingInfo.phone ?? '', fileNo: '' } as unknown as NonNullable<ReturnType<typeof db.patient>>) : null;
   const patientOf = () => (c.patientId ? db.patient(c.patientId) : pseudo);
+  patientOfRef.current = patientOf;
   // تشخيص فاضي: مفيش أي بيانات طبية (اسم المريض وبياناته الأساسية مابيتحسبوش) — مايتحفظش «مكتمل»
   const nothingEntered = !(sum.complaint || sum.diagnosis || sum.examination || sum.history || sum.plan || initial?.complaint?.trim() || initial?.diagnosis?.trim() || initial?.examination?.trim() || initial?.history?.trim()
     || c.plan.trim() || c.medications.some((m) => m.name.trim()) || c.labs.length || c.imagingRequests.some((x) => x.region.trim()) || c.attachments.length);
@@ -534,6 +546,47 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           </section>
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('rx')}>رجوع: الأدوية والروشتة</Button>
+            <Button variant="outline" icon="chevronLeft" onClick={() => goTab('report')}>التالي: التقارير</Button>
+            <Button icon="check" loading={busy} disabled={!ok} onClick={() => save(false)}>حفظ الكشف</Button>
+          </div>
+        </>}
+
+        {/* ١٢/١١: «التقارير» — إفادة طبية على ورقة العيادة: طباعة / حفظ صورة على الموبايل / واتساب (محادثة فاضية وتبعت الصورة) */}
+        {tab === 'report' && <>
+          <section className="plan-part rep-form">
+            <h3 className="plan-part__h">إفادة طبية</h3>
+            <div className="rep-grid">
+              <label className="field"><span>تاريخ حضور المريض</span><input className="input" type="date" value={rf.visitDate} onChange={(e) => setRep('rep.visit', e.target.value)} /></label>
+              <label className="field"><span>إعادة العرض بتاريخ</span><input className="input" type="date" value={rf.nextDate} onChange={(e) => setRep('rep.next', e.target.value)} /></label>
+              <label className="field"><span>تاريخ إصدار التقرير</span><input className="input" type="date" value={rf.issueDate} onChange={(e) => setRep('rep.issue', e.target.value)} /></label>
+            </div>
+            <label className="field"><span>تبيّن أن المريض يعاني من</span><textarea className="input" rows={2} dir="auto" value={rf.diagnosis} onChange={(e) => setRep('rep.dx', e.target.value)} placeholder="التشخيص" /></label>
+            <label className="field"><span>ويحتاج إلى</span><textarea className="input" rows={2} dir="auto" value={rf.needs} onChange={(e) => setRep('rep.needs', e.target.value)} placeholder="مثلًا: راحة 14 يوم وجلسات علاج طبيعي" /></label>
+            <div className="out-actions">
+              <button type="button" className="out-act" onClick={() => void printHtml(reportHtml(rf, patientOf()), openPrintWindow())}>
+                <Icon name="print" size={22} /><b>طباعة</b><small>على الطابعة على طول</small>
+              </button>
+              <button type="button" className="out-act" onClick={async () => {
+                const say = (r: string) => { if (r === 'saved') toast.success(/Android/i.test(navigator.userAgent) ? 'اتحفظت الصورة في معرض الصور — ألبوم «Download»' : 'اتحفظت صورة التقرير على الجهاز'); };
+                const ready = readyReportImage(rf, patientOf());
+                if (ready) { say(deliverReportImage(ready)); return; }
+                try { say(deliverReportImage(await prepareReportImage(rf, patientOf()))); } catch (e) { toast.error((e as Error).message); }
+              }}>
+                <Icon name="download" size={22} /><b>تحميل على الموبايل</b><small>صورة في معرض الصور</small>
+              </button>
+              <button type="button" className="out-act out-act--wa" onClick={() => {
+                // محادثة فاضية مع المريض — الطبيب بيبعت صورة التقرير بنفسه
+                const pt = c.patientId ? db.patient(c.patientId) : null;
+                const ph = waPhone(pt ? whatsappNumber(pt) || pt.phone : (pendingInfo.phone ?? ''));
+                if (!ph) { toast.error('مفيش رقم موبايل للمريض.'); return; }
+                window.open(`https://wa.me/${ph}`, '_blank', 'noopener');
+              }}>
+                <Icon name="share" size={22} /><b>إرسال واتساب</b><small>يفتح محادثة المريض وتبعت الصورة</small>
+              </button>
+            </div>
+          </section>
+          <div className="sh-next">
+            <Button variant="outline" icon="chevron" onClick={() => goTab('appt')}>رجوع: موعد المتابعة</Button>
             <Button icon="check" loading={busy} disabled={!ok} onClick={() => save(false)}>حفظ الكشف</Button>
           </div>
         </>}

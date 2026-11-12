@@ -2122,3 +2122,10 @@ html[dir="rtl"] .table td.num, html[dir="rtl"] .table th.num { text-align: right
 .pg-dxb__side { display: inline-flex; gap: 4px; }
 .pg-dxb__chips { display: flex; flex-wrap: wrap; gap: 5px; }
 @media (max-width: 520px) { .pg-dxb { grid-template-columns: minmax(0, 1fr); } }
+
+/* ١٢/١١: تاب «التقارير» */
+.rep-form { display: grid; gap: 10px; }
+.rep-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.rep-form .field > span { display: block; font-weight: 700; margin-bottom: 4px; color: var(--brand-700); }
+.out-act--wa { border-color: #25d366 !important; }
+.out-act--wa .icon { color: #128c4b; }

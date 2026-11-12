@@ -3,8 +3,8 @@ import { useRef, useState, type ReactNode } from 'react';
 import { Button } from '../components/ui';
 import { Icon } from '../utils/icons';
 import { useToast } from '../hooks/useToast';
-import { IMAGING_KIND, IMAGING_STATUS, ortho, type Attachment, type ImagingKind, type ImagingRequest, type Medication, type RxData } from './data';
-import { LAB_GROUPS, XRAY_VIEWS, medCatalog, type MedPreset } from './clinicalLists';
+import { IMAGING_KIND, IMAGING_STATUS, ortho, type Attachment, type ImagingKind, type ImagingRequest, type Medication, type RxData, type RxTemplate } from './data';
+import { LAB_GROUPS, MED_DOSES, MED_DURATIONS, MED_FREQS, MED_NOTES, XRAY_VIEWS, medCatalog, type MedPreset } from './clinicalLists';
 import { useMedBank } from './medBank';
 import { AttachmentThumbs } from './Consultations';
 import { IconBtn, Tone } from './kit';
@@ -40,10 +40,6 @@ function Section({ icon, title, children, aside }: { icon: string; title: string
 }
 
 // اختيارات خانات الدواء في الروشتة — و«أخرى…» بتفتح كتابة حرة، والقيمة المحفوظة بأي صيغة بتفضل ظاهرة
-const MED_DOSES = ['قرص', 'نصف قرص', 'قرصين', 'كبسولة', 'كبسولتين', 'كيس', 'أمبول عضل', 'أمبول وريد', 'حقنة تحت الجلد', 'ملعقة صغيرة 5 مل', 'ملعقة كبيرة 15 مل', 'نقط', 'لبوس', 'دهان', 'لصقة'];
-const MED_FREQS = ['مرة يوميًا', 'مرتين يوميًا', '3 مرات يوميًا', '4 مرات يوميًا', 'كل 6 ساعات', 'كل 8 ساعات', 'كل 12 ساعة', 'مرة كل يومين', 'مرة أسبوعيًا', 'مرتين أسبوعيًا', 'مرة شهريًا', 'عند اللزوم'];
-const MED_DURATIONS = ['يوم واحد', '3 أيام', '5 أيام', '7 أيام', '10 أيام', '14 يوم', '3 أسابيع', 'شهر', 'شهرين', '3 شهور', '6 شهور', 'مستمر'];
-const MED_NOTES = ['بعد الأكل', 'قبل الأكل', 'مع الأكل', 'على الريق', 'قبل النوم', 'صباحًا', 'مساءً', 'عند الألم', 'مع كوب ماء كبير', 'على مكان الألم'];
 const OTHER_CHOICE = '__other__';
 function MedChoice({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (v: string) => void }) {
   const [typing, setTyping] = useState(false);
@@ -109,6 +105,15 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
   const toggleMed = (p: MedPreset) => set('medications', hasMed(p.name)
     ? c.medications.filter((m) => norm(m.name) !== norm(p.name))
     : [...c.medications.filter((m) => m.name.trim()), { ...emptyMed(), name: p.name, dose: p.dose, frequency: p.frequency, duration: p.duration, notes: p.notes ?? '' }]);
+  // روشتات جاهزة (قسم الأدوية): ضغطة بتنزّل كل أدويتها؛ لو كلها في الروشتة الضغطة بتشيلها
+  const templates = ortho.list('rx_templates').filter((t) => t.items.length).sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+  const tplOn = (t: RxTemplate) => t.items.every((m) => hasMed(m.name));
+  const applyTpl = (t: RxTemplate) => {
+    if (tplOn(t)) { const ks = new Set(t.items.map((m) => norm(m.name))); set('medications', c.medications.filter((m) => !ks.has(norm(m.name)))); return; }
+    const add = t.items.filter((m) => m.name.trim() && !hasMed(m.name)).map((m) => ({ ...emptyMed(), ...m, notes: m.notes ?? '' }));
+    set('medications', [...c.medications.filter((m) => m.name.trim()), ...add]);
+    toast.success(`نزلت روشتة «${t.name}» — ${add.length} دواء`);
+  };
   const medGroups = new Map<string, MedPreset[]>();
   for (const p of medCatalog()) {
     // من غير بحث: اللي الطبيب اختاره يظهر قدامه بس — البحث بيدور في البنك كله
@@ -169,6 +174,16 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
   const medsSec = (
     <Section key="meds" icon="receipt" title={rxOnly ? 'الأدوية' : 'العلاج — الروشتة'} aside={<Button size="sm" variant="outline" icon="plus" onClick={() => set('medications', [...c.medications, emptyMed()])}>إضافة دواء</Button>}>
       {/* ١٢/١١: مربعين — (1) الأدوية (2) جرعات الدواء المختار ← «إضافة للروشتة» بتنزّله في القايمة تحت */}
+      {templates.length > 0 && (
+        <div className="cx-tpl">
+          <span className="cx-tpl__t">روشتات جاهزة</span>
+          {templates.map((t) => { const on = tplOn(t); return (
+            <button key={t.id} type="button" className={`cx-chip${on ? ' is-on' : ''}`} aria-pressed={on} title={t.items.map((m) => m.name).join(' + ')} onClick={() => applyTpl(t)}>
+              {on && <Icon name="check" size={13} />} {t.name} <small className="num">({t.items.length})</small>
+            </button>
+          ); })}
+        </div>
+      )}
       <div className="cx-pick">
         <div className="cx-pick__p">
           <div className="cx-pick__h"><span className="cx-pick__n">1</span> اختار الدواء</div>

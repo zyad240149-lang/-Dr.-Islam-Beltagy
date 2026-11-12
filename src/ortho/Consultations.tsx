@@ -32,6 +32,7 @@ const patientAge = (id: string) => { const b = id ? db.patient(id)?.birthDate : 
 import { InjectionList, InjectionModal } from './Injections';
 import { PatientMedicalFiles } from './PatientMedicalFiles';
 import { RxEditor } from './Rx';
+import { RxTemplatePicker } from './RxTemplates';
 import { PainHint, PrevRx } from './history';
 import type { RxData } from './data';
 import { FollowUpStep, FollowUpsOfConsult, savePendingFollowUps, useFuCan, type FuDraft } from './FollowUps';
@@ -542,6 +543,14 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
             })()}
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
               <Button icon="receipt" onClick={() => setRxOpen(true)}>فتح الروشتة</Button>
+              {/* روشتة جاهزة: أدويتها بتنزل في الكشف (اللي مش موجود بس) وبعدين بتفتح الروشتة تراجعها وتحفظ */}
+              <RxTemplatePicker onPick={(t) => {
+                const has = (n: string) => c.medications.some((m) => m.name.trim().toLowerCase() === n.trim().toLowerCase());
+                const add = t.items.filter((m) => m.name.trim() && !has(m.name)).map((m) => ({ ...m, notes: m.notes ?? '' }));
+                setC((x) => ({ ...x, medications: [...x.medications.filter((m) => m.name.trim()), ...add] }));
+                toast.success(add.length ? `نزلت روشتة «${t.name}» — ${add.length} دواء، راجعها واحفظ` : `أدوية «${t.name}» موجودة في الروشتة فعلًا`);
+                setRxOpen(true);
+              }} />
               <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => printRx(c, patientOf())}>طباعة الروشتة</Button>
             </div>
           </section>

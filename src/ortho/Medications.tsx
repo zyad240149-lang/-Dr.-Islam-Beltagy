@@ -7,6 +7,7 @@ import { MED_PRESETS, medCatalog, type MedPreset } from './clinicalLists';
 import { ortho, useOrthoVersion, type MedItem } from './data';
 import { Field, IconBtn, LoadState, PageHead, SearchBox, confirmDelete, useClinicalCan, useRun } from './kit';
 import { useMedBank } from './medBank';
+import { RxTemplatesView, emptyTemplate } from './RxTemplates';
 
 type Draft = MedPreset & { id?: string };
 type Row = Omit<MedItem, 'id'> & { id?: string };
@@ -104,7 +105,8 @@ export default function Medications() {
   useOrthoVersion();
   const perm = useClinicalCan('medications');
   const { run, busy } = useRun();
-  const [view, setView] = useState<'shown' | 'bank'>('shown');
+  const [view, setView] = useState<'shown' | 'bank' | 'templates'>('shown');
+  const [tplEdit, setTplEdit] = useState<ReturnType<typeof emptyTemplate> | null>(null);
   const [q, setQ] = useState('');
   const [edit, setEdit] = useState<Draft | null>(null);
   const [groupEdit, setGroupEdit] = useState<string | null>(null); // '' = مجموعة جديدة
@@ -139,9 +141,10 @@ export default function Medications() {
 
   return (
     <div className="page">
-      <PageHead title="الأدوية" sub="ضيف أي دواء في البنك، واختار اللي يظهر قدامك في الروشتة، وقسّمهم مجموعات">
-        {perm.add && <Button variant="outline" icon="plus" onClick={() => setGroupEdit('')}>مجموعة جديدة</Button>}
-        {perm.add && <Button icon="plus" onClick={() => setEdit(emptyMed())}>إضافة دواء للبنك</Button>}
+      <PageHead title="الأدوية" sub="ضيف أي دواء في البنك، واختار اللي يظهر قدامك في الروشتة، وقسّمهم مجموعات — أو اعمل روشتات جاهزة تنزّلها في التشخيص بضغطة">
+        {perm.add && view === 'templates' && <Button icon="plus" onClick={() => setTplEdit(emptyTemplate())}>روشتة جاهزة جديدة</Button>}
+        {perm.add && view !== 'templates' && <Button variant="outline" icon="plus" onClick={() => setGroupEdit('')}>مجموعة جديدة</Button>}
+        {perm.add && view !== 'templates' && <Button icon="plus" onClick={() => setEdit(emptyMed())}>إضافة دواء للبنك</Button>}
       </PageHead>
       <div className="seg dx-views" role="tablist" aria-label="أقسام الأدوية">
         <button type="button" role="tab" aria-selected={view === 'shown'} className={`seg__btn ${view === 'shown' ? 'active' : ''}`} onClick={() => setView('shown')}>
@@ -150,11 +153,14 @@ export default function Medications() {
         <button type="button" role="tab" aria-selected={view === 'bank'} className={`seg__btn ${view === 'bank' ? 'active' : ''}`} onClick={() => setView('bank')}>
           بنك الأدوية <span className="badge badge--brand num">{Math.max(all.length, bank.total)}</span>
         </button>
+        <button type="button" role="tab" aria-selected={view === 'templates'} className={`seg__btn ${view === 'templates' ? 'active' : ''}`} onClick={() => setView('templates')}>
+          روشتات جاهزة <span className="badge badge--brand num">{ortho.list('rx_templates').length}</span>
+        </button>
       </div>
       <section className="card">
-        <div className="filter-bar"><div className="field"><SearchBox value={q} onChange={setQ} placeholder={view === 'bank' ? 'ابحث بالاسم التجاري أو المادة الفعالة (مثال: diclofenac)' : 'ابحث باسم الدواء أو المجموعة'} /></div></div>
+        <div className="filter-bar"><div className="field"><SearchBox value={q} onChange={setQ} placeholder={view === 'templates' ? 'ابحث باسم الروشتة أو دواء فيها' : view === 'bank' ? 'ابحث بالاسم التجاري أو المادة الفعالة (مثال: diclofenac)' : 'ابحث باسم الدواء أو المجموعة'} /></div></div>
         <div className="card__body">
-          <LoadState kind="medications">
+          {view === 'templates' ? <RxTemplatesView q={q} editing={tplEdit} setEditing={setTplEdit} /> : <LoadState kind="medications">
             {!list.length && !extra.length && !(view === 'bank' && (bankHits.length || bank.loading)) && <EmptyState icon="search" title={term ? 'مفيش أدوية بالاسم ده' : 'مفيش أدوية ظاهرة قدامك'} text={term ? undefined : 'افتح «بنك الأدوية» وعلّم على اللي عايزه يظهر.'} />}
             {[...byGroup].map(([g, meds]) => (
               <div key={g} style={{ marginBottom: 16 }}>
@@ -212,7 +218,7 @@ export default function Medications() {
                 ))}
               </div>
             )}
-          </LoadState>
+          </LoadState>}
         </div>
       </section>
       {edit && <MedModal initial={edit} groups={groups} onClose={() => setEdit(null)} />}

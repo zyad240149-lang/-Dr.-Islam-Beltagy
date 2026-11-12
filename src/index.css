@@ -875,6 +875,22 @@ textarea.input { height: auto; padding-block: 10px; resize: vertical; line-heigh
 .cx-chip { height: 30px; padding: 0 11px; border-radius: var(--r-pill); border: 1px solid var(--line); background: var(--surface); font: inherit; font-size: 13.5px; font-weight: 600; color: var(--text); cursor: pointer; transition: background .15s, color .15s, border-color .15s; }
 .cx-chip:hover { border-color: var(--brand-100); color: var(--brand-700); }
 .cx-chip.is-on { background: var(--brand-700); border-color: var(--brand-700); color: #fff; }
+/* روشتات جاهزة فوق اختيار الدواء */
+.cx-tpl { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 12px; padding: 10px 12px; border: 1px dashed var(--brand-100); border-radius: var(--r-md, 10px); background: var(--surface-2, var(--surface)); }
+.cx-tpl__t { font-weight: 700; font-size: 13.5px; color: var(--brand-700); margin-inline-end: 4px; }
+.cx-tpl .cx-chip { display: inline-flex; align-items: center; gap: 4px; }
+.cx-tpl .cx-chip small { opacity: .7; font-weight: 500; }
+/* نافذة الروشتة الجاهزة */
+.rxt-grid { display: grid; grid-template-columns: 1fr 1.3fr; gap: 16px; margin-top: 12px; }
+@media (max-width: 760px) { .rxt-grid { grid-template-columns: 1fr; } }
+.rxt-h { display: block; margin-bottom: 8px; }
+.rxt-list { max-height: 360px; overflow-y: auto; margin-top: 8px; }
+.rxt-pick { display: flex; gap: 8px; align-items: center; padding: 6px 2px; cursor: pointer; }
+.rxt-item { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px; }
+.rxt-item__top { display: flex; align-items: center; gap: 6px; }
+.rxt-item__top b { flex: 1; }
+.rxt-item__f { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 6px; }
+
 .cx-pain { display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); gap: 4px; max-width: 520px; }
 .cx-pain__b { height: 34px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); font: inherit; font-weight: 700; color: var(--text); cursor: pointer; }
 .cx-pain__b--lo.is-on { background: var(--ok); border-color: var(--ok); color: #fff; }
@@ -2225,3 +2241,10 @@ html[dir="rtl"] .table td.num, html[dir="rtl"] .table th.num { text-align: right
 /* «فتح موعد إضافي» */
 .dsch-extra { display: flex; gap: 8px; align-items: center; justify-content: center; margin-top: 12px; padding: 10px; border: 1px dashed var(--line); border-radius: 12px; }
 .dsch-extra .input { width: 140px; }
+/* زرار «روشتات جاهزة» جنب «فتح الروشتة» */
+.rxt-menu { position: relative; }
+.rxt-menu__bg { position: fixed; inset: 0; z-index: 40; }
+.rxt-menu__pop { position: absolute; inset-inline-start: 0; top: calc(100% + 6px); z-index: 41; min-width: 280px; max-width: min(420px, 90vw); max-height: 340px; overflow-y: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.12); padding: 6px; }
+.rxt-menu__it { display: block; width: 100%; text-align: start; padding: 8px 10px; border: 0; border-radius: 8px; background: none; font: inherit; color: var(--text); cursor: pointer; }
+.rxt-menu__it:hover { background: var(--brand-50, rgba(0,0,0,.04)); }
+.rxt-menu__it span { display: block; font-size: 12.5px; color: var(--muted, #667); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

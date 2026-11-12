@@ -66,6 +66,8 @@ export interface InjectionSheet {
 }
 export interface Injection { id: string; patientId: string; appointmentId?: string | null; date: string; sheet: InjectionSheet; createdBy?: string | null }
 // قايمة أسامي الأدوية (قسم «الأدوية» — مش مخزون): اقتراحات الروشتة
+// روشتة جاهزة (هجرة 972): اسم + أدوية بجرعاتها — بتنزل كلها في روشتة الكشف بضغطة
+export interface RxTemplate { id: string; name: string; items: Medication[]; notes: string }
 export interface MedItem { id: string; name: string; group: string; dose: string; frequency: string; duration: string; notes?: string; shown: boolean; scientificName?: string }
 // التمرينات العلاجية: مكتبة تمرينات (اسم + وصف + صور/فيديوهات) وخطة تمرينات لكل مريض مربوطة بتشخيصه
 export interface ExerciseMedia { path: string; url: string; type: string; name: string }
@@ -112,16 +114,17 @@ const COLUMNS: Record<Kind, string[]> = {
   nursing: ['patient_id', 'appointment_id', 'date', 'sheet'],
   injections: ['patient_id', 'appointment_id', 'date', 'sheet'],
   medications: ['name', 'group', 'dose', 'frequency', 'duration', 'notes', 'shown'],
+  rx_templates: ['name', 'items', 'notes'],
   exercises: ['name', 'group', 'description', 'media'],
   exercise_plans: ['patient_id', 'consultation_id', 'date', 'exercise_ids', 'notes', 'share_token'],
   follow_ups: ['patient_id', 'consultation_id', 'doctor_id', 'date', 'time', 'reason', 'notes', 'status', 'appointment_id', 'kind', 'pain_score'],
   pain_scores: [], prescriptions: [], prescription_items: [], // سجلات بيكتبها الخادم بالتريجرات (هجرة 964) — قراية بس
   files: [], // ملفات المريض (patient_files) — قراية بس هنا؛ الرفع والحذف من db.uploadPatientFile / deletePatientFile
 };
-export type Kind = 'consultations' | 'imaging' | 'surgeries' | 'surgery_stages' | 'surgery_payment_stages' | 'fractures' | 'nursing' | 'injections' | 'medications' | 'exercises' | 'exercise_plans' | 'follow_ups' | 'files' | 'pain_scores' | 'prescriptions' | 'prescription_items';
+export type Kind = 'consultations' | 'imaging' | 'surgeries' | 'surgery_stages' | 'surgery_payment_stages' | 'fractures' | 'nursing' | 'injections' | 'medications' | 'rx_templates' | 'exercises' | 'exercise_plans' | 'follow_ups' | 'files' | 'pain_scores' | 'prescriptions' | 'prescription_items';
 /** الأنواع اللي الخادم بيكتبها لوحده من التريجرات — بتتحمّل تاني بعد حفظ مصدرها */
 const DERIVED: Partial<Record<Kind, Kind[]>> = { consultations: ['pain_scores', 'prescriptions', 'prescription_items'], nursing: ['pain_scores', 'prescriptions', 'prescription_items'], follow_ups: ['pain_scores'] };
-type Of<K extends Kind> = K extends 'files' ? Record<string, unknown> : K extends 'pain_scores' ? PainScore : K extends 'prescriptions' ? Prescription : K extends 'prescription_items' ? PrescriptionItem : K extends 'follow_ups' ? FollowUp : K extends 'exercises' ? Exercise : K extends 'exercise_plans' ? ExercisePlan : K extends 'medications' ? MedItem : K extends 'consultations' ? Consultation : K extends 'imaging' ? Imaging : K extends 'surgeries' ? Surgery : K extends 'surgery_stages' ? SurgeryStage : K extends 'surgery_payment_stages' ? SurgeryPaymentStage : K extends 'nursing' ? Nursing : K extends 'injections' ? Injection : Fracture;
+type Of<K extends Kind> = K extends 'files' ? Record<string, unknown> : K extends 'pain_scores' ? PainScore : K extends 'prescriptions' ? Prescription : K extends 'prescription_items' ? PrescriptionItem : K extends 'follow_ups' ? FollowUp : K extends 'exercises' ? Exercise : K extends 'exercise_plans' ? ExercisePlan : K extends 'medications' ? MedItem : K extends 'rx_templates' ? RxTemplate : K extends 'consultations' ? Consultation : K extends 'imaging' ? Imaging : K extends 'surgeries' ? Surgery : K extends 'surgery_stages' ? SurgeryStage : K extends 'surgery_payment_stages' ? SurgeryPaymentStage : K extends 'nursing' ? Nursing : K extends 'injections' ? Injection : Fracture;
 type Row = Record<string, unknown>;
 
 /** اسم الجدول: ملفات المريض جدولها patient_files (مش ortho_) — بتتحمّل وتتحفظ على الجهاز زي باقي السجلات الطبية عشان تفتح من غير إنترنت */
@@ -218,7 +221,7 @@ export function hydrateOrthoCache(x: Partial<Record<Kind, Row[]>> | null) {
   if (x) for (const k of Object.keys(x) as Kind[]) if (Array.isArray(x[k])) { server[k] = x[k]!; cache[k] = overlay(k, x[k]!); }
   bump();
 }
-const KIND_LABEL: Record<Kind, string> = { consultations: 'كشف', imaging: 'أشعة', surgeries: 'عملية', surgery_stages: 'مرحلة عملية', surgery_payment_stages: 'مرحلة دفع', fractures: 'كسر/جبس', nursing: 'متابعة تمريض', injections: 'حقن', medications: 'دواء', exercises: 'تمرين', exercise_plans: 'خطة تمرينات', follow_ups: 'موعد متابعة', files: 'ملف', pain_scores: 'درجة ألم', prescriptions: 'روشتة', prescription_items: 'دواء في روشتة' };
+const KIND_LABEL: Record<Kind, string> = { consultations: 'كشف', imaging: 'أشعة', surgeries: 'عملية', surgery_stages: 'مرحلة عملية', surgery_payment_stages: 'مرحلة دفع', fractures: 'كسر/جبس', nursing: 'متابعة تمريض', injections: 'حقن', medications: 'دواء', rx_templates: 'روشتة جاهزة', exercises: 'تمرين', exercise_plans: 'خطة تمرينات', follow_ups: 'موعد متابعة', files: 'ملف', pain_scores: 'درجة ألم', prescriptions: 'روشتة', prescription_items: 'دواء في روشتة' };
 /**
  * حفظ على الجهاز ← طابور المزامنة. إنشاء: بمعرّف ثابت من الجهاز (إعادة الإرسال مابتكررش). تعديل: بنحفظ قيم الخادم وقت التعديل (base)
  * ولو حد غيّر نفس الحقول على الخادم قبل المزامنة ← «تعارض» يتعرض للطبيب يقرر (مفيش كتابة فوق تشخيص بصمت).

@@ -131,7 +131,7 @@ export function requestPageHtml(kind: 'rad' | 'lab', s: ExamSheet, p: ReqPatient
       + sec('Side', radSide(s) ? chips([radSide(s)]) : '')
       + sec('Body Region', radRegions(s).length ? chips(radRegions(s)) : '')
       // ١٢/١١: ورق X-Ray / MRI / CT بقى بيطبع على صورة نموذجه (requestSheets.ts) — هنا الطب النووي وكثافة العظام بس
-      + RAD_FORMS.filter((f) => !['xr', 'mr', 'ct'].includes(f.id)).map((f) => {
+      + RAD_FORMS.map((f) => { // ١٢/١١: الطباعة رجعت ورقة العيادة زي الروشتة — المتعلّم بس من كل النماذج (X-Ray/MRI/CT/…)
         const p = radPicked(s, f);
         if (!p.count && !p.extras.length && !p.notes) return '';
         const rows = p.rows.map(([r, o]) => (o.length ? `<div class="grp"><b>${esc(r)}</b>${chips(o)}</div>` : `<div class="grp">${chips([r])}</div>`)).join('');

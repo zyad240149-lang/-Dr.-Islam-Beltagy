@@ -22,7 +22,8 @@ import { RequestForms } from './RequestForms';
 import { PhysioReferralTab } from './PhysioReferralTab';
 import { prepareReportImage, readyReportImage, deliverReportImage, reportFields, reportHtml } from './reportData';
 import { applyRequestForms, labOthers } from './requestData';
-import { deliverReqImage, prepareReqImage, readyReqImage, reqKindHtml } from './requestSheets';
+// ١٢/١١: طباعة/صورة الأشعة والتحاليل = ورقة العيادة (زي الروشتة) باللي اتعلّم بس — مش صورة النموذج كاملة
+import { requestHtml as reqKindHtml, prepareRequestImage as prepareReqImage, readyRequestImage as readyReqImage, deliverRequestImage as deliverReqImage } from './requestData';
 import { DiagnosisOutput } from './DiagnosisOutput';
 import { ExerciseSendModal, useCanSendExercises } from './ExerciseSend';
 import { PlanGeneralSheet } from './PlanGeneralSheet';

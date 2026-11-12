@@ -18,7 +18,8 @@ const ageOf = (birth?: string | null) => {
 
 /** خانات التقرير من شيت الكشف — والفاضي بياخد من الكشف نفسه (التشخيص/ميعاد المتابعة/تاريخ الكشف) */
 export function reportFields(s: ExamSheet, d: { date: string; diagnosis?: string; followUp?: string | null; today: string }): ReportFields {
-  const t = (k: string) => (s.txt[k] ?? '').trim();
+  // ١٢/١١: القيمة زي ما اتكتبت بالظبط (من غير trim) — الـ trim كان بيشيل المسافة أول ما تتكتب فمكانش ينفع تكتب كلمتين
+  const t = (k: string) => { const v = s.txt[k] ?? ''; return v.trim() ? v : ''; };
   return {
     visitDate: t('rep.visit') || d.date,
     diagnosis: t('rep.dx') || (d.diagnosis ?? ''),

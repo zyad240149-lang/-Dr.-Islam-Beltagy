@@ -3,6 +3,7 @@
 import { fileNoText } from '../utils/phoneUtils';
 import { IMAGING_KIND, type Consultation } from './data';
 import { openPrintWindow, printHtml } from '../utils/printDoc';
+import { renderLetterImage, type ReqImage } from './requestData';
 
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
@@ -104,3 +105,18 @@ ${RX_CSS}
 export function printRx(c: Omit<Consultation, 'id' | 'patientId'>, p?: RxPatient | null, win?: Window | null, title?: string) {
   void printHtml(rxHtml(c, p, title), win === undefined ? openPrintWindow() : win);
 }
+
+// ١٢/١١: صورة الروشتة (نفس ورقة العيادة) — «تحميل على الموبايل» من تاب الروشتة؛ بتتجهز مقدمًا عشان الحفظ يحصل في نفس الضغطة
+let rxImg: ReqImage | null = null;
+let rxPending: Promise<ReqImage> | null = null;
+let rxPendingKey = '';
+export function prepareRxImage(c: Omit<Consultation, 'id' | 'patientId'>, p?: RxPatient | null): Promise<ReqImage> {
+  const html = rxPageHtml(c, p);
+  if (rxImg?.key === html) return Promise.resolve(rxImg);
+  if (rxPending && rxPendingKey === html) return rxPending;
+  rxPendingKey = html;
+  const name = `Prescription-${(p?.fileNo || '').replace(/[^A-Za-z0-9-]/g, '') || 'patient'}-${c.date}-${Date.now().toString().slice(-5)}.png`;
+  rxPending = renderLetterImage(html, name, `.rxp { width: 148mm; height: 210mm; }${RX_CSS}`, '.rxp').then((img) => { rxImg = img; return img; }).finally(() => { rxPending = null; });
+  return rxPending;
+}
+export const readyRxImage = (c: Omit<Consultation, 'id' | 'patientId'>, p?: RxPatient | null) => (rxImg?.key === rxPageHtml(c, p) ? rxImg : null);

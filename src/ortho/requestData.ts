@@ -218,7 +218,7 @@ const imgCache = new Map<'rad' | 'lab', ReqImage>();
 const pending = new Map<string, Promise<ReqImage>>();
 
 /** صورة PNG من صفحة على ورقة العيادة (.rqp) — مستخدمة في الطلبات والتقارير */
-export async function renderLetterImage(html: string, name: string, extraCss = ''): Promise<ReqImage> {
+export async function renderLetterImage(html: string, name: string, extraCss = '', sel = '.rqp'): Promise<ReqImage> {
   const host = document.createElement('div');
   host.style.cssText = 'position:fixed;left:-10000px;top:0;z-index:-1;background:#fff';
   host.innerHTML = `<style>${REQ_CSS}${extraCss}</style>${html}`;
@@ -227,7 +227,7 @@ export async function renderLetterImage(html: string, name: string, extraCss = '
     await Promise.race([document.fonts?.ready, new Promise((r) => setTimeout(r, 2000))]).catch(() => undefined);
     await Promise.all(Array.from(host.querySelectorAll('img')).map((img) => (img.complete ? null : new Promise((r) => { img.onload = r; img.onerror = r; }))));
     const { default: html2canvas } = await import('html2canvas');
-    const canvas = await html2canvas(host.querySelector('.rqp') as HTMLElement, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+    const canvas = await html2canvas(host.querySelector(sel) as HTMLElement, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
     const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/png'));
     if (!blob) throw new Error('تعذّر تجهيز الصورة');
     return { key: html, blob, dataUrl: canvas.toDataURL('image/png'), file: new File([blob], name, { type: 'image/png', lastModified: Date.now() }) };

@@ -16,7 +16,7 @@ import { VoiceDictation } from '../components/VoiceDictation';
 import { RegionSheetForm, SheetSwitch } from './RegionSheet';
 import { useToast } from '../hooks/useToast';
 import { IMAGING_KIND, IMAGING_STATUS, REGIONS, SIDE, isIncomplete, isUnlinked, ortho, useOrthoVersion, type Attachment, type Consultation, type Injection, type ImagingKind, type ImagingRequest, type Medication, type Side } from './data';
-import { printRx } from './printRx';
+import { prepareRxImage, printRx, readyRxImage } from './printRx';
 import { openPrintWindow, printHtml } from '../utils/printDoc';
 import { RequestForms } from './RequestForms';
 import { PhysioReferralTab } from './PhysioReferralTab';
@@ -179,6 +179,13 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
     const t = setTimeout(() => { void prepareReportImage(rf, patientOfRef.current()).catch(() => undefined); }, 600);
     return () => clearTimeout(t);
   }, [tab, rfKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  // صورة الروشتة بتتجهز مقدمًا وانت في تاب الروشتة
+  const rxKey = JSON.stringify([c.medications, c.labs, c.imagingRequests, c.plan, c.date, c.followUp, c.patientId]);
+  useEffect(() => {
+    if (tab !== 'rx' || !c.medications.some((m) => m.name.trim())) return;
+    const t = setTimeout(() => { void prepareRxImage(c, patientOfRef.current()).catch(() => undefined); }, 600);
+    return () => clearTimeout(t);
+  }, [tab, rxKey]); // eslint-disable-line react-hooks/exhaustive-deps
   // شيتات الطبيب: من مكان الألم في الشيت العام + اللي اتكتب فيه + اللي الطبيب ضافه
   const active = activeSheets(sheet);
   const usActive = US_SHEETS.filter((d) => sheet.on.includes(`us|${d.prefix}`) || usFilled(sheet, d));
@@ -552,6 +559,25 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
                 setRxOpen(true);
               }} />
               <Button variant="outline" icon="print" disabled={!c.patientId && !unlinked} onClick={() => printRx(c, patientOf())}>طباعة الروشتة</Button>
+            </div>
+            {/* ١٢/١١: الروشتة على الموبايل (صورة على ورقة العيادة) وواتساب المريض — زي التقارير */}
+            <div className="out-actions" style={{ marginTop: 12 }}>
+              <button type="button" className="out-act" disabled={!c.medications.some((m) => m.name.trim())} onClick={async () => {
+                const say = (r: string) => { if (r === 'saved') toast.success(/Android/i.test(navigator.userAgent) ? 'اتحفظت صورة الروشتة في معرض الصور — ألبوم «Download»' : 'اتحفظت صورة الروشتة على الجهاز'); };
+                const ready = readyRxImage(c, patientOf());
+                if (ready) { say(deliverReqImage(ready)); return; }
+                try { say(deliverReqImage(await prepareRxImage(c, patientOf()))); } catch (e) { toast.error((e as Error).message); }
+              }}>
+                <Icon name="download" size={22} /><b>حفظ على الموبايل</b><small>صورة الروشتة في معرض الصور</small>
+              </button>
+              <button type="button" className="out-act out-act--wa" onClick={() => {
+                const pt = c.patientId ? db.patient(c.patientId) : null;
+                const ph = waPhone(pt ? whatsappNumber(pt) || pt.phone : (pendingInfo.phone ?? ''));
+                if (!ph) { toast.error('مفيش رقم موبايل للمريض.'); return; }
+                window.open(`https://wa.me/${ph}`, '_blank', 'noopener');
+              }}>
+                <Icon name="share" size={22} /><b>واتساب المريض</b><small>يفتح محادثة المريض وتبعت صورة الروشتة</small>
+              </button>
             </div>
           </section>
           {requestsFold}

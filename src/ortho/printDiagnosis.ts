@@ -5,6 +5,7 @@ import { DOCTOR } from '../landing/content';
 import { fileNoText } from '../utils/phoneUtils';
 import { fmtDate } from '../utils/format';
 import { SIDE, type Consultation, type ExamSheet } from './data';
+import { planSheetSummary } from './PlanGeneralSheet';
 import { GEN_BOXES, SHEET_LISTS as L, bmiOf, bmiClass, bmiText, normSheet, painLabel, sheetHasContent } from './ExamSheet';
 import { RX_CSS, RX_FONT_HREF, rxPageHtml } from './printRx';
 import { DX_SHEETS, FDX, PAIN_FOR_DD, dxGroupKey, dxSub, type DxSheetId } from './dxCatalog';
@@ -80,7 +81,7 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
   // ---------- صفحة 1: الشيت العام ----------
   const meds = s.meds.filter((m) => m.name.trim());
   const pain = s.pain.length ? `<ul>${s.pain.map((k) => `<li>${esc(painLabel(k))}</li>`).join('')}</ul>` : compact ? '' : '<div class="ln"><span>&nbsp;</span></div>';
-  const vas = compact && c.painScore === '' ? '' : `<div class="vas">${Array.from({ length: 11 }, (_, n) => `<span class="${c.painScore === n ? 'on' : ''}">${n}</span>`).join('')}</div>`;
+  const vas = compact && (c.painScore === '' || c.painScore == null) ? '' : `<div class="vas">${Array.from({ length: 11 }, (_, n) => `<span class="${c.painScore === n ? 'on' : ''}">${n}</span>`).join('')}</div>`;
   const visitCols = [
     lbl('الشكوى', cks('n.cc', L.N_CC)) + line('أخرى', v('n.cc.other')),
     lbl('مكان الألم', pain) + lbl('شدة الألم حاليًا (من 10)', vas),
@@ -103,13 +104,16 @@ function sheetPages(c: DxConsult, p: DxPatient | null | undefined, visitNo?: num
       // التاريخ المرضي العام لمشاكل العظام والمفاصل (GEN_BOXES)
       ...GEN_BOXES.map((b, i) => box(6 + i, b.title, b.f.map((f) => ('g' in f ? lbl(f.label ?? '', wrap(f.one ? 'row' : 'cols2', cks(f.g, f.items) + (f.also ?? []).map((x) => cks(x.g, x.items)).join(''))) + (f.other ? line('أخرى', v(f.g + '.other')) : '') : line(f.label, v(f.k)))).join('')
         + (b.id !== 'sum' ? line('ملاحظات', v(`n.bn.${b.id}`)) : ''), [b.wide && 'wide', b.id === 'rf' && 'red'].filter(Boolean).join(' '))),
+      // ١٢/١١: الشيت العام الجديد (التشخيص من الجسم، بداية الألم، الشكوى، مربعات التقييم…) — كان مش بيظهر خالص في التشخيص المحفوظ
+      (() => { const pgs = planSheetSummary(s); const ls = [...pgs.history.split('\n'), ...pgs.examination.split('\n')].filter((x) => x.trim()); return box(20, 'الشيت العام الجديد', ls.map((x) => { const i = x.indexOf(': '); return i > 0 ? line(x.slice(0, i), esc(x.slice(i + 2))) : line('', esc(x)); }).join(''), 'wide'); })(),
+      (() => { const ps = Object.entries(s.txt).filter(([k, x]) => k.startsWith('pr.') && x.trim()); const po = s.on.filter((o) => o.startsWith('pr.')); return po.length || ps.length ? box(21, 'تحويل علاج طبيعي (Physiotherapy Referral)', (po.length ? `<div class="row">${po.map((o) => ck(true, o.split('|')[1])).join('')}</div>` : '') + ps.map(([k, x]) => line(k.replace(/^pr\./, ''), esc(x))).join(''), 'wide') : ''; })(),
     ]);
 
   // ---------- صفحة 2: Hip & Knee ----------
   const rtLt = (k: string, unit = '') => [v(k + '.rt'), v(k + '.lt')].map((x) => `<td>${x && x + unit}</td>`).join('');
   const filled = (k: string) => !compact || !!(v(k + '.rt') || v(k + '.lt'));
   const sex = has('n.gender', 'ذكر') ? 'M' : has('n.gender', 'أنثى') ? 'F' : '';
-  const side = (compact ? L.X_SIDE.filter(([k]) => c.side === k) : L.X_SIDE).map(([k, l]) => ck(c.side === k, l)).join('');
+  const side = (compact ? (sheetFilled(s, 'hipknee') ? L.X_SIDE.filter(([k]) => c.side === k) : []) : L.X_SIDE).map(([k, l]) => ck(c.side === k, l)).join('');
   const derm = L.X_DERM.filter(([r]) => !compact || has('x.derm', `${r} Rt`) || has('x.derm', `${r} Lt`));
   const imgs = L.X_IMG.filter((m) => !compact || has('x.img', m) || v(`x.img.${m}`) || v(`x.img.${m}.date`));
   const drBar = `Patient Name: <b>${name || '—'}</b><span>Age: <b>${v('n.age') || '—'}</b></span>${compact && !sex ? '' : `<span>Sex: ${compact ? ck(true, sex) : ck(sex === 'M', 'M') + ck(sex === 'F', 'F')}</span>`}<span>Date: <b>${dmy(c.date)}</b></span><span>File No.: <b>${fileNo || '—'}</b></span>`;

@@ -8,6 +8,21 @@ import { Checks, Pick, Txt, sheetApi } from './ExamSheet';
 import { REQ_CSS, type ReqPatient } from './requestData';
 import { PR_GOALS, PR_PROGRAMS, PR_REEVAL, PR_REGIONS, PR_SIDES, PR_TYPES, deliverPrImage, preparePrImage, prHtml, readyPrImage, type PrInfo } from './physioReferral';
 
+// صور من ورقة العيادة (public/rx/physio-form.jpg ‏1086×1448) — قص بالـ CSS من نفس الصورة
+const IW = 1086, IH = 1448;
+type Box4 = [number, number, number, number];
+const CARD_CROPS: Box4[] = [
+  [25, 590, 135, 690], [377, 590, 497, 690], [727, 590, 852, 690],
+  [25, 745, 135, 855], [377, 745, 497, 855], [730, 745, 855, 852],
+  [25, 910, 135, 1012], [377, 910, 497, 1012], [730, 910, 855, 1012],
+  [25, 1068, 135, 1165], [380, 1068, 492, 1165], [730, 1068, 855, 1165],
+];
+const REGION_CROPS: Box4[] = [[243, 347, 312, 402], [343, 347, 413, 402], [448, 347, 518, 402], [550, 347, 613, 402], [635, 347, 702, 402], [720, 347, 785, 402], [808, 347, 870, 402], [895, 347, 965, 402]];
+function Crop({ box: [x0, y0, x1, y1], w }: { box: Box4; w: number }) {
+  const k = w / (x1 - x0);
+  return <span className="pr-crop" aria-hidden style={{ width: w, height: Math.round((y1 - y0) * k), backgroundSize: `${IW * k}px ${IH * k}px`, backgroundPosition: `-${x0 * k}px -${y0 * k}px` }} />;
+}
+
 export function PhysioReferralTab({ sheet, onChange, info, patient, waPhone }: {
   sheet: ExamSheet; onChange: (f: (s: ExamSheet) => ExamSheet) => void; info: PrInfo; patient: () => ReqPatient | null | undefined; waPhone: string;
 }) {
@@ -30,13 +45,20 @@ export function PhysioReferralTab({ sheet, onChange, info, patient, waPhone }: {
         <div><div className="sh-lbl">Treatment Type</div><div className="sh-inline"><Pick a={a} g="pr.type" items={PR_TYPES} /></div></div>
       </div>
       <div className="sh-lbl">Region (Affected Area)</div>
-      <div className="sh-inline"><Checks a={a} g="pr.reg" items={PR_REGIONS} /></div>
+      {/* ١٢/١١: صور المناطق من ورقة العيادة نفسها — دوسة على الصورة بتعلّم المنطقة */}
+      <div className="pr-f-regs">
+        {PR_REGIONS.map((r, i) => { const on = a.has('pr.reg', r); return (
+          <button key={r} type="button" className={`pr-f-reg${on ? ' is-on' : ''}`} aria-pressed={on} onClick={() => a.toggle('pr.reg', r)}>
+            <Crop box={REGION_CROPS[i]} w={58} /><span>{on ? '☑' : '☐'} {r}</span>
+          </button>
+        ); })}
+      </div>
       {other("pr.reg.other")}
       <div className="pr-f-progs">
         {PR_PROGRAMS.map((b, i) => (
           <div key={b.title} className="pr-f-box">
             <div className="pr-f-h"><em>{i + 1}</em>{b.title}</div>
-            <Checks a={a} g={`pr.p${i + 1}`} items={b.items} />
+            <div className="pr-f-body"><Crop box={CARD_CROPS[i]} w={86} /><div className="pr-f-list"><Checks a={a} g={`pr.p${i + 1}`} items={b.items} /></div></div>
             {other(`pr.p${i + 1}.other`)}
           </div>
         ))}

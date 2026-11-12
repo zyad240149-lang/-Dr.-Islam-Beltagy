@@ -2167,3 +2167,12 @@ html[dir="rtl"] .table td.num, html[dir="rtl"] .table th.num { text-align: right
 .cx-chip-x { position: absolute; top: -6px; inset-inline-end: -5px; width: 16px; height: 16px; border-radius: 50%; border: 0; background: var(--danger); color: #fff; font-size: 11px; line-height: 16px; padding: 0; cursor: pointer; }
 .cx-chip--plus { border-style: dashed !important; color: var(--brand-700); background: transparent; }
 .cx-chip-add { height: 28px; width: 150px; font-size: 12.5px; padding: 0 10px; border-radius: 999px; }
+
+/* ١٢/١١: صور شيت العلاج الطبيعي (مقصوصة من ورقة العيادة) */
+.pr-crop { display: block; flex: none; border-radius: 10px; background-image: url(/rx/physio-form.jpg); background-repeat: no-repeat; box-shadow: 0 1px 3px rgba(16,24,47,.12); }
+.pr-f-body { display: flex; gap: 8px; align-items: flex-start; }
+.pr-f-list { flex: 1; min-width: 0; }
+.pr-f-regs { display: flex; flex-wrap: wrap; gap: 8px; }
+.pr-f-reg { display: grid; justify-items: center; gap: 4px; padding: 6px 8px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); font: inherit; font-size: 12.5px; font-weight: 700; color: var(--brand-700); cursor: pointer; }
+.pr-f-reg.is-on { border-color: var(--brand-700); background: var(--brand-50, #eef2fb); }
+.pr-f-reg .pr-crop { border-radius: 8px; }

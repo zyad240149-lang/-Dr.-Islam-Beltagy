@@ -19,6 +19,7 @@ import { IMAGING_KIND, IMAGING_STATUS, REGIONS, SIDE, isIncomplete, isUnlinked, 
 import { printRx } from './printRx';
 import { openPrintWindow, printHtml } from '../utils/printDoc';
 import { RequestForms } from './RequestForms';
+import { PhysioReferralTab } from './PhysioReferralTab';
 import { prepareReportImage, readyReportImage, deliverReportImage, reportFields, reportHtml } from './reportData';
 import { applyRequestForms, deliverRequestImage, labOthers, prepareRequestImage, readyRequestImage, requestHtml } from './requestData';
 import { DiagnosisOutput } from './DiagnosisOutput';
@@ -102,7 +103,7 @@ function Section({ icon, title, children, aside }: { icon: string; title: string
 // «كشف الطبيب» بيتسمى بالمنطقة: شيت الطبيب بيتحدد من مكان الألم في الشيت العام (regionSheets)
 // ١٠/١١: «فحص سريع» رقم 2 قبل «متابعة المريض» (3)، و«موعد المتابعة» الأخير (طلب الدكتور)
 // ١١/١١: تاب «فحص سريع» اتشال (طلب العيادة) — البيانات القديمة (qe.*) لسه محفوظة في الكشف
-const TABS = [['nurse', 'الشيت العام'], ['nursing', 'متابعة المريض'], ['doctor', 'كشف الطبيب'], ['files', 'الأشعة والتحاليل'], ['inj', 'الحقن'], ['plan', 'الخطة العلاجية'], ['rx', 'الأدوية والروشتة'], ['appt', 'موعد المتابعة'], ['report', 'التقارير']] as const; // ١٢/١١: «التقارير» (إفادة طبية) آخر تاب
+const TABS = [['nurse', 'الشيت العام'], ['nursing', 'متابعة المريض'], ['doctor', 'كشف الطبيب'], ['files', 'الأشعة والتحاليل'], ['inj', 'الحقن'], ['plan', 'الخطة العلاجية'], ['rx', 'الأدوية والروشتة'], ['appt', 'موعد المتابعة'], ['report', 'التقارير'], ['physio', 'العلاج الطبيعي']] as const; // ١٢/١١: «التقارير» (إفادة طبية) آخر تاب
 type Tab = typeof TABS[number][0];
 
 // appointmentId = الزيارة اللي التشخيص الجديد بيتربط بيها (من «بانتظار التشخيص»)؛ من غيرها بيتربط بزيارة النهارده المفتوحة للمريض لو فيه
@@ -587,6 +588,18 @@ export function ConsultModal({ initial, resume, patientId = '', appointmentId, p
           </section>
           <div className="sh-next">
             <Button variant="outline" icon="chevron" onClick={() => goTab('appt')}>رجوع: موعد المتابعة</Button>
+            <Button variant="outline" icon="chevronLeft" onClick={() => goTab('physio')}>التالي: العلاج الطبيعي</Button>
+            <Button icon="check" loading={busy} disabled={!ok} onClick={() => save(false)}>حفظ الكشف</Button>
+          </div>
+        </>}
+
+        {/* ١٢/١١: «العلاج الطبيعي» — Physiotherapy Referral (A4): طباعة / تحميل صورة / واتساب */}
+        {tab === 'physio' && <>
+          <PhysioReferralTab sheet={sheet} onChange={changeSheet} patient={patientOf}
+            info={{ date: c.date, diagnosis: sum.diagnosis || c.diagnosis || '', refNo: visitAppt?.no ?? '' }}
+            waPhone={(() => { const pt = c.patientId ? db.patient(c.patientId) : null; return waPhone(pt ? whatsappNumber(pt) || pt.phone : (pendingInfo.phone ?? '')); })()} />
+          <div className="sh-next">
+            <Button variant="outline" icon="chevron" onClick={() => goTab('report')}>رجوع: التقارير</Button>
             <Button icon="check" loading={busy} disabled={!ok} onClick={() => save(false)}>حفظ الكشف</Button>
           </div>
         </>}

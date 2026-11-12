@@ -79,6 +79,7 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
   const [medQ, setMedQ] = useState('');
   // ١٢/١١: اختيار الدواء على مربعين — الأول الأدوية، والتاني جرعات الدواء المختار، و«إضافة للروشتة» بتنزّله تحت
   const [sel, setSel] = useState<MedPreset | null>(null);
+  const [openGroups, setOpenGroups] = useState<string[]>([]);
   const [draft, setDraft] = useState<Pick<Medication, 'dose' | 'frequency' | 'duration' | 'notes'>>({ dose: '', frequency: '', duration: '', notes: '' });
   const choose = (p: MedPreset) => {
     const cur = c.medications.find((m) => m.name.trim().toLowerCase() === p.name.trim().toLowerCase());
@@ -167,16 +168,19 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
           <div className="cx-pick__h"><span className="cx-pick__n">1</span> اختار الدواء</div>
           <input className="input cx-medq" dir="auto" placeholder="ابحث بالاسم التجاري أو المادة الفعالة…" value={medQ} onChange={(e) => setMedQ(e.target.value)} />
           <div className="cx-pick__list">
-            {[...medGroups].map(([g, meds]) => (
-              <div key={g}>
-                <div className="cx-pick__g">{g}</div>
-                {meds.map((p) => { const on = hasMed(p.name); const act = sel?.name === p.name; return (
+            {/* ١٢/١١: كل مجموعة مقفولة — بتفتحها وتقفلها بضغطة على اسمها، والبحث بيفتح النتايج على طول */}
+            {[...medGroups].map(([g, meds]) => { const open = !!medQ.trim() || openGroups.includes(g); const n = meds.filter((p) => hasMed(p.name)).length; return (
+              <div key={g} className={`cx-pick__grp${open ? ' is-open' : ''}`}>
+                <button type="button" className="cx-pick__g" aria-expanded={open} onClick={() => setOpenGroups((x) => (x.includes(g) ? x.filter((y) => y !== g) : [...x, g]))}>
+                  <Icon name="chevron" size={13} /><span>{g}</span><small>{meds.length}</small>{n > 0 && <b className="cx-pick__cnt">{n} ✓</b>}
+                </button>
+                {open && meds.map((p) => { const on = hasMed(p.name); const act = sel?.name === p.name; return (
                   <button key={p.name} type="button" dir="ltr" className={`cx-pick__m${act ? ' is-act' : ''}${on ? ' is-on' : ''}`} onClick={() => choose(p)}>
                     <span>{p.name}</span>{on && <Icon name="check" size={13} />}
                   </button>
                 ); })}
               </div>
-            ))}
+            ); })}
             {medQ.trim() && !medGroups.size && <p className="cx-empty">مفيش دواء بالاسم ده — اضغط «إضافة دواء» واكتبه.</p>}
           </div>
         </div>

@@ -2215,4 +2215,5 @@ html[dir="rtl"] .table td.num, html[dir="rtl"] .table th.num { text-align: right
 .rs-labsp { display: grid; gap: 8px; padding: 8px; border: 2px solid #6cb33f; border-radius: 14px; }
 .rs-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0 10px; font-size: 13px; }
 .pr-fold__b { padding: 10px 14px 14px; }
+.rs-cards { display: grid; gap: 10px; }
 @media (max-width: 520px) { .rs-secs, .rs-labs { grid-template-columns: minmax(0, 1fr); } .rs-row__n { min-width: 70px; } }

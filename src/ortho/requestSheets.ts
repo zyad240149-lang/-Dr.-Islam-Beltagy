@@ -4,14 +4,14 @@
 // فاللي اتعلّم قبل كده بيظهر متعلّم، والطلبات بتتسجل في ملف المريض من applyRequestForms زي الأول.
 import type { ExamSheet } from './data';
 import { fileNoText } from '../utils/phoneUtils';
-import { RAD_FORMS, type RadForm } from './radDetail';
-import { LAB_OTHERS, LAB_REQ_GROUPS, REQ_CSS, deliverRequestImage, renderLetterImage, requestPageHtml, type ReqImage, type ReqPatient } from './requestData';
+import { RAD_FORMS, radPicked, type RadForm } from './radDetail';
+import { LAB_OTHERS, LAB_REQ_GROUPS, REQ_CSS, deliverRequestImage, radTypes, renderLetterImage, requestPageHtml, type ReqImage, type ReqPatient } from './requestData';
 import { LAB_BOXES, RAD_BOXES, type Box4, type Pt } from './requestSheetBoxes';
 
 export type RadSheetId = 'ct' | 'mr' | 'xr';
 export type SheetId = RadSheetId | 'lab';
-/** 'rad' = طلبات الأشعة التانية (سونار / ديكسا / مسح ذري…) على ورقة العيادة العادية */
-export type ReqKind = SheetId | 'rad';
+/** «طلب أشعة» = كل نماذج الأشعة المتعلّمة (CT / MRI / X-Ray + الأشعة التانية على ورقة العيادة) — «طلب تحاليل» = نموذج التحاليل */
+export type ReqKind = 'rad' | 'lab';
 
 export const IW = 1536, IH = 1024;
 export const SHEET_IMG: Record<SheetId, string> = { ct: '/rx/ct-form.jpg', mr: '/rx/mri-form.jpg', xr: '/rx/xray-form.jpg', lab: '/rx/lab-form.jpg' };
@@ -148,33 +148,67 @@ ${marks.join('')}
 </div></div>`;
 }
 
+// ---------- صفحات كل طلب ----------
+export const OTHER_RAD_FORMS = RAD_FORMS.filter((f) => !['xr', 'mr', 'ct'].includes(f.id));
+const prefixed = (s: ExamSheet, pre: string) => s.on.some((o) => o.startsWith(pre)) || Object.entries(s.txt).some(([k, v]) => k.startsWith(pre) && v.trim());
+/** النموذج فيه حاجة متعلّمة أو مكتوبة */
+export const sheetFilled = (id: SheetId, s: ExamSheet) => (id === 'lab' ? sheetCount('lab', s) > 0 || !!tx(s, 'lr.notes') : prefixed(s, `${id}.`));
+/** الأشعة التانية (سونار / ديكسا / مسح ذري…) — بتتطبع على ورقة العيادة العادية */
+export const otherRadCount = (s: ExamSheet) => radTypes(s).length + OTHER_RAD_FORMS.reduce((n, f) => n + radPicked(s, f).count, 0);
+const otherRadFilled = (s: ExamSheet) => otherRadCount(s) > 0 || !!tx(s, 'rr.ind') || OTHER_RAD_FORMS.some((f) => prefixed(s, `${f.id}.`));
+/** صفحات الطلب: الأشعة = كل نموذج متعلّم فيه حاجة (كل واحد صفحة) — التحاليل = نموذجها */
+export function reqPages(kind: ReqKind, s: ExamSheet, p: ReqPatient | null | undefined, date: string): string[] {
+  if (kind === 'lab') return sheetFilled('lab', s) ? [sheetPageHtml('lab', s, p, date)] : [];
+  const pages = (['ct', 'mr', 'xr'] as const).filter((id) => sheetFilled(id, s)).map((id) => sheetPageHtml(id, s, p, date));
+  if (otherRadFilled(s)) pages.push(requestPageHtml('rad', s, p, date));
+  return pages;
+}
+
 const FONT = 'https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;800&display=swap';
-/** صفحة الطباعة لأي طلب (نماذج الورق A4 بالعرض — والأشعة التانية على ورقة العيادة A5) */
+/** صفحة الطباعة: نماذج الورق A4 بالعرض، والأشعة التانية على ورقة العيادة A5 — كل نموذج في صفحة */
 export function reqKindHtml(kind: ReqKind, s: ExamSheet, p: ReqPatient | null | undefined, date: string): string {
-  const title = kind === 'rad' ? 'Radiology Request' : SHEET_NAME[kind].en;
-  const page = kind === 'rad' ? '@page { size: A5; margin: 0; }' : '@page { size: A4 landscape; margin: 0; }';
-  const body = kind === 'rad' ? requestPageHtml('rad', s, p, date) : sheetPageHtml(kind, s, p, date);
+  const title = kind === 'rad' ? 'Radiology Request' : SHEET_NAME.lab.en;
+  const pageCss = `@page { size: A4 landscape; margin: 0; } @page a5 { size: A5; margin: 0; } .rqp:not(.rfp) { page: a5; } .rqp { break-after: page; } .rqp:last-child { break-after: auto; }`;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${title} — ${esc(p?.fullName)}</title>
-<link rel="stylesheet" href="${FONT}"><style>${page} body { margin: 0; } ${REQ_CSS} ${RS_CSS}</style></head><body>${body}</body></html>`;
+<link rel="stylesheet" href="${FONT}"><style>${pageCss} body { margin: 0; } ${REQ_CSS} ${RS_CSS}</style></head><body>${reqPages(kind, s, p, date).join('\n')}</body></html>`;
 }
 
 // ---------- الصورة (بتتجهز مقدمًا عشان الحفظ يحصل في نفس الضغطة على الموبايل) ----------
+// أكتر من نموذج ← صورة واحدة فيها النماذج تحت بعض
+async function stackImage(pages: string[], name: string): Promise<ReqImage> {
+  if (pages.length === 1) return renderLetterImage(pages[0], name, RS_CSS);
+  const parts: ReqImage[] = [];
+  for (const h of pages) parts.push(await renderLetterImage(h, name, RS_CSS));
+  const bmps = await Promise.all(parts.map((x) => createImageBitmap(x.blob)));
+  const W = Math.max(...bmps.map((b) => b.width)), GAP = 30;
+  const hs = bmps.map((b) => Math.round(b.height * (W / b.width)));
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = hs.reduce((a, b) => a + b, 0) + GAP * (bmps.length - 1);
+  const g = canvas.getContext('2d')!;
+  g.fillStyle = '#e5e7eb'; g.fillRect(0, 0, canvas.width, canvas.height);
+  let y = 0;
+  bmps.forEach((b, i) => { g.drawImage(b, 0, y, W, hs[i]); y += hs[i] + GAP; });
+  const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/png'));
+  if (!blob) throw new Error('تعذّر تجهيز الصورة');
+  return { key: pages.join('\n'), blob, dataUrl: canvas.toDataURL('image/png'), file: new File([blob], name, { type: 'image/png', lastModified: Date.now() }) };
+}
 const cache = new Map<ReqKind, ReqImage>();
 const pending = new Map<string, Promise<ReqImage>>();
-const pageOf = (kind: ReqKind, s: ExamSheet, p: ReqPatient | null | undefined, date: string) => (kind === 'rad' ? requestPageHtml('rad', s, p, date) : sheetPageHtml(kind, s, p, date));
 export function prepareReqImage(kind: ReqKind, s: ExamSheet, p: ReqPatient | null | undefined, date: string): Promise<ReqImage> {
-  const html = pageOf(kind, s, p, date);
+  const pages = reqPages(kind, s, p, date);
+  if (!pages.length) return Promise.reject(new Error(kind === 'rad' ? 'علّم الأشعة المطلوبة الأول.' : 'علّم التحاليل المطلوبة الأول.'));
+  const key = pages.join('\n');
   const hit = cache.get(kind);
-  if (hit && hit.key === html) return Promise.resolve(hit);
-  const k = kind + html;
+  if (hit && hit.key === key) return Promise.resolve(hit);
+  const k = kind + key;
   if (!pending.has(k)) {
-    const name = `${kind === 'rad' ? 'Radiology-Request' : SHEET_NAME[kind].file}-${(p?.fileNo || '').replace(/[^A-Za-z0-9-]/g, '') || 'patient'}-${date}-${Date.now().toString().slice(-5)}.png`;
-    pending.set(k, renderLetterImage(html, name, RS_CSS).then((img) => { cache.set(kind, img); return img; }).finally(() => pending.delete(k)));
+    const name = `${kind === 'rad' ? 'Radiology-Request' : 'Laboratory-Request'}-${(p?.fileNo || '').replace(/[^A-Za-z0-9-]/g, '') || 'patient'}-${date}-${Date.now().toString().slice(-5)}.png`;
+    pending.set(k, stackImage(pages, name).then((img) => { cache.set(kind, img); return img; }).finally(() => pending.delete(k)));
   }
   return pending.get(k)!;
 }
 export function readyReqImage(kind: ReqKind, s: ExamSheet, p: ReqPatient | null | undefined, date: string): ReqImage | null {
   const hit = cache.get(kind);
-  return hit && hit.key === pageOf(kind, s, p, date) ? hit : null;
+  return hit && hit.key === reqPages(kind, s, p, date).join('\n') ? hit : null;
 }
 export const deliverReqImage = deliverRequestImage;

@@ -1,17 +1,17 @@
 // شاشة طلبات الأشعة والتحاليل في تاب «الأشعة والتحاليل» بالكشف (وفي «متابعة المريض») — اختيار + حفظ + طباعة + حفظ كصورة + واتساب
 // ١٢/١١: CT / MRI / X-Ray / Laboratory بنفس شكل ورق العيادة: كل قسم مقفول ويتفتح بضغطة، وجنب كل بند صورته مقصوصة من نفس صورة الورقة
-import { useEffect, useState, type ReactNode } from 'react';
-import { RAD_FORMS, groupOtherKey, radPicked } from './radDetail';
+import { useContext, useEffect, useState, type ReactNode } from 'react';
+import { groupOtherKey, radPicked } from './radDetail';
 import { Button } from '../components/ui';
 import { Icon } from '../utils/icons';
+import { useToast } from '../hooks/useToast';
 import type { ExamSheet } from './data';
-import { Checks, Ck, Pick, Txt, sheetApi, type Api } from './ExamSheet';
+import { BoxOpenDefault, Checks, Ck, Pick, Txt, sheetApi, type Api } from './ExamSheet';
 import { LAB_OTHERS, RAD_REGIONS, RAD_SIDES, RAD_TYPES, radTypes } from './requestData';
-import { EXTRA_CROP, IW, IH, LAB_SHEET_GROUPS, LAB_SPECIAL_CROP, SECTION_CROP, SHEET_IMG, SHEET_NAME, TITLE_CROP, labOn, labToggle, radForm, sheetCount, type RadSheetId, type ReqKind, type SheetId } from './requestSheets';
+import { EXTRA_CROP, IW, IH, LAB_SHEET_GROUPS, LAB_SPECIAL_CROP, OTHER_RAD_FORMS as OTHER_FORMS, SECTION_CROP, SHEET_IMG, SHEET_NAME, TITLE_CROP, labOn, labToggle, otherRadCount, radForm, reqPages, sheetCount, type RadSheetId, type ReqKind, type SheetId } from './requestSheets';
 import { LAB_BOXES, RAD_BOXES, type Box4 } from './requestSheetBoxes';
 
 type Act = (kind: ReqKind) => void;
-const OTHER_FORMS = RAD_FORMS.filter((f) => !['xr', 'mr', 'ct'].includes(f.id));
 
 /** جزء من صورة الورقة (قص بالـ CSS) — بعرض w أو بارتفاع h */
 function Crop({ id, box: [x0, y0, x1, y1], w, h }: { id: SheetId; box: Box4; w?: number; h?: number }) {
@@ -31,21 +31,34 @@ function Sec({ head, n, cls = '', children }: { head: ReactNode; n: number; cls?
 }
 
 /** النموذج كله: عنوانه = عنوان الورقة نفسها، مقفول ويتفتح */
-function SheetCard({ id, n, acts, children }: { id: SheetId; n: number; acts: ReactNode; children: ReactNode }) {
+function SheetCard({ id, n, children }: { id: SheetId; n: number; children: ReactNode }) {
   return (
     <details className="rs-card">
       <summary aria-label={`${SHEET_NAME[id].en} — ${SHEET_NAME[id].ar}`}><Crop id={id} box={TITLE_CROP[id]} h={46} /><Count n={n} /><Icon name="chevron" size={16} /></summary>
       <div className="rs-card__b" dir="ltr">{children}</div>
-      <div className="rq-card__f">{acts}</div>
     </details>
   );
 }
 
-function RadSheet({ id, a, sheet, acts }: { id: RadSheetId; a: Api; sheet: ExamSheet; acts: ReactNode }) {
+// طلب أشعة / طلب تحاليل: مفتوح ويتقفل بزرار في العنوان (الأزرار — حفظ / طباعة / صورة / واتساب — ظاهرة دايمًا)
+function Card({ icon, title, en, children, actions }: { icon: string; title: string; en: string; children: ReactNode; actions: ReactNode }) {
+  const [open, setOpen] = useState(useContext(BoxOpenDefault));
+  return (
+    <section className="rq-card">
+      <header className="rq-card__h"><Icon name={icon} size={18} /><b>{title}</b><span dir="ltr">{en}</span>
+        <button type="button" className="sh-box__t" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? 'إغلاق' : 'فتح'}</button>
+      </header>
+      {open && <div className="rq-card__b rs-cards">{children}</div>}
+      <div className="rq-card__f">{actions}</div>
+    </section>
+  );
+}
+
+function RadSheet({ id, a, sheet }: { id: RadSheetId; a: Api; sheet: ExamSheet }) {
   const f = radForm(id), bx = RAD_BOXES[id];
   let ri = 0;
   return (
-    <SheetCard id={id} n={sheetCount(id, sheet)} acts={acts}>
+    <SheetCard id={id} n={sheetCount(id, sheet)}>
       <div className="rs-secs">
         {f.groups.map((g, gi) => {
           const start = ri; ri += g.rows?.length ?? 0;
@@ -83,7 +96,7 @@ function RadSheet({ id, a, sheet, acts }: { id: RadSheetId; a: Api; sheet: ExamS
   );
 }
 
-function LabSheet({ a, sheet, onChange, acts }: { a: Api; sheet: ExamSheet; onChange: (f: (s: ExamSheet) => ExamSheet) => void; acts: ReactNode }) {
+function LabSheet({ a, sheet, onChange }: { a: Api; sheet: ExamSheet; onChange: (f: (s: ExamSheet) => ExamSheet) => void }) {
   const group = (gi: number) => {
     const g = LAB_SHEET_GROUPS[gi];
     return (
@@ -96,7 +109,7 @@ function LabSheet({ a, sheet, onChange, acts }: { a: Api; sheet: ExamSheet; onCh
   const normal = LAB_SHEET_GROUPS.map((g, i) => (g.special ? -1 : i)).filter((i) => i >= 0);
   const special = LAB_SHEET_GROUPS.map((g, i) => (g.special ? i : -1)).filter((i) => i >= 0);
   return (
-    <SheetCard id="lab" n={sheetCount('lab', sheet)} acts={acts}>
+    <SheetCard id="lab" n={sheetCount('lab', sheet)}>
       <div className="rs-labs">
         {normal.map(group)}
         <Sec n={LAB_OTHERS.filter((k) => a.txt(k).trim()).length} head={<><Crop id="lab" box={LAB_BOXES.othersIcon} h={30} /><span className="rs-sec__t"><b>Others</b><small dir="rtl">أخرى</small></span></>}>
@@ -131,27 +144,34 @@ export function RequestForms({ sheet, onChange, busy, disabled, onSave, onPrint,
   sheet: ExamSheet; onChange: (f: (s: ExamSheet) => ExamSheet) => void; busy: boolean; disabled: boolean;
   onSave: () => void; onPrint: Act; onImage: Act; onWhatsapp: Act; prepare: Act;
 }) {
+  const toast = useToast();
   const a = sheetApi(sheet, onChange);
-  const otherN = radTypes(sheet).length + OTHER_FORMS.reduce((n, f) => n + radPicked(sheet, f).count, 0);
-  const counts: Record<ReqKind, number> = { ct: sheetCount('ct', sheet), mr: sheetCount('mr', sheet), xr: sheetCount('xr', sheet), lab: sheetCount('lab', sheet), rad: otherN };
+  const otherN = otherRadCount(sheet);
+  const radN = sheetCount('ct', sheet) + sheetCount('mr', sheet) + sheetCount('xr', sheet) + otherN, labN = sheetCount('lab', sheet);
+  const filled = (kind: ReqKind) => reqPages(kind, sheet, null, '').length > 0;
   // صورة كل طلب بتتجهز في الخلفية بعد ما الاختيارات تهدى ثانية — عشان «حفظ كصورة» يحفظ في نفس الضغطة
   useEffect(() => {
     if (disabled) return;
-    const t = window.setTimeout(() => { (Object.keys(counts) as ReqKind[]).forEach((k) => { if (counts[k]) prepare(k); }); }, 1000);
+    const t = window.setTimeout(() => { if (filled('rad')) prepare('rad'); if (filled('lab')) prepare('lab'); }, 1000);
     return () => window.clearTimeout(t);
   }, [sheet, disabled]); // eslint-disable-line react-hooks/exhaustive-deps
+  const need = (kind: ReqKind, go: Act) => () => {
+    if (!filled(kind)) { toast.error(kind === 'rad' ? 'علّم الأشعة المطلوبة الأول.' : 'علّم التحاليل المطلوبة الأول.'); return; }
+    go(kind);
+  };
   const acts = (kind: ReqKind) => (
     <>
       <Button size="sm" variant="outline" icon="check" loading={busy} disabled={disabled} onClick={onSave}>حفظ</Button>
-      <Button size="sm" icon="print" loading={busy} disabled={disabled} onClick={() => onPrint(kind)}>طباعة</Button>
-      <Button size="sm" variant="outline" icon="download" loading={busy} disabled={disabled} onClick={() => onImage(kind)}>حفظ كصورة على الجهاز</Button>
+      <Button size="sm" icon="print" loading={busy} disabled={disabled} onClick={need(kind, onPrint)}>طباعة</Button>
+      <Button size="sm" variant="outline" icon="download" loading={busy} disabled={disabled} onClick={need(kind, onImage)}>حفظ كصورة على الجهاز</Button>
       <Button size="sm" variant="outline" icon="share" loading={busy} disabled={disabled} onClick={() => onWhatsapp(kind)}>فتح واتساب المريض</Button>
     </>
   );
   return (
     <div className="rq-forms">
-      {(['ct', 'mr', 'xr'] as const).map((id) => <RadSheet key={id} id={id} a={a} sheet={sheet} acts={acts(id)} />)}
-      <LabSheet a={a} sheet={sheet} onChange={onChange} acts={acts('lab')} />
+      {/* طلب أشعة: نماذج CT / MRI / X-Ray — الطباعة والصورة فيهم كل نموذج متعلّم فيه حاجة (كل نموذج صفحة) */}
+      <Card icon="scan" title={`طلب أشعة${radN ? ` (${radN})` : ''}`} en="Radiology Request" actions={acts('rad')}>
+      {(['ct', 'mr', 'xr'] as const).map((id) => <RadSheet key={id} id={id} a={a} sheet={sheet} />)}
 
       {/* أشعة تانية مش في الورق (سونار / ديكسا / مسح ذري…) — بتتطبع على ورقة العيادة العادية */}
       <details className="rs-card rs-card--other">
@@ -196,8 +216,12 @@ export function RequestForms({ sheet, onChange, busy, disabled, onSave, onPrint,
           <div className="sh-lbl">السبب الطبي / الاشتباه الإكلينيكي — Clinical Indication</div>
           <textarea className="sh-in sh-notes" dir="auto" rows={2} aria-label="Clinical Indication" value={a.txt('rr.ind')} onChange={(e) => a.set('rr.ind', e.target.value)} />
         </div>
-        <div className="rq-card__f">{acts('rad')}</div>
       </details>
+      </Card>
+
+      <Card icon="list" title={`طلب تحاليل${labN ? ` (${labN})` : ''}`} en="Laboratory Request" actions={acts('lab')}>
+        <LabSheet a={a} sheet={sheet} onChange={onChange} />
+      </Card>
     </div>
   );
 }

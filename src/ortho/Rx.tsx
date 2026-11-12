@@ -80,6 +80,12 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
   // ١٢/١١: اختيار الدواء على مربعين — الأول الأدوية، والتاني جرعات الدواء المختار، و«إضافة للروشتة» بتنزّله تحت
   const [sel, setSel] = useState<MedPreset | null>(null);
   const [openGroups, setOpenGroups] = useState<string[]>([]);
+  // ١٢/١١: اختيارات بيضيفها الطبيب بنفسه لكل صف (جرعة/عدد مرات/مدة/ملاحظة) — محفوظة على الجهاز
+  type OptKey = 'dose' | 'frequency' | 'duration' | 'notes';
+  const [customOpts, setCustomOpts] = useState<Partial<Record<OptKey, string[]>>>(() => { try { return JSON.parse(localStorage.getItem('rx-custom-opts') || '{}'); } catch { return {}; } });
+  const saveCustom = (k: OptKey, xs: string[]) => setCustomOpts((o) => { const n = { ...o, [k]: xs }; try { localStorage.setItem('rx-custom-opts', JSON.stringify(n)); } catch { /* المتصفح مانع التخزين — الاختيار شغال في الجلسة دي بس */ } return n; });
+  const [adding, setAdding] = useState<OptKey | null>(null);
+  const [newOpt, setNewOpt] = useState('');
   const [draft, setDraft] = useState<Pick<Medication, 'dose' | 'frequency' | 'duration' | 'notes'>>({ dose: '', frequency: '', duration: '', notes: '' });
   const choose = (p: MedPreset) => {
     const cur = c.medications.find((m) => m.name.trim().toLowerCase() === p.name.trim().toLowerCase());
@@ -191,11 +197,26 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
               <div className="cx-pick__sel" dir="ltr">{sel.name}</div>
               {([['الجرعة', 'dose', MED_DOSES], ['عدد المرات', 'frequency', MED_FREQS], ['المدة', 'duration', MED_DURATIONS], ['ملاحظة', 'notes', MED_NOTES]] as const).map(([label, k, opts]) => {
                 const v = draft[k] ?? '';
-                const list = v && !(opts as readonly string[]).includes(v) ? [v, ...opts] : opts;
+                const mine = customOpts[k] ?? [];
+                const base = [...opts, ...mine.filter((o) => !(opts as readonly string[]).includes(o))];
+                const list = v && !base.includes(v) ? [v, ...base] : base;
                 return (
                   <div key={k} className="cx-pick__row">
                     <b>{label}</b>
-                    <div className="cx-pick__chips">{list.map((o) => <button key={o} type="button" className={`cx-chip cx-chip--sm${v === o ? ' is-on' : ''}`} onClick={() => setDraft((d) => ({ ...d, [k]: d[k] === o ? '' : o }))}>{o}</button>)}</div>
+                    <div className="cx-pick__chips">
+                      {list.map((o) => (
+                        <span key={o} className="cx-chip-wrap">
+                          <button type="button" className={`cx-chip cx-chip--sm${v === o ? ' is-on' : ''}`} onClick={() => setDraft((d) => ({ ...d, [k]: d[k] === o ? '' : o }))}>{o}</button>
+                          {mine.includes(o) && <button type="button" className="cx-chip-x" aria-label={`حذف ${o}`} title="حذف من الاختيارات" onClick={() => saveCustom(k, mine.filter((x) => x !== o))}>×</button>}
+                        </span>
+                      ))}
+                      {/* ١٢/١١: «+» تضيف اختيار جديد للصف ده — بيتحفظ ويفضل ظاهر بعد كده */}
+                      {adding === k
+                        ? <input className="input cx-chip-add" autoFocus placeholder={`${label} جديد…`} value={newOpt} onChange={(e) => setNewOpt(e.target.value)}
+                            onBlur={() => { setAdding(null); setNewOpt(''); }}
+                            onKeyDown={(e) => { if (e.key === 'Escape') { setAdding(null); setNewOpt(''); } if (e.key === 'Enter') { e.preventDefault(); const t = newOpt.trim(); if (t) { if (!base.includes(t)) saveCustom(k, [...mine, t]); setDraft((d) => ({ ...d, [k]: t })); } setAdding(null); setNewOpt(''); } }} />
+                        : <button type="button" className="cx-chip cx-chip--sm cx-chip--plus" title={`إضافة ${label} جديد`} onClick={() => { setAdding(k); setNewOpt(''); }}>+ إضافة</button>}
+                    </div>
                   </div>
                 );
               })}

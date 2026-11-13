@@ -31,7 +31,7 @@ type EB = { id: string; title: string; part: string; wide?: boolean; red?: boole
 const SIDES = ['Right', 'Left', 'Bilateral'];
 export const EVAL_BOXES: EB[] = [
   { id: 'loc', off: true, part: 'Subjective', title: 'مكان الألم (Location of Pain)', f: [{ g: 'pg.loc', items: L_(LOCATION), other: true }] },
-  { id: 'ons', part: 'Subjective', title: 'بداية الألم (Onset)', f: [{ g: 'pg.ons', items: L_(ONSET), other: true }] },
+  { id: 'ons', off: true, part: 'Subjective', title: 'بداية الألم (Onset)', f: [{ g: 'pg.ons', items: L_(ONSET), other: true }] },
   { id: 'dur', off: true, part: 'Subjective', title: 'المدة (Duration)', f: [{ k: 'pg.dur.n', label: 'المدة', num: true }, { g: 'pg.dur.u', label: 'الوحدة', items: L_(DURATION_UNITS), one: true }] },
   { id: 'rad', part: 'Subjective', title: 'Radiation / Spread', f: [{ g: 'pg.rad', items: L_(RADIATION), other: true }] },
   { id: 'pat', part: 'Subjective', title: 'Pain Pattern / Timing', f: [{ g: 'pg.pat', items: L_(PATTERN), other: true }] },

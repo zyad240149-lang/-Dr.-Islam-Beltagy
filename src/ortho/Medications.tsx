@@ -8,6 +8,7 @@ import { ortho, useOrthoVersion, type MedItem } from './data';
 import { Field, IconBtn, LoadState, PageHead, SearchBox, confirmDelete, useClinicalCan, useRun } from './kit';
 import { useMedBank } from './medBank';
 import { setGroupOrder, sortGroups, useGroupOrder } from './groupOrder';
+import { DoctorFields, saveDoctorInfo, useDoctorDraft } from './medDoctorFields';
 import { RxTemplatesView, emptyTemplate } from './RxTemplates';
 
 type Draft = MedPreset & { id?: string };
@@ -32,11 +33,17 @@ function MedModal({ initial, groups, onClose }: { initial: Draft; groups: string
   const [newGroup, setNewGroup] = useState(false);
   const set = (k: 'name' | 'group' | 'dose' | 'frequency' | 'duration' | 'notes', v: string) => setM((x) => ({ ...x, [k]: v }));
   const dup = !m.id && ortho.list('medications').some((x) => keyOf(x.name) === keyOf(m.name));
+  const canDoc = useClinicalCan('medications').view;
+  const doc = useDoctorDraft(initial.name, canDoc);
+  const save = async () => {
+    const id = await ortho.save('medications', { ...m, name: m.name.trim(), shown: isShown(m) });
+    if (canDoc) await saveDoctorInfo(id, doc.d, doc.info);
+  };
   return (
     <Modal title={initial.id ? 'تعديل الدواء' : 'إضافة دواء للبنك'} onClose={onClose} footer={<>
       {dup && <span className="sh-need">الدواء ده موجود في البنك</span>}
       <Button variant="outline" onClick={onClose}>إلغاء</Button>
-      <Button icon="check" loading={busy} disabled={!m.name.trim() || dup} onClick={() => run(() => ortho.save('medications', { ...m, name: m.name.trim(), shown: isShown(m) }), 'تم حفظ الدواء', onClose)}>حفظ</Button>
+      <Button icon="check" loading={busy} disabled={!m.name.trim() || dup || !doc.loaded} onClick={() => run(save, 'تم حفظ الدواء', onClose)}>حفظ</Button>
     </>}>
       <div className="grid-form grid-form--2">
         <Field label="اسم الدواء" className="span-2"><input className="input" dir="ltr" value={m.name} onChange={(e) => set('name', e.target.value)} placeholder="مثال: Diclofenac sodium 50mg" autoFocus /></Field>
@@ -58,6 +65,7 @@ function MedModal({ initial, groups, onClose }: { initial: Draft; groups: string
         <label className="span-2" style={{ display: 'inline-flex', gap: 8, alignItems: 'center', cursor: 'pointer' }}>
           <input type="checkbox" checked={isShown(m)} onChange={(e) => setM((x) => ({ ...x, shown: e.target.checked }))} /> يظهر قدامي في الروشتة
         </label>
+        {canDoc && (doc.loaded ? <DoctorFields d={doc.d} setD={doc.setD} info={doc.info} /> : <p className="muted span-2">بيحمّل معلومات الطبيب…</p>)}
       </div>
     </Modal>
   );

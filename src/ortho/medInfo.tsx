@@ -32,14 +32,14 @@ export function parseMedName(name: string) {
 // ———————————————————— البيانات (جداول 973) ————————————————————
 interface BankRow { id: string; name: string; scientific_name: string; group: string; notes: string; strength: string; dosage_form: string; data_status: string; info_source: string }
 interface Ingredient { id: string; name: string; synonyms: string[]; strength: string; reference_dose: string; contraindications: string; warnings: string; side_effects: string; interactions: string; info_source: string; info_updated_at: string | null; data_status: string }
-interface Internal { company: string; origin_country: string; pack_size: string; doctor_notes: string; info_source: string; updated_at: string }
-interface Price { price: number; currency: string; country: string; price_basis: 'pack' | 'unit'; pack_size: string; company: string; verified_at: string; source: string }
+export interface Internal { company: string; origin_country: string; pack_size: string; doctor_notes: string; info_source: string; updated_at: string }
+export interface Price { price: number; currency: string; country: string; price_basis: 'pack' | 'unit'; pack_size: string; company: string; verified_at: string; source: string }
 export interface MedInfoData { row: BankRow | null; ings: Ingredient[]; internal: Internal | null; prices: Price[]; offline?: boolean }
 
 const esc = (s: string) => s.trim().replace(/[\\%_]/g, (c) => `\\${c}`);
 const cache = new Map<string, MedInfoData>();
 
-async function loadInfo(name: string): Promise<MedInfoData> {
+export async function loadInfo(name: string): Promise<MedInfoData> {
   const { data, error } = await supabase.from('ortho_medications').select('id,name,scientific_name,group,notes,strength,dosage_form,data_status,info_source').ilike('name', esc(name)).limit(1);
   if (error) return { row: null, ings: [], internal: null, prices: [], offline: true };
   const row = (data?.[0] as BankRow | undefined) ?? null;

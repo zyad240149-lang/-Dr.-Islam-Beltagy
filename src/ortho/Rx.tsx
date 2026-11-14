@@ -8,7 +8,8 @@ import { LAB_GROUPS, MED_DOSES, MED_DURATIONS, MED_FREQS, MED_NOTES, XRAY_VIEWS,
 import { useMedBank } from './medBank';
 import { useRxInteractions } from './interactions';
 import { AttachmentThumbs } from './Consultations';
-import { IconBtn, Tone } from './kit';
+import { IconBtn, Tone, useClinicalCan } from './kit';
+import { MedDoctorInfo } from './medInfo';
 
 export const emptyRx = (): RxData => ({ medications: [], labs: [], imagingRequests: [], attachments: [], plan: '' });
 export const normRx = (r?: Partial<RxData>): RxData => ({ ...emptyRx(), ...r });
@@ -103,6 +104,7 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
   // ١١/١١: نفس الدواء متكتب مرتين ← تنبيه + الصفوف المتكررة بتتعلّم بالأحمر
   const dupNames = (() => { const seen = new Map<string, number>(); for (const m of c.medications) { const k = norm(m.name); if (k) seen.set(k, (seen.get(k) ?? 0) + 1); } return new Set([...seen].filter(([, n]) => n > 1).map(([k]) => k)); })();
   const interactions = useRxInteractions(c.medications);
+  const canSeeMedInfo = useClinicalCan('medications').view; // معلومات الطبيب الداخلية حسب صلاحية قسم «الأدوية»
   const hasMed = (name: string) => c.medications.some((m) => norm(m.name) === norm(name));
   const toggleMed = (p: MedPreset) => set('medications', hasMed(p.name)
     ? c.medications.filter((m) => norm(m.name) !== norm(p.name))
@@ -262,7 +264,8 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
             ))}
             {dupNames.size > 0 && <div className="cx-dup" role="alert"><Icon name="alert" size={16} /> فيه دواء متكتب مرتين: <b dir="ltr">{[...dupNames].join('، ')}</b> — امسح التكرار.</div>}
             {c.medications.map((m, i) => (
-              <div className={`cx-row cx-row--med${dupNames.has(norm(m.name)) ? ' is-dup' : ''}`} key={i}>
+              <div className="cx-med" key={i}>
+              <div className={`cx-row cx-row--med${dupNames.has(norm(m.name)) ? ' is-dup' : ''}`}>
                 <span className="cx-row__n">{i + 1}</span>
                 <input className="input" dir="ltr" aria-label="اسم الدواء" placeholder="اسم الدواء" list="cx-meds" value={m.name} onChange={(e) => pickMedName(i, e.target.value)} />
                 <MedChoice label="الجرعة" value={m.dose} options={MED_DOSES} onChange={(v) => setMed(i, { dose: v })} />
@@ -271,6 +274,8 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
                 {/* ملاحظة الدواء ده بس (بعد الأكل، قبل النوم…) — كتابة حرة مع اقتراحات، منفصلة عن ملاحظات الروشتة العامة تحت */}
                 <input className="input cx-row__note" dir="auto" aria-label={`ملاحظة الدواء ${i + 1}`} placeholder="ملاحظة الدواء (بعد الأكل…)" list="cx-med-notes" value={m.notes ?? ''} onChange={(e) => setMed(i, { notes: e.target.value })} />
                 <IconBtn icon="trash" label="حذف الدواء" danger onClick={() => set('medications', c.medications.filter((_, j) => j !== i))} />
+              </div>
+              {canSeeMedInfo && <MedDoctorInfo name={m.name} interactions={interactions} onPickAlt={(alt) => pickMedName(i, alt)} />}
               </div>
             ))}
           </div>

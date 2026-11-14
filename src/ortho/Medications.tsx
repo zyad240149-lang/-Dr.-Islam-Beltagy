@@ -7,6 +7,7 @@ import { MED_PRESETS, medCatalog, type MedPreset } from './clinicalLists';
 import { ortho, useOrthoVersion, type MedItem } from './data';
 import { Field, IconBtn, LoadState, PageHead, SearchBox, confirmDelete, useClinicalCan, useRun } from './kit';
 import { useMedBank } from './medBank';
+import { setGroupOrder, sortGroups, useGroupOrder } from './groupOrder';
 import { RxTemplatesView, emptyTemplate } from './RxTemplates';
 
 type Draft = MedPreset & { id?: string };
@@ -112,6 +113,30 @@ function GroupModal({ initialName, meds, toRow, onClose }: { initialName: string
 
 const GROUP_HUES = [215, 160, 28, 280, 350, 190, 95, 45, 255, 320];
 
+// ترتيب المجموعات: أسهم فوق/تحت لكل مجموعة — نفس الترتيب بيظهر في الروشتة
+function GroupOrderModal({ groups, onClose }: { groups: string[]; onClose: () => void }) {
+  const [list, setList] = useState(groups);
+  const move = (i: number, d: number) => setList((l) => { const j = i + d; if (j < 0 || j >= l.length) return l; const n = [...l]; [n[i], n[j]] = [n[j], n[i]]; return n; });
+  return (
+    <Modal title="ترتيب المجموعات" onClose={onClose} footer={<>
+      <Button variant="outline" onClick={onClose}>إلغاء</Button>
+      <Button icon="check" onClick={() => { setGroupOrder(list); onClose(); }}>حفظ الترتيب</Button>
+    </>}>
+      <p className="muted" style={{ marginTop: 0 }}>رتّب المجموعات بالأسهم — نفس الترتيب هيظهر في صفحة الأدوية وفي الروشتة.</p>
+      <div className="grp-order">
+        {list.map((g, i) => (
+          <div className="grp-order__row" key={g} style={{ borderInlineStartColor: `hsl(${GROUP_HUES[i % GROUP_HUES.length]} 65% 50%)` }}>
+            <span className="num grp-order__n">{i + 1}</span>
+            <b dir="auto" className="grp-order__name">{g}</b>
+            <button type="button" className="grp-order__btn" aria-label={`طلّع ${g} لفوق`} disabled={i === 0} onClick={() => move(i, -1)}>▲</button>
+            <button type="button" className="grp-order__btn" aria-label={`نزّل ${g} لتحت`} disabled={i === list.length - 1} onClick={() => move(i, 1)}>▼</button>
+          </div>
+        ))}
+      </div>
+    </Modal>
+  );
+}
+
 export default function Medications() {
   useOrthoVersion();
   const perm = useClinicalCan('medications');
@@ -122,6 +147,8 @@ export default function Medications() {
   const [edit, setEdit] = useState<Draft | null>(null);
   const [groupEdit, setGroupEdit] = useState<string | null>(null); // '' = مجموعة جديدة
   const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set());
+  const [ordering, setOrdering] = useState(false);
+  const groupOrder = useGroupOrder();
   const saved = ortho.list('medications');
   const savedBy = new Map(saved.map((m) => [keyOf(m.name), m] as const));
   const all = medCatalog();
@@ -155,6 +182,7 @@ export default function Medications() {
     <div className="page med-page">
       <PageHead title="الأدوية" sub="ضيف أي دواء في البنك، واختار اللي يظهر قدامك في الروشتة، وقسّمهم مجموعات — أو اعمل روشتات جاهزة تنزّلها في التشخيص بضغطة">
         {perm.add && view === 'templates' && <Button icon="plus" onClick={() => setTplEdit(emptyTemplate())}>روشتة جاهزة جديدة</Button>}
+        {view !== 'templates' && groups.length > 1 && <Button variant="outline" onClick={() => setOrdering(true)}>⇅ ترتيب المجموعات</Button>}
         {perm.add && view !== 'templates' && <Button variant="outline" icon="plus" onClick={() => setGroupEdit('')}>مجموعة جديدة</Button>}
         {perm.add && view !== 'templates' && <Button icon="plus" onClick={() => setEdit(emptyMed())}>إضافة دواء للبنك</Button>}
       </PageHead>
@@ -174,7 +202,7 @@ export default function Medications() {
         <div className="card__body">
           {view === 'templates' ? <RxTemplatesView q={q} editing={tplEdit} setEditing={setTplEdit} /> : <LoadState kind="medications">
             {!list.length && !extra.length && !(view === 'bank' && (bankHits.length || bank.loading)) && <EmptyState icon="search" title={term ? 'مفيش أدوية بالاسم ده' : 'مفيش أدوية ظاهرة قدامك'} text={term ? undefined : 'افتح «بنك الأدوية» وعلّم على اللي عايزه يظهر.'} />}
-            {[...byGroup].map(([g, meds], gi) => {
+            {sortGroups([...byGroup], groupOrder).map(([g, meds], gi) => {
               const hue = GROUP_HUES[gi % GROUP_HUES.length];
               const isOpen = !!term || openGroups.has(g);
               const toggle = () => setOpenGroups((s) => { const n = new Set(s); n.has(g) ? n.delete(g) : n.add(g); return n; });
@@ -238,6 +266,7 @@ export default function Medications() {
         </div>
       </section>
       {edit && <MedModal initial={edit} groups={groups} onClose={() => setEdit(null)} />}
+      {ordering && <GroupOrderModal groups={sortGroups(groups.map((g) => [g, 0] as [string, number]), groupOrder).map(([g]) => g)} onClose={() => setOrdering(false)} />}
       {groupEdit !== null && <GroupModal initialName={groupEdit} meds={all} toRow={toRow} onClose={() => setGroupEdit(null)} />}
     </div>
   );

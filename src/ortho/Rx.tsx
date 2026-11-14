@@ -10,6 +10,7 @@ import { useRxInteractions } from './interactions';
 import { AttachmentThumbs } from './Consultations';
 import { IconBtn, Tone, useClinicalCan } from './kit';
 import { MedDoctorInfo } from './medInfo';
+import { sortGroups, useGroupOrder } from './groupOrder';
 
 export const emptyRx = (): RxData => ({ medications: [], labs: [], imagingRequests: [], attachments: [], plan: '' });
 export const normRx = (r?: Partial<RxData>): RxData => ({ ...emptyRx(), ...r });
@@ -118,6 +119,7 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
     set('medications', [...c.medications.filter((m) => m.name.trim()), ...add]);
     toast.success(`نزلت روشتة «${t.name}» — ${add.length} دواء`);
   };
+  const groupOrder = useGroupOrder();
   const medGroups = new Map<string, MedPreset[]>();
   for (const p of medCatalog()) {
     // من غير بحث: اللي الطبيب اختاره يظهر قدامه بس — البحث بيدور في البنك كله
@@ -194,7 +196,7 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
           <input className="input cx-medq" dir="auto" placeholder="ابحث بالاسم التجاري أو المادة الفعالة…" value={medQ} onChange={(e) => setMedQ(e.target.value)} />
           <div className="cx-pick__list">
             {/* ١٢/١١: كل مجموعة مقفولة — بتفتحها وتقفلها بضغطة على اسمها، والبحث بيفتح النتايج على طول */}
-            {[...medGroups].map(([g, meds]) => { const open = !!medQ.trim() || openGroups.includes(g); const n = meds.filter((p) => hasMed(p.name)).length; return (
+            {sortGroups([...medGroups], groupOrder).map(([g, meds]) => { const open = !!medQ.trim() || openGroups.includes(g); const n = meds.filter((p) => hasMed(p.name)).length; return (
               <div key={g} className={`cx-pick__grp${open ? ' is-open' : ''}`} style={{ ['--gc' as string]: `hsl(${[...g].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) % 360, 7)} 62% 45%)` }}>
                 <button type="button" className="cx-pick__g" aria-expanded={open} onClick={() => setOpenGroups((x) => (x.includes(g) ? x.filter((y) => y !== g) : [...x, g]))}>
                   <Icon name="chevron" size={13} /><span>{g}</span><small>{meds.length}</small>{n > 0 && <b className="cx-pick__cnt">{n} ✓</b>}

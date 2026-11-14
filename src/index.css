@@ -2094,6 +2094,13 @@ html[dir="rtl"] .table td.num, html[dir="rtl"] .table th.num { text-align: right
 .med-info__src { margin: 0; font-size: 11.5px; color: var(--muted, #64748b); }
 @media (max-width: 640px) { .med-info { margin-inline-start: 0; } .med-info__grid { grid-template-columns: 1fr; } }
 @media print { .med-info { display: none !important; } }
+/* ١٤/١١: ترتيب مجموعات الأدوية */
+.grp-order { display: flex; flex-direction: column; gap: 6px; }
+.grp-order__row { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid var(--border, #dbe3ef); border-inline-start-width: 4px; border-radius: 10px; background: #fff; }
+.grp-order__n { width: 24px; text-align: center; color: var(--muted, #64748b); font-weight: 700; }
+.grp-order__name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.grp-order__btn { width: 44px; height: 44px; flex: none; border-radius: 10px; border: 1px solid var(--border, #dbe3ef); background: var(--brand-50, #f5f8fd); color: var(--brand-700); font-size: 15px; cursor: pointer; }
+.grp-order__btn:disabled { opacity: .35; cursor: default; }
 
 /* ١١/١١: شريط «كشوفات مفتوحة» — الكشوفات المركونة (فتح مريض تاني) */
 .cdock { position: fixed; bottom: 12px; inset-inline-start: 50%; transform: translateX(50%); z-index: 55; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; max-width: calc(100vw - 24px);

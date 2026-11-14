@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import { medCatalog } from './clinicalLists';
 import type { Medication } from './data';
 
-type Cls = 'cox2' | 'nsaid' | 'steroid' | 'anticoag' | 'antiplatelet' | 'ssri' | 'tramadol' | 'opioid' | 'relaxant' | 'benzo' | 'pregab' | 'ppi' | 'methotrexate' | 'quinolone' | 'acei' | 'diuretic' | 'lithium' | 'paracetamol' | 'potassium' | 'bisphos' | 'calcium';
+type Cls = 'sedative' | 'tca' | 'inhibitor' | 'herbal' | 'statin' | 'colchicine' | 'cox2' | 'nsaid' | 'steroid' | 'anticoag' | 'antiplatelet' | 'ssri' | 'tramadol' | 'opioid' | 'relaxant' | 'benzo' | 'pregab' | 'ppi' | 'methotrexate' | 'quinolone' | 'acei' | 'diuretic' | 'lithium' | 'paracetamol' | 'potassium' | 'bisphos' | 'calcium';
 
 const RULES: [Cls, RegExp][] = [
   ['cox2', /etoricoxib|celecoxib|cox-?2|parecoxib/i],
@@ -27,7 +27,13 @@ const RULES: [Cls, RegExp][] = [
   ['paracetamol', /paracetamol|acetaminophen/i],
   ['potassium', /spironolactone|potassium chloride|eplerenone/i],
   ['bisphos', /alendron|risedron|ibandron|bisphosph/i],
-  ['calcium', /calcium|iron|ferrous|antacid|magnesium hydroxide|aluminium/i],
+  ['calcium', /calcium|\biron\b|ferrous|antacid|magnesium hydroxide|aluminium/i],
+  ['sedative', /quetiapine|olanzapine|risperidone|aripiprazole|haloperidol|chlorpromazine|mirtazapine|amitriptyline|imipramine|clomipramine|chlorpheniramine|diphenhydramine|promethazine|hydroxyzine|zolpidem/i],
+  ['tca', /amitriptyline|imipramine|clomipramine|nortriptyline|dapoxetine|ondansetron|linezolid/i],
+  ['inhibitor', /clarithromycin|erythromycin|fluconazole|itraconazole|ketoconazole|voriconazole|metronidazole|amiodarone/i],
+  ['herbal', /ginkgo|fish oil|omega|garlic|ginseng|turmeric|curcumin/i],
+  ['statin', /simvastatin|atorvastatin|lovastatin/i],
+  ['colchicine', /colchicine/i],
 ];
 
 type Pair = { a: Cls[]; b: Cls[]; level: 'danger' | 'warn'; msg: string; same?: boolean };
@@ -53,6 +59,12 @@ const PAIRS: Pair[] = [
   { a: ['paracetamol'], b: ['paracetamol'], same: true, level: 'danger', msg: 'باراسيتامول في أكتر من دوا — خطر جرعة زيادة على الكبد.' },
   { a: ['bisphos'], b: ['calcium'], level: 'warn', msg: 'Bisphosphonate مع كالسيوم/حديد/مضاد حموضة — بيمنع الامتصاص؛ لازم فرق ساعتين على الأقل.' },
   { a: ['quinolone'], b: ['calcium'], level: 'warn', msg: 'Quinolone مع كالسيوم/حديد/مضاد حموضة — بيقلل الامتصاص؛ افصل بينهم.' },
+  { a: ['tramadol'], b: ['tca'], level: 'danger', msg: 'Tramadol مع دوا بيرفع السيروتونين (Amitriptyline/Ondansetron/Dapoxetine…) — خطر متلازمة السيروتونين وتشنجات.' },
+  { a: ['tramadol', 'opioid', 'relaxant', 'pregab', 'benzo'], b: ['sedative'], level: 'warn', msg: 'مسكن/مُرخي عضلات مع دوا مهدئ (مضاد ذهان/حساسية/نوم) — نُعاس شديد ودوخة؛ نبّه المريض.' },
+  { a: ['anticoag'], b: ['inhibitor'], level: 'danger', msg: 'مُسيل للدم مع دوا بيرفع مستواه (Clarithromycin/Fluconazole/Metronidazole…) — خطر نزيف؛ راجع INR/الجرعة.' },
+  { a: ['anticoag', 'antiplatelet'], b: ['herbal'], level: 'warn', msg: 'مُسيل/مضاد صفائح مع مكمّل بيأثر على السيولة (Ginkgo/Omega-3/Garlic…) — احتمال نزيف.' },
+  { a: ['statin'], b: ['inhibitor'], level: 'warn', msg: 'Statin مع Clarithromycin/Fluconazole — خطر التهاب وتكسّر العضلات.' },
+  { a: ['colchicine'], b: ['inhibitor', 'statin'], level: 'danger', msg: 'Colchicine مع Clarithromycin/Statin — خطر سُمّية الكولشيسين والعضلات.' },
   { a: ['acei'], b: ['potassium'], level: 'warn', msg: 'دوا ضغط ACEI/ARB مع Spironolactone/بوتاسيوم — خطر ارتفاع البوتاسيوم.' },
 ];
 

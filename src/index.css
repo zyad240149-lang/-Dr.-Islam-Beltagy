@@ -2095,6 +2095,7 @@ html[dir="rtl"] .table td.num, html[dir="rtl"] .table th.num { text-align: right
 @media (max-width: 640px) { .med-info { margin-inline-start: 0; } .med-info__grid { grid-template-columns: 1fr; } }
 .med-info__alt.is-diff { border-style: dashed; color: var(--muted, #64748b); }
 .med-info__med { padding: 6px 10px; border-radius: 8px; background: #fff; margin-bottom: 4px; }
+.med-info__txt { white-space: pre-wrap; text-align: left; max-height: 180px; overflow: auto; font-size: 12.5px; line-height: 1.5; padding-inline-end: 4px; }
 .med-info__edit { display: flex; flex-direction: column; gap: 10px; padding: 10px; border-radius: 10px; background: #fff; border: 1px solid var(--border, #dbe3ef); }
 .med-info__form { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px 12px; }
 .med-info__form label, .med-info__notes { display: flex; flex-direction: column; gap: 4px; font-weight: 600; font-size: 12.5px; color: var(--muted, #64748b); }

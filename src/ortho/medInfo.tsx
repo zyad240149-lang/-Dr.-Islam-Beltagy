@@ -88,6 +88,14 @@ function Line({ label, children }: { label: string; children: ReactNode }) {
   return <div className="med-info__line"><span className="med-info__k">{label}</span><span className="med-info__v">{children}</span></div>;
 }
 
+// المصدر: لو فيه رابط النشرة يبقى لينك يفتح في تابة جديدة
+function SourceText({ src }: { src: string }) {
+  if (!src) return <>المصدر: غير مذكور</>;
+  const m = src.match(/https?:\/\/\S+/);
+  if (!m) return <>المصدر: {src}</>;
+  return <>المصدر: {src.slice(0, m.index).replace(/[—\s]+$/, '')} — <a href={m[0]} target="_blank" rel="noopener noreferrer">افتح النشرة</a></>;
+}
+
 function PriceText({ p }: { p: Price }) {
   const old = daysAgo(p.verified_at) > 180;
   return (
@@ -175,8 +183,8 @@ export function MedDoctorInfo({ name, interactions, onPickAlt }: { name: string;
         <h4>{title}</h4>
         {!xs.length ? <p className="muted">مش متسجّلة — مفيش معلومة موثّقة نعرضها.</p> : xs.map((x, i) => (
           <div key={i} className="med-info__med">
-            {ings.length > 1 && <b dir="ltr">{x.who}: </b>}<span style={{ whiteSpace: 'pre-wrap' }}>{x.text}</span>
-            <div className="med-info__src">المصدر: {x.src || 'غير مذكور'}{x.at ? ` · ${x.at}` : ''} · {STATUS[x.st]?.[0] ?? x.st}</div>
+            {ings.length > 1 && <b dir="ltr">{x.who}: </b>}<div className="med-info__txt" dir="ltr">{x.text}</div>
+            <div className="med-info__src"><SourceText src={x.src} /> {x.at ? ` · تاريخ النشرة ${x.at}` : ''} · {STATUS[x.st]?.[0] ?? x.st}{x.src.includes('FDA') ? ' · نص النشرة الأمريكية بالإنجليزي' : ''}</div>
           </div>
         ))}
       </div>

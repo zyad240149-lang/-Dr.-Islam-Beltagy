@@ -6,6 +6,7 @@ import { useToast } from '../hooks/useToast';
 import { IMAGING_KIND, IMAGING_STATUS, ortho, type Attachment, type ImagingKind, type ImagingRequest, type Medication, type RxData, type RxTemplate } from './data';
 import { LAB_GROUPS, MED_DOSES, MED_DURATIONS, MED_FREQS, MED_NOTES, XRAY_VIEWS, medCatalog, type MedPreset } from './clinicalLists';
 import { useMedBank } from './medBank';
+import { useRxInteractions } from './interactions';
 import { AttachmentThumbs } from './Consultations';
 import { IconBtn, Tone } from './kit';
 
@@ -101,6 +102,7 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
   const norm = (s: string) => s.trim().toLowerCase();
   // ١١/١١: نفس الدواء متكتب مرتين ← تنبيه + الصفوف المتكررة بتتعلّم بالأحمر
   const dupNames = (() => { const seen = new Map<string, number>(); for (const m of c.medications) { const k = norm(m.name); if (k) seen.set(k, (seen.get(k) ?? 0) + 1); } return new Set([...seen].filter(([, n]) => n > 1).map(([k]) => k)); })();
+  const interactions = useRxInteractions(c.medications);
   const hasMed = (name: string) => c.medications.some((m) => norm(m.name) === norm(name));
   const toggleMed = (p: MedPreset) => set('medications', hasMed(p.name)
     ? c.medications.filter((m) => norm(m.name) !== norm(p.name))
@@ -253,6 +255,11 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
         ? <p className="cx-empty">الأدوية اللي بتضيفها بتنزل هنا — أو اضغط «إضافة دواء» واكتب اسم دواء تاني.</p>
         : (
           <div className="cx-rows">
+            {interactions.map((x, k) => (
+              <div key={`ix${k}`} className="cx-dup" role="alert" style={x.level === 'warn' ? { background: 'hsl(40 95% 50% / .12)', borderColor: 'hsl(40 90% 45%)', color: 'hsl(35 80% 28%)' } : undefined}>
+                <Icon name="alert" size={16} /> <span>{x.level === 'danger' ? 'تداخل خطير' : 'تنبيه'}: <b dir="ltr">{x.a}</b> + <b dir="ltr">{x.b}</b> — {x.msg}</span>
+              </div>
+            ))}
             {dupNames.size > 0 && <div className="cx-dup" role="alert"><Icon name="alert" size={16} /> فيه دواء متكتب مرتين: <b dir="ltr">{[...dupNames].join('، ')}</b> — امسح التكرار.</div>}
             {c.medications.map((m, i) => (
               <div className={`cx-row cx-row--med${dupNames.has(norm(m.name)) ? ' is-dup' : ''}`} key={i}>

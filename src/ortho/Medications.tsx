@@ -116,11 +116,12 @@ const GROUP_HUES = [215, 160, 28, 280, 350, 190, 95, 45, 255, 320];
 // ترتيب المجموعات: أسهم فوق/تحت لكل مجموعة — نفس الترتيب بيظهر في الروشتة
 function GroupOrderModal({ groups, onClose }: { groups: string[]; onClose: () => void }) {
   const [list, setList] = useState(groups);
+  const { run, busy } = useRun();
   const move = (i: number, d: number) => setList((l) => { const j = i + d; if (j < 0 || j >= l.length) return l; const n = [...l]; [n[i], n[j]] = [n[j], n[i]]; return n; });
   return (
     <Modal title="ترتيب المجموعات" onClose={onClose} footer={<>
       <Button variant="outline" onClick={onClose}>إلغاء</Button>
-      <Button icon="check" onClick={() => { setGroupOrder(list); onClose(); }}>حفظ الترتيب</Button>
+      <Button icon="check" loading={busy} onClick={() => run(() => setGroupOrder(list), 'اتحفظ الترتيب', onClose)}>حفظ الترتيب</Button>
     </>}>
       <p className="muted" style={{ marginTop: 0 }}>رتّب المجموعات بالأسهم — نفس الترتيب هيظهر في صفحة الأدوية وفي الروشتة.</p>
       <div className="grp-order">

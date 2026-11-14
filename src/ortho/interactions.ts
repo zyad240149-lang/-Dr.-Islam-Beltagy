@@ -73,13 +73,19 @@ const key = (s: string) => s.trim().toLowerCase();
 
 export interface Interaction { a: string; b: string; level: 'danger' | 'warn'; msg: string }
 
-export function findInteractions(meds: { name: string; text: string }[]): Interaction[] {
+// المواد الفعالة من نص «A+B(syn)» → أسامي موحّدة
+const ingredientsOf = (sci = '') => sci.toLowerCase().split('+').map((x) => x.replace(/\(.*?\)/g, ' ').replace(/\s+/g, ' ').trim()).filter(Boolean);
+
+export function findInteractions(meds: { name: string; text: string; sci?: string }[]): Interaction[] {
   // الدهانات والجِل والسبراي امتصاصها للدم ضعيف — مش بتدخل في التداخلات
   const topical = /\b(gel|cream|crem|oint|ointment|spray|patch|plaster|lotion|emulgel|topical|top\.)/i;
   const cls = meds.map((m) => (topical.test(`${m.name} ${m.text}`) ? new Set<Cls>() : classify(`${m.name} ${m.text}`)));
   const out: Interaction[] = [];
   for (let i = 0; i < meds.length; i++) for (let j = i + 1; j < meds.length; j++) {
     if (key(meds[i].name) === key(meds[j].name)) continue; // التكرار ليه تنبيه لوحده
+    // نفس المادة الفعالة في دواءين بأسامي تجارية مختلفة (مثال: Panadol + Cetal)
+    const shared = ingredientsOf(meds[i].sci).filter((x) => ingredientsOf(meds[j].sci).includes(x));
+    if (shared.length) { out.push({ a: meds[i].name, b: meds[j].name, level: 'danger', msg: `نفس المادة الفعالة (${shared.join(' + ')}) في الدواءين — جرعة مضاعفة. اكتفي بواحد.` }); continue; }
     const hit = (p: Pair, x: Set<Cls>, y: Set<Cls>) => p.a.some((c) => x.has(c)) && p.b.some((c) => y.has(c));
     const p = PAIRS.find((p) => hit(p, cls[i], cls[j]) || (!p.same && hit(p, cls[j], cls[i])));
     if (p) out.push({ a: meds[i].name, b: meds[j].name, level: p.level, msg: p.msg });
@@ -89,6 +95,7 @@ export function findInteractions(meds: { name: string; text: string }[]): Intera
 
 // المادة الفعالة من البنك على الخادم (بالاسم بالظبط) — بتتحفظ عشان مانسألش تاني
 const sciCache = new Map<string, string>();
+const ingCache = new Map<string, string>();
 
 export function useRxInteractions(meds: Medication[]): Interaction[] {
   const names = meds.map((m) => m.name.trim()).filter(Boolean);
@@ -100,12 +107,12 @@ export function useRxInteractions(meds: Medication[]): Interaction[] {
     let live = true;
     supabase.from('ortho_medications').select('name,scientific_name,group').in('name', missing).then(({ data }) => {
       for (const n of missing) sciCache.set(key(n), '');
-      for (const r of data ?? []) sciCache.set(key(r.name), `${r.scientific_name ?? ''} ${r.group ?? ''}`);
+      for (const r of data ?? []) { sciCache.set(key(r.name), `${r.scientific_name ?? ''} ${r.group ?? ''}`); ingCache.set(key(r.name), r.scientific_name ?? ''); }
       if (live) bump((x) => x + 1);
     });
     return () => { live = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sig]);
   const groupOf = new Map(medCatalog().map((m) => [key(m.name), `${m.group} ${(m as { scientificName?: string }).scientificName ?? ''}`]));
-  return findInteractions(names.map((n) => ({ name: n, text: `${groupOf.get(key(n)) ?? ''} ${sciCache.get(key(n)) ?? ''}` })));
+  return findInteractions(names.map((n) => ({ name: n, text: `${groupOf.get(key(n)) ?? ''} ${sciCache.get(key(n)) ?? ''}`, sci: ingCache.get(key(n)) ?? '' })));
 }

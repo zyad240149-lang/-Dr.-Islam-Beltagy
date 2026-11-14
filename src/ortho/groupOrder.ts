@@ -1,22 +1,37 @@
 // ترتيب مجموعات الأدوية اللي الطبيب بيختاره — بيتطبق في صفحة الأدوية وفي اختيار الأدوية في الروشتة.
-// متخزن على الجهاز ده (localStorage) لحد ما يتعمل له مكان في قاعدة البيانات يتزامن بين الأجهزة.
+// متخزن في قاعدة البيانات (ortho_med_groups — migration 973) فبيتزامن بين الأجهزة، ونسخة على الجهاز عشان يشتغل من غير نت.
 import { useSyncExternalStore } from 'react';
+import { supabase } from '../lib/supabase';
 
 const KEY = 'ortho.medGroupOrder.v1';
 const subs = new Set<() => void>();
 let cached: string[] | null = null;
+let fetched = false;
 
+function local(): string[] {
+  try { const v = JSON.parse(localStorage.getItem(KEY) ?? '[]'); return Array.isArray(v) ? v.filter((x) => typeof x === 'string') : []; }
+  catch { return []; }
+}
+function publish(order: string[]) {
+  cached = [...order];
+  try { localStorage.setItem(KEY, JSON.stringify(cached)); } catch { /* التخزين مقفول */ }
+  subs.forEach((f) => f());
+}
 function read(): string[] {
-  if (cached) return cached;
-  try { const v = JSON.parse(localStorage.getItem(KEY) ?? '[]'); cached = Array.isArray(v) ? v.filter((x) => typeof x === 'string') : []; }
-  catch { cached = []; }
+  if (!cached) cached = local();
+  if (!fetched) {
+    fetched = true;
+    supabase.from('ortho_med_groups').select('name,position').order('position').then(({ data, error }) => {
+      if (!error && data?.length) publish(data.map((r) => r.name as string));
+    });
+  }
   return cached;
 }
 
-export function setGroupOrder(order: string[]) {
-  cached = [...order];
-  try { localStorage.setItem(KEY, JSON.stringify(cached)); } catch { /* التخزين مقفول — الترتيب يفضل للجلسة دي بس */ }
-  subs.forEach((f) => f());
+export async function setGroupOrder(order: string[]) {
+  publish(order);
+  const { error } = await supabase.from('ortho_med_groups').upsert(order.map((name, position) => ({ name, position })), { onConflict: 'name' });
+  if (error) throw error;
 }
 
 export function useGroupOrder() {

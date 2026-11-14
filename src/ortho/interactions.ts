@@ -97,7 +97,42 @@ export function findInteractions(meds: { name: string; text: string; sci?: strin
 const sciCache = new Map<string, string>();
 const ingCache = new Map<string, string>();
 
-export function useRxInteractions(meds: Medication[]): Interaction[] {
+// ———————— حساسية المريض ————————
+// كلمات الحساسية الشائعة (عربي/إنجليزي) ⇢ المواد/الفئات اللي تتعارض معاها
+const ALLERGY_MAP: [RegExp, RegExp, Cls[]][] = [
+  [/بنسلين|بنسيلين|penicillin|amoxicillin|اموكسيسيلين|أموكسيسيلين/i, /penicillin|amoxicillin|ampicillin|cloxacillin|flucloxacillin|piperacillin|benzathine|oxacillin/i, []],
+  [/سيفالو|cephalo|cef/i, /cef|ceph/i, []],
+  [/سلفا|sulfa|sulpha/i, /sulfamethoxazole|sulfadiazine|sulfasalazine|sulpha|sulfa/i, []],
+  [/اسبرين|أسبرين|aspirin/i, /aspirin|acetylsalicylic/i, ['nsaid']],
+  [/مسكن|مضاد.*التهاب|nsaid|diclofenac|ديكلوفيناك|فولتارين|ibuprofen|بروفين/i, /diclofenac|ibuprofen|naproxen|ketoprofen|piroxicam|meloxicam|lornoxicam|aceclofenac|ketorolac|etoricoxib|celecoxib/i, ['nsaid', 'cox2']],
+  [/كورتيزون|cortisone|steroid/i, /predni|dexameth|betameth|hydrocort|triamcin|methylpred|deflazacort/i, ['steroid']],
+  [/ترامادول|tramadol/i, /tramadol/i, []],
+  [/كودايين|codeine|مورفين|morphine|opioid/i, /codeine|morphine|oxycodone|tramadol|tapentadol/i, ['opioid', 'tramadol']],
+  [/باراسيتامول|paracetamol|بنادول|panadol|acetaminophen/i, /paracetamol|acetaminophen/i, ['paracetamol']],
+  [/ميترونيدازول|فلاجيل|metronidazole/i, /metronidazole/i, []],
+  [/كينولون|سيبرو|cipro|quinolone|levoflox/i, /floxacin/i, ['quinolone']],
+  [/ماكرولايد|macrolide|azithro|clarithro|erythro/i, /azithromycin|clarithromycin|erythromycin/i, []],
+  [/يود|iodine/i, /iodine|povidone/i, []],
+  [/لاتكس|latex/i, /latex/i, []],
+];
+
+export function findAllergyAlerts(meds: { name: string; text: string; sci?: string }[], allergy: string): Interaction[] {
+  const a = allergy.trim();
+  if (!a || /^(لا توجد|لا يوجد|مفيش|none|no|nkda)/i.test(a) && a.length < 30) return [];
+  const out: Interaction[] = [];
+  // كلمات إنجليزي مكتوبة في الحساسية بالظبط (مثال: «allergic to ketoprofen»)
+  const words = (a.toLowerCase().match(/[a-z]{5,}/g) ?? []).filter((w) => !['allergy', 'allergic', 'drugs', 'medication', 'foods', 'patient'].includes(w));
+  for (const m of meds) {
+    const hay = `${m.name} ${m.sci ?? ''}`.toLowerCase();
+    const cls = classify(`${m.name} ${m.text}`);
+    const hit = ALLERGY_MAP.find(([trig, re, cs]) => trig.test(a) && (re.test(hay) || cs.some((c) => cls.has(c))));
+    const word = words.find((w) => hay.includes(w));
+    if (hit || word) out.push({ a: m.name, b: 'حساسية المريض', level: 'danger', msg: `المريض مسجّل عنده حساسية: «${a.slice(0, 80)}» — الدواء ده ممكن يكون منها${word ? ` (${word})` : ''}. اتأكد قبل ما تكتبه.` });
+  }
+  return out;
+}
+
+export function useRxInteractions(meds: Medication[], allergy = ''): Interaction[] {
   const names = meds.map((m) => m.name.trim()).filter(Boolean);
   const sig = names.map(key).sort().join('|');
   const [, bump] = useState(0);
@@ -114,5 +149,6 @@ export function useRxInteractions(meds: Medication[]): Interaction[] {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sig]);
   const groupOf = new Map(medCatalog().map((m) => [key(m.name), `${m.group} ${(m as { scientificName?: string }).scientificName ?? ''}`]));
-  return findInteractions(names.map((n) => ({ name: n, text: `${groupOf.get(key(n)) ?? ''} ${sciCache.get(key(n)) ?? ''}`, sci: ingCache.get(key(n)) ?? '' })));
+  const list = names.map((n) => ({ name: n, text: `${groupOf.get(key(n)) ?? ''} ${sciCache.get(key(n)) ?? ''}`, sci: ingCache.get(key(n)) ?? '' }));
+  return [...findAllergyAlerts(list, allergy), ...findInteractions(list)];
 }

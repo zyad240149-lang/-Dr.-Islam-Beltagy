@@ -2366,3 +2366,6 @@ html[dir="rtl"] .table td.num, html[dir="rtl"] .table th.num { text-align: right
   .filter-bar > .field:has(> select) { flex: 1 1 calc(50% - 8px); min-width: 0; }
   .filter-bar > .field:has(> select) label { font-size: 13px; }
 }
+.cx-med__need { margin-inline-start: 32px; font-size: 12.5px; color: #8a5a00; background: #fff6e0; border-radius: 8px; padding: 5px 10px; }
+@media (max-width: 640px) { .cx-med__need { margin-inline-start: 0; } }
+@media print { .cx-med__need { display: none !important; } }

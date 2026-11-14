@@ -6,6 +6,7 @@ import { useToast } from '../hooks/useToast';
 import { IMAGING_KIND, IMAGING_STATUS, ortho, type Attachment, type ImagingKind, type ImagingRequest, type Medication, type RxData, type RxTemplate } from './data';
 import { LAB_GROUPS, MED_DOSES, MED_DURATIONS, MED_FREQS, MED_NOTES, XRAY_VIEWS, medCatalog, type MedPreset } from './clinicalLists';
 import { useMedBank } from './medBank';
+import { db } from '../data/db';
 import { useRxInteractions } from './interactions';
 import { AttachmentThumbs } from './Consultations';
 import { IconBtn, Tone, useClinicalCan } from './kit';
@@ -104,7 +105,10 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
   const norm = (s: string) => s.trim().toLowerCase();
   // ١١/١١: نفس الدواء متكتب مرتين ← تنبيه + الصفوف المتكررة بتتعلّم بالأحمر
   const dupNames = (() => { const seen = new Map<string, number>(); for (const m of c.medications) { const k = norm(m.name); if (k) seen.set(k, (seen.get(k) ?? 0) + 1); } return new Set([...seen].filter(([, n]) => n > 1).map(([k]) => k)); })();
-  const interactions = useRxInteractions(c.medications);
+  // حساسية المريض من التقييم الأولي + شيت الكشف (خانات «مواد أخرى» و«التفاصيل») — بتتقارن بأدوية الروشتة
+  const allergyText = patientId ? [...db.assessmentsForPatient(patientId).map((a) => a.allergies), ...ortho.list('consultations', patientId).flatMap((x) => [x.sheet?.txt?.['n.allergy.other'], x.sheet?.txt?.['n.allergy.details']])]
+    .map((t) => (t ?? '').trim()).filter(Boolean).filter((t, k, arr) => arr.indexOf(t) === k).join('، ') : '';
+  const interactions = useRxInteractions(c.medications, allergyText);
   const canSeeMedInfo = useClinicalCan('medications').view; // معلومات الطبيب الداخلية حسب صلاحية قسم «الأدوية»
   const hasMed = (name: string) => c.medications.some((m) => norm(m.name) === norm(name));
   const toggleMed = (p: MedPreset) => set('medications', hasMed(p.name)
@@ -261,7 +265,7 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
           <div className="cx-rows">
             {interactions.map((x, k) => (
               <div key={`ix${k}`} className="cx-dup" role="alert" style={x.level === 'warn' ? { background: 'hsl(40 95% 50% / .12)', borderColor: 'hsl(40 90% 45%)', color: 'hsl(35 80% 28%)' } : undefined}>
-                <Icon name="alert" size={16} /> <span>{x.level === 'danger' ? 'تداخل خطير' : 'تنبيه'}: <b dir="ltr">{x.a}</b> + <b dir="ltr">{x.b}</b> — {x.msg}</span>
+                <Icon name="alert" size={16} /> <span>{x.b === 'حساسية المريض' ? <>حساسية: <b dir="ltr">{x.a}</b> — {x.msg}</> : <>{x.level === 'danger' ? 'تداخل خطير' : 'تنبيه'}: <b dir="ltr">{x.a}</b> + <b dir="ltr">{x.b}</b> — {x.msg}</>}</span>
               </div>
             ))}
             {dupNames.size > 0 && <div className="cx-dup" role="alert"><Icon name="alert" size={16} /> فيه دواء متكتب مرتين: <b dir="ltr">{[...dupNames].join('، ')}</b> — امسح التكرار.</div>}
@@ -277,6 +281,9 @@ export function RxEditor({ value: c, onChange, patientId, region = '', onUploadi
                 <input className="input cx-row__note" dir="auto" aria-label={`ملاحظة الدواء ${i + 1}`} placeholder="ملاحظة الدواء (بعد الأكل…)" list="cx-med-notes" value={m.notes ?? ''} onChange={(e) => setMed(i, { notes: e.target.value })} />
                 <IconBtn icon="trash" label="حذف الدواء" danger onClick={() => set('medications', c.medications.filter((_, j) => j !== i))} />
               </div>
+              {m.name.trim() && (!m.dose.trim() || !m.frequency.trim() || !m.duration.trim()) && (
+                <div className="cx-med__need">مفيش جرعة معتمدة متسجّلة للدواء ده — النظام مش بيخترع جرعة. اكمل: {[!m.dose.trim() && 'الجرعة', !m.frequency.trim() && 'عدد المرات', !m.duration.trim() && 'المدة'].filter(Boolean).join('، ')} (وراعي السن/الوزن/الكلى لو محتاج).</div>
+              )}
               {canSeeMedInfo && <MedDoctorInfo name={m.name} interactions={interactions} onPickAlt={(alt) => pickMedName(i, alt)} />}
               </div>
             ))}

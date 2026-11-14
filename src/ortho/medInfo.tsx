@@ -45,11 +45,12 @@ async function loadInfo(name: string): Promise<MedInfoData> {
   const row = (data?.[0] as BankRow | undefined) ?? null;
   if (!row) return { row: null, ings: [], internal: null, prices: [] };
   const [li, inn, pr] = await Promise.all([
-    supabase.from('ortho_medication_ingredients').select('strength,position,ingredient:ortho_active_ingredients(id,name,synonyms,reference_dose,contraindications,warnings,side_effects,interactions,info_source,info_updated_at,data_status)').eq('medication_id', row.id).order('position'),
+    supabase.from('ortho_medication_ingredients').select('strength,position,ingredient:ortho_active_ingredients(id,name,synonyms,reference_dose,contraindications,warnings,side_effects,interactions,info_source,info_updated_at,data_status,merged_into)').eq('medication_id', row.id).order('position'),
     supabase.from('ortho_med_internal').select('company,origin_country,pack_size,doctor_notes,info_source,updated_at').eq('medication_id', row.id).maybeSingle(),
     supabase.from('ortho_med_prices').select('price,currency,country,price_basis,pack_size,company,verified_at,source').eq('medication_id', row.id).order('verified_at', { ascending: false }).limit(10),
   ]);
-  const ings = ((li.data ?? []) as unknown as { strength: string; ingredient: Omit<Ingredient, 'strength'> | null }[]).filter((x) => x.ingredient).map((x) => ({ ...x.ingredient!, strength: x.strength }));
+  // المواد المكررة (merged_into — migration 975) بتتشال لإن الدواء مربوط كمان بالمادة الأساسية
+  const ings = ((li.data ?? []) as unknown as { strength: string; ingredient: (Omit<Ingredient, 'strength'> & { merged_into: string | null }) | null }[]).filter((x) => x.ingredient && !x.ingredient.merged_into).map((x) => ({ ...x.ingredient!, strength: x.strength }));
   return { row, ings, internal: (inn.data as Internal | null) ?? null, prices: (pr.data ?? []) as Price[] };
 }
 

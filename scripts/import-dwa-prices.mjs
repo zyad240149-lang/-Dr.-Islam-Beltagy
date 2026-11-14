@@ -1,10 +1,9 @@
 // استيراد أسعار وشركات من ملف Excel بتاع «دليل الأدوية» (dwaprices.com) — نفس أعمدة ملفهم:
 //   id | الاسم انجلش | الاسم عربي | سعر قديم | سعر جديد | تركيبة/مادة فعالة | شركة | تصنيف | وحدات | وحدات صغرى | حجم/وزن | تركيز | شكل صيدلاني | باركود دولي | محلي/مستورد | تاريخ تحديث سعر | شهرة الصنف
-// الربط بالاسم الإنجليزي بعد توحيد الشكل (حروف صغيرة، من غير نقط، tabs=tab …). اللي بيتطابق بالظبط بس هو اللي بيتكتب؛
-// التطابق التقريبي بيطلع في تقرير للمراجعة ومش بيتكتب.
+// الربط بالاسم الإنجليزي بعد توحيد الشكل (حروف صغيرة، من غير نقط، tabs=tab …) على ٣ مستويات (تحت). اللي مش بيتحسم بيطلع في التقرير ومش بيتكتب.
 // مش بيمسح ولا بيغيّر حاجة متسجلة: الشركة/البلد/العبوة/التركيز/الشكل في الخانات الفاضية بس، والسعر بيتضاف كسطر جديد بمصدره وتاريخه
 // (ومش بيتكرر لو نفس السعر بنفس التاريخ والمصدر موجود).
-// التشغيل: node scripts/import-dwa-prices.mjs --file=path.xlsx [--apply] [--report=out.csv]   (من غير --apply = تجربة بس)
+// التشغيل: node scripts/import-dwa-prices.mjs --file=path.xlsx [--apply] [--report=out.csv] [--exact-only]   (من غير --apply = تجربة بس)
 import readXlsxFile from 'read-excel-file/node';
 import { writeFileSync } from 'node:fs';
 import { sql } from './_env.mjs';
@@ -21,6 +20,7 @@ const FORM_AR = { tablet: 'أقراص', capsule: 'كبسولات', sachet: 'أك
 /** توحيد الاسم للمقارنة: «DIMRA 20 F.C.TAB.» = «dimra 20 f.c.tab» */
 export function norm(s) {
   return String(s ?? '').toLowerCase()
+    .replace(/\b(\d{1,3})[.,](\d{3})(?=\s*i\.?\s*u)/g, '$1$2') // 200.000 I.U = 200000 IU
     .replace(/(\d)\s*,\s*(\d)/g, '$1.$2')
     .replace(/(\d)\.(\d)/g, '$1\u0001$2') // نقطة الكسر العشري تفضل
     .replace(/[.()[\]{}'"`،,;:]/g, ' ').replace(/\u0001/g, '.')
@@ -35,7 +35,6 @@ const sorted = (s) => s.split(' ').sort().join(' ');
 const brand = (s) => s.split(' ')[0];
 const nums = (s) => (s.match(/\d+(?:\.\d+)?[a-z%]*/g) ?? []).sort().join(' ');
 const formKey = (s) => (/\b(tab|caplet|fc|ec)\b|tabs?\b/.test(s) ? 'tab' : /\bcap\b/.test(s) ? 'cap' : /\bamp\b|\bvial\b|inj/.test(s) ? 'inj' : /sachet/.test(s) ? 'sachet' : /syrup|susp/.test(s) ? 'liquid' : /cream|gel|oint/.test(s) ? 'topical' : /drop/.test(s) ? 'drop' : /supp/.test(s) ? 'supp' : '');
-const strongOk = process.argv.includes('--strong');
 
 const sheets = await readXlsxFile(file);
 const data = (Array.isArray(sheets[0]?.data) ? sheets[0].data : sheets);
@@ -67,29 +66,55 @@ const byNorm = new Map(), bySorted = new Map(), byBrand = new Map();
 const push = (m, k, v) => { if (!m.has(k)) m.set(k, []); m.get(k).push(v); };
 for (const b of bank) { const n = norm(b.name); push(byNorm, n, b); push(bySorted, sorted(n), b); push(byBrand, brand(n), b); }
 
+// ٣ مستويات: (١) نفس الاسم بالظبط (٢) قوي: نفس الاسم التجاري والأرقام والشكل (٣) محلول: البنك ناقصه رقم (زي عدد العبوة) أو فيه
+// أكتر من مرشح — بيختار بالمادة الفعالة + الشكل + الأرقام + أكتر كلمات مشتركة، بشرط إن الأحسن واحد بس ومحدش تاني من الملف خده.
+// اللي مش بيتحسم بيفضل «مراجعة» ومش بيتكتب. --exact-only = المستوى الأول بس.
+const exactOnly = process.argv.includes('--exact-only');
 const exact = [], review = [], none = [];
+const claimed = new Map(); // id دوا البنك ← صنف الملف
+const rest = [];
 for (const it of items) {
   const n = norm(it.name);
   const hit = byNorm.get(n) ?? bySorted.get(sorted(n));
-  if (hit?.length === 1) { exact.push({ it, med: hit[0] }); continue; }
-  if (hit && hit.length > 1) { review.push({ it, why: 'أكتر من دوا بنفس الاسم في البنك', cands: hit.map((h) => h.name) }); continue; }
-  const cands = (byBrand.get(brand(n)) ?? []).filter((b) => !it.sci || !b.scientific_name || norm(b.scientific_name).split(' ')[0] === norm(it.sci).split(' ')[0]);
-  // تطابق قوي: نفس الاسم التجاري + نفس الأرقام بالظبط (التركيز والعدد) + نفس نوع الشكل + مرشح واحد بس
-  const strong = cands.filter((b) => { const bn = norm(b.name); return nums(bn) === nums(n) && nums(n) !== '' && formKey(bn) === formKey(n); });
-  if (strong.length === 1 && strongOk) { exact.push({ it, med: strong[0], strong: true }); continue; }
-  if (cands.length) review.push({ it, why: strong.length === 1 ? 'تطابق قوي (نفس الاسم والأرقام) — شغّل --strong عشان يتكتب' : 'تطابق تقريبي (نفس الاسم التجاري)', cands: (strong.length === 1 ? strong : cands).slice(0, 6).map((c) => c.name) });
-  else none.push({ it });
+  if (hit?.length === 1 && !claimed.has(hit[0].id)) { exact.push({ it, med: hit[0], how: 'بالظبط' }); claimed.set(hit[0].id, it); }
+  else rest.push(it);
+}
+const setOf = (s) => new Set(nums(s).split(' ').filter(Boolean));
+const subset = (a, b) => [...a].every((x) => b.has(x));
+const words = (s) => new Set(s.split(' ').filter((w) => w.length > 1 || /\d/.test(w)));
+const overlap = (a, b) => { const A = words(a), B = words(b); let k = 0; for (const w of A) if (B.has(w)) k++; return k / (A.size + B.size - k || 1); };
+const picks = [];
+for (const it of rest) {
+  const n = norm(it.name);
+  const ing = norm(it.sci).split(' ')[0];
+  const cands = (byBrand.get(brand(n)) ?? []).filter((b) => !claimed.has(b.id) && (!ing || !b.scientific_name || norm(b.scientific_name).split(' ')[0] === ing));
+  if (!cands.length) { none.push({ it }); continue; }
+  if (exactOnly) { review.push({ it, why: 'مش متطابق بالظبط', cands: cands.slice(0, 6).map((c) => c.name) }); continue; }
+  const A = setOf(n), fk = formKey(n);
+  const strong = cands.filter((b) => { const bn = norm(b.name); return nums(bn) === nums(n) && A.size > 0 && formKey(bn) === fk; });
+  if (strong.length === 1) { picks.push({ it, med: strong[0], how: 'قوي: نفس الاسم والأرقام والشكل' }); continue; }
+  const ok = cands.filter((b) => { const bn = norm(b.name), B = setOf(bn), bf = formKey(bn); return (bf === fk || !bf || !fk) && (subset(A, B) || subset(B, A)); });
+  const scored = ok.map((b) => ({ b, s: overlap(n, norm(b.name)) })).sort((x, y) => y.s - x.s);
+  if (scored.length && (scored.length === 1 || scored[0].s > scored[1].s) && scored[0].s >= 0.3) {
+    picks.push({ it, med: scored[0].b, how: scored.length === 1 ? 'محلول: المرشح الوحيد بنفس المادة والشكل والأرقام' : `محلول: الأقرب من ${scored.length} مرشحين (${scored.slice(1, 3).map((x) => x.b.name).join(' / ')})` });
+  } else review.push({ it, why: ok.length ? 'أكتر من مرشح بنفس الدرجة' : 'مفيش مرشح بنفس الأرقام/الشكل', cands: (ok.length ? ok : cands).slice(0, 6).map((c) => c.name) });
+}
+// لو صنفين من الملف اختاروا نفس دوا البنك — الاتنين للمراجعة
+const cnt = new Map(); for (const p of picks) cnt.set(p.med.id, (cnt.get(p.med.id) ?? 0) + 1);
+for (const p of picks) {
+  if (cnt.get(p.med.id) > 1) review.push({ it: p.it, why: 'أكتر من صنف في الملف بيشاوروا على نفس الدوا', cands: [p.med.name] });
+  else { exact.push(p); claimed.set(p.med.id, p.it); }
 }
 
-console.log(`الملف: ${items.length} صنف — متطابق بالظبط: ${exact.length} | محتاج مراجعة: ${review.length} | مش موجود في البنك: ${none.length}`);
-console.log('أمثلة متطابقة:'); for (const { it, med } of exact.slice(0, 8)) console.log(`  ${it.name}  ⇐  ${med.name}  | ${it.price} EGP ${it.date} | ${it.company}`);
-console.log('أمثلة للمراجعة:'); for (const r of review.slice(0, 8)) console.log(`  ${r.it.name}  ?  ${r.cands.join(' / ')}`);
+console.log(`الملف: ${items.length} صنف — اتربط: ${exact.length} (بالظبط ${exact.filter((x) => x.how === 'بالظبط').length}، الباقي قوي/محلول) | محتاج مراجعة: ${review.length} | مش موجود في البنك: ${none.length}`);
+console.log('أمثلة متطابقة:'); for (const { it, med, how } of [...exact.filter((x) => x.how !== 'بالظبط'), ...exact.filter((x) => x.how === 'بالظبط').slice(0, 4)]) console.log(`  ${it.name}  ⇐  ${med.name}  | ${it.price} EGP ${it.date} | ${how}`);
+console.log('للمراجعة (مش هيتكتب):'); for (const r of review) console.log(`  ${r.it.name}  ?  ${r.cands.join(' / ')}`);
 console.log('أمثلة مش موجودة:'); for (const r of none.slice(0, 8)) console.log(`  ${r.it.name}`);
 
 if (reportPath) {
   const esc = (s) => `"${String(s ?? '').replace(/"/g, '""')}"`;
   const lines = [['الحالة', 'اسم المصدر', 'سعر', 'تاريخ', 'شركة', 'دوا البنك / المرشحين', 'سبب'].map(esc).join(',')];
-  for (const { it, med } of exact) lines.push(['متطابق', it.name, it.price, it.date, it.company, med.name, ''].map(esc).join(','));
+  for (const { it, med, how } of exact) lines.push(['اتربط', it.name, it.price, it.date, it.company, med.name, how].map(esc).join(','));
   for (const r of review) lines.push(['مراجعة', r.it.name, r.it.price, r.it.date, r.it.company, r.cands.join(' | '), r.why].map(esc).join(','));
   for (const r of none) lines.push(['مش موجود', r.it.name, r.it.price, r.it.date, r.it.company, '', ''].map(esc).join(','));
   writeFileSync(reportPath, '﻿' + lines.join('\n'));

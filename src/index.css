@@ -2305,3 +2305,19 @@ html[dir="rtl"] .table td.num, html[dir="rtl"] .table th.num { text-align: right
 .fold-t--light { border-color: var(--brand-100); background: var(--brand-50, #eef2fb); color: var(--brand-700); }
 .plan-part__h.fold-h { display: flex; align-items: center; gap: 8px; }
 @media print { .fold-t { display: none; } }
+
+/* ١٤/١١: مساحة لمس أكبر على الموبايل للأزرار واللينكات الصغيرة (من غير ما شكل الكمبيوتر يتغيّر) */
+@media screen and (max-width: 640px) {
+  .wa-link { min-height: 36px; min-width: 40px; padding: 6px 10px; justify-content: center; font-size: 14px; }
+  .link-btn, .link-more { display: inline-flex; align-items: center; min-height: 40px; }
+  .fu-chip { min-height: 30px; padding: 6px 8px; }
+  .fu-item__patient, .ortho-cell-strong { display: inline-block; padding-block: 8px; }
+  .page input[type="checkbox"], .page input[type="radio"], .modal input[type="checkbox"], .modal input[type="radio"] { width: 20px; height: 20px; flex: none; }
+  .switch { transform: scale(1.15); }
+}
+@media screen and (max-width: 640px) {
+  /* الفلاتر: البحث سطر كامل، والقوايم المنسدلة اتنين جنب بعض بدل ما تاكل الشاشة الأولى */
+  .filter-bar { gap: 8px; padding: 12px; }
+  .filter-bar > .field:has(> select) { flex: 1 1 calc(50% - 8px); min-width: 0; }
+  .filter-bar > .field:has(> select) label { font-size: 13px; }
+}

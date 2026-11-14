@@ -110,6 +110,8 @@ function GroupModal({ initialName, meds, toRow, onClose }: { initialName: string
   );
 }
 
+const GROUP_HUES = [215, 160, 28, 280, 350, 190, 95, 45, 255, 320];
+
 export default function Medications() {
   useOrthoVersion();
   const perm = useClinicalCan('medications');
@@ -119,6 +121,7 @@ export default function Medications() {
   const [q, setQ] = useState('');
   const [edit, setEdit] = useState<Draft | null>(null);
   const [groupEdit, setGroupEdit] = useState<string | null>(null); // '' = مجموعة جديدة
+  const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set());
   const saved = ortho.list('medications');
   const savedBy = new Map(saved.map((m) => [keyOf(m.name), m] as const));
   const all = medCatalog();
@@ -171,13 +174,20 @@ export default function Medications() {
         <div className="card__body">
           {view === 'templates' ? <RxTemplatesView q={q} editing={tplEdit} setEditing={setTplEdit} /> : <LoadState kind="medications">
             {!list.length && !extra.length && !(view === 'bank' && (bankHits.length || bank.loading)) && <EmptyState icon="search" title={term ? 'مفيش أدوية بالاسم ده' : 'مفيش أدوية ظاهرة قدامك'} text={term ? undefined : 'افتح «بنك الأدوية» وعلّم على اللي عايزه يظهر.'} />}
-            {[...byGroup].map(([g, meds]) => (
-              <div key={g} style={{ marginBottom: 16 }}>
-                <div className="med-grp">
-                  <h3 className="ortho-sub" style={{ margin: 0, fontWeight: 700 }}>{g} <span className="num">({meds.length})</span></h3>
-                  {perm.edit && groups.includes(g) && <Button size="sm" variant="outline" icon="edit" onClick={() => setGroupEdit(g)}>تعديل المجموعة</Button>}
+            {[...byGroup].map(([g, meds], gi) => {
+              const hue = GROUP_HUES[gi % GROUP_HUES.length];
+              const isOpen = !!term || openGroups.has(g);
+              const toggle = () => setOpenGroups((s) => { const n = new Set(s); n.has(g) ? n.delete(g) : n.add(g); return n; });
+              return (
+              <div key={g} style={{ marginBottom: 10, borderInlineStart: `4px solid hsl(${hue} 65% 50%)`, borderRadius: 10, background: `hsl(${hue} 70% 50% / .06)`, padding: isOpen ? '0 8px 8px' : '0 8px' }}>
+                <div className="med-grp" style={{ cursor: 'pointer', minHeight: 48 }} onClick={toggle} role="button" aria-expanded={isOpen}>
+                  <h3 className="ortho-sub" style={{ margin: 0, fontWeight: 700, color: `hsl(${hue} 60% 38%)`, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ display: 'inline-block', transition: 'transform .2s', transform: isOpen ? 'rotate(90deg)' : 'rotate(180deg)' }}>▶</span>
+                    {g} <span className="num" style={{ background: `hsl(${hue} 65% 50% / .15)`, borderRadius: 999, padding: '1px 8px' }}>{meds.length}</span>
+                  </h3>
+                  {perm.edit && groups.includes(g) && <span onClick={(e) => e.stopPropagation()}><Button size="sm" variant="outline" icon="edit" onClick={() => setGroupEdit(g)}>تعديل المجموعة</Button></span>}
                 </div>
-                {meds.map((m) => {
+                {isOpen && meds.map((m) => {
                   const s = savedBy.get(keyOf(m.name));
                   return (
                     <div className="item-card ortho-row med-row" key={m.name}>
@@ -195,7 +205,8 @@ export default function Medications() {
                   );
                 })}
               </div>
-            ))}
+              );
+            })}
             {view === 'bank' && (bankHits.length > 0 || bank.failed) && (
               <div style={{ marginTop: 20 }}>
                 <h3 className="ortho-sub" style={{ margin: '0 0 6px', fontWeight: 700 }}>باقي البنك — ابحث بالاسم التجاري أو المادة الفعالة <span className="num">({bank.total})</span></h3>

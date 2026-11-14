@@ -213,3 +213,42 @@
 .dxm-reg > .sh-lbl:first-child { margin: 0 0 6px; padding: 6px 10px; border-radius: 8px; background: var(--brand-700); color: #fff; font-size: 14px; }
 .dxm-reg label.sh-ck { display: flex; width: 100%; direction: ltr; text-align: left; }
 .dxm-other { grid-column: 1 / -1; }
+
+/* ١٤/١١: صفحة الأدوية — سهلة التحكم من الموبايل */
+.med-grp { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.med-row__act { display: flex; gap: 8px; align-items: center; }
+.med-show { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); font: inherit; font-size: 14px; font-weight: 700; white-space: nowrap; cursor: pointer; transition: background .15s, color .15s, border-color .15s; }
+.med-show.is-on { background: var(--brand-50, #eef2fb); border-color: var(--brand-600); color: var(--brand-700); }
+.med-show:disabled { opacity: .55; cursor: default; }
+.med-pick-list { max-height: 320px; overflow-y: auto; }
+.med-pick { display: flex; gap: 10px; align-items: center; padding: 8px 4px; cursor: pointer; border-bottom: 1px solid var(--line-2); }
+.med-pick input { width: 20px; height: 20px; flex: none; }
+.med-pick b { overflow-wrap: anywhere; }
+@media screen and (max-width: 640px) {
+  /* أزرار الإضافة: جنب بعض بعرض الشاشة */
+  .med-page .page-head > :not(:first-child) { display: contents; }
+  .med-page .page-head { gap: 8px; }
+  .med-page .page-head > .btn { flex: 1 1 calc(50% - 8px); min-height: 44px; }
+  /* التبويبات: سطر واحد يتسحب بالصباع */
+  .med-tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x mandatory; }
+  .med-tabs::-webkit-scrollbar { display: none; }
+  .med-tabs .seg__btn { flex: 0 0 auto; padding: 0 14px; white-space: nowrap; scroll-snap-align: start; }
+  /* كارت الدواء: الاسم فوق، والتحكم سطر كامل تحته */
+  .med-page .item-card { padding: 12px; }
+  .med-page .item-card + .item-card { margin-top: 8px; }
+  .med-row > div:first-child { flex: 1 1 100%; min-width: 0; overflow-wrap: anywhere; }
+  .med-row__act { flex: 1 1 100%; justify-content: space-between; padding-top: 8px; border-top: 1px dashed var(--line-2); }
+  .med-row__act .med-show { flex: 1; min-height: 44px; }
+  .med-row__act .icon-btn { width: 44px; height: 44px; }
+  .med-row > .btn { width: 100%; min-height: 44px; }
+  .med-grp .btn { min-height: 40px; }
+  .med-pick-list { max-height: none; }
+  .med-pick { padding: 12px 4px; }
+  .med-page .filter-bar { position: sticky; top: 0; z-index: 2; background: var(--surface); }
+}
+@media screen and (max-width: 640px) {
+  .rxt-pick { padding: 10px 4px; border-bottom: 1px solid var(--line-2); }
+  .rxt-pick input { width: 20px; height: 20px; flex: none; }
+  .rxt-list { max-height: 45vh; }
+  .rxt-item__f .input { min-height: 44px; }
+}

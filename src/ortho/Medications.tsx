@@ -16,6 +16,15 @@ const keyOf = (name: string) => name.trim().toLowerCase();
 const isShown = (m: MedPreset) => m.shown !== false;
 const NEW_GROUP = '__new_group__';
 
+// زرار كبير «ظاهر قدامي / مخفي» بدل checkbox صغير — أسهل في اللمس على الموبايل
+function ShowToggle({ on, disabled, onClick }: { on: boolean; disabled?: boolean; onClick: () => void }) {
+  return (
+    <button type="button" className={`med-show ${on ? 'is-on' : ''}`} aria-pressed={on} disabled={disabled} onClick={onClick}>
+      {on ? '✓ ظاهر قدامي' : '+ إظهار قدامي'}
+    </button>
+  );
+}
+
 function MedModal({ initial, groups, onClose }: { initial: Draft; groups: string[]; onClose: () => void }) {
   const { run, busy } = useRun();
   const [m, setM] = useState<Draft>(initial);
@@ -85,11 +94,11 @@ function GroupModal({ initialName, meds, toRow, onClose }: { initialName: string
     </>}>
       <Field label="اسم المجموعة"><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="مثال: روشتة الخشونة" autoFocus /></Field>
       <div style={{ margin: '12px 0' }}><SearchBox value={q} onChange={setQ} placeholder="ابحث بالاسم التجاري أو المادة الفعالة" /></div>
-      <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+      <div className="med-pick-list">
         {shown.map((m) => {
           const k = keyOf(m.name);
           return (
-            <label key={k} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '6px 2px', cursor: 'pointer' }}>
+            <label key={k} className="med-pick">
               <input type="checkbox" checked={picked.has(k)} onChange={() => toggle(m)} />
               <b dir="ltr">{m.name}</b>{m.group && <small className="muted">{m.group}</small>}
             </label>
@@ -140,13 +149,13 @@ export default function Medications() {
   const toggleShown = (m: Draft) => run(() => ortho.save('medications', toRow(m, { shown: !isShown(m) })), isShown(m) ? 'اتشال من قدامك — لسه موجود في البنك' : 'بقى ظاهر قدامك في الروشتة');
 
   return (
-    <div className="page">
+    <div className="page med-page">
       <PageHead title="الأدوية" sub="ضيف أي دواء في البنك، واختار اللي يظهر قدامك في الروشتة، وقسّمهم مجموعات — أو اعمل روشتات جاهزة تنزّلها في التشخيص بضغطة">
         {perm.add && view === 'templates' && <Button icon="plus" onClick={() => setTplEdit(emptyTemplate())}>روشتة جاهزة جديدة</Button>}
         {perm.add && view !== 'templates' && <Button variant="outline" icon="plus" onClick={() => setGroupEdit('')}>مجموعة جديدة</Button>}
         {perm.add && view !== 'templates' && <Button icon="plus" onClick={() => setEdit(emptyMed())}>إضافة دواء للبنك</Button>}
       </PageHead>
-      <div className="seg dx-views" role="tablist" aria-label="أقسام الأدوية">
+      <div className="seg dx-views med-tabs" role="tablist" aria-label="أقسام الأدوية">
         <button type="button" role="tab" aria-selected={view === 'shown'} className={`seg__btn ${view === 'shown' ? 'active' : ''}`} onClick={() => setView('shown')}>
           اللي بيظهر قدامي <span className="badge badge--brand num">{shownCount}</span>
         </button>
@@ -164,23 +173,21 @@ export default function Medications() {
             {!list.length && !extra.length && !(view === 'bank' && (bankHits.length || bank.loading)) && <EmptyState icon="search" title={term ? 'مفيش أدوية بالاسم ده' : 'مفيش أدوية ظاهرة قدامك'} text={term ? undefined : 'افتح «بنك الأدوية» وعلّم على اللي عايزه يظهر.'} />}
             {[...byGroup].map(([g, meds]) => (
               <div key={g} style={{ marginBottom: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <div className="med-grp">
                   <h3 className="ortho-sub" style={{ margin: 0, fontWeight: 700 }}>{g} <span className="num">({meds.length})</span></h3>
                   {perm.edit && groups.includes(g) && <Button size="sm" variant="outline" icon="edit" onClick={() => setGroupEdit(g)}>تعديل المجموعة</Button>}
                 </div>
                 {meds.map((m) => {
                   const s = savedBy.get(keyOf(m.name));
                   return (
-                    <div className="item-card ortho-row" key={m.name}>
+                    <div className="item-card ortho-row med-row" key={m.name}>
                       <div>
                         <b dir="ltr">{m.name}</b>{isBase(m.name) && <span className="badge badge--muted" style={{ marginInlineStart: 8 }}>أساسي</span>}
                         <div className="ortho-sub">{[m.dose, m.frequency, m.duration].filter(Boolean).join(' — ') || '—'}</div>
                         {m.notes?.trim() && <div className="ortho-sub">ملاحظة: {m.notes.trim()}</div>}
                       </div>
-                      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                        <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                          <input type="checkbox" checked={isShown(m)} disabled={busy || !(s ? perm.edit : perm.add)} onChange={() => toggleShown(m)} /> يظهر قدامي
-                        </label>
+                      <div className="med-row__act">
+                        <ShowToggle on={isShown(m)} disabled={busy || !(s ? perm.edit : perm.add)} onClick={() => toggleShown(m)} />
                         {perm.edit && <IconBtn icon="edit" label="تعديل" onClick={() => setEdit(s ? { ...m, id: s.id } : { ...m })} />}
                         {perm.del && s && <IconBtn icon="trash" label="حذف" danger onClick={() => remove(s)} />}
                       </div>
@@ -194,12 +201,10 @@ export default function Medications() {
                 <h3 className="ortho-sub" style={{ margin: '0 0 6px', fontWeight: 700 }}>باقي البنك — ابحث بالاسم التجاري أو المادة الفعالة <span className="num">({bank.total})</span></h3>
                 {bank.failed && <p className="muted">البحث في البنك محتاج اتصال بالإنترنت.</p>}
                 {bankHits.map((m) => (
-                  <div className="item-card ortho-row" key={m.id}>
+                  <div className="item-card ortho-row med-row" key={m.id}>
                     <div><b dir="ltr">{m.name}</b><div className="ortho-sub" dir="ltr" style={{ textAlign: 'start' }}>{[m.scientificName, m.group].filter(Boolean).join(' · ') || '—'}</div></div>
-                    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                      <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                        <input type="checkbox" checked={isShown(m)} disabled={busy || !perm.edit} onChange={() => toggleShown(m)} /> يظهر قدامي
-                      </label>
+                    <div className="med-row__act">
+                      <ShowToggle on={isShown(m)} disabled={busy || !perm.edit} onClick={() => toggleShown(m)} />
                       {perm.edit && <IconBtn icon="edit" label="تعديل" onClick={() => setEdit({ ...m })} />}
                     </div>
                   </div>
@@ -211,7 +216,7 @@ export default function Medications() {
               <div style={{ marginTop: 20 }}>
                 <h3 className="ortho-sub" style={{ margin: '0 0 6px', fontWeight: 700 }}>اتكتبت للمرضى ومش في البنك <span className="num">({extra.length})</span></h3>
                 {extra.map(({ m, n }) => (
-                  <div className="item-card ortho-row" key={m.name}>
+                  <div className="item-card ortho-row med-row" key={m.name}>
                     <div><b dir="ltr">{m.name}</b><div className="ortho-sub">اتكتب <span className="num">{n}</span> مرة{[m.dose, m.frequency, m.duration].some(Boolean) ? ` · ${[m.dose, m.frequency, m.duration].filter(Boolean).join(' — ')}` : ''}</div></div>
                     {perm.add && <Button size="sm" variant="outline" icon="plus" onClick={() => setEdit({ ...m })}>إضافة للبنك</Button>}
                   </div>
